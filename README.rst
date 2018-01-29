@@ -1,8 +1,3 @@
-=========
-Multivers
-=========
-
-
 .. image:: https://img.shields.io/pypi/v/multivers.svg
         :target: https://pypi.python.org/pypi/multivers
 
@@ -17,12 +12,21 @@ Multivers
      :target: https://pyup.io/repos/github/ankostis/multivers/
      :alt: Updates
 
+===================================================
+Multivers: Bump versions on multi-project git repos 
+===================================================
+
+:version:        |version|
+:rel_date:      `2017-12-07 01:31:19`
+:Documentation: https://multivers.readthedocs.io
+:repository:    https://github.com/JRCSTU/multivers
+:pypi-repo:     https://pypi.org/project/multivers/
+:keywords:      software, configuration, versioning, library
+:copyright:     2018 European Commission (`JRC <https://ec.europa.eu/jrc/>`_)
+:license:       `EUPL 1.2 <https://joinup.ec.europa.eu/software/page/eupl>`_
 
 Bump versions of multiple projects hosted in a single Git repo, independently.
 
-
-* Free software: European Union Public Licence 1.2
-* Documentation: https://multivers.readthedocs.io.
 
 
 Features
