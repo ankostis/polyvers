@@ -10,8 +10,8 @@
 Command to bump independently PEP-440 versions on multi-project Git repos.
 
 USAGE:
-  bumpver
-  bumpver [-n] [-f] [-c] [-a] [-t <message>]  <new-ver>
+  multivers
+  multivers [-n] [-f] [-c] [-a] [-t <message>]  <new-ver>
 
 Without <new-ver> prints version extracted from current file.
 Don't add a 'v' prefix!
@@ -36,7 +36,7 @@ OPTIONS:
     X.Y.postN.devM      # Developmental release of a post-release
 
 EXAMPLE:
-    bumpver -t 'Mostly model changes' 1.6.2b0
+    multivers -t 'Mostly model changes' 1.6.2b0
 
 """
 
@@ -44,8 +44,9 @@ import os.path as osp
 import sys
 import re
 import functools as fnt
-
-import docopt
+import traitlets as trt
+import traitlets.config as trc
+from .autoinstance_traitlet import AutoInstance
 
 
 my_dir = osp.dirname(__file__)
@@ -59,6 +60,104 @@ RFILE = osp.join(my_dir, '..', 'README.rst')
 
 class CmdException(Exception):
     pass
+
+
+class Base(trc.Configurable):
+    def _interpolate_message(self, msg):
+        context = dict(list(time_context.items()) + list(prefixed_environ().items()) + list(vcs_info.items()))
+        msg.format(context)
+
+
+class Project(Base):
+    force = trt.Bool(
+        config=True,
+        help="Bump (and optionally) commit/tag even if version exists/is same.")
+
+    dry_run = trt.Bool(
+        config=True,
+        help="Do not write files - just pretend.")
+
+    tag = trt.Bool(
+        config=True,
+        help="""
+        Enable tagging, per-project.
+
+        Adds a signed tag with name/msg from `tag_name`/`message` (commit implied).
+
+        """)
+    sign_tags = trt.Bool(
+        config=True,
+        help="Enable PGP-signing of tags (see also `sign_user`)."
+    )
+
+    sign_user = trt.Unicode(
+        config=True,
+        help="The signing PGP user (email, key-id)."
+    )
+
+    message = trt.Unicode(
+        "chore(ver): bump {current_version} → {new_version}",
+        config=True,
+        help="""
+            The message for commits and per-project tags.
+
+            Available interpolations:
+            - `{current_version}`
+            - `{new_version}`
+            - `{now}`
+            - `{utcnow:%d.%m.%Y}`
+            - <`{$ENV_VAR}`>
+        """)
+
+
+class Multivers(trc.Application, Project):
+    projects = trt.List(
+        AutoInstance,
+        config=True)
+
+    amend = trt.Bool(
+        config=True,
+        help="Amend the last bump-version commit, if any.")
+    commit = trt.Bool(
+        config=True,
+        help="""
+            Commit afterwards with a commit-message describing version bump.
+
+            If false, no commit created, just search'n replace version-ids.
+            Related params: out_of_trunk, message
+        """)
+
+    flags = {
+        ('f', 'force'): (
+            {'Project': {'force': True}},
+            Project.force.help
+        ),
+        ('n', 'dry-run'): (
+            {'Project': {'force': True}},
+            Project.dry_run.help
+        ),
+        ('c', 'commit'): (
+            {},
+            "Commit afterwards with a commit-message describing version bump."
+        ),
+        ('a', 'amend'): (
+            {'Multivers': {'amend': True}},
+            "Amend the last bump-version commit, if any."
+        ),
+        ('t', 'tag'): (
+            {'Project': {'tag': True}},
+            "Adds a (signed) tag with name/msg in `tag_name`/`message` (commit implied)."
+        ),
+        ('s', 'sign-tags'): (
+            {'Project': {'sign_tags': True}},
+            "Signed tag with the given message (commit implied)."
+        ),
+    }
+    aliases = {
+        'log-level': 'Application.log_level',
+        ('m', 'message'): 'Project.message',
+        ('u', 'sign-user'): 'Project.sign_user',
+    }
 
 
 @fnt.lru_cache()
@@ -259,3 +358,6 @@ def main(*args):
     except Exception as ex:
         raise ex
 
+
+if __name__ == '__main__':
+    main(*sys.argv[1:])
