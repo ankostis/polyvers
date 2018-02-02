@@ -6,6 +6,10 @@
 # You may obtain a copy of the Licence at: http://ec.europa.eu/idabc/eupl
 """Top-level package for Multivers."""
 
-__author__ = """Kostis Anagnostopoulos"""
-__email__ = 'ankostis@gmail.com'
 __version__ = '0.0.0'
+
+__copyright__ = "Copyright (C) 2015-2017 European Commission (JRC)"
+__license__   = "EUPL 1.2"
+__title__     = "multivers"
+__summary__   = "Bump independently versions on multi-project git repos"
+__uri__       = "https://github.com/JRCSTU/multivers"
