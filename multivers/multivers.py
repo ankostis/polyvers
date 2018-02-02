@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
 # Copyright 2015-2018 European Commission (JRC);
@@ -8,7 +7,7 @@
 #
 
 """
-Script to bump, commit and tag new versions.
+Command to bump, commit and tag new versions.
 
 USAGE:
   bumpver
@@ -260,6 +259,3 @@ def main(*args):
     except Exception as ex:
         raise ex
 
-
-if __name__ == '__main__':
-    main(*sys.argv[1:])

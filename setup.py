@@ -24,9 +24,9 @@ test_requirements = [
     'pytest',
     # TODO: put package test requirements here
 ]
-
+proj_name = 'multivers'
 setup(
-    name='multivers',
+    name=proj_name,
     version='0.0.0',
     description="Bump versions of multiple projects hosted in a single Git repo"
                 ", independently.",
@@ -56,4 +56,7 @@ setup(
     test_suite='tests',
     tests_require=test_requirements,
     setup_requires=setup_requirements,
+    entry_points={
+        'console_scripts': [
+            '%(p)s = %(p)s.__main__:main' % {'p': proj_name}]},
 )
