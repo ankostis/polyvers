@@ -37,7 +37,7 @@ setup(
     packages=find_packages(include=['multivers']),
     include_package_data=True,
     install_requires=requirements,
-    license="GNU General Public License v3",
+    license='EUPL 1.2',
     zip_safe=False,
     keywords='multivers',
     classifiers=[
