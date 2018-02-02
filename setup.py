@@ -28,8 +28,7 @@ proj_name = 'multivers'
 setup(
     name=proj_name,
     version='0.0.0',
-    description="Bump versions of multiple projects hosted in a single Git repo"
-                ", independently.",
+    description="Bump independently PEP-440 versions on multi-project Git repos.",
     long_description=readme + '\n\n' + history,
     author="Kostis Anagnostopoulos",
     author_email='ankostis@gmail.com',

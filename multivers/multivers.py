@@ -7,7 +7,7 @@
 #
 
 """
-Command to bump, commit and tag new versions.
+Command to bump independently PEP-440 versions on multi-project Git repos.
 
 USAGE:
   bumpver
