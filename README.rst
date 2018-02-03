@@ -28,15 +28,22 @@ Polyvers: Bump sub-project PEP-440 versions in Git monorepos independently
 
 A ``bumpversion``-like command-line tool to bump `PEP-440 version-ids
 <https://www.python.org/dev/peps/pep-0440/>`_ independently on multiple related
-sub-projects hosted in a single Git repo (the *monorepo*).
+sub-projects hosted in a single *Git* repo (the `monorepo`_ ).
 
-When `using monorepos`_, sharing of branches across versions becomes difficult
-due to merge conflicts on the version-ids "engraved" in the sub-project sources.
-Contrary to `similar tools`_, *polyvers* engraves static version-ids only in
-out-of-trunk (leaf) commits, and only when sub-projects get released.
-For in-trunk code, the reported versions originate from git tags
-(like ``git-describe``) and are always up-to-date.
+"Bumping a version" translates into:
 
+- deciding the next version of sub-projects, selectively and independently;
+- adding x2 commits & tags: one *"Version" commit* in-trunk, and another
+  `"Leaf" release-commit`_;
+- engraving the new version-ids in the source code of all *dependent* sub-projects
+  (in the "leaf" commit only),
+- optionally building packages out of the later;
+- enforcing customizable validation rules and extensible hooks on the process.
+
+
+.. contents:: Table of Contents
+  :backlinks: top
+  :depth: 4
 
 Quickstart
 ==========
@@ -68,7 +75,7 @@ Quickstart
             +--...
 
    ...we have to map the *project folders ↔ project-names* using a `traitlets configuration
-   file <https://traitlets.readthedocs.io/en/stable/>`_ named as
+   file <https://traitlets.readthedocs.io>`_ named as
    ``/monorepo.git/.polyvers.py``:
 
    .. code-block:: python
@@ -77,10 +84,6 @@ Quickstart
             {'path': 'base_project'},  # If no 'name' given, extracted from `setup.py`.
             {'name': 'core'}           # If no `path`, same as `project_name` implied.
         ]
-
-        ## Prefer not to engrave Version-ids "statically" in master branch (trunk),
-        #  to avoid conflicts when merging version files.
-        c.Polyvers.leaf_releases = True
 
 
 3. We then set each sub-project to derive its version *on runtime* from latest tag(s),
@@ -94,7 +97,7 @@ Quickstart
         __version__ = polyvers.version('baseproj')
         ...
 
-4. We can now run use the ``polyvers`` command to inspect & set versions for all
+4. We can now use the ``polyvers`` command to inspect & set the same version to all
    sub-projects:
 
    .. code-block:: console
@@ -191,54 +194,88 @@ Quickstart
 
 Features
 ========
-- `PEP-440 version ids
-  <https://www.python.org/dev/peps/pep-0440/>`_; use *local version identifiers* part
-  to signify versions of any the *dependent* project(s).
-- Optionally engrave sub-project version-ids in "leaf" commits, outside-of-trunk
-  to avoid thus merge conflicts.
-- Maintain "developmental" release trains that can be safely published in *PyPi*
-  (need ``pip install --pre``).
-- Extensible with bump-version *hooks* (e.g. for validating doctests) implemented
-  as `setuptools plugins
-  <http://setuptools.readthedocs.io/en/latest/setuptools.html#dynamic-discovery-of-services-and-plugins>`_.
-- Always accurate version reported on runtime when run from git repos
-  (never again forget to update IDs when running experiments)
+PEP 440 version ids
+-------------------
+While most versioning tools use `Semantic versioning
+<http://semver.org/>`_, python's ``distutils`` native library
+supports the quasi-superset, but more versatile, `PEP-440 version ids
+<https://www.python.org/dev/peps/pep-0440/>`_.
 
-Drawbacks
-=========
-- Needs extra setup to view the project-version in GitHub landing page.
+Monorepos
+---------
+When your project succeeds, problems like these are known only too well:
 
+  Changes in **web-server** depend on **core** features that cannot go public
+  because the "official" **wire-protocol** is freezed.
 
-Using monorepos
-===============
-The patterns are known only too well:
+  While downstream projects using **core** as a library complain about its bloated
+  transitive dependencies (why *flask* library is needed??).
 
-  Changes in **WebServer** depend on **MainProject** features that cannot go public
-  because the "official" **WireProtocol** is freezed.
-
-  While projects downstream complain about the proliferation of
-  transitive dependencies.
-
-It is obvious that a project needs splitting!
-From `lerna <https://lernajs.io/>`_:
+So the time to "split the project has come.  But from `lerna <https://lernajs.io/>`_:
 
   Splitting up large codebases into separate independently versioned packages
   is extremely useful for code sharing. However, making changes across
   many repositories is messy and difficult to track, and testing across repositories
   gets complicated really fast.
 
+So a `monorepo <http://www.drmaciver.com/2016/10/why-you-should-use-a-single-repository-for-all-your-companys-projects/>`_
+is needed.
 But as `Yarn <https://yarnpkg.com/blog/2017/08/02/introducing-workspaces/>`_ put it:
 
   OTOH, splitting projects into their own folders is sometimes not enough.
   Testing, managing dependencies, and publishing multiple packages quickly
-  gets complicated and many such projects adopt tools such as Lerna ...
+  gets complicated and many such projects adopt tools such as ...
+
+This is such a tool.
+
+"Leaf" Release-commit
+---------------------
+Even in single-project repos, sharing code across branches may cause merge-conflicts
+due to the version-ids "engraved" in the sources.
+In monorepos, more engraved version-ids translate to more opportunities for conflicts.
+
+Contrary to `similar tools`_, static version-ids are engraved only in out-of-trunk
+(leaf) commits, and only when the sub-projects are released.
+In-trunk code report its version-id on runtime based on Git tags (``git-describe``)
+so it's always up-to-date.
+
+Marking dependent versions across sub-projects
+----------------------------------------------
+When bumping the version of a sub-project the `"local" part of PEP-440
+<https://www.python.org/dev/peps/pep-0440/#local-version-identifiers>`_
+on all other the *dependent* sub-projects in the monorepo  signify their relationship
+at the time of the bump.
+
+Lock release trains as "developmental"
+--------------------------------------
+Specific branches can be selected always to be published into *PyPi* only as
+`PEP-440's "Developmental" releases
+<https://www.python.org/dev/peps/pep-0440/#developmental-releases>`_, meanining that
+users need ``pip install --pre`` to install from such release-trains.
+This is a safeguard to avoid accidentally landing half-baked code to users.
+
+Other Features
+--------------
+- Highly configurable using `traitlets <https://traitlets.readthedocs.io>`_, with
+  sensible defaults; it's possible to run without any config file in single-project repos.
+- Extensible with bump-version *hooks* (e.g. for validating doctests) TODO: implemented
+  as `setuptools plugins
+  <http://setuptools.readthedocs.io/en/latest/setuptools.html#dynamic-discovery-of-services-and-plugins>`_.
+- Always accurate version reported on runtime when run from git repos
+  (never again wonder with which version your experimental-data were produced).
+
+Drawbacks & Workarounds
+-----------------------
+- To `install sub-projects from git repos
+  <https://pip.pypa.io/en/stable/reference/pip_install/#vcs-support>`_ use::
+
+      pip install -e git+https://repo_url/#egg=pkg&subdirectory=pkg_dir
+
+- Set branch ``latest`` as default in GitHub to show engraved sub-project version-ids.
 
 
 Similar Tools
 =============
-Contrary to this project's *PEP-440*, all other important projects are
-using `Semantic versioning <http://semver.org/>`_:
-
 - The original **bumpversion** project; development stopped after 2015:
   https://github.com/peritus/bumpversion
 - **bump2version:** active clone of the original:
@@ -252,6 +289,12 @@ using `Semantic versioning <http://semver.org/>`_:
 - https://github.com/korfuri/awesome-monorepo
 - `Lerna <https://lernajs.io/>`_: A tool for managing JavaScript projects
   with multiple packages.
+- `Pants <https://www.pantsbuild.org/>`_:  a build system designed for codebases that:
+  - Are large and/or growing rapidly.
+  - Consist of many subprojects that share a significant amount of code.
+  - Have complex dependencies on third-party libraries.
+  - Use a variety of languages, code generators and frameworks.
+
 
 
 Credits
