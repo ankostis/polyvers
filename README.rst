@@ -21,13 +21,20 @@ Polyvers: Bump sub-project PEP-440 versions in Git monorepos independently
 :Documentation: https://polyvers.readthedocs.io
 :repository:    https://github.com/JRCSTU/polyvers
 :pypi-repo:     https://pypi.org/project/polyvers/
-:keywords:      versioning, configuration, git, monorepo, software, tool, library
+:keywords:      version-management, configuration-management, versioning,
+                git, monorepo, tool, library
 :copyright:     2018 European Commission (`JRC <https://ec.europa.eu/jrc/>`_)
 :license:       `EUPL 1.2 <https://joinup.ec.europa.eu/software/page/eupl>`_
 
 A ``bumpversion``-like command-line tool to bump `PEP-440 version-ids
-<https://www.python.org/dev/peps/pep-0440/>`_ independently
-on multiple related sub-projects hosted in a single Git repo (*monorepo*).
+<https://www.python.org/dev/peps/pep-0440/>`_ independently on multiple related
+sub-projects hosted in a single Git repo (the *monorepo*).
+
+When `using monorepos`_, sharing of branches across versions becomes difficult
+due to merge conflicts on the version-ids "engraved" in the sub-project sources.
+Contrary to other monorepo versioning tools, *polyvers* engraves them in out-of-trunk
+"leaf" commits, only when sub-projects get released.  For in-trunk code,
+reported versions originate from git tags.
 
 
 Quickstart
@@ -201,6 +208,31 @@ Drawbacks
 - Needs extra setup to view the project-version in GitHub landing page.
 
 
+Using monorepos
+===============
+The patterns are known only too well:
+
+  Changes in **WebServer** depend on **MainProject** features that cannot go public
+  because the "official" **WireProtocol** is freezed.
+
+  While projects downstream complain about the proliferation of
+  transitive dependencies.
+
+It is obvious that a project needs splitting!
+From `lerna <https://lernajs.io/>`_:
+
+  Splitting up large codebases into separate independently versioned packages
+  is extremely useful for code sharing. However, making changes across
+  many repositories is messy and difficult to track, and testing across repositories
+  gets complicated really fast.
+
+But as `Yarn <https://yarnpkg.com/blog/2017/08/02/introducing-workspaces/>`_ put it:
+
+  OTOH, splitting projects into their own folders is sometimes not enough.
+  Testing, managing dependencies, and publishing multiple packages quickly
+  gets complicated and many such projects adopt tools such as Lerna ...
+
+
 Similar Projects
 ================
 Contrary to this project's *PEP-440*, all other important projects are
@@ -217,6 +249,8 @@ using `Semantic versioning <http://semver.org/>`_:
 - Search other `34 similar projects in GitHub
   <https://github.com/search?l=Python&o=desc&q=bump+version&s=updated&type=Repositories>`_.
 - https://github.com/korfuri/awesome-monorepo
+- `Lerna <https://lernajs.io/>`_: A tool for managing JavaScript projects
+  with multiple packages.
 
 
 Credits
