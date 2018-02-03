@@ -24,7 +24,7 @@ test_requirements = [
     'pytest',
     # TODO: put package test requirements here
 ]
-proj_name = 'multivers'
+proj_name = 'polyvers'
 setup(
     name=proj_name,
     version='0.0.0',
@@ -32,13 +32,13 @@ setup(
     long_description=readme + '\n\n' + history,
     author="Kostis Anagnostopoulos",
     author_email='ankostis@gmail.com',
-    url='https://github.com/ankostis/multivers',
-    packages=find_packages(include=['multivers']),
+    url='https://github.com/jrcstu/polyvers',
+    packages=find_packages(include=['polyvers']),
     include_package_data=True,
     install_requires=requirements,
     license='EUPL 1.2',
     zip_safe=False,
-    keywords='multivers',
+    keywords='polyvers',
     classifiers=[
         'Development Status :: 2 - Pre-Alpha',
         'Intended Audience :: Developers',

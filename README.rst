@@ -1,26 +1,26 @@
-.. image:: https://img.shields.io/pypi/v/multivers.svg
-        :target: https://pypi.python.org/pypi/multivers
+.. image:: https://img.shields.io/pypi/v/polyvers.svg
+        :target: https://pypi.python.org/pypi/polyvers
 
-.. image:: https://img.shields.io/travis/ankostis/multivers.svg
-        :target: https://travis-ci.org/ankostis/multivers
+.. image:: https://img.shields.io/travis/jrcstu/polyvers.svg
+        :target: https://travis-ci.org/jrcstu/polyvers
 
-.. image:: https://readthedocs.org/projects/multivers/badge/?version=latest
-        :target: https://multivers.readthedocs.io/en/latest/?badge=latest
+.. image:: https://readthedocs.org/projects/polyvers/badge/?version=latest
+        :target: https://polyvers.readthedocs.io/en/latest/?badge=latest
         :alt: Documentation Status
 
-.. image:: https://pyup.io/repos/github/ankostis/multivers/shield.svg
-     :target: https://pyup.io/repos/github/ankostis/multivers/
+.. image:: https://pyup.io/repos/github/jrcstu/polyvers/shield.svg
+     :target: https://pyup.io/repos/github/jrcstu/polyvers/
      :alt: Updates
 
-================================================
-Multivers: Bump PEP-440 versions on Gt monorepos
-================================================
+==========================================================================
+Polyvers: Bump sub-project PEP-440 versions in Git monorepos independently
+==========================================================================
 
 :version:       |version|
 :rel_date:      2018-02-03 00:00:00
-:Documentation: https://multivers.readthedocs.io
-:repository:    https://github.com/JRCSTU/multivers
-:pypi-repo:     https://pypi.org/project/multivers/
+:Documentation: https://polyvers.readthedocs.io
+:repository:    https://github.com/JRCSTU/polyvers
+:pypi-repo:     https://pypi.org/project/polyvers/
 :keywords:      versioning, configuration, git, monorepo, software, tool, library
 :copyright:     2018 European Commission (`JRC <https://ec.europa.eu/jrc/>`_)
 :license:       `EUPL 1.2 <https://joinup.ec.europa.eu/software/page/eupl>`_
@@ -32,19 +32,19 @@ on multiple related sub-projects hosted in a single Git repo (*monorepo*).
 
 Quickstart
 ==========
-1. Installing the tool, and you get the ``multivers`` command:
+1. Installing the tool, and you get the ``polyvers`` command:
 
    .. code-block:: console
 
-    $ pip install multivers
+    $ pip install polyvers
     ...
-    $ multivers --version
+    $ polyvers --version
     0.0.0
-    $ multivers --help
+    $ polyvers --help
     ...
 
-    $ multivers
-    multivers: Neither `setup.py` nor `.multivers.py` configuration file found!
+    $ polyvers
+    polyvers: Neither `setup.py` nor `.polyvers.py` configuration file found!
 
 
 2. Assuming our *monorepo* project ``/monorepo.git/`` contains two sub-projects::
@@ -61,18 +61,18 @@ Quickstart
 
    ...we have to map the *project folders ↔ project-names* using a `traitlets configuration
    file <https://traitlets.readthedocs.io/en/stable/>`_ named as
-   ``/monorepo.git/.multivers.py``:
+   ``/monorepo.git/.polyvers.py``:
 
    .. code-block:: python
 
-        c.Multivers.projects = [
+        c.Polyvers.projects = [
             {'path': 'base_project'},  # If no 'name' given, extracted from `setup.py`.
             {'name': 'core'}           # If no `path`, same as `project_name` implied.
         ]
 
         ## Prefer not to engrave Version-ids "statically" in master branch (trunk),
         #  to avoid conflicts when merging version files.
-        c.Multivers.leaf_releases = True
+        c.Polyvers.leaf_releases = True
 
 
 3. We then set each sub-project to derive its version *on runtime* from latest tag(s),
@@ -80,23 +80,23 @@ Quickstart
 
    .. code-block:: python
 
-        import multivers
+        import polyvers
 
         __title__ = "baseproj"
-        __version__ = multivers.version('baseproj')
+        __version__ = polyvers.version('baseproj')
         ...
 
-4. We can now run use the ``multivers`` command to inspect & set versions for all
+4. We can now run use the ``polyvers`` command to inspect & set versions for all
    sub-projects:
 
    .. code-block:: console
 
     $ cd /monorepo.git
-    $ multivers             # No sub-project versions yet.
+    $ polyvers             # No sub-project versions yet.
     base_project: null
     core: null
 
-    $ multivers  --set 0.0.0
+    $ polyvers  --set 0.0.0
     ...
     base_project: 0.0.0
     core: 0.0.0
@@ -118,15 +118,15 @@ Quickstart
    .. code-block:: console
 
     $ cat base_project/baseproj/__init__.py    # Untouched!
-    import multivers
+    import polyvers
 
     __title__     = "baseproj"
-    __version__ = multivers.version('baseproj')
+    __version__ = polyvers.version('baseproj')
     ...
 
     $ git checkout  latest
     $ cat base_project/baseproj/__init__.py
-    import multivers
+    import polyvers
 
     __title__     = "baseproj"
     __version__ = '0.0.0'
@@ -140,7 +140,7 @@ Quickstart
    .. code-block:: console
 
     $ git commit  --allow-empty  -m "some head work"
-    $ multivers  baseproj  --add 0.0.1.dev
+    $ polyvers  baseproj  --add 0.0.1.dev
     ...
     base_project: 0.0.1.dev0
     core: 0.0.0+base_project.0.0.1.dev0
@@ -160,14 +160,14 @@ Quickstart
 
     $ git checkout latest
     $ cat base_project/baseproj/__init__.py
-    import multivers
+    import polyvers
 
     __title__     = "baseproj"
     __version__ = '0.0.1.dev0'
     ...
 
     $ cat core/core/__init__.py
-    import multivers
+    import polyvers
 
     __title__ = "core"
     __version__ = '0.0.0+baseproj.0.0.1.dev0'

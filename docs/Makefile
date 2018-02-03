@@ -85,17 +85,17 @@ qthelp:
 	@echo
 	@echo "Build finished; now you can run "qcollectiongenerator" with the" \
 	      ".qhcp project file in $(BUILDDIR)/qthelp, like this:"
-	@echo "# qcollectiongenerator $(BUILDDIR)/qthelp/multivers.qhcp"
+	@echo "# qcollectiongenerator $(BUILDDIR)/qthelp/polyvers.qhcp"
 	@echo "To view the help file:"
-	@echo "# assistant -collectionFile $(BUILDDIR)/qthelp/multivers.qhc"
+	@echo "# assistant -collectionFile $(BUILDDIR)/qthelp/polyvers.qhc"
 
 devhelp:
 	$(SPHINXBUILD) -b devhelp $(ALLSPHINXOPTS) $(BUILDDIR)/devhelp
 	@echo
 	@echo "Build finished."
 	@echo "To view the help file:"
-	@echo "# mkdir -p $$HOME/.local/share/devhelp/multivers"
-	@echo "# ln -s $(BUILDDIR)/devhelp $$HOME/.local/share/devhelp/multivers"
+	@echo "# mkdir -p $$HOME/.local/share/devhelp/polyvers"
+	@echo "# ln -s $(BUILDDIR)/devhelp $$HOME/.local/share/devhelp/polyvers"
 	@echo "# devhelp"
 
 epub:

@@ -10,8 +10,8 @@
 Command to bump independently PEP-440 versions on multi-project Git repos.
 
 USAGE:
-  multivers
-  multivers [-n] [-f] [-c] [-a] [-t <message>]  <new-ver>
+  polyvers
+  polyvers [-n] [-f] [-c] [-a] [-t <message>]  <new-ver>
 
 Without <new-ver> prints version extracted from current file.
 Don't add a 'v' prefix!
@@ -36,7 +36,7 @@ OPTIONS:
     X.Y.postN.devM      # Developmental release of a post-release
 
 EXAMPLE:
-    multivers -t 'Mostly model changes' 1.6.2b0
+    polyvers -t 'Mostly model changes' 1.6.2b0
 
 """
 
@@ -110,7 +110,7 @@ class Project(Base):
         """)
 
 
-class Multivers(trc.Application, Project):
+class Polyvers(trc.Application, Project):
     projects = trt.List(
         AutoInstance,
         config=True)
@@ -141,7 +141,7 @@ class Multivers(trc.Application, Project):
             "Commit afterwards with a commit-message describing version bump."
         ),
         ('a', 'amend'): (
-            {'Multivers': {'amend': True}},
+            {'Polyvers': {'amend': True}},
             "Amend the last bump-version commit, if any."
         ),
         ('t', 'tag'): (

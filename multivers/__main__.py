@@ -11,4 +11,4 @@ import sys
 
 
 if __name__ == '__main__':
-    __import__('multivers').main(*sys.argv[1:])
+    __import__('polyvers').main(*sys.argv[1:])

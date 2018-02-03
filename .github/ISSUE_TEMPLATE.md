@@ -1,4 +1,4 @@
-* Multivers version:
+* Polyvers version:
 * Python version:
 * Operating System:
 

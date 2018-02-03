@@ -11,7 +11,7 @@ import pytest
 from traitlets import List, Instance, CInt
 from traitlets.config import Configurable, Config
 
-from multivers.autoinstance_traitlet import AutoInstance
+from polyvers.autoinstance_traitlet import AutoInstance
 
 
 class C(Configurable):

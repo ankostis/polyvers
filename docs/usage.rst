@@ -2,6 +2,6 @@
 Usage
 =====
 
-To use Multivers in a project::
+To use Polyvers in a project::
 
-    import multivers
+    import polyvers

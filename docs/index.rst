@@ -1,4 +1,4 @@
-Welcome to Multivers's documentation!
+Welcome to Polyvers's documentation!
 ======================================
 
 Contents:

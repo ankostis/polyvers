@@ -8,13 +8,13 @@ Installation
 Stable release
 --------------
 
-To install Multivers, run this command in your terminal:
+To install Polyvers, run this command in your terminal:
 
 .. code-block:: console
 
-    $ pip install multivers
+    $ pip install polyvers
 
-This is the preferred method to install Multivers, as it will always install the most recent stable release. 
+This is the preferred method to install Polyvers, as it will always install the most recent stable release.
 
 If you don't have `pip`_ installed, this `Python installation guide`_ can guide
 you through the process.
@@ -26,19 +26,19 @@ you through the process.
 From sources
 ------------
 
-The sources for Multivers can be downloaded from the `Github repo`_.
+The sources for Polyvers can be downloaded from the `Github repo`_.
 
 You can either clone the public repository:
 
 .. code-block:: console
 
-    $ git clone git://github.com/ankostis/multivers
+    $ git clone git://github.com/jrcstu/polyvers
 
 Or download the `tarball`_:
 
 .. code-block:: console
 
-    $ curl  -OL https://github.com/ankostis/multivers/tarball/master
+    $ curl  -OL https://github.com/jrcstu/polyvers/tarball/master
 
 Once you have a copy of the source, you can install it with:
 
@@ -47,5 +47,5 @@ Once you have a copy of the source, you can install it with:
     $ python setup.py install
 
 
-.. _Github repo: https://github.com/ankostis/multivers
-.. _tarball: https://github.com/ankostis/multivers/tarball/master
+.. _Github repo: https://github.com/jrcstu/polyvers
+.. _tarball: https://github.com/jrcstu/polyvers/tarball/master
