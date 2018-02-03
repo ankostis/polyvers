@@ -32,9 +32,10 @@ sub-projects hosted in a single Git repo (the *monorepo*).
 
 When `using monorepos`_, sharing of branches across versions becomes difficult
 due to merge conflicts on the version-ids "engraved" in the sub-project sources.
-Contrary to other monorepo versioning tools, *polyvers* engraves them in out-of-trunk
-"leaf" commits, only when sub-projects get released.  For in-trunk code,
-reported versions originate from git tags.
+Contrary to `similar tools`_, *polyvers* engraves static version-ids only in
+out-of-trunk (leaf) commits, and only when sub-projects get released.
+For in-trunk code, the reported versions originate from git tags
+(like ``git-describe``) and are always up-to-date.
 
 
 Quickstart
@@ -50,8 +51,8 @@ Quickstart
     $ polyvers --help
     ...
 
-    $ polyvers
-    polyvers: Neither `setup.py` nor `.polyvers.py` configuration file found!
+    $ polyvers status
+    polyvers: Neither `setup.py` nor `.polyvers(.json|.py|.salt)` config-files found!
 
 
 2. Assuming our *monorepo* project ``/monorepo.git/`` contains two sub-projects::
@@ -99,11 +100,11 @@ Quickstart
    .. code-block:: console
 
     $ cd /monorepo.git
-    $ polyvers             # No sub-project versions yet.
+    $ polyvers status           # No sub-project versions yet.
     base_project: null
     core: null
 
-    $ polyvers  --set 0.0.0
+    $ polyvers setver 0.0.0
     ...
     base_project: 0.0.0
     core: 0.0.0
@@ -147,7 +148,7 @@ Quickstart
    .. code-block:: console
 
     $ git commit  --allow-empty  -m "some head work"
-    $ polyvers  baseproj  --add 0.0.1.dev
+    $ polyvers bump 0.0.1.dev  baseproj
     ...
     base_project: 0.0.1.dev0
     core: 0.0.0+base_project.0.0.1.dev0
@@ -233,8 +234,8 @@ But as `Yarn <https://yarnpkg.com/blog/2017/08/02/introducing-workspaces/>`_ put
   gets complicated and many such projects adopt tools such as Lerna ...
 
 
-Similar Projects
-================
+Similar Tools
+=============
 Contrary to this project's *PEP-440*, all other important projects are
 using `Semantic versioning <http://semver.org/>`_:
 
