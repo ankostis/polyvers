@@ -41,7 +41,7 @@ class MultipleInstanceError(ConfigurableError):
 class Configurable(HasTraits):
 
     config = Instance(Config, (), {})
-    parent = Instance('traitlets.config.configurable.Configurable', allow_none=True)
+    parent = Instance('polyvers._vendor.traitlets.config.configurable.Configurable', allow_none=True)
 
     def __init__(self, **kwargs):
         """Create a configurable given a config config.
