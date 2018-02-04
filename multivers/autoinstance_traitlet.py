@@ -11,20 +11,6 @@ from traitlets import TraitError, Any, Instance, This
 from traitlets.config import Config, Configurable
 
 
-# def _prefix_element_params(element_class_name, element_cfg):
-#     """Forbid mixed prefixed & un-prefixed trait-params."""
-#     if not element_cfg or all(key[0].islower() for key in element_cfg.keys()):
-#         element_cfg = {element_class_name: element_cfg}
-#     elif all(key[0].isupper() for key in element_cfg.keys()):
-#         pass
-#     else:
-#         raise TraitError(
-#             "AutoInstance's configs must be all (un-)prefixed params for %r"
-#             ",\n but keys were: %s" %
-#             (element_class_name, list(element_cfg)))
-#
-#     return element_cfg
-
 class AutoInstance(Instance):
     def validate(self, obj, value):
         iclass = self.klass
