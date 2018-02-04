@@ -44,7 +44,7 @@ import os.path as osp
 import sys
 import re
 import functools as fnt
-import traitlets as trt
+from ._vendor import traitlets as trt
 import traitlets.config as trc
 from .autoinstance_traitlet import AutoInstance
 

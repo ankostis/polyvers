@@ -7,8 +7,8 @@
 
 """AutoInstance traitlet creates an instance from config-params."""
 
-from traitlets import TraitError, Any, Instance, This
-from traitlets.config import Config, Configurable
+from ._vendor.traitlets import TraitError, Any, Instance, This
+from ._vendor.traitlets.config.configurable import Config, Configurable
 
 
 class AutoInstance(Instance):

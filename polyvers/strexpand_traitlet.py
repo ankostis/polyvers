@@ -6,7 +6,7 @@
 # You may obtain a copy of the Licence at: http://ec.europa.eu/idabc/eupl
 """Unicode traitlet interpolating `{abc}` patterns from a "context" dictionary."""
 
-from traitlets import TraitError, Unicode
+from ._vendor.traitlets import TraitError, Unicode
 
 class StrExpand(Unicode):
     """

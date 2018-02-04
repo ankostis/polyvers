@@ -9,7 +9,7 @@
 
 import pytest
 
-from traitlets import HasTraits
+from polyvers._vendor.traitlets import HasTraits
 from polyvers.strexpand_traitlet import StrExpand
 
 

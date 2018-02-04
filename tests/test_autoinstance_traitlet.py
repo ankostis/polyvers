@@ -8,8 +8,8 @@
 """Tests for AutoInstance traitlet."""
 
 import pytest
-from traitlets import List, Instance, CInt
-from traitlets.config import Configurable, Config
+from polyvers._vendor.traitlets import List, Instance, CInt
+from polyvers._vendor.traitlets.config import Configurable, Config
 
 from polyvers.autoinstance_traitlet import AutoInstance
 
