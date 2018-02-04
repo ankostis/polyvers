@@ -115,6 +115,18 @@ class Polyvers(trc.Application, Project):
         AutoInstance,
         config=True)
 
+    use_leaf_releases = trt.Bool(True,
+        config=True,
+        help="""
+            Version-ids statically engraved in-trunk when false, otherwise in "leaf" commits.
+
+            - Limit branches considered as "in-trunk" using `in_trunk_branches` param.
+            - Select the name of the Leaf branch with `leaf_branch` param.
+
+            Leaf release-commits avoid frequent merge-conflicts in files containing
+            the version-ids.
+    """)
+
     amend = trt.Bool(
         config=True,
         help="Amend the last bump-version commit, if any.")
@@ -158,6 +170,26 @@ class Polyvers(trc.Application, Project):
         ('m', 'message'): 'Project.message',
         ('u', 'sign-user'): 'Project.sign_user',
     }
+
+
+class SubCmd(trc.Application):
+    pass
+
+
+class Setver(SubCmd):
+    pass
+
+
+class Bump(SubCmd):
+    pass
+
+
+class Config(SubCmd):
+    pass
+
+
+class Help(SubCmd):
+    pass
 
 
 @fnt.lru_cache()

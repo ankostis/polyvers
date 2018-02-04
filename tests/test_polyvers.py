@@ -11,9 +11,6 @@
 import pytest
 
 
-from polyvers import polyvers
-
-
 @pytest.fixture
 def response():
     """Sample pytest fixture.
