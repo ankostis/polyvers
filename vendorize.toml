@@ -1,0 +1,7 @@
+## To be run with https://github.com/mwilliamson/python-vendorize
+
+target = "polyvers/_vendor"
+requires = [
+    ## "git+https://github.com/rmorshea/traitlets@mutable"
+    '../traitlets.git'
+]
