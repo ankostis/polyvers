@@ -136,7 +136,7 @@ class Polyvers(Application, Project):
     version = __version__
     examples = Unicode("""\
         - Try the `project` sub-command::
-              %(cmd_chain)s  project
+              %(cmd_chain)s bump -t 'Mostly model changes' 1.6.2b0
 
         - To learn more about command-line options and configurations::
               %(cmd_chain)s  help
@@ -150,7 +150,8 @@ class Polyvers(Application, Project):
         AutoInstance(Project),
         config=True)
 
-    use_leaf_releases = Bool(True,
+    use_leaf_releases = Bool(
+        True,
         config=True,
         help="""
             Version-ids statically engraved in-trunk when false, otherwise in "leaf" commits.
@@ -209,10 +210,31 @@ class Help(Application):
 
 Polyvers.subcommands = OrderedDict([
     ('status', ('Status',
-                 Status.__doc__)),
+                Status.__doc__)),
+    ('setver', ('Setver',
+                Setver.__doc__)),
+    ('bump', ('Bump',
+              Bump.__doc__)),
+    ('config', ('Config',
+                Config.__doc__)),
+    ('help', ('Help',
+              Help.__doc__)),
 ])
 
 Polyvers.flags = {
+    ## Inherited from Application
+    #
+    'show-config': ({
+        'Application': {
+            'show_config': True,
+        },
+    }, Application.show_config.help),
+    'show-config-json': ({
+        'Application': {
+            'show_config_json': True,
+        },
+    }, Application.show_config_json.help),
+
     ('v', 'verbose'): (
         {'Base': {'verbose': True}},
         Base.verbose.help
@@ -244,7 +266,6 @@ Polyvers.flags = {
 }
 
 Polyvers.aliases = {
-    'log-level': 'Application.log_level',
 #     ('m', 'message'): 'Project.message',
 #     ('u', 'sign-user'): 'Project.sign_user',
 }

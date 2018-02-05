@@ -45,7 +45,8 @@ def main(argv=None, **app_init_kwds):
 
     ## Imports in separate try-block due to CmdException.
     try:
-        from . import traitcmdutils as tcu
+        from . import traitcmd as tc
+        from . import mainpump as mpu
         from ._vendor.traitlets import TraitError
         from . import CmdException
         from .polyvers import Polyvers
@@ -54,8 +55,8 @@ def main(argv=None, **app_init_kwds):
         return mlu.exit_with_pride(ex, logger=log)
 
     try:
-        cmd = tcu.make_cmd(Polyvers, argv, **app_init_kwds)
-        return tcu.pump_cmd(cmd.start()) and 0
+        cmd = tc.make_cmd(Polyvers, argv, **app_init_kwds)
+        return mpu.pump_cmd(cmd.start()) and 0
     except (CmdException, TraitError) as ex:
         log.debug('App exited due to: %r', ex, exc_info=1)
         ## Suppress stack-trace for "expected" errors but exit-code(1).
@@ -72,4 +73,4 @@ if __name__ == '__main__':
     if __package__ is None:
         __package__ = "polyvers"  # @ReservedAssignment
 
-    __import__('polyvers').__main__.main(sys.argv[1:])
+    main(sys.argv[1:])

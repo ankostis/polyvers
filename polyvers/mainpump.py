@@ -6,8 +6,7 @@
 # You may not use this work except in compliance with the Licence.
 # You may obtain a copy of the Licence at: http://ec.europa.eu/idabc/eupl
 #
-"Utils for pumping results out of Traitlet Applications in `main()`."
-
+"""Utils pumping results out of yielding functions for `main()`."""
 
 def chain_cmds(app_classes, argv=None, **root_kwds):
     """
