@@ -12,8 +12,9 @@ with open('HISTORY.rst') as history_file:
     history = history_file.read()
 
 requirements = [
+    'boltons',                  # for IndexSet
     'rainbow_logging_handler',
-    'ruamel.yaml',
+    'ruamel.yaml',              # for logconf
     'ipython_genutils',         # by vendorized `traitlets`
     'spectate',                 # by vendorized `traitlets`
     'gitpython >= 2.1.0',       # Win+Cygwin support
@@ -28,11 +29,11 @@ test_requirements = [
     'pytest',
     # TODO: put package test requirements here
 ]
-proj_name = 'polyvers'
+PROJECT = 'polyvers'
 setup(
-    name=proj_name,
+    name=PROJECT,
     version='0.0.0',
-    description="Bump independently PEP-440 versions on multi-project Git repos.",
+    description="Bump sub-project PEP-440 versions in Git monorepos independently.",
     long_description=readme + '\n\n' + history,
     author="Kostis Anagnostopoulos",
     author_email='ankostis@gmail.com',
@@ -42,7 +43,8 @@ setup(
     install_requires=requirements,
     license='EUPL 1.2',
     zip_safe=False,
-    keywords='polyvers',
+    keywords="version-management configuration-management versioning "
+             "git monorepo tool library".split(),
     classifiers=[
         'Development Status :: 2 - Pre-Alpha',
         'Intended Audience :: Developers',
@@ -61,5 +63,5 @@ setup(
     setup_requires=setup_requirements,
     entry_points={
         'console_scripts': [
-            '%(p)s = %(p)s.__main__:main' % {'p': proj_name}]},
+            '%(p)s = %(p)s.__main__:main' % {'p': PROJECT}]},
 )
