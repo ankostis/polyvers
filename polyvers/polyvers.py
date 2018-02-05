@@ -48,10 +48,9 @@ import sys
 import functools as fnt
 import os.path as osp
 
-from . import __version__
+from . import __version__, CmdException
 from ._vendor.traitlets import List, Bool, Unicode  # @UnresolvedImport
 from ._vendor.traitlets.config import Configurable, Application
-
 from .autoinstance_traitlet import AutoInstance
 from .strexpand_traitlet import StrExpand
 
@@ -63,10 +62,6 @@ VFILE_regex_v = re.compile(r'__version__ = version = "([^"]+)"')
 VFILE_regex_d = re.compile(r'__updated__ = "([^"]+)"')
 
 RFILE = osp.join(my_dir, '..', 'README.rst')
-
-
-class CmdException(Exception):
-    pass
 
 
 class Base(Configurable):

@@ -47,7 +47,8 @@ def main(argv=None, **app_init_kwds):
     try:
         from . import traitcmdutils as tcu
         from ._vendor.traitlets import TraitError
-        from .polyvers import CmdException, Polyvers
+        from . import CmdException
+        from .polyvers import Polyvers
     except Exception as ex:
         ## Print stacktrace to stderr and exit-code(-1).
         return mlu.exit_with_pride(ex, logger=log)
