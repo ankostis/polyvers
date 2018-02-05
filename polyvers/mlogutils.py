@@ -18,95 +18,145 @@ import functools as fnt
 import os.path as osp
 
 
+def _classify_fpaths(fpaths):
+    """
+    Split filelist in 3: (confs|'None'), (yaml|yamls) or and missing anc check
+    """
+    yamls, confs, missing = [], [], []
+    for f in fpaths:
+        orig_f = f
+        f = osp.normpath(osp.abspath(osp.expanduser(f)))
+        if osp.exists(f):
+            if osp.splitext(f)[1] in '.yaml' or '.yamls':
+                yamls.append(f)
+            else:
+                confs.append(f)
+        else:
+            missing.append(orig_f)
+
+    return yamls, confs, missing
+
+
+def _load_logconfs(yaml_fpaths, conf_fpaths):
+    """
+    Loads one of the two list-of-fpaths using the respective logging methods.
+
+    :return:
+        the list of files loaded
+    """
+    from logging import config as lcfg
+
+    logconf_src = None
+    if yaml_fpaths:
+        logconf_src = yaml_fpaths
+        for fpath in yaml_fpaths:
+            log_dict = {}
+            with io.open(fpath) as fd:
+                log_dict.update(yaml.safe_load(fd))
+        lcfg.dictConfig(log_dict)
+    elif conf_fpaths:
+        logconf_src = conf_fpaths
+        lcfg.fileConfig(conf_fpaths)
+
+    return logconf_src
+
+
+def _setup_color_logs(frmt):
+    from rainbow_logging_handler import RainbowLoggingHandler
+
+    color_handler = RainbowLoggingHandler(
+        sys.stderr,
+        color_message_debug=('grey', None, False),
+        color_message_info=('blue', None, False),
+        color_message_warning=('yellow', None, True),
+        color_message_error=('red', None, True),
+        color_message_critical=('white', 'red', True),
+    )
+    formatter = logging.Formatter(frmt)
+    color_handler.setFormatter(formatter)
+
+    ## Be conservative and apply color only when
+    #  log-config looks like the "basic".
+    #
+    rlog = logging.getLogger()
+    if rlog.handlers and isinstance(rlog.handlers[0], logging.StreamHandler):
+        rlog.removeHandler(rlog.handlers[0])
+        rlog.addHandler(color_handler)
+
+
 def init_logging(
-        level=None, frmt=None, logconf_file=None,
-        color=False,
-        default_logconf_file=None,
+        level=None, logconf_files=None,
+        color=None,
         logger=None,
         **kwds):
     """
     :param level:
-        tip: use :func:`is_any_log_option()` to decide if should be None
-        (only if None default HOME ``logconf.yaml`` file is NOT read).
-    :param default_logconf_file:
-        Read from HOME only if ``(level, frmt, logconf_file)`` are none.
+        Root-logger's level; Overrides `logconf_files` if given, INFO otherwise.
+    :param logconf_files:
+        YAML file(s) to configure loggers.
+        Allowed file-extensions:
+          - '.conf' (implied if missing) .
+          - '.yml'/'yaml'
+        The `~` in the path expanded to $HOME.
+        See https://docs.python.org/3/library/logging.config.html
+    :type logconf_files:
+        None, str, seq[str]
+    :param color:
+        Whether to color log-messages; if undefined, true only in consoles.
     :param logger:
-        Which logger to use to log logconf source(must support debug level).
+        Which logger to use to log logconf source(must support info and debug).
         if missing, derived from this module.
     :param kwds:
         Passed directly to :func:`logging.basicConfig()` (e.g. `filename`);
         used only id default HOME ``logconf.yaml`` file is NOT read.
     """
-    ## Only read default logconf file in HOME
-    #  if no explicit arguments given.
-    #
-    no_args = all(i is None for i in [level, frmt, logconf_file])
-    if no_args and default_logconf_file and osp.exists(default_logconf_file):
-        logconf_file = default_logconf_file
+    default_level = logging.INFO
+    logconf_src = None
+    missing_logconfs = None
+    self_level = logging.DEBUG if level is None else logging.INFO
+    if not logger:
+        logger = logging.getLogger(__name__)
 
-    if logconf_file:
-        from logging import config as lcfg
+    if logconf_files and not isinstance(logconf_files, (list, tuple)):
+        logconf_files = [logconf_files]
+    if logconf_files:
+        yamls, confs, missing_logconfs = _classify_fpaths(logconf_files)
+        if bool(yamls) and bool(confs):
+            raise ValueError(
+                "Cannot handle MIXED logconf-file extensions: %s\n"
+                "  Specify either '.yaml' or '.conf'" % (logconf_files, ))
 
-        logconf_file = osp.expanduser(logconf_file)
-        if osp.splitext(logconf_file)[1] in '.yaml' or '.yml':
-            with io.open(logconf_file) as fd:
-                log_dict = yaml.safe_load(fd)
-                lcfg.dictConfig(log_dict)
-        else:
-            lcfg.fileConfig(logconf_file)
+        logconf_src = _load_logconfs(yamls, confs)
 
-        logconf_src = logconf_file
-    else:
+    if logconf_src:  # Some logconf applied
+        if level is not None:
+            # Respect given level, overriding Logconf-file on root-logger
+            logging.getLogger().level = level
+
+    else:  # No logconf applied
+        logconf_src = 'explicit(level=%s, default_level=%s, kw=%s)' % (
+            level, default_level, kwds)
+
         if level is None:
-            level = logging.INFO
-        if not frmt:
-            frmt = "%(asctime)-15s:%(levelname)5.5s:%(name)s:%(message)s"
-        logging.basicConfig(level=level, format=frmt, **kwds)
-        rlog = logging.getLogger()
-        rlog.level = level  # because `basicConfig()` does not reconfig root-logger when re-invoked.
-
-        logging.getLogger('pandalone.xleash.io').setLevel(logging.WARNING)
-
-        if color and sys.stderr.isatty():
-            from rainbow_logging_handler import RainbowLoggingHandler
-
-            color_handler = RainbowLoggingHandler(
-                sys.stderr,
-                color_message_debug=('grey', None, False),
-                color_message_info=('blue', None, False),
-                color_message_warning=('yellow', None, True),
-                color_message_error=('red', None, True),
-                color_message_critical=('white', 'red', True),
-            )
-            formatter = formatter = logging.Formatter(frmt)
-            color_handler.setFormatter(formatter)
-
-            ## Be conservative and apply color only when
-            #  log-config looks like the "basic".
+            ## Apply default Logging-config.
             #
-            if rlog.handlers and isinstance(rlog.handlers[0], logging.StreamHandler):
-                rlog.removeHandler(rlog.handlers[0])
-                rlog.addHandler(color_handler)
-        logconf_src = 'explicit(level=%s)' % level
+            level = logging.INFO
+        frmt = kwds.pop('format',
+                        "%(asctime)-15s:%(levelname)5.5s:%(name)s:%(message)s")
+        logging.basicConfig(level=level, format=frmt, **kwds)
+        # Because `basicConfig()` ignores root-logger if this re-invoked.
+        logging.getLogger().level = level
+
+        if color is None:
+            color = sys.stderr.isatty()
+        if color:
+            _setup_color_logs(frmt)
 
     logging.captureWarnings(True)
 
-    if not logger:
-        logger = logging.getLogger(__name__)
-    logger.debug('Logging-configurations source: %s', logconf_src)
-
-
-def is_any_log_option(argv):
-    """
-    Return true if any -v/--verbose/--debug etc options are in `argv`
-
-    :param argv:
-        Main's args to search for log-flags.
-    """
-    log_opts = '-v --verbose -d --debug --vlevel'.split()
-    if argv is None:
-        argv = sys.argv
-    return argv and set(log_opts) & set(argv)
+    logger.log(self_level, "Logging-configurations source: %s\n"
+               "  missing logconf-files: %s",
+               logconf_src, missing_logconfs)
 
 
 def exit_with_pride(reason=None,

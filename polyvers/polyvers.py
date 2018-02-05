@@ -89,6 +89,10 @@ class Base(Configurable):
 
         return cls.interpolation_context
 
+    verbose = Bool(
+        config=True,
+        help="Set logging-level to DEBUG.")
+
     force = Bool(
         config=True,
         help="Bump (and optionally) commit/tag even if version exists/is same.")
@@ -214,6 +218,10 @@ Polyvers.subcommands = OrderedDict([
 ])
 
 Polyvers.flags = {
+    ('v', 'verbose'): (
+        {'Base': {'verbose': True}},
+        Base.verbose.help
+    ),
     ('f', 'force'): (
         {'Project': {'force': True}},
         Project.force.help

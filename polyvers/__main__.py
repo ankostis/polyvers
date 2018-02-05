@@ -15,29 +15,33 @@ import os.path as osp
 
 APPNAME = 'polyvers'
 
-log = logging.getLogger('%s.main' % APPNAME)
-
 
 def main(argv=None, **app_init_kwds):
     """
-    Handles some exceptions politely and returns the exit-code.
+    Handle some exceptions politely and return the exit-code.
 
     :param argv:
-        If `None`, use :data:`sys.argv`; use ``[]`` to explicitly use no-args.
+        Invoke it without anything, or ``sys.argv[1:]``, or [].
     """
+    req_ver = (3, 6)
+    if sys.version_info < req_ver:
+        raise NotImplemented(
+            "Sorry, Python >= %s is required, found: %s" %
+            (req_ver, sys.version_info))
+
     from . import mlogutils as mlu
 
-    if sys.version_info < (3, 6):
-        return mlu.exit_with_pride(
-            "Sorry, Python >= 3.4 is required, found: %s" % sys.version_info,
-            logger=log)
+    if argv is None:
+        argv = sys.argv[1:]
 
     ## At these early stages, any log cmd-line option
     #  enable DEBUG logging ; later will be set by `baseapp` traits.
-    log_level = logging.DEBUG if mlu.is_any_log_option(argv) else None
+    log_level = logging.DEBUG if (set('-v --verbose'.split()) &
+                                  set(argv)) else None
 
+    log = logging.getLogger('%s.main' % APPNAME)
     mlu.init_logging(level=log_level,
-                     default_logconf_file=osp.join('~', '.%s.yaml' % APPNAME))
+                     logconf_files=osp.join('~', '.%s.yaml' % APPNAME))
 
     ## Imports in separate try-block due to CmdException.
     try:
@@ -67,4 +71,4 @@ if __name__ == '__main__':
     if __package__ is None:
         __package__ = "polyvers"  # @ReservedAssignment
 
-    __import__('polyvers').__main__.main(*sys.argv[1:])
+    __import__('polyvers').__main__.main(sys.argv[1:])
