@@ -15,6 +15,7 @@ requirements = [
     'rainbow_logging_handler',
     'ruamel.yaml',
     'ipython_genutils',         # by vendorized `traitlets`
+    'spectate',                 # by vendorized `traitlets`
     'gitpython >= 2.1.0',       # Win+Cygwin support
 ]
 
