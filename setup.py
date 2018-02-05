@@ -12,7 +12,10 @@ with open('HISTORY.rst') as history_file:
     history = history_file.read()
 
 requirements = [
+    'rainbow_logging_handler',
+    'ruamel.yaml',
     'ipython_genutils',         # by vendorized `traitlets`
+    'gitpython >= 2.1.0',       # Win+Cygwin support
 ]
 
 setup_requirements = [

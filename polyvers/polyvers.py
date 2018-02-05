@@ -5,12 +5,11 @@
 # You may not use this work except in compliance with the Licence.
 # You may obtain a copy of the Licence at: http://ec.europa.eu/idabc/eupl
 #
-
 """
-Command to bump independently PEP-440 versions on multi-project Git repos.
+Bump independently PEP-440 versions of sub-project in Git monorepos.
 
 USAGE:
-  polyvers
+  polyvers status
   polyvers [-n] [-f] [-c] [-a] [-t <message>]  <new-ver>
 
 Without <new-ver> prints version extracted from current file.
@@ -40,13 +39,21 @@ EXAMPLE:
 
 """
 
-import os.path as osp
-import sys
+from collections import OrderedDict, ChainMap
+from datetime import datetime
+import os
 import re
+import sys
+
 import functools as fnt
-from ._vendor import traitlets as trt
-import traitlets.config as trc
+import os.path as osp
+
+from . import __version__
+from ._vendor.traitlets import List, Bool, Unicode  # @UnresolvedImport
+from ._vendor.traitlets.config import Configurable, Application
+
 from .autoinstance_traitlet import AutoInstance
+from .strexpand_traitlet import StrExpand
 
 
 my_dir = osp.dirname(__file__)
@@ -62,22 +69,37 @@ class CmdException(Exception):
     pass
 
 
-class Base(trc.Configurable):
-    def _interpolate_message(self, msg):
-        context = dict(list(time_context.items()) + list(prefixed_environ().items()) + list(vcs_info.items()))
-        msg.format(context)
+class Base(Configurable):
+    #: A stack of 3 dics used by `interpolation_context_factory()` class-method,
+    #: listed with 1st one winning over:
+    #:   0. vcs-info: writes affect this one only,
+    #:   1. time: (now, utcnow), always updated on access,
+    #:   2. env-vars, `$`-prefixed.
+    interpolation_context = ChainMap([{}, {}, {}])
 
+    @classmethod
+    def interpolation_context_factory(cls, obj, trait, text):
+        maps = cls.interpolation_context
+        if not maps:
+            maps[2].update({'$' + k: v for k, v in os.environ.items()})
+        maps[1].update({
+            'now': datetime.now(),
+            'utcnow': datetime.utcnow(),
+        })
 
-class Project(Base):
-    force = trt.Bool(
+        return cls.interpolation_context
+
+    force = Bool(
         config=True,
         help="Bump (and optionally) commit/tag even if version exists/is same.")
 
-    dry_run = trt.Bool(
+    dry_run = Bool(
         config=True,
         help="Do not write files - just pretend.")
 
-    tag = trt.Bool(
+
+class Project(Base):
+    tag = Bool(
         config=True,
         help="""
         Enable tagging, per-project.
@@ -85,17 +107,17 @@ class Project(Base):
         Adds a signed tag with name/msg from `tag_name`/`message` (commit implied).
 
         """)
-    sign_tags = trt.Bool(
+    sign_tags = Bool(
         config=True,
         help="Enable PGP-signing of tags (see also `sign_user`)."
     )
 
-    sign_user = trt.Unicode(
+    sign_user = Unicode(
         config=True,
         help="The signing PGP user (email, key-id)."
     )
 
-    message = trt.Unicode(
+    message = StrExpand(
         "chore(ver): bump {current_version} → {new_version}",
         config=True,
         help="""
@@ -110,12 +132,26 @@ class Project(Base):
         """)
 
 
-class Polyvers(trc.Application, Project):
-    projects = trt.List(
-        AutoInstance,
+class Polyvers(Application, Project):
+    """"""
+    version = __version__
+    examples = Unicode("""\
+        - Try the `project` sub-command::
+              %(cmd_chain)s  project
+
+        - To learn more about command-line options and configurations::
+              %(cmd_chain)s  help
+              %(cmd_chain)s  config
+              %(cmd_chain)s  config paths --config-paths GMail --config-paths ~/.co2dice
+              %(cmd_chain)s  config show --source file --config-paths GMail --config-paths ~/.co2dice
+    """)
+    classes = [Project]
+
+    projects = List(
+        AutoInstance(Project),
         config=True)
 
-    use_leaf_releases = trt.Bool(True,
+    use_leaf_releases = Bool(True,
         config=True,
         help="""
             Version-ids statically engraved in-trunk when false, otherwise in "leaf" commits.
@@ -127,69 +163,91 @@ class Polyvers(trc.Application, Project):
             the version-ids.
     """)
 
-    amend = trt.Bool(
+    amend = Bool(
         config=True,
         help="Amend the last bump-version commit, if any.")
-    commit = trt.Bool(
+
+    commit = Bool(
         config=True,
         help="""
-            Commit afterwards with a commit-message describing version bump.
+            Commit after engraving with a commit-message describing version bump.
 
-            If false, no commit created, just search'n replace version-ids.
-            Related params: out_of_trunk, message
+            - If false, no commit created, just search'n replace version-ids.
+              Related params: out_of_trunk, message.
+            - False make sense only if `use_leaf_releases=False`
         """)
 
-    flags = {
-        ('f', 'force'): (
-            {'Project': {'force': True}},
-            Project.force.help
-        ),
-        ('n', 'dry-run'): (
-            {'Project': {'force': True}},
-            Project.dry_run.help
-        ),
-        ('c', 'commit'): (
-            {},
-            "Commit afterwards with a commit-message describing version bump."
-        ),
-        ('a', 'amend'): (
-            {'Polyvers': {'amend': True}},
-            "Amend the last bump-version commit, if any."
-        ),
-        ('t', 'tag'): (
-            {'Project': {'tag': True}},
-            "Adds a (signed) tag with name/msg in `tag_name`/`message` (commit implied)."
-        ),
-        ('s', 'sign-tags'): (
-            {'Project': {'sign_tags': True}},
-            "Signed tag with the given message (commit implied)."
-        ),
-    }
-    aliases = {
-        'log-level': 'Application.log_level',
-        ('m', 'message'): 'Project.message',
-        ('u', 'sign-user'): 'Project.sign_user',
-    }
 
-
-class SubCmd(trc.Application):
+class VersionSubCmd(Application):
+    """"""
     pass
 
 
-class Setver(SubCmd):
+class Status(VersionSubCmd):
+    """"""
     pass
 
 
-class Bump(SubCmd):
+class Setver(VersionSubCmd):
+    """"""
     pass
 
 
-class Config(SubCmd):
+class Bump(VersionSubCmd):
+    """"""
     pass
 
 
-class Help(SubCmd):
+class Config(Application):
+    """"""
     pass
+
+
+class Help(Application):
+    """"""
+    pass
+
+
+Polyvers.subcommands = OrderedDict([
+    ('status', ('Status',
+                 Status.__doc__)),
+])
+
+Polyvers.flags = {
+    ('f', 'force'): (
+        {'Project': {'force': True}},
+        Project.force.help
+    ),
+    ('n', 'dry-run'): (
+        {'Project': {'force': True}},
+        Project.dry_run.help
+    ),
+    ('c', 'commit'): (
+        {},
+        Polyvers.commit.help
+    ),
+    ('a', 'amend'): (
+        {'Polyvers': {'amend': True}},
+        Polyvers.amend.help
+    ),
+    ('t', 'tag'): (
+        {'Project': {'tag': True}},
+        Project.tag.help
+    ),
+    ('s', 'sign-tags'): (
+        {'Project': {'sign_tags': True}},
+        Project.sign_tags.help
+    ),
+}
+
+Polyvers.aliases = {
+    'log-level': 'Application.log_level',
+#     ('m', 'message'): 'Project.message',
+#     ('u', 'sign-user'): 'Project.sign_user',
+}
+
+
+
 
 
 @fnt.lru_cache()
@@ -361,7 +419,7 @@ def bumpver(new_ver, dry_run=False, force=False, amend=False,
                 yield from do_tag(tag, tag_name_or_commit, dry_run, force)
 
 
-def main(*args):
+def OLDmain(*args):
     opts = docopt.docopt(__doc__, argv=args)
 
     new_ver = opts['<new-ver>']
@@ -389,7 +447,3 @@ def main(*args):
         sys.exit(str(ex))
     except Exception as ex:
         raise ex
-
-
-if __name__ == '__main__':
-    main(*sys.argv[1:])
