@@ -22,7 +22,7 @@ from ._vendor.traitlets import List, Bool, Unicode  # @UnresolvedImport
 from ._vendor.traitlets import config as trc
 from .autoinstance_traitlet import AutoInstance
 from .strexpand_traitlet import StrExpand
-from .traitcmd import Cmd, build_sub_cmds
+from . import traitutils as tu
 
 
 my_dir = osp.dirname(__file__)
@@ -103,7 +103,7 @@ class Project(Base):
         """)
 
 
-class PolyversCmd(Cmd, Project):
+class PolyversCmd(tu.Cmd, Project):
     """
     Bump independently PEP-440 versions of sub-project in Git monorepos.
 
@@ -173,11 +173,11 @@ class PolyversCmd(Cmd, Project):
         return d
 
 
-class VersionSubcmd(Cmd):
+class VersionSubcmd(tu.Cmd):
     pass
 
 
-class InitCmd(Cmd):
+class InitCmd(tu.Cmd):
     """Generate configurations based on directory contents."""
     def run(self):
         pass
@@ -226,25 +226,25 @@ class BumpCmd(VersionSubcmd):
         pass
 
 
-class Logconf(Cmd):
+class Logconf(tu.Cmd):
     """Write a logging-configuration file that can filter logs selectively."""
     def run(self):
         pass
 
 
-class ConfigCmd(Cmd):
+class ConfigCmd(tu.Cmd):
     """Print configurations used (defaults | files | merged)."""
     def run(self):
         pass
 
 
-class HelpCmd(Cmd):
+class HelpCmd(tu.Cmd):
     """List and print help for configurable classes and their parameters."""
     def run(self):
         pass
 
 
-PolyversCmd.subcommands = build_sub_cmds(InitCmd,StatusCmd,
+PolyversCmd.subcommands = tu.build_sub_cmds(InitCmd,StatusCmd,
                                          SetverCmd, BumpCmd,
                                          Logconf,
                                          ConfigCmd, HelpCmd)
