@@ -40,7 +40,7 @@ def main(argv=None, **app_init_kwds):
     if sys.argv:
         mypack.APPNAME = osp.basename(sys.argv[0])
 
-    from polyvers import mlogutils as mlu
+    from polyvers import logconfutils as mlu
     log = logging.getLogger('%s.main' % mypack.APPNAME)
     mlu.init_logging(level=log_level,
                      logconf_files=osp.join('~', '.%s.yaml' % mypack.APPNAME))
