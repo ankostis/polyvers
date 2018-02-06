@@ -48,11 +48,13 @@ import sys
 import functools as fnt
 import os.path as osp
 
+from . import APPNAME
 from . import __version__, CmdException
 from ._vendor.traitlets import List, Bool, Unicode  # @UnresolvedImport
-from ._vendor.traitlets.config import Configurable, Application
+from ._vendor.traitlets import config as trc
 from .autoinstance_traitlet import AutoInstance
 from .strexpand_traitlet import StrExpand
+from .traitcmd import Cmd, build_sub_cmds
 
 
 my_dir = osp.dirname(__file__)
@@ -64,7 +66,9 @@ VFILE_regex_d = re.compile(r'__updated__ = "([^"]+)"')
 RFILE = osp.join(my_dir, '..', 'README.rst')
 
 
-class Base(Configurable):
+class Base(trc.Configurable):
+    " Common base for configurables and apps."
+
     #: A stack of 3 dics used by `interpolation_context_factory()` class-method,
     #: listed with 1st one winning over:
     #:   0. vcs-info: writes affect this one only,
@@ -90,7 +94,7 @@ class Base(Configurable):
 
     force = Bool(
         config=True,
-        help="Bump (and optionally) commit/tag even if version exists/is same.")
+        help="Force commands to perform their duties without complaints.")
 
     dry_run = Bool(
         config=True,
@@ -131,7 +135,7 @@ class Project(Base):
         """)
 
 
-class Polyvers(Application, Project):
+class PolyversCmd(Cmd, Project):
     """"""
     version = __version__
     examples = Unicode("""\
@@ -177,64 +181,72 @@ class Polyvers(Application, Project):
             - False make sense only if `use_leaf_releases=False`
         """)
 
+    def _my_text_interpolations(self):
+        d = super()._my_text_interpolations()
+        d.update({'appname': 'APPNAME'})
+        return d
 
-class VersionSubCmd(Application):
-    """"""
+
+class VersionSubcmd(Cmd):
     pass
 
 
-class Status(VersionSubCmd):
+class StatusCmd(VersionSubcmd):
     """"""
-    pass
+    def run(self):
+        pass
 
 
-class Setver(VersionSubCmd):
+class SetverCmd(VersionSubcmd):
     """"""
-    pass
+    def run(self):
+        pass
 
 
-class Bump(VersionSubCmd):
+class BumpCmd(VersionSubcmd):
     """"""
-    pass
+    def run(self):
+        pass
 
 
-class Config(Application):
+class InitCmd(Cmd):
     """"""
-    pass
+    def run(self):
+        pass
 
 
-class Help(Application):
+class ConfigCmd(Cmd):
     """"""
-    pass
+    def run(self):
+        pass
 
 
-Polyvers.subcommands = OrderedDict([
-    ('status', ('Status',
-                Status.__doc__)),
-    ('setver', ('Setver',
-                Setver.__doc__)),
-    ('bump', ('Bump',
-              Bump.__doc__)),
-    ('config', ('Config',
-                Config.__doc__)),
-    ('help', ('Help',
-              Help.__doc__)),
-])
+class HelpCmd(Cmd):
+    """"""
+    def run(self):
+        pass
 
-Polyvers.flags = {
+
+PolyversCmd.subcommands = build_sub_cmds(SetverCmd, BumpCmd,
+                                         InitCmd,
+                                         ConfigCmd, HelpCmd)
+
+PolyversCmd.flags = {
     ## Inherited from Application
     #
     'show-config': ({
         'Application': {
             'show_config': True,
         },
-    }, Application.show_config.help),
+    }, trc.Application.show_config.help),
     'show-config-json': ({
         'Application': {
             'show_config_json': True,
         },
-    }, Application.show_config_json.help),
+    }, trc.Application.show_config_json.help),
 
+    ## Consulted by main.init_logging() if in sys.argv.
+    #
     ('v', 'verbose'): (
         {'Base': {'verbose': True}},
         Base.verbose.help
@@ -249,11 +261,11 @@ Polyvers.flags = {
     ),
     ('c', 'commit'): (
         {},
-        Polyvers.commit.help
+        PolyversCmd.commit.help
     ),
     ('a', 'amend'): (
         {'Polyvers': {'amend': True}},
-        Polyvers.amend.help
+        PolyversCmd.amend.help
     ),
     ('t', 'tag'): (
         {'Project': {'tag': True}},
@@ -265,7 +277,7 @@ Polyvers.flags = {
     ),
 }
 
-Polyvers.aliases = {
+PolyversCmd.aliases = {
 #     ('m', 'message'): 'Project.message',
 #     ('u', 'sign-user'): 'Project.sign_user',
 }
