@@ -20,7 +20,7 @@ from ._vendor.traitlets import List, Bool, Unicode  # @UnresolvedImport
 from ._vendor.traitlets import config as trc
 from .autoinstance_traitlet import AutoInstance
 from .strexpand_traitlet import StrExpand
-from . import traitutils as tu
+from . import cmdutils as tu
 
 
 my_dir = osp.dirname(__file__)

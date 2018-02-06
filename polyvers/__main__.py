@@ -48,7 +48,7 @@ def main(argv=None, **app_init_kwds):
     ## Imports in separate try-block due to CmdException.
     #
     try:
-        from polyvers import CmdException, traitutils as tu, mainpump as mpu
+        from polyvers import CmdException, cmdutils as tu, mainpump as mpu
         from polyvers._vendor.traitlets import TraitError
         from polyvers.cli import PolyversCmd
     except Exception as ex:

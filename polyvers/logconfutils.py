@@ -85,7 +85,8 @@ def _setup_color_logs(frmt):
 
 
 def init_logging(
-        level=None, logconf_files=None,
+        level=None,
+        logconf_files=None,
         color=None,
         logger=None,
         **kwds):
@@ -93,7 +94,7 @@ def init_logging(
     :param level:
         Root-logger's level; Overrides `logconf_files` if given, INFO otherwise.
     :param logconf_files:
-        YAML file(s) to configure loggers.
+        File(s) to configure loggers; set `[]` to prohibit loading any logconf file.
         Allowed file-extensions:
           - '.conf' (implied if missing) .
           - '.yml'/'yaml'
