@@ -35,6 +35,7 @@ def main(argv=None, **app_init_kwds):
 
     ## Rename app!
     #
+    #  NOTE: All imports in this file must be absolute!
     import polyvers as mypack
     if sys.argv:
         mypack.APPNAME = osp.basename(sys.argv[0])
@@ -49,7 +50,7 @@ def main(argv=None, **app_init_kwds):
     try:
         from polyvers import CmdException, traitutils as tu, mainpump as mpu
         from polyvers._vendor.traitlets import TraitError
-        from polyvers.core import PolyversCmd
+        from polyvers.cli import PolyversCmd
     except Exception as ex:
         ## Print stacktrace to stderr and exit-code(-1).
         return mlu.exit_with_pride(ex, logger=log)
