@@ -26,19 +26,26 @@ Polyvers: Bump sub-project PEP-440 versions in Git monorepos independently
 :copyright:     2018 European Commission (`JRC <https://ec.europa.eu/jrc/>`_)
 :license:       `EUPL 1.2 <https://joinup.ec.europa.eu/software/page/eupl>`_
 
-A ``bumpversion``-like command-line tool to bump `PEP-440 version-ids
-<https://www.python.org/dev/peps/pep-0440/>`_ independently on multiple related
-sub-projects hosted in a single *Git* repo (the `monorepo`_ ).
+A python 3.6+ command-line tool to manage `PEP-440 version-ids
+<https://www.python.org/dev/peps/pep-0440/>`_ of dependent sub-projects
+hosted in a *Git* `monorepos`_, independently.  When bumping the version of
+sub-project(s), *polyvers* does the following:
 
-"Bumping a version" translates into:
+- help you decide the next version of sub-projects, selectively and independently;
+- add x2 tagged commits:
 
-- deciding the next version of sub-projects, selectively and independently;
-- adding x2 commits & tags: one *"Version" commit* in-trunk, and another
-  `"Leaf" release-commit`_;
-- engraving the new version-ids in the source code of all *dependent* sub-projects
-  (in the "leaf" commit only),
-- optionally building packages out of the later;
-- enforcing customizable validation rules and extensible hooks on the process.
+  - one in-trunk *"Version" commit*, and another
+  - `out-of-trunk (leaf) "Release" commit`_ ;
+
+- engrave the new versions in the source code of all *dependent* sub-projects,
+  but only in the "leaf" version-commit;
+- build packages out of the later (optionally);
+- enforce (customizable) validation rules and run (extensible) hooks.
+
+Additional utilities include:
+- library code to extract sub-project's version from past tags
+  (provided a a separate subproject here);
+- pip-install all subprojects in develop mode (``pip install -e``).
 
 
 .. contents:: Table of Contents
@@ -218,26 +225,28 @@ So the time to "split the project has come.  But from `lerna <https://lernajs.io
   many repositories is messy and difficult to track, and testing across repositories
   gets complicated really fast.
 
-So a `monorepo <http://www.drmaciver.com/2016/10/why-you-should-use-a-single-repository-for-all-your-companys-projects/>`_
-is needed.
+So a *monorepo* [#]_ [#]_ is the solution.
 But as `Yarn <https://yarnpkg.com/blog/2017/08/02/introducing-workspaces/>`_ put it:
 
   OTOH, splitting projects into their own folders is sometimes not enough.
   Testing, managing dependencies, and publishing multiple packages quickly
   gets complicated and many such projects adopt tools such as ...
 
-This is such a tool.
+*Polyvers* is such a tool.
 
-"Leaf" Release-commit
----------------------
+.. [#] <https://medium.com/@maoberlehner/monorepos-in-the-wild-33c6eb246cb9
+.. [#] http://www.drmaciver.com/2016/10/why-you-should-use-a-single-repository-for-all-your-companys-projects/
+
+Out-of-trunk (leaf) "Release" commit
+------------------------------------
 Even in single-project repos, sharing code across branches may cause merge-conflicts
 due to the version-ids "engraved" in the sources.
-In monorepos, more engraved version-ids translate to more opportunities for conflicts.
+In monorepos, the versions proliferate, and so does the conflicts.
 
 Contrary to `similar tools`_, static version-ids are engraved only in out-of-trunk
 (leaf) commits, and only when the sub-projects are released.
-In-trunk code report its version-id on runtime based on Git tags (``git-describe``)
-so it's always up-to-date.
+In-trunk code is never touched, and version-ids are reported, on runtime, based
+on Git tags (like ``git-describe``), so they are always up-to-date.
 
 Marking dependent versions across sub-projects
 ----------------------------------------------
