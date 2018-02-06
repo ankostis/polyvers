@@ -13,7 +13,7 @@ import sys
 import functools as fnt
 import os.path as osp
 
-from . import CmdException
+from .cmdutils import CmdException
 
 
 my_dir = osp.dirname(__file__)

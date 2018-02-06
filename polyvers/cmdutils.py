@@ -11,39 +11,18 @@
 from collections import OrderedDict
 import contextlib
 import io
-from boltons.setutils import IndexedSet as iset
 import logging
 import os
 import re
 
+from boltons.setutils import IndexedSet as iset
+
 import os.path as osp
 
-from . import CmdException, APPNAME
 from . import fileutils as fu
 from ._vendor import traitlets as trt
+from ._vendor.traitlets import List, Unicode  # @UnresolvedImport
 from ._vendor.traitlets import config as trc
-
-
-#######################
-## App-specific vars ##
-#######################
-CONFIG_VAR_NAME = '%s_CONFIG_PATHS' % APPNAME
-
-def default_config_fname():
-    """The config-file's basename (no path or extension) to search when not explicitly specified."""
-    return '%s_config.py' % APPNAME
-
-
-def default_config_dir():
-    """The folder of user's config-file."""
-    return fu.convpath('~/.%s' % APPNAME)
-
-
-def default_config_fpaths():
-    """The full path of to user's config-file, without extension."""
-    return [osp.join(default_config_dir(), default_config_fname())]
-#######################
-
 
 
 def class2cmd_name(cls):
@@ -79,7 +58,6 @@ def build_sub_cmds(*subapp_classes):
 def cmd_line_chain(cmd):
     """Utility returning the cmd-line(str) that launched a :class:`Cmd`."""
     return ' '.join(c.name for c in reversed(cmd.my_cmd_chain()))
-
 
 
 def chain_cmds(app_classes, argv=None, **root_kwds):
@@ -149,8 +127,12 @@ class CfgFilesRegistry(contextlib.ContextDecorator):
     - Invoke this for every "manually" visited config-file, successful or not.
     """
 
-    def __init__(self, default_config_fname):
-        self.default_config_fname = default_config_fname
+    def __init__(self, config_basename=None):
+        """
+        :param config_basename:
+            if given, what to search within dirs.
+        """
+        self.config_basename = config_basename
 
     #: A list of 2-tuples ``(folder, fname(s))`` with loaded config-files
     #: in ascending order (last overrides earlier).
@@ -248,12 +230,12 @@ class CfgFilesRegistry(contextlib.ContextDecorator):
 
             return found_any
 
-        def _derive_config_fpaths(path):  #  -> List[Text]:
+        def _derive_config_fpaths(path):  # -> List[Text]:
             """Return multiple *existent* fpaths for each config-file path (folder/file)."""
 
             p = fu.convpath(path)
-            if osp.isdir(p):
-                try_json_and_py(osp.join(p, self.default_config_fname))
+            if self.config_basename and osp.isdir(p):
+                try_json_and_py(osp.join(p, self.config_basename))
             else:
                 found = try_json_and_py(p)
                 ## Do not strip ext if has matched WITH ext.
@@ -273,11 +255,10 @@ class CfgFilesRegistry(contextlib.ContextDecorator):
                 return dirpath
 
 
-
-class PathList(trt.List):
+class PathList(List):
     """Trait that splits unicode strings on `os.pathsep` to form a the list of paths."""
     def __init__(self, *args, **kwargs):
-        return super().__init__(*args, trait=trt.Unicode(), **kwargs)
+        return super().__init__(*args, trait=Unicode(), **kwargs)
 
     def validate(self, obj, value):
         """break all elements also into `os.pathsep` segments"""
@@ -291,6 +272,10 @@ class PathList(trt.List):
         if s:
             s = s.split(osp.pathsep)
         return s
+
+
+class CmdException(Exception):
+    pass
 
 
 class Cmd(trc.Application):
@@ -318,8 +303,7 @@ class Cmd(trc.Application):
     ## HELP ##
     ##########
 
-    option_description = trt.Unicode(
-    """
+    option_description = Unicode("""
         Options are convenience aliases to configurable class-params,
         as listed in the "Equivalent to" description-line of the aliases.
         To see all configurable class-params for some <cmd>, use::
@@ -390,7 +374,6 @@ class Cmd(trc.Application):
     ############
 
     config_paths = PathList(
-        default_value=default_config_fpaths(),
         help="""
         Absolute/relative folder/file path(s) to read "static" config-parameters from.
 
@@ -411,7 +394,7 @@ class Cmd(trc.Application):
           you may issue:
               <cmd> --config-paths=~/my_conf(sep)s/tmp/conf.py  --Cmd.config_paths=~/.{appname}.jso
         """ % {'sep': osp.pathsep}
-    ).tag(config=True, envvar=CONFIG_VAR_NAME)
+    ).tag(config=True)
 
     _cfgfiles_registry = None
 
@@ -419,10 +402,16 @@ class Cmd(trc.Application):
     def loaded_config_files(self):
         return self._cfgfiles_registry and self._cfgfiles_registry.config_tuples or []
 
+    config_basename = Unicode(
+        'config.py',
+        help=""""
+        The config-file's basename (no path or extension) to search when not explicitly specified.
+        """)
+
     def _collect_static_fpaths(self):
         """Return fully-normalized paths, with ext."""
         config_paths = self.config_paths
-        self._cfgfiles_registry = CfgFilesRegistry(default_config_fname())
+        self._cfgfiles_registry = CfgFilesRegistry(self.config_basename)
         fpaths = self._cfgfiles_registry.collect_fpaths(config_paths)
 
         return fpaths
@@ -496,12 +485,15 @@ class Cmd(trc.Application):
         return new_config
 
     def write_default_config(self, config_file=None, force=False):
-        if not config_file:
-            config_file = default_config_fpaths()[0]
-        else:
+        if config_file:
             config_file = fu.convpath(config_file)
             if osp.isdir(config_file):
-                config_file = osp.join(config_file, default_config_fname())
+                config_file = osp.join(config_file, self.config_basename)
+        elif self.config_fpaths:
+            config_file = self.config_fpaths[0]
+        else:
+            raise AssertionError("No config-file given to write to!")
+
         config_file = fu.ensure_file_ext(config_file, '.py')
 
         is_overwrite = osp.isfile(config_file)
@@ -526,7 +518,6 @@ class Cmd(trc.Application):
         config_text = self.generate_config_file()
         with io.open(config_file, mode='wt') as fp:
             fp.write(config_text)
-
 
     #############
     ## STARTUP ##
@@ -600,7 +591,7 @@ class Cmd(trc.Application):
             subcmd_msg = "unknown sub-command `%s`!" % args[0]
         else:
             subcmd_msg = "sub-command is missing!"
-        subcmds = '\n'.join('  %10s: %s' %(k, desc) for k, (_, desc)
+        subcmds = '\n'.join('  %10s: %s' % (k, desc) for k, (_, desc)
                             in self.subcommands.items())
         msg = tw.dedent(
             """

@@ -48,7 +48,7 @@ def main(argv=None, **app_init_kwds):
     ## Imports in separate try-block due to CmdException.
     #
     try:
-        from polyvers import CmdException, cmdutils as tu, mainpump as mpu
+        from polyvers import cmdutils as cu, mainpump as mpu
         from polyvers._vendor.traitlets import TraitError
         from polyvers.cli import PolyversCmd
     except Exception as ex:
@@ -56,9 +56,9 @@ def main(argv=None, **app_init_kwds):
         return mlu.exit_with_pride(ex, logger=log)
 
     try:
-        cmd = tu.make_cmd(PolyversCmd, argv, **app_init_kwds)
+        cmd = cu.make_cmd(PolyversCmd, argv, **app_init_kwds)
         return mpu.pump_cmd(cmd.start()) and 0
-    except (CmdException, TraitError) as ex:
+    except (cu.CmdException, TraitError) as ex:
         log.debug('App exited due to: %r', ex, exc_info=1)
         ## Suppress stack-trace for "expected" errors but exit-code(1).
         return mlu.exit_with_pride(str(ex), logger=log)

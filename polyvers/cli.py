@@ -10,12 +10,14 @@
 from collections import ChainMap
 from datetime import datetime
 import os
-import re
 
 import os.path as osp
 
 from . import APPNAME
-from . import __version__, CmdException
+from . import __version__
+from ._vendor import traitlets as trt
+from . import fileutils as fu
+## Explictely imported to stop code-analysis complains.
 from ._vendor.traitlets import List, Bool, Unicode  # @UnresolvedImport
 from ._vendor.traitlets import config as trc
 from .autoinstance_traitlet import AutoInstance
@@ -23,13 +25,26 @@ from .strexpand_traitlet import StrExpand
 from . import cmdutils as tu
 
 
-my_dir = osp.dirname(__file__)
+####################
+## Config sources ##
+####################
+CONFIG_VAR_NAME = '%s_CONFIG_PATHS' % APPNAME
 
-VFILE = osp.join(my_dir, '..', 'co2mpas', '_version.py')
-VFILE_regex_v = re.compile(r'__version__ = version = "([^"]+)"')
-VFILE_regex_d = re.compile(r'__updated__ = "([^"]+)"')
 
-RFILE = osp.join(my_dir, '..', 'README.rst')
+def default_config_fname():
+    """The config-file's basename (no path or extension) to search when not explicitly specified."""
+    return '%s_config.py' % APPNAME
+
+
+def default_config_dir():
+    """The folder of user's config-file."""
+    return fu.convpath('~/.%s' % APPNAME)
+
+
+def default_config_fpaths():
+    """The full path of to user's config-file, without extension."""
+    return [osp.join(default_config_dir(), default_config_fname())]
+#######################
 
 
 class Base(trc.Configurable):
@@ -170,6 +185,14 @@ class PolyversCmd(tu.Cmd, Project):
         d.update({'appname': APPNAME})
         return d
 
+    @trt.default('config_basename')
+    def _config_basename(self):
+        return default_config_fname()
+
+    @trt.default('config_fpaths')
+    def _config_fpaths(self):
+        return default_config_fpaths()
+
 
 class VersionSubcmd(tu.Cmd):
     pass
@@ -295,6 +318,9 @@ PolyversCmd.flags = {
 }
 
 PolyversCmd.aliases = {
-#     ('m', 'message'): 'Project.message',
-#     ('u', 'sign-user'): 'Project.sign_user',
+    ('m', 'message'): 'Project.message',
+    ('u', 'sign-user'): 'Project.sign_user',
 }
+
+# TODO: Will work when patched: https://github.com/ipython/traitlets/pull/449
+PolyversCmd.config_paths.metadata['envvar'] = CONFIG_VAR_NAME

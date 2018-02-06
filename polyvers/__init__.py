@@ -11,12 +11,7 @@ APPNAME = 'polyvers'
 __version__ = '0.0.0'
 
 __copyright__ = "Copyright (C) 2015-2017 European Commission (JRC)"
-__license__   = "EUPL 1.2"
-__title__     = "polyvers"
-__summary__   = "Bump independently versions on multi-project git repos"
-__uri__       = "https://github.com/JRCSTU/polyvers"
-
-
-class CmdException(Exception):
-    pass
-
+__license__ = "EUPL 1.2"
+__title__ = "polyvers"
+__summary__ = "Bump independently versions on multi-project git repos"
+__uri__ = "https://github.com/JRCSTU/polyvers"
