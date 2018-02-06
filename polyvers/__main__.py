@@ -26,13 +26,6 @@ def main(argv=None, **app_init_kwds):
             "Sorry, Python >= %s is required, found: %s" %
             (req_ver, sys.version_info))
 
-    import polyvers as mypackage
-
-    ## Rename app!
-    #
-    if sys.argv:
-        mypackage.APPNAME = sys.argv[0]
-
     if argv is None:
         argv = sys.argv[1:]
 
@@ -40,19 +33,23 @@ def main(argv=None, **app_init_kwds):
     #  enable DEBUG logging ; later will be set by `baseapp` traits.
     log_level = logging.DEBUG if (set('-v --verbose'.split()) & set(argv)) else None
 
-    from . import mlogutils as mlu
-    log = logging.getLogger('%s.main' % mypackage.APPNAME)
+    ## Rename app!
+    #
+    import polyvers as mypack
+    if sys.argv:
+        mypack.APPNAME = sys.argv[0]
+
+    from polyvers import mlogutils as mlu
+    log = logging.getLogger('%s.main' % mypack.APPNAME)
     mlu.init_logging(level=log_level,
-                     logconf_files=osp.join('~', '.%s.yaml' % mypackage.APPNAME))
+                     logconf_files=osp.join('~', '.%s.yaml' % mypack.APPNAME))
 
     ## Imports in separate try-block due to CmdException.
     #
     try:
-        from . import traitcmd as tc
-        from . import mainpump as mpu
-        from ._vendor.traitlets import TraitError
-        from . import CmdException
-        from .polyvers import PolyversCmd
+        from polyvers import CmdException, traitcmd as tc, mainpump as mpu
+        from polyvers._vendor.traitlets import TraitError
+        from polyvers.polyvers import PolyversCmd
     except Exception as ex:
         ## Print stacktrace to stderr and exit-code(-1).
         return mlu.exit_with_pride(ex, logger=log)
