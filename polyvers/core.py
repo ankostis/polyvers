@@ -5,39 +5,7 @@
 # You may not use this work except in compliance with the Licence.
 # You may obtain a copy of the Licence at: http://ec.europa.eu/idabc/eupl
 #
-"""
-Bump independently PEP-440 versions of sub-project in Git monorepos.
-
-USAGE:
-  polyvers status
-  polyvers [-n] [-f] [-c] [-a] [-t <message>]  <new-ver>
-
-Without <new-ver> prints version extracted from current file.
-Don't add a 'v' prefix!
-
-OPTIONS:
-  -a, --amend       Amend current commit for setting the "chore(ver): ..." msg.
-  -f, --force       Bump (and optionally) commit/tag if version exists/is same.
-  -n, --dry-run     Do not write files - just pretend.
-  -c, --commit      Commit afterwardswith a commit-message describing version bump.
-  -t, --tag=<msg>   Adds a signed tag with the given message (commit implied).
-
-
-- Pre-releases: when working on some verion
-    X.YbN               # Beta release
-    X.YrcN  or  X.YcN   # Release Candidate
-    X.Y                 # Final release
-- Post-release:
-    X.YaN.postM         # Post-release of an alpha release
-    X.YrcN.postM        # Post-release of a release candidate
-- Dev-release:
-    X.YaN.devM          # Developmental release of an alpha release
-    X.Y.postN.devM      # Developmental release of a post-release
-
-EXAMPLE:
-    polyvers -t 'Mostly model changes' 1.6.2b0
-
-"""
+""" Bump independently PEP-440 versions of sub-project in Git monorepos. """
 
 from collections import OrderedDict, ChainMap
 from datetime import datetime
@@ -136,17 +104,40 @@ class Project(Base):
 
 
 class PolyversCmd(Cmd, Project):
-    """"""
+    """
+    Bump independently PEP-440 versions of sub-project in Git monorepos.
+
+    SYNTAX:
+      %(cmd_chain)s <sub-cmd> ...
+    """
     version = __version__
-    examples = Unicode("""\
-        - Try the `project` sub-command::
-              %(cmd_chain)s bump -t 'Mostly model changes' 1.6.2b0
+    examples = Unicode("""
+        - Let it guess the configurations for your monorepo::
+              %(cmd_chain)s init
+
+        - Then try the main sub-commands::
+              %(cmd_chain)s status
+              %(cmd_chain)s setver 0.0.0.dev0 -c '1st commit, untagged'
+              %(cmd_chain)s bump -t 'Mostly model changes, tagged'
 
         - To learn more about command-line options and configurations::
               %(cmd_chain)s  help
               %(cmd_chain)s  config
-              %(cmd_chain)s  config paths --config-paths GMail --config-paths ~/.co2dice
-              %(cmd_chain)s  config show --source file --config-paths GMail --config-paths ~/.co2dice
+
+        - You may specify different configurations with:
+              %(cmd_chain)s  <sub-cmd> config-paths /foo.bar:~/.co2dice
+
+        PEP-440 Version Samples:
+        - Pre-releases: when working on some verion
+            X.YbN               # Beta release
+            X.YrcN  or  X.YcN   # Release Candidate
+            X.Y                 # Final release
+        - Post-release:
+            X.YaN.postM         # Post-release of an alpha release
+            X.YrcN.postM        # Post-release of a release candidate
+        - Dev-release:
+            X.YaN.devM          # Developmental release of an alpha release
+            X.Y.postN.devM      # Developmental release of a post-release
     """)
     classes = [Project]
 
@@ -191,44 +182,69 @@ class VersionSubcmd(Cmd):
     pass
 
 
+class InitCmd(Cmd):
+    """Generate configurations based on directory contents."""
+    def run(self):
+        pass
+
+
 class StatusCmd(VersionSubcmd):
-    """"""
+    """
+    List the versions of project(s).
+
+    SYNTAX:
+        %(cmd_chain)s [OPTIONS] [<project>]...
+    """
     def run(self):
         pass
 
 
 class SetverCmd(VersionSubcmd):
-    """"""
-    def run(self):
-        pass
+    """
+    Set the version of project(s) exacty as given.
 
+    SYNTAX:
+        %(cmd_chain)s [OPTIONS] <version> [<project>]...
+
+    - If no <version-offset> specified, increase the last part (e.g 0.0.dev0-->dev1).
+    - If no project(s) specified, increase the versions for all projects.
+    - Denied if version for some projects is backward-in-time or has jumped parts;
+      use --force if you might.
+    - Prefer not to add a 'v' prefix!
+    """
 
 class BumpCmd(VersionSubcmd):
-    """"""
-    def run(self):
-        pass
+    """
+    Increase the version of project(s) by the given offset.
 
+    SYNTAX:
+        %(cmd_chain)s [OPTIONS] [<version-offset>] [<project>]...
+        %(cmd_chain)s [OPTIONS] --part <offset> [<project>]...
 
-class InitCmd(Cmd):
-    """"""
+    - If no <version-offset> specified, increase the last part (e.g 0.0.dev0-->dev1).
+    - If no project(s) specified, increase the versions for all projects.
+    - Denied if version for some projects is backward-in-time or has jumped parts;
+      use --force if you might.
+    - Don't add a 'v' prefix!
+    """
     def run(self):
         pass
 
 
 class ConfigCmd(Cmd):
-    """"""
+    """Print configurations used (defaults | files | merged)."""
     def run(self):
         pass
 
 
 class HelpCmd(Cmd):
-    """"""
+    """List and print help for configurable classes and their parameters."""
     def run(self):
         pass
 
 
-PolyversCmd.subcommands = build_sub_cmds(SetverCmd, BumpCmd,
-                                         InitCmd,
+PolyversCmd.subcommands = build_sub_cmds(InitCmd,StatusCmd,
+                                         SetverCmd, BumpCmd,
                                          ConfigCmd, HelpCmd)
 
 PolyversCmd.flags = {
