@@ -121,7 +121,7 @@ class PolyversCmd(tu.Cmd, Project):
               %(cmd_chain)s bump -t 'Mostly model changes, tagged'
 
         PEP-440 Version Samples:
-        - Pre-releases: when working on some verion
+        - Pre-releases: when working on new features:
             X.YbN               # Beta release
             X.YrcN  or  X.YcN   # Release Candidate
             X.Y                 # Final release
@@ -206,6 +206,7 @@ class SetverCmd(VersionSubcmd):
     - Prefer not to add a 'v' prefix!
     """
 
+
 class BumpCmd(VersionSubcmd):
     """
     Increase the version of project(s) by the given offset.
@@ -242,10 +243,10 @@ class HelpCmd(tu.Cmd):
         pass
 
 
-PolyversCmd.subcommands = tu.build_sub_cmds(InitCmd,StatusCmd,
-                                         SetverCmd, BumpCmd,
-                                         Logconf,
-                                         ConfigCmd, HelpCmd)
+PolyversCmd.subcommands = tu.build_sub_cmds(InitCmd, StatusCmd,
+                                            SetverCmd, BumpCmd,
+                                            Logconf,
+                                            ConfigCmd, HelpCmd)
 
 PolyversCmd.flags = {
     ## Inherited from Application

@@ -206,7 +206,24 @@ PEP 440 version ids
 While most versioning tools use `Semantic versioning
 <http://semver.org/>`_, python's ``distutils`` native library
 supports the quasi-superset, but more versatile, `PEP-440 version ids
-<https://www.python.org/dev/peps/pep-0440/>`_.
+<https://www.python.org/dev/peps/pep-0440/>`_, like that:
+
+- Pre-releases: when working on new features::
+
+    X.YbN               # Beta release
+    X.YrcN  or  X.YcN   # Release Candidate
+    X.Y                 # Final release
+
+- Post-release::
+
+    X.YaN.postM         # Post-release of an alpha release
+    X.YrcN.postM        # Post-release of a release candidate
+
+- Dev-release::
+
+    X.YaN.devM          # Developmental release of an alpha release
+    X.Y.postN.devM      # Developmental release of a post-release
+
 
 Monorepos
 ---------
@@ -267,15 +284,15 @@ Other Features
 --------------
 - Highly configurable using `traitlets <https://traitlets.readthedocs.io>`_, with
   sensible defaults; it's possible to run without any config file in single-project repos.
+- Always accurate version reported on runtime when run from git repos
+  (never again wonder with which version your experimental-data were produced).
 - Extensible with bump-version *hooks* (e.g. for validating doctests) TODO: implemented
   as `setuptools plugins
   <http://setuptools.readthedocs.io/en/latest/setuptools.html#dynamic-discovery-of-services-and-plugins>`_.
-- Always accurate version reported on runtime when run from git repos
-  (never again wonder with which version your experimental-data were produced).
 
 Drawbacks & Workarounds
 -----------------------
-- To `install sub-projects from git repos
+- To ``pip``-install python projects is a bit `more complicated
   <https://pip.pypa.io/en/stable/reference/pip_install/#vcs-support>`_ use::
 
       pip install -e git+https://repo_url/#egg=pkg&subdirectory=pkg_dir
@@ -312,4 +329,3 @@ This package was created with Cookiecutter_ and the `audreyr/cookiecutter-pypack
 
 .. _Cookiecutter: https://github.com/audreyr/cookiecutter
 .. _`audreyr/cookiecutter-pypackage`: https://github.com/audreyr/cookiecutter-pypackage
-
