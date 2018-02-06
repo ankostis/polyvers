@@ -49,7 +49,7 @@ def main(argv=None, **app_init_kwds):
     try:
         from polyvers import CmdException, traitcmd as tc, mainpump as mpu
         from polyvers._vendor.traitlets import TraitError
-        from polyvers.polyvers import PolyversCmd
+        from polyvers.core import PolyversCmd
     except Exception as ex:
         ## Print stacktrace to stderr and exit-code(-1).
         return mlu.exit_with_pride(ex, logger=log)
