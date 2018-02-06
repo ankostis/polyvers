@@ -174,7 +174,7 @@ class PolyversCmd(Cmd, Project):
 
     def _my_text_interpolations(self):
         d = super()._my_text_interpolations()
-        d.update({'appname': 'APPNAME'})
+        d.update({'appname': APPNAME})
         return d
 
 
