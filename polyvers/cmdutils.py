@@ -132,11 +132,12 @@ class CfgFilesRegistry(contextlib.ContextDecorator):
         :param config_basename:
             if given, what to search within dirs.
         """
+        self._visited_tuples = []
         self.config_basename = config_basename
 
     #: A list of 2-tuples ``(folder, fname(s))`` with loaded config-files
     #: in ascending order (last overrides earlier).
-    _visited_tuples = []
+    _visited_tuples = None
 
     @property
     def config_tuples(self):
