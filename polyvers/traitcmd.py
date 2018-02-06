@@ -336,7 +336,7 @@ class Cmd(trc.Application):
         ## Overridden for interpolating app-name.
         txt = self.description or self.__doc__
         txt %= self._my_text_interpolations()
-        for p in trc.wrap_paragraphs(txt):
+        for p in trc.wrap_paragraphs('%s: %s' % (cmd_line_chain(self), txt)):
             yield p
             yield ''
 
@@ -598,10 +598,12 @@ class Cmd(trc.Application):
             subcmd_msg = "unknown sub-command `%s`; try one of" % args[0]
         else:
             subcmd_msg = "specify one of its sub-commands"
+        subcmds = '\n'.join('  %8s: %s' %(k, desc) for k, (_, desc)
+                            in self.subcommands.items())
         msg = tw.dedent(
             """
             %(cmd_chain)s: %(subcmd_msg)s:
-                %(subcmds)s
+            %(subcmds)s
             or type:
                 %(cmd_chain)s --help
 
@@ -609,7 +611,7 @@ class Cmd(trc.Application):
             %(epilogue)s""") % {
                 'subcmd_msg': subcmd_msg,
                 'cmd_chain': cmd_line_chain(self),
-                'subcmds': ', '.join(self.subcommands.keys()),
+                'subcmds': subcmds,
                 'examples': examples,
                 'epilogue': '\n'.join(self.emit_help_epilogue()),
         }
