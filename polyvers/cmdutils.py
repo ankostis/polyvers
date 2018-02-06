@@ -377,10 +377,10 @@ class Cmd(trc.Application):
             interps = self._my_text_interpolations()
             yield trc.dedent("""
             --------
-            - For the list of available options & cnfiguration-params, use:
+            - For available option, configuration-params & examples, use:
                   %(cmd_chain)s --help (OR --help-all)
             - For help on specific classes/params, use:
-                  %(appname)s help <class-or-param-1>...\
+                  %(appname)s help <class-or-param-1>...
             - To inspect configuration values:
                   %(appname)s config <class-or-param-1>...
             """ % interps)
@@ -596,7 +596,6 @@ class Cmd(trc.Application):
 
         assert self.subcommands, "Override run() method in cmd subclasses."
 
-        examples = '\n'.join(self.emit_examples()) if self.examples else ''
         if args:
             subcmd_msg = "unknown sub-command `%s`!" % args[0]
         else:
@@ -609,13 +608,10 @@ class Cmd(trc.Application):
 
               Try one of:
             %(subcmds)s
-
-            %(examples)s
             %(epilogue)s""") % {
                 'subcmd_msg': subcmd_msg,
                 'cmd_chain': cmd_line_chain(self),
                 'subcmds': subcmds,
-                'examples': examples,
                 'epilogue': '\n'.join(self.emit_help_epilogue()),
         }
         raise CmdException(msg)
