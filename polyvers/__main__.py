@@ -37,7 +37,7 @@ def main(argv=None, **app_init_kwds):
     #
     import polyvers as mypack
     if sys.argv:
-        mypack.APPNAME = sys.argv[0]
+        mypack.APPNAME = osp.basename(sys.argv[0])
 
     from polyvers import mlogutils as mlu
     log = logging.getLogger('%s.main' % mypack.APPNAME)
