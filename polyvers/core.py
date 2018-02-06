@@ -114,18 +114,13 @@ class PolyversCmd(Cmd, Project):
     examples = Unicode("""
         - Let it guess the configurations for your monorepo::
               %(cmd_chain)s init
+          You may specify different configurations paths with:
+              %(cmd_chain)s --config-paths /foo/bar/:~/.%(appname)s.yaml:.
 
-        - Then try the main sub-commands::
+        - Use then the main sub-commands::
               %(cmd_chain)s status
               %(cmd_chain)s setver 0.0.0.dev0 -c '1st commit, untagged'
               %(cmd_chain)s bump -t 'Mostly model changes, tagged'
-
-        - To learn more about command-line options and configurations::
-              %(cmd_chain)s  help
-              %(cmd_chain)s  config
-
-        - You may specify different configurations with:
-              %(cmd_chain)s  <sub-cmd> config-paths /foo.bar:~/.co2dice
 
         PEP-440 Version Samples:
         - Pre-releases: when working on some verion
@@ -231,6 +226,12 @@ class BumpCmd(VersionSubcmd):
         pass
 
 
+class Logconf(Cmd):
+    """Write a logging-configuration file that can filter logs selectively."""
+    def run(self):
+        pass
+
+
 class ConfigCmd(Cmd):
     """Print configurations used (defaults | files | merged)."""
     def run(self):
@@ -245,6 +246,7 @@ class HelpCmd(Cmd):
 
 PolyversCmd.subcommands = build_sub_cmds(InitCmd,StatusCmd,
                                          SetverCmd, BumpCmd,
+                                         Logconf,
                                          ConfigCmd, HelpCmd)
 
 PolyversCmd.flags = {

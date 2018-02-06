@@ -375,12 +375,15 @@ class Cmd(trc.Application):
         """
         if not classes:
             interps = self._my_text_interpolations()
-            yield "--------"
-            yield ("- For all available params, use:\n    %(cmd_chain)s --help-all\n"
-                   % interps)
-            yield ("- For help on specific classes/params, use:\n    "
-                   "%(appname)s config desc [-v] [-c] <class-or-param-1> ...\n"
-                   % interps)
+            yield trc.dedent("""
+            --------
+            - For the list of available options & cnfiguration-params, use:
+                  %(cmd_chain)s --help (OR --help-all)
+            - For help on specific classes/params, use:
+                  %(appname)s help <class-or-param-1>...\
+            - To inspect configuration values:
+                  %(appname)s config <class-or-param-1>...
+            """ % interps)
 
     ############
     ## CONFIG ##
@@ -595,17 +598,17 @@ class Cmd(trc.Application):
 
         examples = '\n'.join(self.emit_examples()) if self.examples else ''
         if args:
-            subcmd_msg = "unknown sub-command `%s`; try one of" % args[0]
+            subcmd_msg = "unknown sub-command `%s`!" % args[0]
         else:
-            subcmd_msg = "specify one of its sub-commands"
-        subcmds = '\n'.join('  %8s: %s' %(k, desc) for k, (_, desc)
+            subcmd_msg = "sub-command is missing!"
+        subcmds = '\n'.join('  %10s: %s' %(k, desc) for k, (_, desc)
                             in self.subcommands.items())
         msg = tw.dedent(
             """
-            %(cmd_chain)s: %(subcmd_msg)s:
+            %(cmd_chain)s: %(subcmd_msg)s
+
+              Try one of:
             %(subcmds)s
-            or type:
-                %(cmd_chain)s --help
 
             %(examples)s
             %(epilogue)s""") % {
