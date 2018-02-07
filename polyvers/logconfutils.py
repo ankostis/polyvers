@@ -12,10 +12,9 @@ import io
 import logging
 import sys
 
-from ruamel import yaml
-
 import functools as fnt
 import os.path as osp
+from ruamel import yaml  # @UnresolvedImport
 
 
 def _classify_fpaths(fpaths):

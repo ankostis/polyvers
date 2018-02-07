@@ -8,6 +8,7 @@
 #
 """Utils pumping results out of yielding functions for `main()`."""
 
+
 def chain_cmds(app_classes, argv=None, **root_kwds):
     """
     Instantiate(optionally) and run a list of ``[cmd, subcmd, ...]``, linking each one as child of its predecessor.
