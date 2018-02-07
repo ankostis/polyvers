@@ -189,7 +189,7 @@ class PolyversCmd(tu.Cmd, Project):
     def _config_basename(self):
         return default_config_fname()
 
-    @trt.default('config_fpaths')
+    @trt.default('config_paths')
     def _config_fpaths(self):
         return default_config_fpaths()
 
