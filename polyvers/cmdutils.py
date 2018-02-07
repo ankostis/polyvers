@@ -362,11 +362,11 @@ class Cmd(trc.Application):
             yield trc.dedent("""
             --------
             - For available option, configuration-params & examples, use:
-                  %(cmd_chain)s --help (OR --help-all)
+                  %(cmd_chain)s help (OR --help-all)
             - For help on specific classes/params, use:
-                  %(appname)s help <class-or-param-1>...
+                  %(appname)s config desc <class-or-param-1>...
             - To inspect configuration values:
-                  %(appname)s config <class-or-param-1>...
+                  %(appname)s config show <class-or-param-1>...
             """ % interps)
 
     ############

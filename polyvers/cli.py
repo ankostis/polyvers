@@ -200,7 +200,7 @@ class VersionSubcmd(tu.Cmd):
 
 class InitCmd(tu.Cmd):
     """Generate configurations based on directory contents."""
-    def run(self):
+    def run(self, *args):
         pass
 
 
@@ -211,7 +211,7 @@ class StatusCmd(VersionSubcmd):
     SYNTAX:
         %(cmd_chain)s [OPTIONS] [<project>]...
     """
-    def run(self):
+    def run(self, *args):
         pass
 
 
@@ -244,32 +244,42 @@ class BumpCmd(VersionSubcmd):
       use --force if you might.
     - Don't add a 'v' prefix!
     """
-    def run(self):
+    def run(self, *args):
         pass
 
 
 class Logconf(tu.Cmd):
     """Write a logging-configuration file that can filter logs selectively."""
-    def run(self):
+    def run(self, *args):
+        pass
+
+
+class DescCmd(tu.Cmd):
+    """List and print help for configurable classes and their parameters."""
+    def run(self, *args):
+        pass
+
+
+class ShowCmd(tu.Cmd):
+    """Print configurations used (defaults | files | merged)."""
+    def run(self, *args):
+        pass
+
+
+class InfosCmd(tu.Cmd):
+    """List paths and other intallation infos."""
+    def run(self, *args):
         pass
 
 
 class ConfigCmd(tu.Cmd):
     """Print configurations used (defaults | files | merged)."""
-    def run(self):
-        pass
-
-
-class HelpCmd(tu.Cmd):
-    """List and print help for configurable classes and their parameters."""
-    def run(self):
-        pass
+    subcommands = tu.build_sub_cmds(DescCmd, ShowCmd, InfosCmd)
 
 
 PolyversCmd.subcommands = tu.build_sub_cmds(InitCmd, StatusCmd,
                                             SetverCmd, BumpCmd,
-                                            Logconf,
-                                            ConfigCmd, HelpCmd)
+                                            Logconf, ConfigCmd)
 
 PolyversCmd.flags = {
     ## Inherited from Application
