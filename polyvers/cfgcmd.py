@@ -249,7 +249,7 @@ class InfosCmd(cu.Cmd):
         yield "ENV_VARS:"
         trait_envvars = self._collect_env_vars(self.all_app_configurables)
         for vname in sorted(set(var_names.split() + trait_envvars)):
-            yield "  %s: %s" % (vname, os.environ.get(vname))
+            yield "  %s: %r" % (vname, os.environ.get(vname))
 
 
 class ShowCmd(cu.Cmd):
