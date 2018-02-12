@@ -8,7 +8,7 @@
 #
 """Utils for building elaborate Commands/Sub-commands with traitlets Application."""
 
-from collections import OrderedDict
+from collections import OrderedDict, Sequence
 import contextlib
 import io
 import logging
@@ -387,7 +387,7 @@ class Cmd(trc.Application):
           is ignored, and the mentioned extensions are combined and searched.
 
         Tips:
-          - Use `config paths` to view the actual paths/files loaded.
+          - Use `config infos` to view the actual paths/files loaded.
           - Use `config write` to produce a skeleton of the config-file.
 
         Examples:
@@ -447,7 +447,7 @@ class Cmd(trc.Application):
 
         return config
 
-    def read_config_files(self):  # -> Tuple[trc.Config, trc.Config]
+    def read_config_files(self):  # -> trc.Config
         """
         Load :attr:`config_paths` and maintain :attr:`config_registry`.
 
@@ -519,6 +519,10 @@ class Cmd(trc.Application):
         config_text = self.generate_config_file()
         with io.open(config_file, mode='wt') as fp:
             fp.write(config_text)
+
+    all_app_configurables = List(
+        help="A sequence of all app configurables to feed into `config` sub-command."
+    )
 
     #############
     ## STARTUP ##

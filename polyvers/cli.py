@@ -254,32 +254,13 @@ class Logconf(tu.Cmd):
         pass
 
 
-class DescCmd(tu.Cmd):
-    """List and print help for configurable classes and their parameters."""
-    def run(self, *args):
-        pass
+subcmds = tu.build_sub_cmds(InitCmd, StatusCmd,
+                            SetverCmd, BumpCmd,
+                            Logconf)
+subcmds['config'] = ('polyvers.cfgcmd.ConfigCmd',
+                     "Commands to inspect configurations and other cli infos.")
 
-
-class ShowCmd(tu.Cmd):
-    """Print configurations used (defaults | files | merged)."""
-    def run(self, *args):
-        pass
-
-
-class InfosCmd(tu.Cmd):
-    """List paths and other intallation infos."""
-    def run(self, *args):
-        pass
-
-
-class ConfigCmd(tu.Cmd):
-    """Print configurations used (defaults | files | merged)."""
-    subcommands = tu.build_sub_cmds(DescCmd, ShowCmd, InfosCmd)
-
-
-PolyversCmd.subcommands = tu.build_sub_cmds(InitCmd, StatusCmd,
-                                            SetverCmd, BumpCmd,
-                                            Logconf, ConfigCmd)
+PolyversCmd.subcommands = subcmds
 
 PolyversCmd.flags = {
     ## Inherited from Application
