@@ -122,5 +122,9 @@ def get_subproject_versions(*projects):
 
 
 if __name__ == '__main__':
+    ## Print project versions for cli args.
+    #
     logging.basicConfig(level=0)
-    print(get_subproject_versions(*sys.argv[1:]))
+    vdict = get_subproject_versions(*sys.argv[1:])
+    print('\n'.join('%s: %s' % pair
+                    for pair in vdict.items()))
