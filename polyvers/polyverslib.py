@@ -24,24 +24,28 @@ def format_syscmd(cmd):
     return cmd
 
 
-def exec_cmd(cmd, check_out=None, dry_run=False,
+def exec_cmd(cmd,
+             dry_run=False,
+             check_stdout=None,
+             check_stderr=None,
+             check_returncode=True,
              encoding='utf-8', encoding_errors='surrogateescape'):
     """
-    param check_out:
+    param check_stdout:
+        None: Popen(stdout=None), printed
         False: Popen(stdout=sbp.DEVNULL), ignored
         True: Popen(stdout=sbp.PIPE), collected & returned
-        None: Popen(stdout=None), printed
     """
     import subprocess as sbp
 
     log = logging.getLogger(__name__)
     call_types = {
-        None: {'label': 'EXEC', 'stdout': None},
-        False: {'label': 'EXEC(no-stdout)', 'stdout': sbp.DEVNULL},
-        True: {'label': 'CALL', 'stdout': sbp.PIPE},
+        None: {'label': 'EXEC', 'stream': None},
+        False: {'label': 'EXEC(no-stdout)', 'stream': sbp.DEVNULL},
+        True: {'label': 'CALL', 'stream': sbp.PIPE},
     }
-    ctype = call_types[check_out]
-    cmd_label = ctype['label']
+    stdout_ctype = call_types[check_stdout]
+    cmd_label = stdout_ctype['label']
     cmd_str = format_syscmd(cmd)
 
     log.debug('%s%s %r', 'DRY_' if dry_run else '', cmd_label, cmd_str)
@@ -52,24 +56,28 @@ def exec_cmd(cmd, check_out=None, dry_run=False,
     ##WARN: python 3.6 `encoding` & `errors` kwds in `Popen`.
     res = sbp.run(
         cmd,
-        stdout=ctype['stdout'],
-        stderr=sbp.STDOUT,
+        stdout=stdout_ctype['stream'],
+        stderr=call_types[check_stderr]['stream'],
         encoding=encoding,
         errors=encoding_errors
     )
     if res.returncode:
-        log.error('%s %r failed with %s!\n  stdout: %s',
-                  cmd_label, cmd_str, res.returncode, res.stdout)
-    elif check_out:
-        log.debug('%s %r ok: \n  stdout: %s',
-                  cmd_label, cmd_str, res.stdout)
-    res.check_returncode()
+        log.error('%s %r failed with %s!\n  stdout: %s\n  stderr: %s',
+                  cmd_label, cmd_str, res.returncode, res.stdout, res.stderr)
+    elif check_stdout or check_stderr:
+        log.debug('%s %r ok: \n  stdout: %s\n  stderr: %s',
+                  cmd_label, cmd_str, res.stdout, res.stderr)
 
-    return res.stdout and res.stdout.strip()
+    if check_returncode:
+        res.check_returncode()
+
+    return res
 
 
 def find_all_subproject_vtags(*projects):
     """
+    Return the all ``proj-v0.0.0``-like tags, per project, if any.
+
     :param projects:
         project-names; fetch all vtags if none given.
     :return:
@@ -83,8 +91,9 @@ def find_all_subproject_vtags(*projects):
     patterns = [vtag_fnmatch_frmt % p
                 for p in projects or ('*', )]
     cmd = ['git', 'tag', '-l'] + patterns
-    out = exec_cmd(cmd, check_out=True)
-    tags = out.split('\n')
+    res = exec_cmd(cmd, check_stdout=True, check_stderr=True)
+    out = res.stdout
+    tags = out and out.strip().split('\n') or []
 
     project_versions = defaultdict(list)
     for t in tags:
@@ -97,15 +106,19 @@ def find_all_subproject_vtags(*projects):
 
 
 def get_subproject_versions(*projects):
-    import subprocess as sbp
+    """
+    Return the last vtag for any project, if any.
 
-    try:
-        vtags = find_all_subproject_vtags(*projects)
-    except sbp.CalledProcessError as _:
-        pass
-    else:
-        return {proj: (versions and versions[-1])
-                for proj, versions in vtags.items()}
+    :param projects:
+        project-names; return any versions found if none given.
+    :return:
+        a {proj: version}, possibly incomplete for projects without any vtag
+    :raise subprocess.CalledProcessError:
+        if `git` executable not in PATH
+    """
+    vtags = find_all_subproject_vtags(*projects)
+    return {proj: (versions and versions[-1])
+            for proj, versions in vtags.items()}
 
 
 if __name__ == '__main__':
