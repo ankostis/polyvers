@@ -379,10 +379,10 @@ class Cmd(trc.Application):
         Absolute/relative folder/file path(s) to read "static" config-parameters from.
 
         - Sources for this parameter can either be CLI or ENV-VAR; since the loading
-          of config-files depend on this parameter, values specified there are ignored.
+          of config-files depend on this parameter, file-configs are ignored.
         - Multiple values may be given and each one may be separated by '(sep)s'.
           Priority is descending, i.e. config-params from the 1st one overrides the rest.
-        - For paths resolving to existing folders, the filenames `{appname}_config(.py|.json)`
+        - For paths resolving to existing folders, the filenames `{basename}(.py|.json)`
           are appended and searched (in this order); otherwise, any file-extension
           is ignored, and the mentioned extensions are combined and searched.
 
@@ -395,6 +395,7 @@ class Cmd(trc.Application):
           you may issue:
               <cmd> --config-paths=~/my_conf(sep)s/tmp/conf.py  --Cmd.config_paths=~/.{appname}.jso
         """ % {'sep': osp.pathsep}
+        ## TODO: Simplify path-loading when /ipython/traitlets#242 merged??
     ).tag(config=True)
 
     _cfgfiles_registry = None
