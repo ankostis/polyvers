@@ -8,10 +8,8 @@
 """Tests for `polyvers` package."""
 
 from polyvers import polyverslib as pvlib
-import tempfile
 
 import pytest
-from py._path import local
 
 
 @pytest.fixture(scope="module")
