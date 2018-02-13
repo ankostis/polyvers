@@ -8,10 +8,15 @@
 #
 """Python code to discover sub-project version in a Git monorepo."""
 
-from collections import defaultdict
+from collections import defaultdict, ChainMap
+from datetime import datetime
 import logging
+import os
+from polyvers._vendor.traitlets import Bool  # @UnresolvedImport
 import re
 import sys
+
+import polyvers._vendor.traitlets.config as trc
 
 
 def format_syscmd(cmd):
@@ -74,83 +79,117 @@ def exec_cmd(cmd,
     return res
 
 
-def find_all_subproject_vtags(*projects):
-    """
-    Return the all ``proj-v0.0.0``-like tags, per project, if any.
+class Base(trc.Configurable):
+    " Common base for configurables and apps."
 
-    :param projects:
-        project-names; fetch all vtags if none given.
-    :return:
-        a {proj: [vtags]}, possibly incomplete for projects without any vtag
-    :raise subprocess.CalledProcessError:
-        if `git` executable not in PATH
-    """
-    vtag_fnmatch_frmt = '%s-v*'
-    vtag_regex = re.compile(r'^([-.\w]+)-v(\d.+)$', re.IGNORECASE)
+    #: A stack of 3 dics used by `interpolation_context_factory()` class-method,
+    #: listed with 1st one winning over:
+    #:   0. vcs-info: writes affect this one only,
+    #:   1. time: (now, utcnow), always updated on access,
+    #:   2. env-vars, `$`-prefixed.
+    interpolation_context = ChainMap([{}, {}, {}])
 
-    patterns = [vtag_fnmatch_frmt % p
-                for p in projects or ('*', )]
-    cmd = ['git', 'tag', '-l'] + patterns
-    res = exec_cmd(cmd, check_stdout=True, check_stderr=True)
-    out = res.stdout
-    tags = out and out.strip().split('\n') or []
+    @classmethod
+    def interpolation_context_factory(cls, obj, trait, text):
+        maps = cls.interpolation_context
+        if not maps:
+            maps[2].update({'$' + k: v for k, v in os.environ.items()})
+        maps[1].update({
+            'now': datetime.now(),
+            'utcnow': datetime.utcnow(),
+        })
 
-    project_versions = defaultdict(list)
-    for t in tags:
-        m = vtag_regex.match(t)
-        if m:
-            pname, ver = m.groups()
-            project_versions[pname].append(ver)
+        return cls.interpolation_context
 
-    return project_versions
+    verbose = Bool(
+        config=True,
+        help="Set logging-level to DEBUG.")
+
+    force = Bool(
+        config=True,
+        help="Force commands to perform their duties without complaints.")
+
+    dry_run = Bool(
+        config=True,
+        help="Do not write files - just pretend.")
+
+    def find_all_subproject_vtags(self, *projects):
+        """
+        Return the all ``proj-v0.0.0``-like tags, per project, if any.
+
+        :param projects:
+            project-names; fetch all vtags if none given.
+        :return:
+            a {proj: [vtags]}, possibly incomplete for projects without any vtag
+        :raise subprocess.CalledProcessError:
+            if `git` executable not in PATH
+        """
+        vtag_fnmatch_frmt = '%s-v*'
+        vtag_regex = re.compile(r'^([-.\w]+)-v(\d.+)$', re.IGNORECASE)
+
+        patterns = [vtag_fnmatch_frmt % p
+                    for p in projects or ('*', )]
+        cmd = ['git', 'tag', '-l'] + patterns
+        res = exec_cmd(cmd, check_stdout=True, check_stderr=True)
+        out = res.stdout
+        tags = out and out.strip().split('\n') or []
+
+        project_versions = defaultdict(list)
+        for t in tags:
+            m = vtag_regex.match(t)
+            if m:
+                pname, ver = m.groups()
+                project_versions[pname].append(ver)
+
+        return project_versions
+
+    def get_subproject_versions(self, *projects):
+        """
+        Return the last vtag for any project, if any.
+
+        :param projects:
+            project-names; return any versions found if none given.
+        :return:
+            a {proj: version}, possibly incomplete for projects without any vtag
+        :raise subprocess.CalledProcessError:
+            if `git` executable not in PATH
+        """
+        vtags = self.find_all_subproject_vtags(*projects)
+        return {proj: (versions and versions[-1])
+                for proj, versions in vtags.items()}
 
 
-def get_subproject_versions(*projects):
-    """
-    Return the last vtag for any project, if any.
+    project_paths = {}
 
-    :param projects:
-        project-names; return any versions found if none given.
-    :return:
-        a {proj: version}, possibly incomplete for projects without any vtag
-    :raise subprocess.CalledProcessError:
-        if `git` executable not in PATH
-    """
-    vtags = find_all_subproject_vtags(*projects)
-    return {proj: (versions and versions[-1])
-            for proj, versions in vtags.items()}
+    def my_version(self):
+        """
+        Return the version for the project of the file invoking this method, if any.
 
+        :param projects:
+            project-names; return any versions found if none given.
+        :return:
+            the version-id (possibly null), or '<no-git-repo>' if ``git`` command
+            has failed.
+        """
+        import inspect
+        import subprocess as sbp
 
-project_paths = {}
-
-def my_version(debug=False):
-    """
-    Return the version for the project of the file invoking this method, if any.
-
-    :param projects:
-        project-names; return any versions found if none given.
-    :return:
-        the version-id (possibly null), or '<no-git-repo>' if ``git`` command
-        has failed.
-    """
-    import inspect
-    import subprocess as sbp
-
-    caller_frame = inspect.stack()[0]
-    caller_frame.filename
-    try:
-        get_subproject_versions(my_project)
-    except sbp.CalledProcessError as _:
-        if debug:
-            '\n'
-    else:
-        pass
+        caller_frame = inspect.stack()[0]
+        my_project = caller_frame.filename
+        try:
+            self.get_subproject_versions(my_project)
+        except sbp.CalledProcessError as ex:
+            if self.verbose:
+                return ex.stderr.replace('\n', '|')
+        else:
+            pass
 
 
 if __name__ == '__main__':
     ## Print project versions for cli args.
     #
     logging.basicConfig(level=0)
-    vdict = get_subproject_versions(*sys.argv[1:])
+
+    vdict = b.get_subproject_versions(*sys.argv[1:])
     print('\n'.join('%s: %s' % pair
                     for pair in vdict.items()))

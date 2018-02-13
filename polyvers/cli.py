@@ -7,24 +7,22 @@
 #
 """ Bump independently PEP-440 versions of sub-project in Git monorepos. """
 
-from collections import ChainMap
-from datetime import datetime
-import os
+from polyvers.polyverslib import Base
 
 import os.path as osp
 
 from . import APPNAME
 from . import __version__
-from ._vendor import traitlets as trt
+from . import cmdutils as tu
 from . import fileutils as fu
-## Explictely imported to stop code-analysis complains.
+from ._vendor import traitlets as trt
 from ._vendor.traitlets import List, Bool, Unicode  # @UnresolvedImport
 from ._vendor.traitlets import config as trc
 from .autoinstance_traitlet import AutoInstance
 from .strexpand_traitlet import StrExpand
-from . import cmdutils as tu
 
 
+## Explictely imported to stop code-analysis complains.
 ####################
 ## Config sources ##
 ####################
@@ -45,41 +43,6 @@ def default_config_fpaths():
     """The full path of to user's config-file, without extension."""
     return [osp.join(default_config_dir(), default_config_fname())]
 #######################
-
-
-class Base(trc.Configurable):
-    " Common base for configurables and apps."
-
-    #: A stack of 3 dics used by `interpolation_context_factory()` class-method,
-    #: listed with 1st one winning over:
-    #:   0. vcs-info: writes affect this one only,
-    #:   1. time: (now, utcnow), always updated on access,
-    #:   2. env-vars, `$`-prefixed.
-    interpolation_context = ChainMap([{}, {}, {}])
-
-    @classmethod
-    def interpolation_context_factory(cls, obj, trait, text):
-        maps = cls.interpolation_context
-        if not maps:
-            maps[2].update({'$' + k: v for k, v in os.environ.items()})
-        maps[1].update({
-            'now': datetime.now(),
-            'utcnow': datetime.utcnow(),
-        })
-
-        return cls.interpolation_context
-
-    verbose = Bool(
-        config=True,
-        help="Set logging-level to DEBUG.")
-
-    force = Bool(
-        config=True,
-        help="Force commands to perform their duties without complaints.")
-
-    dry_run = Bool(
-        config=True,
-        help="Do not write files - just pretend.")
 
 
 class Project(Base):
