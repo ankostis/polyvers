@@ -10,6 +10,7 @@
 from polyvers import polyverslib as pvlib
 
 import pytest
+import subprocess as subp
 
 
 @pytest.fixture(scope="module")
@@ -35,7 +36,12 @@ def git_repo(tmpdir_factory):
     return repo_dir
 
 
-def test_get_all_versions(git_repo):
+@pytest.fixture(scope="module")
+def no_repo(tmpdir_factory):
+    return tmpdir_factory.mktemp('norepo')
+
+
+def test_get_all_versions(git_repo, no_repo):
     git_repo.chdir()
     d = pvlib.find_all_subproject_vtags()
     assert dict(d) == {
@@ -43,23 +49,39 @@ def test_get_all_versions(git_repo):
         'proj-2': ['0.2.0', '0.2.1'],
     }, d
 
+    no_repo.chdir()
+    with pytest.raises(subp.CalledProcessError):
+        d = pvlib.find_all_subproject_vtags()
 
-def test_get_p1_versions(git_repo):
+
+def test_get_p1_versions(git_repo, no_repo):
     git_repo.chdir()
     d = pvlib.find_all_subproject_vtags('proj1')
     assert dict(d) == {'proj1': ['0.0.0', '0.0.1']}, d
 
+    no_repo.chdir()
+    with pytest.raises(subp.CalledProcessError):
+        d = pvlib.find_all_subproject_vtags('proj1')
 
-def test_get_p2_versions(git_repo):
+
+def test_get_p2_versions(git_repo, no_repo):
     git_repo.chdir()
     d = pvlib.find_all_subproject_vtags('proj-2')
     assert dict(d) == {'proj-2': ['0.2.0', '0.2.1']}, d
 
+    no_repo.chdir()
+    with pytest.raises(subp.CalledProcessError):
+        d = pvlib.find_all_subproject_vtags('proj-2')
 
-def test_get_subproject_versions(git_repo):
+
+def test_get_subproject_versions(git_repo, no_repo):
     git_repo.chdir()
     d = pvlib.get_subproject_versions()
     assert d == {
         'proj1': '0.0.1',
         'proj-2': '0.2.1',
     }, d
+
+    no_repo.chdir()
+    with pytest.raises(subp.CalledProcessError):
+        d = pvlib.get_subproject_versions()
