@@ -60,16 +60,6 @@ def replace_substrings(files, subst_pairs):
         yield (txt, fpath, replacements)
 
 
-def format_syscmd(cmd):
-    if isinstance(cmd, (list, tuple)):
-        cmd = ' '.join('"%s"' % s if ' ' in s else s
-                       for s in cmd)
-    else:
-        assert isinstance(cmd, str), cmd
-
-    return cmd
-
-
 def strip_ver2_commonprefix(ver1, ver2):
     cprefix = osp.commonprefix([ver1, ver2])
     if cprefix:
@@ -95,14 +85,6 @@ def run_testcases():
 
     if not res.wasSuccessful():
         raise CmdException("Doc TCs failed, probably version-bumping has failed!")
-
-
-def exec_cmd(cmd):
-    import subprocess as sbp
-
-    err = sbp.call(cmd, stderr=sbp.STDOUT)
-    if err:
-        raise CmdException("Failed(%i) on: %s" % (err, format_syscmd(cmd)))
 
 
 def do_commit(new_ver, old_ver, dry_run, amend, ver_files):
