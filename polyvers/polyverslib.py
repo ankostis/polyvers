@@ -121,6 +121,32 @@ def get_subproject_versions(*projects):
             for proj, versions in vtags.items()}
 
 
+project_paths = {}
+
+def my_version(debug=False):
+    """
+    Return the version for the project of the file invoking this method, if any.
+
+    :param projects:
+        project-names; return any versions found if none given.
+    :return:
+        the version-id (possibly null), or '<no-git-repo>' if ``git`` command
+        has failed.
+    """
+    import inspect
+    import subprocess as sbp
+
+    caller_frame = inspect.stack()[0]
+    caller_frame.filename
+    try:
+        get_subproject_versions(my_project)
+    except sbp.CalledProcessError as _:
+        if debug:
+            '\n'
+    else:
+        pass
+
+
 if __name__ == '__main__':
     ## Print project versions for cli args.
     #
