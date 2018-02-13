@@ -134,8 +134,14 @@ class Application(SingletonConfigurable):
     keyvalue_description = Unicode(keyvalue_description)
     subcommand_description = Unicode(subcommand_description)
 
+    #: .. deprecated:: 5.0.0
+    #:     Replaced by `supported_cfg_loaders` ordered-map.
     python_config_loader_class = PyFileConfigLoader
     json_config_loader_class = JSONFileConfigLoader
+
+    supported_cfg_loaders = OrderedDict([
+        ('.py', PyFileConfigLoader),
+        ('.json', JSONFileConfigLoader)])
 
     # The usage and example string that goes at the end of the help string.
     examples = Unicode()
@@ -713,18 +719,31 @@ class Application(SingletonConfigurable):
         yield each config object in turn.
         """
 
+        def new_loader(name, path):
+            for ext, loader in cls.supported_cfg_loaders.items():
+                if name.endswith(ext):
+                    return loader(name, path, log=log)
+            raise AssertionError("Unknown file-extension in config-file %r!" % name)
+
         if not isinstance(path, list):
             path = [path]
         for path in path[::-1]:
             # path list is in descending priority order, so load files backwards:
-            pyloader = cls.python_config_loader_class(basefilename+'.py', path=path, log=log)
             if log:
                 log.debug("Looking for %s in %s", basefilename, path or os.getcwd())
-            jsonloader = cls.json_config_loader_class(basefilename+'.json', path=path, log=log)
+            loaders = [new_loader(basefilename + ext, path=path)
+                       for ext in cls.supported_cfg_loaders]
+            # load conf.d/config files in lorder
+            conf_d = os.path.join(path, basefilename + '.d')
+            if os.path.isdir(conf_d):
+                supported_cfg_extensions = tuple(cls.supported_cfg_loaders)
+                for filename in sorted(os.listdir(conf_d)):
+                    if filename.endswith(supported_cfg_extensions):
+                        loaders.append(new_loader(filename, path=conf_d))
+            config = None
             loaded = []
             filenames = []
-            for loader in [pyloader, jsonloader]:
-                config = None
+            for loader in loaders:
                 try:
                     config = loader.load_config()
                 except ConfigFileNotFound:
