@@ -56,7 +56,7 @@ def main(argv=None, **app_init_kwds):
         return mlu.exit_with_pride(ex, logger=log)
 
     try:
-        cmd = cu.make_cmd(PolyversCmd, argv, **app_init_kwds)
+        cmd = PolyversCmd.make_cmd(argv, **app_init_kwds)
         return mpu.pump_cmd(cmd.start()) and 0
     except (cu.CmdException, TraitError) as ex:
         log.debug('App exited due to: %r', ex, exc_info=1)

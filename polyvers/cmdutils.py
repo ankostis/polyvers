@@ -137,25 +137,6 @@ def chain_cmds(app_classes, argv=None, **root_kwds):
     return root
 
 
-def make_cmd(app, argv=None, **kwargs):
-    """
-    Instanciate, initialize and return application.
-
-    :param argv:
-        Like :meth:`initialize()`, if undefined, replaced with ``sys.argv[1:]``.
-
-    - Tip: Apply :func:`pump_cmd()` on return values to process
-      generators of :meth:`run()`.
-    - This functions is the 1st half of :meth:`launch_instance()` which
-      invokes and discards :meth:`start()` results.
-    """
-    ## Overriden just to return `start()`.
-    cmd = app.instance(**kwargs)
-    cmd.initialize(argv)
-
-    return cmd
-
-
 class CfgFilesRegistry(contextlib.ContextDecorator):
     """
     Locate and account config-files (``.json|.py``).
@@ -332,6 +313,25 @@ class Spec(trc.Configurable):
 
 class Cmd(trc.Application, Spec):
     "Common machinery for all (sub)commands."
+
+    @classmethod
+    def make_cmd(app, argv=None, **kwargs):
+        """
+        Instanciate, initialize and return application.
+
+        :param argv:
+            Like :meth:`initialize()`, if undefined, replaced with ``sys.argv[1:]``.
+
+        - Tip: Apply :func:`pump_cmd()` on return values to process
+          generators of :meth:`run()`.
+        - This functions is the 1st half of :meth:`launch_instance()` which
+          invokes and discards :meth:`start()` results.
+        """
+        ## Overriden just to return `start()`.
+        cmd = app.instance(**kwargs)
+        cmd.initialize(argv)
+
+        return cmd
 
     @trt.default('log')
     def _log_default(self):
