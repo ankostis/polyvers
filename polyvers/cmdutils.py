@@ -8,7 +8,7 @@
 #
 """Utils for building elaborate Commands/Sub-commands with traitlets Application."""
 
-from collections import OrderedDict, Sequence
+from collections import OrderedDict
 import contextlib
 import io
 import logging
@@ -62,7 +62,7 @@ def cmd_line_chain(cmd):
 
 def chain_cmds(app_classes, argv=None, **root_kwds):
     """
-    Instantiate(optionally) and run a list of ``[cmd, subcmd, ...]``, linking each one as child of its predecessor.
+    Instantiate a list of ``[cmd, subcmd, ...]``, linking children to parents.
 
     :param app_classes:
         A list of cmd-classes: ``[root, sub1, sub2, app]``
@@ -73,7 +73,8 @@ def chain_cmds(app_classes, argv=None, **root_kwds):
         Like :meth:`initialize()`, if undefined, replaced with ``sys.argv[1:]``.
     :return:
         The root(1st) cmd to invoke :meth:`Aplication.start()`
-        and possibly apply the :func:`pump_cmd()` on its results.
+
+    Apply the :func:`pump_cmd()` or `collect_cmd()` on the return instance.
 
     - Normally `argv` contain any sub-commands, and it is enough to invoke
       ``initialize(argv)`` on the root cmd.  This function shortcuts
@@ -86,8 +87,8 @@ def chain_cmds(app_classes, argv=None, **root_kwds):
     app_classes = list(app_classes)
     root = app = None
     for app_cl in app_classes:
-        if type(app_cl).__name__ != 'Application':
-                    raise ValueError("Expected an Application-class instance, got %r!" % app_cl)
+        if not isinstance(app_cl, type(trc.Application)):
+            raise ValueError("Expected an Application-class instance, got %r!" % app_cl)
         if not root:
             ## The 1st cmd is always orphan, and gets returned.
             root = app = app_cl(**root_kwds)
