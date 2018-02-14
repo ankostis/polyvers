@@ -13,6 +13,10 @@ import pytest
 import subprocess as subp
 
 
+proj1 = 'proj1'
+proj2 = 'proj-2'
+
+
 @pytest.fixture(scope="module")
 def git_repo(tmpdir_factory):
     repo_dir = tmpdir_factory.mktemp('repo')
@@ -41,12 +45,12 @@ def no_repo(tmpdir_factory):
     return tmpdir_factory.mktemp('norepo')
 
 
-def test_get_all_versions(git_repo, no_repo):
+def test_get_all_vtags(git_repo, no_repo):
     git_repo.chdir()
     d = pvlib.find_all_subproject_vtags()
     assert dict(d) == {
-        'proj1': ['0.0.0', '0.0.1'],
-        'proj-2': ['0.2.0', '0.2.1'],
+        proj1: ['0.0.0', '0.0.1'],
+        proj2: ['0.2.0', '0.2.1'],
     }, d
 
     no_repo.chdir()
@@ -54,32 +58,32 @@ def test_get_all_versions(git_repo, no_repo):
         d = pvlib.find_all_subproject_vtags()
 
 
-def test_get_p1_versions(git_repo, no_repo):
+def test_get_p1_vtags(git_repo, no_repo):
     git_repo.chdir()
-    d = pvlib.find_all_subproject_vtags('proj1')
-    assert dict(d) == {'proj1': ['0.0.0', '0.0.1']}, d
+    d = pvlib.find_all_subproject_vtags(proj1)
+    assert dict(d) == {proj1: ['0.0.0', '0.0.1']}, d
 
     no_repo.chdir()
     with pytest.raises(subp.CalledProcessError):
-        d = pvlib.find_all_subproject_vtags('proj1')
+        d = pvlib.find_all_subproject_vtags(proj1)
 
 
-def test_get_p2_versions(git_repo, no_repo):
+def test_get_p2_vtags(git_repo, no_repo):
     git_repo.chdir()
-    d = pvlib.find_all_subproject_vtags('proj-2')
-    assert dict(d) == {'proj-2': ['0.2.0', '0.2.1']}, d
+    d = pvlib.find_all_subproject_vtags(proj2)
+    assert dict(d) == {proj2: ['0.2.0', '0.2.1']}, d
 
     no_repo.chdir()
     with pytest.raises(subp.CalledProcessError):
-        d = pvlib.find_all_subproject_vtags('proj-2')
+        d = pvlib.find_all_subproject_vtags(proj2)
 
 
 def test_get_subproject_versions(git_repo, no_repo):
     git_repo.chdir()
     d = pvlib.get_subproject_versions()
     assert d == {
-        'proj1': '0.0.1',
-        'proj-2': '0.2.1',
+        proj1: '0.0.1',
+        proj2: '0.2.1',
     }, d
 
     no_repo.chdir()
