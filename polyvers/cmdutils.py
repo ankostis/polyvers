@@ -6,7 +6,43 @@
 # You may not use this work except in compliance with the Licence.
 # You may obtain a copy of the Licence at: http://ec.europa.eu/idabc/eupl
 #
-"""Utils for building elaborate Commands/Sub-commands with traitlets Application."""
+"""
+Utils for building elaborate Commands/Sub-commands with traitlets Application.
+
+## Examples:
+
+To run a base command, use this code::
+
+    cd = MainCmd.make_cmd(argv, **app_init_kwds)  ## `sys.argv` used if `argv` is `None`!
+    cmd.start()
+
+To run nested commands and print its output, use :func:`baseapp.chain_cmds()` like that::
+
+    cmd = chain_cmds([MainCmd, Sub1Cmd, Sub2Cmd], argv)  ## `argv` without sub-cmds
+    sys.exit(baseapp.pump_cmd(cmd.start()) and 0)
+
+Of course you can mix'n match.
+
+## Configuration and Initialization guidelines for *Spec* and *Cmd* classes
+
+0. The configuration of :class:`HasTraits` instance gets stored in its ``config`` attribute.
+1. A :class:`HasTraits` instance receives its configuration from 3 sources, in this order:
+
+  a. code specifying class-attributes or running on constructors;
+  b. configuration files (*json* or ``.py`` files);
+  c. command-line arguments.
+
+2. Constructors must allow for properties to be overwritten on construction; any class-defaults
+   must function as defaults for any constructor ``**kwds``.
+
+3. Some utility code depends on trait-defaults (i.e. construction of help-messages),
+   so for certain properties (e.g. description), it is preferable to set them
+   as traits-with-defaults on class-attributes.
+
+4. Listen `Good Bait <https://www.youtube.com/watch?v=CE4bl5rk5OQ>`_ after 1:43.
+
+.. [#] http://traitlets.readthedocs.io/
+"""
 
 from collections import OrderedDict
 import contextlib
@@ -569,8 +605,6 @@ class Cmd(trc.Application, Spec):
         It parses cl-args before file-configs, to detect sub-commands
         and update any :attr:`config_paths`, then it reads all file-configs, and
         then re-apply cmd-line configs as overrides (trick copied from `jupyter-core`).
-
-        It also validates config-values for :class:`crypto.Cipher` traits.
         """
         self.parse_command_line(argv)
         if self._is_dispatching():
