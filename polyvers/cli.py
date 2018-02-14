@@ -22,7 +22,7 @@ from ._vendor.traitlets import List, Bool, Unicode  # @UnresolvedImport
 from ._vendor.traitlets import config as trc
 from .autoinstance_traitlet import AutoInstance
 from .strexpand_traitlet import StrExpand
-from . import cmdutils as tu
+from . import cmdutils as cu
 
 
 ####################
@@ -47,7 +47,7 @@ def default_config_fpaths():
 #######################
 
 
-class Base(tu.Spec):
+class Base(cu.Spec):
     " Common base for configurables and apps."
 
     #: A stack of 3 dics used by `interpolation_context_factory()` class-method,
@@ -104,7 +104,7 @@ class Project(Base):
         """)
 
 
-class PolyversCmd(tu.Cmd, Project):
+class PolyversCmd(cu.Cmd, Project):
     """
     Bump independently PEP-440 versions of sub-project in Git monorepos.
 
@@ -182,11 +182,11 @@ class PolyversCmd(tu.Cmd, Project):
         return default_config_fpaths()
 
 
-class VersionSubcmd(tu.Cmd):
+class VersionSubcmd(cu.Cmd):
     pass
 
 
-class InitCmd(tu.Cmd):
+class InitCmd(cu.Cmd):
     """Generate configurations based on directory contents."""
     def run(self, *args):
         pass
@@ -236,13 +236,13 @@ class BumpCmd(VersionSubcmd):
         pass
 
 
-class Logconf(tu.Cmd):
+class Logconf(cu.Cmd):
     """Write a logging-configuration file that can filter logs selectively."""
     def run(self, *args):
         pass
 
 
-subcmds = tu.build_sub_cmds(InitCmd, StatusCmd,
+subcmds = cu.build_sub_cmds(InitCmd, StatusCmd,
                             SetverCmd, BumpCmd,
                             Logconf)
 subcmds['config'] = ('polyvers.cfgcmd.ConfigCmd',
@@ -268,15 +268,15 @@ PolyversCmd.flags = {
     #
     ('v', 'verbose'): (
         {'Spec': {'verbose': True}},
-        tu.Spec.verbose.help
+        cu.Spec.verbose.help
     ),
     ('f', 'force'): (
         {'Spec': {'force': True}},
-        tu.Spec.force.help
+        cu.Spec.force.help
     ),
     ('n', 'dry-run'): (
         {'Spec': {'force': True}},
-        tu.Spec.dry_run.help
+        cu.Spec.dry_run.help
     ),
     ('c', 'commit'): (
         {},
