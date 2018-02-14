@@ -14,6 +14,10 @@ import re
 import sys
 
 
+vtag_fnmatch_frmt = '%s-v*'
+vtag_regex = re.compile(r'^([-.\w]+)-v(\d.+)$', re.IGNORECASE)
+
+
 def format_syscmd(cmd):
     if isinstance(cmd, (list, tuple)):
         cmd = ' '.join('"%s"' % s if ' ' in s else s
@@ -85,9 +89,6 @@ def find_all_subproject_vtags(*projects):
     :raise subprocess.CalledProcessError:
         if `git` executable not in PATH
     """
-    vtag_fnmatch_frmt = '%s-v*'
-    vtag_regex = re.compile(r'^([-.\w]+)-v(\d.+)$', re.IGNORECASE)
-
     patterns = [vtag_fnmatch_frmt % p
                 for p in projects or ('*', )]
     cmd = ['git', 'tag', '-l'] + patterns
@@ -121,36 +122,71 @@ def get_subproject_versions(*projects):
             for proj, versions in vtags.items()}
 
 
-project_paths = {}
-
-def my_version(debug=False):
+def describe_project(project, debug=False):
     """
-    Return the version for the project of the file invoking this method, if any.
+    A ``git describe`` replacement based on project's vtags, if any.
 
-    :param projects:
-        project-names; return any versions found if none given.
+    :param str project:
+        Used as the prefix of vtags when searching them.
+    :param bool debug:
+        Version id(s) contain error?
     :return:
-        the version-id (possibly null), or '<no-git-repo>' if ``git`` command
-        has failed.
+        the version-id (possibly null), or '<git-error>' if ``git`` command
+        failed.
+
+    Results retrieved by command::
+
+        git describe --tags --match <PROJECT>-v*
+
+    ``--tags`` needed to consider also unannotated tags, as ``git tag`` does.
     """
-    import inspect
     import subprocess as sbp
 
-    caller_frame = inspect.stack()[0]
-    caller_frame.filename
+    vid = None
+    tag_pattern = vtag_fnmatch_frmt % project
+    cmd = 'git describe --tags --match'.split() + [tag_pattern]
     try:
-        get_subproject_versions(my_project)
-    except sbp.CalledProcessError as _:
-        if debug:
-            '\n'
-    else:
-        pass
+        res = exec_cmd(cmd, check_stdout=True, check_stderr=True)
+        out = res.stdout
+        vid = out and out.strip()
+    except sbp.CalledProcessError as ex:
+        err = ex.stderr
+        if 'No annotated tags' in err or 'No names found' in err:
+            vid = None
+        else:
+            if debug:
+                vid = '<git-error: %s>' % err.strip().replace('\n', ' # ')
+            else:
+                vid = '<git-error>'
+
+    return vid
 
 
 if __name__ == '__main__':
-    ## Print project versions for cli args.
+    ## Print project(s) versions or describe a single one.
     #
-    logging.basicConfig(level=0)
-    vdict = get_subproject_versions(*sys.argv[1:])
-    print('\n'.join('%s: %s' % pair
-                    for pair in vdict.items()))
+    args = sys.argv[1:]
+
+    for o in ('-h', '--help'):
+        if o in args:
+            print("Usage: %s [-v | --verbose] [PROJ-1]...\n"
+                  "Describe a single project, or "
+                  "list their (all) vtags if more (none) given." % sys.argv[0])
+            exit(0)
+
+    verbose = False
+    for o in ('-v', '--verbose'):
+        if o in args:
+            verbose = True
+            args.remove(o)
+
+    logging.basicConfig(level=logging.DEBUG if verbose else logging.INFO)
+    if len(args) == 1:
+        res = describe_project(args[0], debug=verbose)
+    else:
+        vdict = get_subproject_versions(*args)
+        res = '\n'.join('%s: %s' % pair
+                        for pair in vdict.items())
+
+    if res is not None:
+        print(res)
