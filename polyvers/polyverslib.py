@@ -162,16 +162,21 @@ def describe_project(project, debug=False):
     return vid
 
 
-if __name__ == '__main__':
-    ## Print project(s) versions or describe a single one.
-    #
-    args = sys.argv[1:]
+def main(*args):
+    """
+    Describe a single project, or list their (all) vtags if more (none) given.
+
+    :param args:
+        usually ``*sys.argv[1:]``
+    """
+    import os.path as osp
 
     for o in ('-h', '--help'):
         if o in args:
-            print("Usage: %s [-v | --verbose] [PROJ-1]...\n"
-                  "Describe a single project, or "
-                  "list their (all) vtags if more (none) given." % sys.argv[0])
+            doc = main.__doc__.split('\n')[1].strip()
+            cmdname = osp.basename(sys.argv[0])
+            print("%s\n\nUsage: %s [-v|--verbose] [PROJ-1]..." %
+                  (doc, cmdname))
             exit(0)
 
     verbose = False
@@ -190,3 +195,7 @@ if __name__ == '__main__':
 
     if res is not None:
         print(res)
+
+
+if __name__ == '__main__':
+    main(*sys.argv[1:])
