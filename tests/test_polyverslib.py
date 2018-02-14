@@ -72,96 +72,96 @@ def no_repo(tmpdir_factory):
 def test_get_all_vtags(ok_repo, untagged_repo, no_repo):
     ok_repo.chdir()
 
-    d = pvlib.find_all_subproject_vtags()
-    assert dict(d) == {
+    v = pvlib.find_all_subproject_vtags()
+    assert dict(v) == {
         proj1: ['0.0.0', '0.0.1'],
         proj2: ['0.2.0', '0.2.1'],
-    }, d
+    }, v
 
     untagged_repo.chdir()
 
-    d = pvlib.find_all_subproject_vtags()
-    assert dict(d) == {}
+    v = pvlib.find_all_subproject_vtags()
+    assert dict(v) == {}
 
     no_repo.chdir()
 
     with pytest.raises(subp.CalledProcessError):
-        d = pvlib.find_all_subproject_vtags()
+        v = pvlib.find_all_subproject_vtags()
 
 
 def test_get_p1_vtags(ok_repo, untagged_repo, no_repo):
     ok_repo.chdir()
 
-    d = pvlib.find_all_subproject_vtags(proj1)
-    assert dict(d) == {proj1: ['0.0.0', '0.0.1']}, d
+    v = pvlib.find_all_subproject_vtags(proj1)
+    assert dict(v) == {proj1: ['0.0.0', '0.0.1']}, v
 
     untagged_repo.chdir()
 
-    d = pvlib.find_all_subproject_vtags(proj1)
-    assert dict(d) == {}
+    v = pvlib.find_all_subproject_vtags(proj1)
+    assert dict(v) == {}
 
     no_repo.chdir()
 
     with pytest.raises(subp.CalledProcessError):
-        d = pvlib.find_all_subproject_vtags(proj1)
+        v = pvlib.find_all_subproject_vtags(proj1)
 
 
 def test_get_p2_vtags(ok_repo):
     ok_repo.chdir()
-    d = pvlib.find_all_subproject_vtags(proj2)
-    assert dict(d) == {proj2: ['0.2.0', '0.2.1']}, d
+    v = pvlib.find_all_subproject_vtags(proj2)
+    assert dict(v) == {proj2: ['0.2.0', '0.2.1']}, v
 
 
 def test_get_BAD_project_vtag(ok_repo, untagged_repo, no_repo):
     ok_repo.chdir()
-    
-    d = pvlib.find_all_subproject_vtags('foo')
-    assert dict(d) == {}, d
 
-    d = pvlib.find_all_subproject_vtags('foo', proj1)
-    assert dict(d) == {proj1: ['0.0.0', '0.0.1']}, d
+    v = pvlib.find_all_subproject_vtags('foo')
+    assert dict(v) == {}, v
+
+    v = pvlib.find_all_subproject_vtags('foo', proj1)
+    assert dict(v) == {proj1: ['0.0.0', '0.0.1']}, v
 
     untagged_repo.chdir()
-    
-    d = pvlib.find_all_subproject_vtags('foo', 'bar')
-    assert dict(d) == {}, d
+
+    v = pvlib.find_all_subproject_vtags('foo', 'bar')
+    assert dict(v) == {}, v
 
     no_repo.chdir()
-    
+
     with pytest.raises(subp.CalledProcessError):
-        d = pvlib.find_all_subproject_vtags('foo')
+        v = pvlib.find_all_subproject_vtags('foo')
 
 
 def test_get_subproject_versions(ok_repo, untagged_repo, no_repo):
     ok_repo.chdir()
-    
-    d = pvlib.get_subproject_versions()
-    assert d == {
+
+    v = pvlib.get_subproject_versions()
+    assert v == {
         proj1: '0.0.1',
         proj2: '0.2.1',
-    }, d
+    }, v
 
     untagged_repo.chdir()
 
-    d = pvlib.get_subproject_versions()
-    assert d == {}
-    
+    v = pvlib.get_subproject_versions()
+    assert v == {}
+
     no_repo.chdir()
-    
-    with pytest.raises(subp.CalledProcessError):
-        d = pvlib.get_subproject_versions()
 
     with pytest.raises(subp.CalledProcessError):
-        d = pvlib.get_subproject_versions('foo')
+        v = pvlib.get_subproject_versions()
 
     with pytest.raises(subp.CalledProcessError):
-        d = pvlib.get_subproject_versions('foo' 'bar')
+        v = pvlib.get_subproject_versions('foo')
+
+    with pytest.raises(subp.CalledProcessError):
+        v = pvlib.get_subproject_versions('foo' 'bar')
 
 
 def test_get_BAD_projects_versions(ok_repo):
     ok_repo.chdir()
-    d = pvlib.get_subproject_versions('foo')
-    assert dict(d) == {}, d
+    v = pvlib.get_subproject_versions('foo')
+    assert dict(v) == {}, v
 
 
 ##############
@@ -173,7 +173,7 @@ def test_describe_project_p1(ok_repo, untagged_repo, no_repo):
 
     v = pvlib.describe_project(proj1)
     assert v.startswith('proj1-v0.0.1')
-    v, d = pvlib.describe_project(proj1, date=True)
+    v, d = pvlib.describe_project(proj1, tag_date=True)
     assert v.startswith('proj1-v0.0.1')
     assert d.startswith(rfc2822_now())
 
@@ -181,7 +181,7 @@ def test_describe_project_p1(ok_repo, untagged_repo, no_repo):
 
     v = pvlib.describe_project('foo')
     assert not v
-    v, d = pvlib.describe_project('foo', date=True)
+    v, d = pvlib.describe_project('foo', tag_date=True)
     assert not v
     assert not d
 
@@ -193,7 +193,7 @@ def test_describe_project_p1(ok_repo, untagged_repo, no_repo):
     v = pvlib.describe_project(proj1, debug=True)
     assert 'Not a git repository' in v
 
-    v, d = pvlib.describe_project(proj1, date=True, debug=True)
+    v, d = pvlib.describe_project(proj1, tag_date=True, debug=True)
     assert 'Not a git repository' in v
     assert not d
 
@@ -203,7 +203,7 @@ def test_describe_project_p2(ok_repo):
 
     v = pvlib.describe_project(proj2)
     assert v.startswith('proj-2-v0.2.1')
-    v, d = pvlib.describe_project(proj2, date=True)
+    v, d = pvlib.describe_project(proj2, tag_date=True)
     assert d.startswith(rfc2822_now())
 
 
@@ -212,7 +212,7 @@ def test_describe_project_BAD(ok_repo, untagged_repo, no_repo):
 
     v = pvlib.describe_project('foo')
     assert not v
-    v, d = pvlib.describe_project('foo', date=True)
+    v, d = pvlib.describe_project('foo', tag_date=True)
     assert not v
     assert not d
 
@@ -220,7 +220,7 @@ def test_describe_project_BAD(ok_repo, untagged_repo, no_repo):
 
     v = pvlib.describe_project('foo')
     assert not v
-    v, d = pvlib.describe_project('foo', date=True)
+    v, d = pvlib.describe_project('foo', tag_date=True)
     assert not v
     assert not d
 
@@ -229,7 +229,7 @@ def test_describe_project_BAD(ok_repo, untagged_repo, no_repo):
     v = pvlib.describe_project('foo')
     assert v == '<git-error>'
 
-    v, d = pvlib.describe_project('foo', date=True)
+    v, d = pvlib.describe_project('foo', tag_date=True)
     assert v == '<git-error>'
     assert not d
 

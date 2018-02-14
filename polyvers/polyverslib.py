@@ -122,7 +122,7 @@ def get_subproject_versions(*projects):
             for proj, versions in vtags.items()}
 
 
-def describe_project(project, date=False, debug=False):
+def describe_project(project, tag_date=False, debug=False):
     """
     A ``git describe`` replacement based on project's vtags, if any.
 
@@ -130,8 +130,10 @@ def describe_project(project, date=False, debug=False):
         Used as the prefix of vtags when searching them.
     :param bool debug:
         Version id(s) contain error?
+    :param bool tag_date:
+        return 2-uple(version-id, last commit's date)
     :return:
-        when `date` is false:
+        when `tag_date` is false:
             the version-id (possibly null), or '<git-error>' if ``git`` command
             failed.
         otherwise:
@@ -158,7 +160,7 @@ def describe_project(project, date=False, debug=False):
     vid = cdate = None
     tag_pattern = vtag_fnmatch_frmt % project
     cmd = 'git describe --tags --match'.split() + [tag_pattern]
-    log_cmd = "git log -n1 --format=format:%cD".split() if date else None
+    log_cmd = "git log -n1 --format=format:%cD".split() if tag_date else None
     try:
         res = exec_cmd(cmd, check_stdout=True, check_stderr=True)
         out = res.stdout
@@ -178,7 +180,7 @@ def describe_project(project, date=False, debug=False):
             else:
                 vid = '<git-error>'
 
-    return (vid, cdate) if date else vid
+    return (vid, cdate) if tag_date else vid
 
 
 def main(*args):
