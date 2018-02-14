@@ -92,9 +92,17 @@ def test_get_subproject_versions(git_repo, no_repo):
 
 
 def test_describe_project_p1(git_repo, no_repo):
+    from datetime import datetime
+    import email.utils as emu
+
     git_repo.chdir()
     v = pvlib.describe_project(proj1)
     assert v.startswith('proj1-v0.0.1')
+
+    git_repo.chdir()
+    v, d = pvlib.describe_project(proj1, date=True)
+    assert v.startswith('proj1-v0.0.1')
+    assert d.startswith(emu.format_datetime(datetime.now())[:12])  # till hour
 
     no_repo.chdir()
     v = pvlib.describe_project(proj1)

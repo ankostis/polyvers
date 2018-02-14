@@ -122,7 +122,7 @@ def get_subproject_versions(*projects):
             for proj, versions in vtags.items()}
 
 
-def describe_project(project, debug=False):
+def describe_project(project, date=False, debug=False):
     """
     A ``git describe`` replacement based on project's vtags, if any.
 
@@ -131,10 +131,23 @@ def describe_project(project, debug=False):
     :param bool debug:
         Version id(s) contain error?
     :return:
-        the version-id (possibly null), or '<git-error>' if ``git`` command
-        failed.
+        when `date` is false:
+            the version-id (possibly null), or '<git-error>' if ``git`` command
+            failed.
+        otherwise:
+            the tuple (version, commit-RFC2822-date)
 
-    Results retrieved by command::
+    .. TIP::
+        It is to be used in ``__init__.py`` files like this::
+
+            __version__ = describe_project('myproj')
+
+        ...or::
+
+            __version__, __updated__ = describe_project('myproj', date=True)
+
+
+    Same results also retrieved by `git` command::
 
         git describe --tags --match <PROJECT>-v*
 
@@ -142,13 +155,19 @@ def describe_project(project, debug=False):
     """
     import subprocess as sbp
 
-    vid = None
+    vid = cdate = None
     tag_pattern = vtag_fnmatch_frmt % project
     cmd = 'git describe --tags --match'.split() + [tag_pattern]
+    log_cmd = "git log -n1 --format=format:%cD".split() if date else None
     try:
         res = exec_cmd(cmd, check_stdout=True, check_stderr=True)
         out = res.stdout
         vid = out and out.strip()
+
+        if log_cmd:
+            res = exec_cmd(log_cmd, check_stdout=True, check_stderr=True)
+            out = res.stdout
+            cdate = out and out.strip()
     except sbp.CalledProcessError as ex:
         err = ex.stderr
         if 'No annotated tags' in err or 'No names found' in err:
@@ -159,7 +178,7 @@ def describe_project(project, debug=False):
             else:
                 vid = '<git-error>'
 
-    return vid
+    return (vid, cdate) if date else vid
 
 
 def main(*args):
