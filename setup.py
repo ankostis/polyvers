@@ -27,7 +27,7 @@ setup_requirements = [
 
 test_requirements = [
     'pytest',
-    # TODO: put package test requirements here
+    'pytest-capturelog',
 ]
 PROJECT = 'polyvers'
 setup(

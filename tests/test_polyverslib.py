@@ -8,11 +8,9 @@
 """Tests for `polyvers` package."""
 
 from polyvers import polyverslib as pvlib
+import re
 
 import pytest
-
-import subprocess as subp
-
 
 proj1 = 'proj1'
 proj2 = 'proj-2'
@@ -67,101 +65,6 @@ def untagged_repo(tmpdir_factory):
 @pytest.fixture(scope="module")
 def no_repo(tmpdir_factory):
     return tmpdir_factory.mktemp('norepo')
-
-
-def test_get_all_vtags(ok_repo, untagged_repo, no_repo):
-    ok_repo.chdir()
-
-    v = pvlib.find_all_subproject_vtags()
-    assert dict(v) == {
-        proj1: ['0.0.0', '0.0.1'],
-        proj2: ['0.2.0', '0.2.1'],
-    }, v
-
-    untagged_repo.chdir()
-
-    v = pvlib.find_all_subproject_vtags()
-    assert dict(v) == {}
-
-    no_repo.chdir()
-
-    with pytest.raises(subp.CalledProcessError):
-        v = pvlib.find_all_subproject_vtags()
-
-
-def test_get_p1_vtags(ok_repo, untagged_repo, no_repo):
-    ok_repo.chdir()
-
-    v = pvlib.find_all_subproject_vtags(proj1)
-    assert dict(v) == {proj1: ['0.0.0', '0.0.1']}, v
-
-    untagged_repo.chdir()
-
-    v = pvlib.find_all_subproject_vtags(proj1)
-    assert dict(v) == {}
-
-    no_repo.chdir()
-
-    with pytest.raises(subp.CalledProcessError):
-        v = pvlib.find_all_subproject_vtags(proj1)
-
-
-def test_get_p2_vtags(ok_repo):
-    ok_repo.chdir()
-    v = pvlib.find_all_subproject_vtags(proj2)
-    assert dict(v) == {proj2: ['0.2.0', '0.2.1']}, v
-
-
-def test_get_BAD_project_vtag(ok_repo, untagged_repo, no_repo):
-    ok_repo.chdir()
-
-    v = pvlib.find_all_subproject_vtags('foo')
-    assert dict(v) == {}, v
-
-    v = pvlib.find_all_subproject_vtags('foo', proj1)
-    assert dict(v) == {proj1: ['0.0.0', '0.0.1']}, v
-
-    untagged_repo.chdir()
-
-    v = pvlib.find_all_subproject_vtags('foo', 'bar')
-    assert dict(v) == {}, v
-
-    no_repo.chdir()
-
-    with pytest.raises(subp.CalledProcessError):
-        v = pvlib.find_all_subproject_vtags('foo')
-
-
-def test_get_subproject_versions(ok_repo, untagged_repo, no_repo):
-    ok_repo.chdir()
-
-    v = pvlib.get_subproject_versions()
-    assert v == {
-        proj1: '0.0.1',
-        proj2: '0.2.1',
-    }, v
-
-    untagged_repo.chdir()
-
-    v = pvlib.get_subproject_versions()
-    assert v == {}
-
-    no_repo.chdir()
-
-    with pytest.raises(subp.CalledProcessError):
-        v = pvlib.get_subproject_versions()
-
-    with pytest.raises(subp.CalledProcessError):
-        v = pvlib.get_subproject_versions('foo')
-
-    with pytest.raises(subp.CalledProcessError):
-        v = pvlib.get_subproject_versions('foo' 'bar')
-
-
-def test_get_BAD_projects_versions(ok_repo):
-    ok_repo.chdir()
-    v = pvlib.get_subproject_versions('foo')
-    assert dict(v) == {}, v
 
 
 ##############
@@ -233,52 +136,53 @@ def test_describe_project_BAD(ok_repo, untagged_repo, no_repo):
     assert v == '<git-error>'
     assert not d
 
+
 ##############
 ##   MAIN   ##
 ##############
 
-
-def test_MAIN_get_all_versions(ok_repo, no_repo, capsys):
+def test_MAIN_describe_projects(ok_repo, untagged_repo, no_repo,
+                                capsys):
     ok_repo.chdir()
+
     pvlib.main()
     out, err = capsys.readouterr()
-    assert out == 'proj-2: 0.2.1\nproj1: 0.0.1\n'
+    assert not out
     assert not err
 
-    no_repo.chdir()
-    with pytest.raises(subp.CalledProcessError) as excinfo:
-        pvlib.main()
-    assert 'Not a git repository' in str(excinfo.value.stderr)
-
-
-def test_MAIN_get_project_versions(ok_repo, no_repo, capsys):
-    ok_repo.chdir()
-    pvlib.main(proj1, proj2)
-    out, err = capsys.readouterr()
-    assert out == 'proj-2: 0.2.1\nproj1: 0.0.1\n'
-    assert not err
-
-    no_repo.chdir()
-    with pytest.raises(subp.CalledProcessError) as excinfo:
-        pvlib.main()
-    assert 'Not a git repository' in str(excinfo.value.stderr)
-
-
-def test_MAIN_describe_projects(ok_repo, no_repo, capsys):
-    ok_repo.chdir()
     pvlib.main(proj1)
     out, err = capsys.readouterr()
     assert out.startswith('proj1-v0.0.1')
     assert not err
-
-    ok_repo.chdir()
     pvlib.main(proj2)
     out, err = capsys.readouterr()
     assert out.startswith('proj-2-v0.2.1')
+    #assert not caplog.text()
+
+    pvlib.main(proj1, proj2, 'foo')
+    out, err = capsys.readouterr()
+    assert re.match(
+        r'proj1: proj1-v0.0.1-2-\w+\nproj-2: proj-2-v0.2.1\nfoo: None', out)
+    #assert 'No names found' in caplog.text()
+
+    untagged_repo.chdir()
+
+    pvlib.main()
+    out, err = capsys.readouterr()
+    assert not out
     assert not err
+    pvlib.main('foo')
+    out, err = capsys.readouterr()
+    assert not out
+    #assert 'No names found' in caplog.text()
+    pvlib.main('foo', 'bar')
+    out, err = capsys.readouterr()
+    assert out == 'foo: None\nbar: None\n'
+    #assert 'No names found' in caplog.text()
 
     no_repo.chdir()
+
     pvlib.main(proj1)
     out, err = capsys.readouterr()
     assert out == '<git-error>\n'
-    assert err
+    #assert caplog.records()

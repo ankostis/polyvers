@@ -6,84 +6,57 @@
 # You may not use this work except in compliance with the Licence.
 # You may obtain a copy of the Licence at: http://ec.europa.eu/idabc/eupl
 #
-"""
-Python code to discover sub-project versions in Git *polyvers* monorepos.
+"""Python code to report sub-project "vtags" in Git *polyvers* monorepos."""
 
-The *polyvers* version-configuration tool is generating tags like::
-
-    proj-foo-v0.1.0
-
-On purpose python code here kept with as few dependencies as possible."""
-
+from collections import defaultdict
 import logging
-import re
 import sys
 
-import subprocess as sbp
+import polyvers.polyverslib as pvlib
 
 
-vtag_fnmatch_frmt = '%s-v*'
-vtag_regex = re.compile(r'^([-.\w]+)-v(\d.+)$', re.IGNORECASE)
-
-
-def format_syscmd(cmd):
-    if isinstance(cmd, (list, tuple)):
-        cmd = ' '.join('"%s"' % s if ' ' in s else s
-                       for s in cmd)
-    else:
-        assert isinstance(cmd, str), cmd
-
-    return cmd
-
-
-def exec_cmd(cmd,
-             dry_run=False,
-             check_stdout=None,
-             check_stderr=None,
-             check_returncode=True,
-             encoding='utf-8', encoding_errors='surrogateescape',
-             **popen_kws):
+def find_all_subproject_vtags(*projects):
     """
-    param check_stdout:
-        None: Popen(stdout=None), printed
-        False: Popen(stdout=sbp.DEVNULL), ignored
-        True: Popen(stdout=sbp.PIPE), collected & returned
+    Return the all ``proj-v0.0.0``-like tags, per project, if any.
+
+    :param projects:
+        project-names; fetch all vtags if none given.
+    :return:
+        a {proj: [vtags]}, possibly incomplete for projects without any vtag
+    :raise subprocess.CalledProcessError:
+        if `git` executable not in PATH
     """
-    log = logging.getLogger(__name__)
-    call_types = {
-        None: {'label': 'EXEC', 'stream': None},
-        False: {'label': 'EXEC(no-stdout)', 'stream': sbp.DEVNULL},
-        True: {'label': 'CALL', 'stream': sbp.PIPE},
-    }
-    stdout_ctype = call_types[check_stdout]
-    cmd_label = stdout_ctype['label']
-    cmd_str = format_syscmd(cmd)
+    tag_patterns = [pvlib.vtag_fnmatch_frmt % p
+                    for p in projects or ('*', )]
+    cmd = 'git tag --merged HEAD -l'.split() + tag_patterns
+    res = pvlib.exec_cmd(cmd, check_stdout=True, check_stderr=True)
+    out = res.stdout
+    tags = out and out.strip().split('\n') or []
 
-    log.debug('%s%s %r', 'DRY_' if dry_run else '', cmd_label, cmd_str)
+    project_versions = defaultdict(list)
+    for t in tags:
+        m = pvlib.vtag_regex.match(t)
+        if m:
+            pname, ver = m.groups()
+            project_versions[pname].append(ver)
 
-    if dry_run:
-        return
+    return project_versions
 
-    ##WARN: python 3.6 `encoding` & `errors` kwds in `Popen`.
-    res = sbp.run(
-        cmd,
-        stdout=stdout_ctype['stream'],
-        stderr=call_types[check_stderr]['stream'],
-        encoding=encoding,
-        errors=encoding_errors,
-        **popen_kws
-    )
-    if res.returncode:
-        log.warning('%s %r failed with %s!\n  stdout: %s\n  stderr: %s',
-                    cmd_label, cmd_str, res.returncode, res.stdout, res.stderr)
-    elif check_stdout or check_stderr:
-        log.debug('%s %r ok: \n  stdout: %s\n  stderr: %s',
-                  cmd_label, cmd_str, res.stdout, res.stderr)
 
-    if check_returncode:
-        res.check_returncode()
+def get_subproject_versions(*projects):
+    """
+    Return the last vtag for any project, if any.
 
-    return res
+    :param projects:
+        project-names; return any versions found if none given.
+    :return:
+        a {proj: version}, possibly incomplete for projects without any vtag
+    :raise subprocess.CalledProcessError:
+        if `git` executable not in PATH
+    """
+    vtags = find_all_subproject_vtags(*projects)
+    return {proj: (versions and versions[-1])
+            for proj, versions in vtags.items()}
 
 
 def describe_project(project, tag_date=False, debug=False):
@@ -119,17 +92,19 @@ def describe_project(project, tag_date=False, debug=False):
 
     ``--tags`` needed to consider also unannotated tags, as ``git tag`` does.
     """
+    import subprocess as sbp
+
     vid = cdate = None
-    tag_pattern = vtag_fnmatch_frmt % project
+    tag_pattern = pvlib.vtag_fnmatch_frmt % project
     cmd = 'git describe --tags --match'.split() + [tag_pattern]
     try:
-        res = exec_cmd(cmd, check_stdout=True, check_stderr=True)
+        res = pvlib.exec_cmd(cmd, check_stdout=True, check_stderr=True)
         out = res.stdout
         vid = out and out.strip()
 
         if tag_date:
             log_cmd = "git log -n1 --format=format:%cD".split()
-            res = exec_cmd(log_cmd, check_stdout=True, check_stderr=True)
+            res = pvlib.exec_cmd(log_cmd, check_stdout=True, check_stderr=True)
             out = res.stdout
             cdate = out and out.strip()
     except sbp.CalledProcessError as ex:
@@ -147,7 +122,7 @@ def describe_project(project, tag_date=False, debug=False):
 
 def main(*args):
     """
-    Describe a single or multiple projects.
+    List vtags for the given sub-project, or all if none given.
 
     :param args:
         usually ``*sys.argv[1:]``
@@ -169,11 +144,9 @@ def main(*args):
             args.remove(o)
 
     logging.basicConfig(level=logging.DEBUG if verbose else logging.INFO)
-    if len(args) == 1:
-        res = describe_project(args[0], debug=verbose)
-    else:
-        res = '\n'.join('%s: %s' % (p, describe_project(p, debug=verbose))
-                        for p in args)
+    vdict = get_subproject_versions(*args)
+    res = '\n'.join('%s: %s' % pair
+                    for pair in vdict.items())
 
     if res:
         print(res)
