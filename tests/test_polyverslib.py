@@ -10,11 +10,19 @@
 from polyvers import polyverslib as pvlib
 
 import pytest
+
 import subprocess as subp
 
 
 proj1 = 'proj1'
 proj2 = 'proj-2'
+
+
+def rfc2822_now():
+    from datetime import datetime
+    import email.utils as emu
+
+    return emu.format_datetime(datetime.now())[:12]  # till hour
 
 
 @pytest.fixture(scope="module")
@@ -118,10 +126,11 @@ def test_get_BAD_projects_versions(git_repo, no_repo):
         d = pvlib.get_subproject_versions('foo', 'bar')
 
 
-def test_describe_project_p1(git_repo, no_repo):
-    from datetime import datetime
-    import email.utils as emu
+##############
+## DESCRIBE ##
+##############
 
+def test_describe_project_p1(git_repo, no_repo):
     git_repo.chdir()
     v = pvlib.describe_project(proj1)
     assert v.startswith('proj1-v0.0.1')
@@ -129,7 +138,7 @@ def test_describe_project_p1(git_repo, no_repo):
     git_repo.chdir()
     v, d = pvlib.describe_project(proj1, date=True)
     assert v.startswith('proj1-v0.0.1')
-    assert d.startswith(emu.format_datetime(datetime.now())[:12])  # till hour
+    assert d.startswith(rfc2822_now())
 
     no_repo.chdir()
     v = pvlib.describe_project(proj1)
@@ -138,11 +147,39 @@ def test_describe_project_p1(git_repo, no_repo):
     v = pvlib.describe_project(proj1, debug=True)
     assert 'Not a git repository' in v
 
+    v, d = pvlib.describe_project(proj1, date=True, debug=True)
+    assert 'Not a git repository' in v
+    assert not d
+
 
 def test_describe_project_p2(git_repo, no_repo):
     git_repo.chdir()
     v = pvlib.describe_project(proj2)
     assert v.startswith('proj-2-v0.2.1')
+    v, d = pvlib.describe_project(proj2, date=True)
+    assert d.startswith(rfc2822_now())
+
+
+def test_describe_project_BAD(git_repo, no_repo):
+    git_repo.chdir()
+    v = pvlib.describe_project('foo')
+    assert not v
+
+    v, d = pvlib.describe_project('foo', date=True)
+    assert not v
+    assert not d
+
+    no_repo.chdir()
+    v = pvlib.describe_project('foo')
+    assert v == '<git-error>'
+
+    v, d = pvlib.describe_project('foo', date=True)
+    assert v == '<git-error>'
+    assert not d
+
+##############
+##   MAIN   ##
+##############
 
 
 def test_MAIN_get_all_versions(git_repo, no_repo, capsys):
@@ -189,5 +226,3 @@ def test_MAIN_describe_projects(git_repo, no_repo, capsys):
     out, err = capsys.readouterr()
     assert out == '<git-error>\n'
     assert err
-
-
