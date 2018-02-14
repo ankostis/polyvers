@@ -89,3 +89,70 @@ def test_get_subproject_versions(git_repo, no_repo):
     no_repo.chdir()
     with pytest.raises(subp.CalledProcessError):
         d = pvlib.get_subproject_versions()
+
+
+def test_describe_project_p1(git_repo, no_repo):
+    git_repo.chdir()
+    v = pvlib.describe_project(proj1)
+    assert v.startswith('proj1-v0.0.1')
+
+    no_repo.chdir()
+    v = pvlib.describe_project(proj1)
+    assert v == '<git-error>'
+
+    v = pvlib.describe_project(proj1, debug=True)
+    assert 'Not a git repository' in v
+
+
+def test_describe_project_p2(git_repo, no_repo):
+    git_repo.chdir()
+    v = pvlib.describe_project(proj2)
+    assert v.startswith('proj-2-v0.2.1')
+
+
+def test_MAIN_get_all_versions(git_repo, no_repo, capsys):
+    git_repo.chdir()
+    pvlib.main()
+    out, err = capsys.readouterr()
+    assert out == 'proj-2: 0.2.1\nproj1: 0.0.1\n'
+    assert not err
+
+    no_repo.chdir()
+    with pytest.raises(subp.CalledProcessError) as excinfo:
+        pvlib.main()
+    assert 'Not a git repository' in str(excinfo.value.stderr)
+
+
+def test_MAIN_get_project_versions(git_repo, no_repo, capsys):
+    git_repo.chdir()
+    pvlib.main(proj1, proj2)
+    out, err = capsys.readouterr()
+    assert out == 'proj-2: 0.2.1\nproj1: 0.0.1\n'
+    assert not err
+
+    no_repo.chdir()
+    with pytest.raises(subp.CalledProcessError) as excinfo:
+        pvlib.main()
+    assert 'Not a git repository' in str(excinfo.value.stderr)
+
+
+def test_MAIN_describe_projects(git_repo, no_repo, capsys):
+    git_repo.chdir()
+    pvlib.main(proj1)
+    out, err = capsys.readouterr()
+    assert out.startswith('proj1-v0.0.1')
+    assert not err
+
+    git_repo.chdir()
+    pvlib.main(proj2)
+    out, err = capsys.readouterr()
+    assert out.startswith('proj-2-v0.2.1')
+    assert not err
+
+    no_repo.chdir()
+    pvlib.main(proj1)
+    out, err = capsys.readouterr()
+    assert out == '<git-error>\n'
+    assert err
+
+
