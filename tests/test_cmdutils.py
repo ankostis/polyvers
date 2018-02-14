@@ -166,7 +166,7 @@ def test_collect_static_fpaths(param, var, exp):
                                     for f in param
                                     for ff in f.split(os.pathsep)]
             if var is not None:
-                os.environ['CO2DICE_CONFIG_PATHS'] = os.pathsep.join(
+                os.environ['POLYVERS_CONFIG_PATHS'] = os.pathsep.join(
                     osp.join(tdir, ff)
                     for f in var
                     for ff in f.split(os.pathsep))
@@ -175,6 +175,6 @@ def test_collect_static_fpaths(param, var, exp):
             assert paths == exp, (param, var, exp)
         finally:
             try:
-                del os.environ['CO2DICE_CONFIG_PATHS']
+                del os.environ['POLYVERS_CONFIG_PATHS']
             except:
                 pass
