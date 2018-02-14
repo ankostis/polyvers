@@ -169,7 +169,7 @@ class WriteCmd(cu.Cmd):
     def run(self, *args):
         ## Prefer to modify `classes` after `initialize()`, or else,
         #  the cmd options would be irrelevant and fatty :-)
-        self.classes = self.all_app_configurables
+        self.classes = all_configurables(self)
         args = args or [None]
         for fpath in args:
             self.write_default_config(fpath, self.force)
@@ -247,7 +247,7 @@ class InfosCmd(cu.Cmd):
         var_names = """HOME HOMEDRIVE HOMEPATH USERPROFILE
                      TRAITLETS_APPLICATION_RAISE_CONFIG_FILE_ERROR"""
         yield "ENV_VARS:"
-        trait_envvars = self._collect_env_vars(self.all_app_configurables)
+        trait_envvars = self._collect_env_vars(all_configurables(self))
         for vname in sorted(set(var_names.split() + trait_envvars)):
             yield "  %s: %r" % (vname, os.environ.get(vname))
 
@@ -316,29 +316,34 @@ class ShowCmd(cu.Cmd):
     ).tag(config=True)
 
     def __init__(self, **kwds):
-        kwds.setdefault('cmd_aliases', {
+        kwds.setdefault('raise_config_file_errors', False)
+        super().__init__(**kwds)
+
+    @trt.observe('parent')
+    def _inherit_parent_cmd(self, change):
+        aliases = self.parent and dict(self.parent.aliases) or {}
+        aliases.update({
             ('s', 'source'): ('ShowCmd.source',
                               ShowCmd.source.help)
         })
-        kwds.setdefault(
-            'cmd_flags', {
-                ('l', 'list'): (
-                    {type(self).__name__: {'list': True}},
-                    type(self).list.help
-                ),
-                ('e', 'regex'): (
-                    {type(self).__name__: {'regex': True}},
-                    type(self).regex.help
-                ),
-                ('t', 'sort'): (
-                    {type(self).__name__: {'sort': True}},
-                    type(self).sort.help
-                ),
-            }
-        )
-        kwds.setdefault('encrypt', True)  # Encrypted ALL freshly edited pconfigs.
-        kwds.setdefault('raise_config_file_errors', False)
-        super().__init__(**kwds)
+        self.aliases = aliases
+
+        flags = self.parent and dict(self.parent.flags) or {}
+        flags.update({
+            ('l', 'list'): (
+                {type(self).__name__: {'list': True}},
+                type(self).list.help
+            ),
+            ('e', 'regex'): (
+                {type(self).__name__: {'regex': True}},
+                type(self).regex.help
+            ),
+            ('t', 'sort'): (
+                {type(self).__name__: {'sort': True}},
+                type(self).sort.help
+            ),
+        })
+        self.flags = flags
 
     def initialize(self, argv=None):
         ## Copied from `Cmd.initialize()`.
@@ -361,7 +366,7 @@ class ShowCmd(cu.Cmd):
     def _yield_configs_and_defaults(self, config, search_terms,
                                     merged: bool):
         verbose = self.verbose
-        conf_classes = self.all_app_configurables
+        conf_classes = all_configurables(self)
         get_classes = (self._classes_inc_parents
                        if verbose else
                        self._classes_with_config_traits)
@@ -530,27 +535,31 @@ class DescCmd(cu.Cmd):
     ).tag(config=True)
 
     def __init__(self, **kwds):
-        kwds.setdefault(
-            'cmd_flags', {
-                ('l', 'list'): (
-                    {type(self).__name__: {'list': True}},
-                    type(self).list.help
-                ),
-                ('e', 'regex'): (
-                    {type(self).__name__: {'regex': True}},
-                    type(self).regex.help
-                ),
-                ('c', 'class'): (
-                    {type(self).__name__: {'clazz': True}},
-                    type(self).clazz.help
-                ),
-                ('t', 'sort'): (
-                    {type(self).__name__: {'sort': True}},
-                    type(self).sort.help
-                ),
-            }
-        )
+
         super().__init__(**kwds)
+
+    @trt.observe('parent')
+    def _inherit_parent_cmd(self, change):
+        flags = self.parent and dict(self.parent.flags) or {}
+        flags.update({
+            ('l', 'list'): (
+                {type(self).__name__: {'list': True}},
+                type(self).list.help
+            ),
+            ('e', 'regex'): (
+                {type(self).__name__: {'regex': True}},
+                type(self).regex.help
+            ),
+            ('c', 'class'): (
+                {type(self).__name__: {'clazz': True}},
+                type(self).clazz.help
+            ),
+            ('t', 'sort'): (
+                {type(self).__name__: {'sort': True}},
+                type(self).sort.help
+            ),
+        })
+        self.flags = flags
 
     def run(self, *args):
         ## Prefer to modify `class_names` after `initialize()`, or else,
@@ -558,7 +567,7 @@ class DescCmd(cu.Cmd):
         get_classes = (self._classes_inc_parents
                        if self.clazz or self.verbose else
                        self._classes_with_config_traits)
-        all_classes = list(get_classes(self.all_app_configurables))
+        all_classes = list(get_classes(all_configurables(self)))
         own_traits = None if self.clazz else not self.verbose
 
         search_map = prepare_search_map(all_classes, own_traits)
@@ -583,3 +592,13 @@ config_subcmds = (
     ShowCmd,
     DescCmd,
 )
+
+
+def all_configurables(cmd):
+    ## Fetch `all_app_configurables` trait from root cmd.
+    #
+    app = cmd
+    while app.parent:
+        app = app.parent
+
+    return list(config_subcmds) + app.all_app_configurables

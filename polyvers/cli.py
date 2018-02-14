@@ -181,6 +181,12 @@ class PolyversCmd(cu.Cmd, Project):
     def _config_fpaths(self):
         return default_config_fpaths()
 
+#     @trt.default('all_app_configurables')
+#     def _all_app_configurables(self):
+#         from .cfgcmd import WriteCmd, InfosCmd, ShowCmd, DescCmd,
+#
+#         return WriteCmd, InfosCmd, ShowCmd, DescCmd
+
 
 class VersionSubcmd(cu.Cmd):
     pass
