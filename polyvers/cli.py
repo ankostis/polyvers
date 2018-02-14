@@ -47,7 +47,7 @@ def default_config_fpaths():
 #######################
 
 
-class Base(trc.Configurable):
+class Base(tu.Spec):
     " Common base for configurables and apps."
 
     #: A stack of 3 dics used by `interpolation_context_factory()` class-method,
@@ -68,18 +68,6 @@ class Base(trc.Configurable):
         })
 
         return cls.interpolation_context
-
-    verbose = Bool(
-        config=True,
-        help="Set logging-level to DEBUG.")
-
-    force = Bool(
-        config=True,
-        help="Force commands to perform their duties without complaints.")
-
-    dry_run = Bool(
-        config=True,
-        help="Do not write files - just pretend.")
 
 
 class Project(Base):
@@ -279,16 +267,16 @@ PolyversCmd.flags = {
     ## Consulted by main.init_logging() if in sys.argv.
     #
     ('v', 'verbose'): (
-        {'Base': {'verbose': True}},
-        Base.verbose.help
+        {'Spec': {'verbose': True}},
+        tu.Spec.verbose.help
     ),
     ('f', 'force'): (
-        {'Project': {'force': True}},
-        Project.force.help
+        {'Spec': {'force': True}},
+        tu.Spec.force.help
     ),
     ('n', 'dry-run'): (
-        {'Project': {'force': True}},
-        Project.dry_run.help
+        {'Spec': {'force': True}},
+        tu.Spec.dry_run.help
     ),
     ('c', 'commit'): (
         {},

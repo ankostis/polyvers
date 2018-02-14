@@ -21,7 +21,7 @@ import os.path as osp
 
 from . import fileutils as fu
 from ._vendor import traitlets as trt
-from ._vendor.traitlets import List, Unicode  # @UnresolvedImport
+from ._vendor.traitlets import Bool, List, Unicode  # @UnresolvedImport
 from ._vendor.traitlets import config as trc
 
 
@@ -279,7 +279,21 @@ class CmdException(Exception):
     pass
 
 
-class Cmd(trc.Application):
+class Spec(trc.Configurable):
+    verbose = Bool(
+        config=True,
+        help="Set logging-level to DEBUG.")
+
+    force = Bool(
+        config=True,
+        help="Force things to perform their duties without complaints.")
+
+    dry_run = Bool(
+        config=True,
+        help="Do not write files - just pretend.")
+
+
+class Cmd(trc.Application, Spec):
     "Common machinery for all (sub)commands."
 
     @trt.default('log')
