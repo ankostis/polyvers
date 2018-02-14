@@ -26,7 +26,7 @@ def rfc2822_now():
 
 
 @pytest.fixture(scope="module")
-def git_repo(tmpdir_factory):
+def ok_repo(tmpdir_factory):
     repo_dir = tmpdir_factory.mktemp('repo')
     repo_dir.chdir()
     cmds = """
@@ -49,98 +49,144 @@ def git_repo(tmpdir_factory):
 
 
 @pytest.fixture(scope="module")
+def untagged_repo(tmpdir_factory):
+    repo_dir = tmpdir_factory.mktemp('repo')
+    repo_dir.chdir()
+    cmds = """
+    git init
+    git commit --allow-empty  --no-edit -m some_msg
+    """
+    for c in cmds.split('\n'):
+        c = c and c.strip()
+        if c:
+            pvlib.exec_cmd(c)
+
+    return repo_dir
+
+
+@pytest.fixture(scope="module")
 def no_repo(tmpdir_factory):
     return tmpdir_factory.mktemp('norepo')
 
 
-def test_get_all_vtags(git_repo, no_repo):
-    git_repo.chdir()
+def test_get_all_vtags(ok_repo, untagged_repo, no_repo):
+    ok_repo.chdir()
+
     d = pvlib.find_all_subproject_vtags()
     assert dict(d) == {
         proj1: ['0.0.0', '0.0.1'],
         proj2: ['0.2.0', '0.2.1'],
     }, d
 
+    untagged_repo.chdir()
+
+    d = pvlib.find_all_subproject_vtags()
+    assert dict(d) == {}
+
     no_repo.chdir()
+
     with pytest.raises(subp.CalledProcessError):
         d = pvlib.find_all_subproject_vtags()
 
 
-def test_get_p1_vtags(git_repo, no_repo):
-    git_repo.chdir()
+def test_get_p1_vtags(ok_repo, untagged_repo, no_repo):
+    ok_repo.chdir()
+
     d = pvlib.find_all_subproject_vtags(proj1)
     assert dict(d) == {proj1: ['0.0.0', '0.0.1']}, d
 
+    untagged_repo.chdir()
+
+    d = pvlib.find_all_subproject_vtags(proj1)
+    assert dict(d) == {}
+
     no_repo.chdir()
+
     with pytest.raises(subp.CalledProcessError):
         d = pvlib.find_all_subproject_vtags(proj1)
 
 
-def test_get_p2_vtags(git_repo, no_repo):
-    git_repo.chdir()
+def test_get_p2_vtags(ok_repo):
+    ok_repo.chdir()
     d = pvlib.find_all_subproject_vtags(proj2)
     assert dict(d) == {proj2: ['0.2.0', '0.2.1']}, d
 
-    no_repo.chdir()
-    with pytest.raises(subp.CalledProcessError):
-        d = pvlib.find_all_subproject_vtags(proj2)
 
-
-def test_get_BAD_project_vtag(git_repo, no_repo):
-    git_repo.chdir()
+def test_get_BAD_project_vtag(ok_repo, untagged_repo, no_repo):
+    ok_repo.chdir()
+    
     d = pvlib.find_all_subproject_vtags('foo')
     assert dict(d) == {}, d
 
     d = pvlib.find_all_subproject_vtags('foo', proj1)
     assert dict(d) == {proj1: ['0.0.0', '0.0.1']}, d
 
+    untagged_repo.chdir()
+    
+    d = pvlib.find_all_subproject_vtags('foo', 'bar')
+    assert dict(d) == {}, d
+
     no_repo.chdir()
+    
     with pytest.raises(subp.CalledProcessError):
         d = pvlib.find_all_subproject_vtags('foo')
 
 
-def test_get_subproject_versions(git_repo, no_repo):
-    git_repo.chdir()
+def test_get_subproject_versions(ok_repo, untagged_repo, no_repo):
+    ok_repo.chdir()
+    
     d = pvlib.get_subproject_versions()
     assert d == {
         proj1: '0.0.1',
         proj2: '0.2.1',
     }, d
 
+    untagged_repo.chdir()
+
+    d = pvlib.get_subproject_versions()
+    assert d == {}
+    
     no_repo.chdir()
+    
     with pytest.raises(subp.CalledProcessError):
         d = pvlib.get_subproject_versions()
 
+    with pytest.raises(subp.CalledProcessError):
+        d = pvlib.get_subproject_versions('foo')
 
-def test_get_BAD_projects_versions(git_repo, no_repo):
-    git_repo.chdir()
+    with pytest.raises(subp.CalledProcessError):
+        d = pvlib.get_subproject_versions('foo' 'bar')
+
+
+def test_get_BAD_projects_versions(ok_repo):
+    ok_repo.chdir()
     d = pvlib.get_subproject_versions('foo')
     assert dict(d) == {}, d
-
-    git_repo.chdir()
-    d = pvlib.get_subproject_versions('foo', 'bar')
-    assert dict(d) == {}, d
-
-    no_repo.chdir()
-    with pytest.raises(subp.CalledProcessError):
-        d = pvlib.get_subproject_versions('foo', 'bar')
 
 
 ##############
 ## DESCRIBE ##
 ##############
 
-def test_describe_project_p1(git_repo, no_repo):
-    git_repo.chdir()
+def test_describe_project_p1(ok_repo, untagged_repo, no_repo):
+    ok_repo.chdir()
+
     v = pvlib.describe_project(proj1)
     assert v.startswith('proj1-v0.0.1')
-
-    git_repo.chdir()
     v, d = pvlib.describe_project(proj1, date=True)
     assert v.startswith('proj1-v0.0.1')
     assert d.startswith(rfc2822_now())
 
+    untagged_repo.chdir()
+
+    v = pvlib.describe_project('foo')
+    assert not v
+    v, d = pvlib.describe_project('foo', date=True)
+    assert not v
+    assert not d
+
     no_repo.chdir()
+
     v = pvlib.describe_project(proj1)
     assert v == '<git-error>'
 
@@ -152,24 +198,34 @@ def test_describe_project_p1(git_repo, no_repo):
     assert not d
 
 
-def test_describe_project_p2(git_repo, no_repo):
-    git_repo.chdir()
+def test_describe_project_p2(ok_repo):
+    ok_repo.chdir()
+
     v = pvlib.describe_project(proj2)
     assert v.startswith('proj-2-v0.2.1')
     v, d = pvlib.describe_project(proj2, date=True)
     assert d.startswith(rfc2822_now())
 
 
-def test_describe_project_BAD(git_repo, no_repo):
-    git_repo.chdir()
+def test_describe_project_BAD(ok_repo, untagged_repo, no_repo):
+    ok_repo.chdir()
+
     v = pvlib.describe_project('foo')
     assert not v
+    v, d = pvlib.describe_project('foo', date=True)
+    assert not v
+    assert not d
 
+    untagged_repo.chdir()
+
+    v = pvlib.describe_project('foo')
+    assert not v
     v, d = pvlib.describe_project('foo', date=True)
     assert not v
     assert not d
 
     no_repo.chdir()
+
     v = pvlib.describe_project('foo')
     assert v == '<git-error>'
 
@@ -182,8 +238,8 @@ def test_describe_project_BAD(git_repo, no_repo):
 ##############
 
 
-def test_MAIN_get_all_versions(git_repo, no_repo, capsys):
-    git_repo.chdir()
+def test_MAIN_get_all_versions(ok_repo, no_repo, capsys):
+    ok_repo.chdir()
     pvlib.main()
     out, err = capsys.readouterr()
     assert out == 'proj-2: 0.2.1\nproj1: 0.0.1\n'
@@ -195,8 +251,8 @@ def test_MAIN_get_all_versions(git_repo, no_repo, capsys):
     assert 'Not a git repository' in str(excinfo.value.stderr)
 
 
-def test_MAIN_get_project_versions(git_repo, no_repo, capsys):
-    git_repo.chdir()
+def test_MAIN_get_project_versions(ok_repo, no_repo, capsys):
+    ok_repo.chdir()
     pvlib.main(proj1, proj2)
     out, err = capsys.readouterr()
     assert out == 'proj-2: 0.2.1\nproj1: 0.0.1\n'
@@ -208,14 +264,14 @@ def test_MAIN_get_project_versions(git_repo, no_repo, capsys):
     assert 'Not a git repository' in str(excinfo.value.stderr)
 
 
-def test_MAIN_describe_projects(git_repo, no_repo, capsys):
-    git_repo.chdir()
+def test_MAIN_describe_projects(ok_repo, no_repo, capsys):
+    ok_repo.chdir()
     pvlib.main(proj1)
     out, err = capsys.readouterr()
     assert out.startswith('proj1-v0.0.1')
     assert not err
 
-    git_repo.chdir()
+    ok_repo.chdir()
     pvlib.main(proj2)
     out, err = capsys.readouterr()
     assert out.startswith('proj-2-v0.2.1')
