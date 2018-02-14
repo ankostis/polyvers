@@ -78,6 +78,19 @@ def test_get_p2_vtags(git_repo, no_repo):
         d = pvlib.find_all_subproject_vtags(proj2)
 
 
+def test_get_BAD_project_vtag(git_repo, no_repo):
+    git_repo.chdir()
+    d = pvlib.find_all_subproject_vtags('foo')
+    assert dict(d) == {}, d
+
+    d = pvlib.find_all_subproject_vtags('foo', proj1)
+    assert dict(d) == {proj1: ['0.0.0', '0.0.1']}, d
+
+    no_repo.chdir()
+    with pytest.raises(subp.CalledProcessError):
+        d = pvlib.find_all_subproject_vtags('foo')
+
+
 def test_get_subproject_versions(git_repo, no_repo):
     git_repo.chdir()
     d = pvlib.get_subproject_versions()
@@ -89,6 +102,20 @@ def test_get_subproject_versions(git_repo, no_repo):
     no_repo.chdir()
     with pytest.raises(subp.CalledProcessError):
         d = pvlib.get_subproject_versions()
+
+
+def test_get_BAD_projects_versions(git_repo, no_repo):
+    git_repo.chdir()
+    d = pvlib.get_subproject_versions('foo')
+    assert dict(d) == {}, d
+
+    git_repo.chdir()
+    d = pvlib.get_subproject_versions('foo', 'bar')
+    assert dict(d) == {}, d
+
+    no_repo.chdir()
+    with pytest.raises(subp.CalledProcessError):
+        d = pvlib.get_subproject_versions('foo', 'bar')
 
 
 def test_describe_project_p1(git_repo, no_repo):
