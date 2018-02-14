@@ -33,7 +33,8 @@ def exec_cmd(cmd,
              check_stdout=None,
              check_stderr=None,
              check_returncode=True,
-             encoding='utf-8', encoding_errors='surrogateescape'):
+             encoding='utf-8', encoding_errors='surrogateescape',
+             **popen_kws):
     """
     param check_stdout:
         None: Popen(stdout=None), printed
@@ -63,11 +64,12 @@ def exec_cmd(cmd,
         stdout=stdout_ctype['stream'],
         stderr=call_types[check_stderr]['stream'],
         encoding=encoding,
-        errors=encoding_errors
+        errors=encoding_errors,
+        **popen_kws
     )
     if res.returncode:
-        log.error('%s %r failed with %s!\n  stdout: %s\n  stderr: %s',
-                  cmd_label, cmd_str, res.returncode, res.stdout, res.stderr)
+        log.warning('%s %r failed with %s!\n  stdout: %s\n  stderr: %s',
+                    cmd_label, cmd_str, res.returncode, res.stdout, res.stderr)
     elif check_stdout or check_stderr:
         log.debug('%s %r ok: \n  stdout: %s\n  stderr: %s',
                   cmd_label, cmd_str, res.stdout, res.stderr)
@@ -89,9 +91,9 @@ def find_all_subproject_vtags(*projects):
     :raise subprocess.CalledProcessError:
         if `git` executable not in PATH
     """
-    patterns = [vtag_fnmatch_frmt % p
-                for p in projects or ('*', )]
-    cmd = ['git', 'tag', '-l'] + patterns
+    tag_patterns = [vtag_fnmatch_frmt % p
+                    for p in projects or ('*', )]
+    cmd = 'git tag --merged HEAD -l'.split() + tag_patterns
     res = exec_cmd(cmd, check_stdout=True, check_stderr=True)
     out = res.stdout
     tags = out and out.strip().split('\n') or []
@@ -160,13 +162,13 @@ def describe_project(project, tag_date=False, debug=False):
     vid = cdate = None
     tag_pattern = vtag_fnmatch_frmt % project
     cmd = 'git describe --tags --match'.split() + [tag_pattern]
-    log_cmd = "git log -n1 --format=format:%cD".split() if tag_date else None
     try:
         res = exec_cmd(cmd, check_stdout=True, check_stderr=True)
         out = res.stdout
         vid = out and out.strip()
 
-        if log_cmd:
+        if tag_date:
+            log_cmd = "git log -n1 --format=format:%cD".split()
             res = exec_cmd(log_cmd, check_stdout=True, check_stderr=True)
             out = res.stdout
             cdate = out and out.strip()
