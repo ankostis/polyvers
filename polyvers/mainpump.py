@@ -105,22 +105,3 @@ def collect_cmd(cmd_res, dont_coalesce=False, assert_ok=False):
             items = items[0]
 
         return items
-
-
-def make_cmd(app, argv=None, **kwargs):
-    """
-    Instanciate, initialize and return application.
-
-    :param argv:
-        Like :meth:`initialize()`, if undefined, replaced with ``sys.argv[1:]``.
-
-    - Tip: Apply :func:`pump_cmd()` on return values to process
-      generators of :meth:`run()`.
-    - This functions is the 1st half of :meth:`launch_instance()` which
-      invokes and discards :meth:`start()` results.
-    """
-    ## Overriden just to return `start()`.
-    cmd = app.instance(**kwargs)
-    cmd.initialize(argv)
-
-    return cmd
