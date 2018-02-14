@@ -181,11 +181,10 @@ class PolyversCmd(cu.Cmd, Project):
     def _config_fpaths(self):
         return default_config_fpaths()
 
-#     @trt.default('all_app_configurables')
-#     def _all_app_configurables(self):
-#         from .cfgcmd import WriteCmd, InfosCmd, ShowCmd, DescCmd,
-#
-#         return WriteCmd, InfosCmd, ShowCmd, DescCmd
+    @trt.default('all_app_configurables')
+    def _all_app_configurables(self):
+        return [type(self), Base, Project,
+                InitCmd, StatusCmd, SetverCmd, BumpveCmd, LogconfCmd]
 
 
 class VersionSubcmd(cu.Cmd):
@@ -224,7 +223,7 @@ class SetverCmd(VersionSubcmd):
     """
 
 
-class BumpCmd(VersionSubcmd):
+class BumpveCmd(VersionSubcmd):
     """
     Increase the version of project(s) by the given offset.
 
@@ -242,15 +241,15 @@ class BumpCmd(VersionSubcmd):
         pass
 
 
-class Logconf(cu.Cmd):
+class LogconfCmd(cu.Cmd):
     """Write a logging-configuration file that can filter logs selectively."""
     def run(self, *args):
         pass
 
 
 subcmds = cu.build_sub_cmds(InitCmd, StatusCmd,
-                            SetverCmd, BumpCmd,
-                            Logconf)
+                            SetverCmd, BumpveCmd,
+                            LogconfCmd)
 subcmds['config'] = ('polyvers.cfgcmd.ConfigCmd',
                      "Commands to inspect configurations and other cli infos.")
 

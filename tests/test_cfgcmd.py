@@ -46,7 +46,7 @@ def test_show_smoketest(case):
         case = [case]
     cmd = ConfigCmd.make_cmd(['show'] + case)
     res = mpu.collect_cmd(cmd.start(), dont_coalesce=True, assert_ok=True)
-    assert len(res) == 0, res
+    assert len(res) > 10, res
 
 
 @pytest.mark.parametrize('case',
