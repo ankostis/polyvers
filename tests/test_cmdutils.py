@@ -164,7 +164,7 @@ def test_default_loaded_paths():
         class MyCmd(cmdutils.Cmd):
             ""
             @trt.default('config_paths')
-            def _config_fpaths(self):
+            def _config_paths(self):
                 return [tdir]
 
         cmd = MyCmd()

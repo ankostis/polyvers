@@ -360,8 +360,7 @@ class Cmd(trc.Application, Spec):
     @trt.default('description')
     def _desc(self):
         """Without it, need to set `description` attr on every class."""
-        desc = type(self).__doc__
-        return desc
+        return type(self).__doc__
 
     ##########
     ## HELP ##
@@ -554,8 +553,8 @@ class Cmd(trc.Application, Spec):
             config_file = fu.convpath(config_file)
             if osp.isdir(config_file):
                 config_file = osp.join(config_file, self.config_basename)
-        elif self.config_fpaths:
-            config_file = self.config_fpaths[0]
+        elif self.config_paths:
+            config_file = self.config_paths[0]
         else:
             raise AssertionError("No config-file given to write to!")
 

@@ -178,7 +178,7 @@ class PolyversCmd(cu.Cmd, Project):
         return default_config_fname()
 
     @trt.default('config_paths')
-    def _config_fpaths(self):
+    def _config_paths(self):
         return default_config_fpaths()
 
     @trt.default('all_app_configurables')
