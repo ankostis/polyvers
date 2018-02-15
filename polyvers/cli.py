@@ -173,10 +173,6 @@ class PolyversCmd(cu.Cmd, Project):
         d.update({'appname': APPNAME})
         return d
 
-    @trt.default('config_basename')
-    def _config_basename(self):
-        return default_config_fname()
-
     @trt.default('config_paths')
     def _config_paths(self):
         return default_config_fpaths()

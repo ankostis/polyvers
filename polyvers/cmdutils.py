@@ -467,10 +467,15 @@ class Cmd(trc.Application, Spec):
         return self._cfgfiles_registry and self._cfgfiles_registry.config_tuples or []
 
     config_basename = Unicode(
-        'config.py',
         help=""""
         The config-file's basename (no path or extension) to search when not explicitly specified.
+
+        By default, it's the root app's name, prefixed with a dot('.').
         """)
+
+    @trt.default('config_basename')
+    def _config_basename(self):
+        return '.' + self.root_app().name
 
     def _collect_static_fpaths(self):
         """Return fully-normalized paths, with ext."""
