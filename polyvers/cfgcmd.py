@@ -240,7 +240,7 @@ class InfosCmd(cu.Cmd):
         loaded_cfgs = self.loaded_config_files
         if loaded_cfgs:
             yield "  LOADED_CONFIGS:"
-            yield from (format_tuple(p, f) for p, f in self.loaded_config_files)
+            yield from (format_tuple(p, f) for p, f in loaded_cfgs)
         else:
             yield "  LOADED_CONFIGS: null"
 
