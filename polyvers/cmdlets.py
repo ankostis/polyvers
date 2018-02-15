@@ -213,7 +213,7 @@ class CfgFilesRegistry(contextlib.ContextDecorator):
         """
         base, fname = osp.split(fpath)
         if loaded:
-            self._new_paths.add(fpath)
+            self.collected_paths.add(fpath)
             pair = (base, fname)
         else:
             pair = (base, None)
@@ -230,14 +230,14 @@ class CfgFilesRegistry(contextlib.ContextDecorator):
         :return:
             fully-normalized paths, with ext
         """
-        new_paths = self._new_paths = iset()
+        collected_paths = self.collected_paths = iset()
         cfg_exts = self.supported_cfg_extensions
 
         def try_file_extensions(basepath):
             loaded_any = False
             for ext in cfg_exts:
                 f = fu.ensure_file_ext(basepath, ext)
-                if f in new_paths:
+                if f in collected_paths:
                     continue
 
                 loaded = osp.isfile(f)
@@ -270,7 +270,7 @@ class CfgFilesRegistry(contextlib.ContextDecorator):
         for cf in path_list:
             _derive_config_fpaths(cf)
 
-        return list(new_paths)
+        return list(collected_paths)
 
     def head_folder(self):
         """The *last* existing visited folder (if any), even if not containing files."""
