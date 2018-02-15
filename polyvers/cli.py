@@ -198,13 +198,53 @@ cmdlets.Cmd.config_paths.default = config_paths
 
 
 class VersionSubcmd(cmdlets.Cmd):
-    pass
+    def check_project_configs_exist(self, scream=True):
+        """
+        Checks if any loaded config-file is a subdir of Git repo.
+
+        :raise CmdException:
+            if cwd not inside a git repo
+        """
+        from pathlib import Path as P
+
+        git_root = find_git_root()
+        if not git_root:
+            raise cmdlets.CmdException(
+                "Polyvers must be run from inside a Git repo!")
+
+        for p in self._cfgfiles_registry.collected_paths:
+            try:
+                if P(p).relative_to(git_root):
+                    return True
+            except ValueError as _:
+                pass
+
+        if scream:
+            self.log.warning(
+                "No '%s' config-file(s) found!\n"
+                "  Invoke `polyvers init` to stop this warning.",
+                git_root / self.config_basename)
+
+        return False
 
 
-class InitCmd(cmdlets.Cmd):
+class InitCmd(VersionSubcmd):
     """Generate configurations based on directory contents."""
+
     def run(self, *args):
-        pass
+        if len(args) > 0:
+            raise cmdlets.CmdException(
+                "Cmd %r takes no arguments, received %d: %r!"
+                % (self.name, len(args), args))
+
+        if not self.force and self.check_project_configs_exist(scream=False):
+            raise cmdlets.CmdException(
+                "Polyvers already initialized!"
+                "\n  Use --force if you must, and also check those files:"
+                "\n    %s" %
+                '\n    '.join(self._cfgfiles_registry.collected_paths))
+
+        yield "Init would be created...."
 
 
 class StatusCmd(VersionSubcmd):
@@ -231,6 +271,8 @@ class SetverCmd(VersionSubcmd):
       use --force if you might.
     - Prefer not to add a 'v' prefix!
     """
+    def run(selfself, *args):
+        pass
 
 
 class BumpveCmd(VersionSubcmd):
