@@ -39,23 +39,34 @@ def test_infos_smoketest():
     assert len(res) > 10, res
 
 
-@pytest.mark.parametrize('case',
-                         [[], 'path', '-e path'.split(), '-el path'.split()])
-def test_show_smoketest(case):
+@pytest.mark.parametrize(
+    'case, nlines', [
+        ([], 23),
+        ('path', 2),
+        ('-e path'.split(), 2),
+        ('-el path'.split(), 5)
+    ])
+def test_show_smoketest(case, nlines):
     if not isinstance(case, list):
         case = [case]
     cmd = ConfigCmd.make_cmd(['show'] + case)
     res = mpu.collect_cmd(cmd.start(), dont_coalesce=True, assert_ok=True)
-    assert len(res) > 10, res
+    assert len(res) >= nlines, res
 
 
-@pytest.mark.parametrize('case',
-                         [[], 'path', '-l path'.split(),
-                          '-e path'.split(), '-le path'.split(),
-                          '-ecl path'.split(), '-cl rec'.split()])
-def test_desc_smoketest(case):
+@pytest.mark.parametrize(
+    'case, nlines', [
+        ([], 20),
+        ('path', 1),
+        ('-l verb'.split(), 2),
+        ('-e verb'.split(), 2),
+        ('-le verb'.split(), 2),
+        ('-ecl cmd'.split(), 5),
+        ('-cl cmd'.split(), 5)
+    ])
+def test_desc_smoketest(case, nlines):
     if not isinstance(case, list):
         case = [case]
     cmd = ConfigCmd.make_cmd(['desc'] + case)
     res = mpu.collect_cmd(cmd.start(), dont_coalesce=True, assert_ok=True)
-    assert len(res) > 10, res
+    assert len(res) >= nlines, res
