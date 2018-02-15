@@ -162,20 +162,29 @@ class PolyversCmd(cmdlets.Cmd, Project):
                 InitCmd, StatusCmd, SetverCmd, BumpveCmd, LogconfCmd]
 
 
-def config_paths(self):
+def find_git_root():
+    """
+    Search dirs up for a Git-repo.
+
+    :return:
+        a `pathlib` native path, or None
+    """
+    ## TODO: See GitPython for a comprehensive way.
     from pathlib import Path as P
 
+    cwd = P().resolve()
+    for f in itt.chain([cwd], cwd.parents):
+        if (f / '.git').is_dir():
+            return f
+
+
+def config_paths(self):
     basename = self.config_basename
     paths = []
 
-    ## Search dirs up for a Git-repo.
-    #  TODO: See GitPython for a comprehensive way.
-    #
-    cwd = P()
-    for f in itt.chain([cwd], cwd.resolve().parents):
-        if (f / '.git').is_dir():
-            paths.append(str(f / basename))
-            break
+    git_root = find_git_root()
+    if git_root:
+        paths.append(str(git_root / basename))
     else:
         paths.append('.')
 
