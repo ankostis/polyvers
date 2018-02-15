@@ -458,6 +458,7 @@ class Cmd(trc.Application, Spec):
               <cmd> --config-paths=~/my_conf(sep)s/tmp/conf.py  --Cmd.config_paths=~/.{appname}.jso
         """ % {'sep': osp.pathsep}
         ## TODO: Simplify path-loading when /ipython/traitlets#242 merged??
+        #  NOTE: Patch default-value on `Cmd` so all subcmds load same configs.
     ).tag(config=True)
 
     _cfgfiles_registry = None

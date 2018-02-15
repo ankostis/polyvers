@@ -11,39 +11,23 @@ from collections import ChainMap
 from datetime import datetime
 import os
 
-import os.path as osp
+import itertools as itt
 
 from . import APPNAME
 from . import __version__
-from ._vendor import traitlets as trt
+from . import cmdutils as cu
 from . import fileutils as fu
-## Explictely imported to stop code-analysis complains.
+from ._vendor import traitlets as trt
 from ._vendor.traitlets import List, Bool, Unicode  # @UnresolvedImport
 from ._vendor.traitlets import config as trc
 from .autoinstance_traitlet import AutoInstance
 from .strexpand_traitlet import StrExpand
-from . import cmdutils as cu
 
 
 ####################
 ## Config sources ##
 ####################
 CONFIG_VAR_NAME = '%s_CONFIG_PATHS' % APPNAME
-
-
-def default_config_fname():
-    """The config-file's basename (no path or extension) to search when not explicitly specified."""
-    return '%s_config.py' % APPNAME
-
-
-def default_config_dir():
-    """The folder of user's config-file."""
-    return fu.convpath('~/.%s' % APPNAME)
-
-
-def default_config_fpaths():
-    """The full path of to user's config-file, without extension."""
-    return [osp.join(default_config_dir(), default_config_fname())]
 #######################
 
 
@@ -173,14 +157,36 @@ class PolyversCmd(cu.Cmd, Project):
         d.update({'appname': APPNAME})
         return d
 
-    @trt.default('config_paths')
-    def _config_paths(self):
-        return default_config_fpaths()
-
     @trt.default('all_app_configurables')
     def _all_app_configurables(self):
         return [type(self), Base, Project,
                 InitCmd, StatusCmd, SetverCmd, BumpveCmd, LogconfCmd]
+
+
+def config_paths(self):
+    from pathlib import Path as P
+
+    basename = self.config_basename
+    paths = []
+
+    ## Search dirs up for a Git-repo.
+    #  TODO: See GitPython for a comprehensive way.
+    #
+    cwd = P()
+    for f in itt.chain([cwd], cwd.resolve().parents):
+        if (f / '.git').is_dir():
+            paths.append(str(f / basename))
+            break
+    else:
+        paths.append('.')
+
+    paths.append('~/%s' % basename)
+
+    return paths
+
+
+## Patch Cmd's config-paths to apply to all subcmds.
+cu.Cmd.config_paths.default = config_paths
 
 
 class VersionSubcmd(cu.Cmd):
