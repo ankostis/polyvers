@@ -339,6 +339,12 @@ class Cmd(trc.Application, Spec):
 
         return cmd
 
+    def root_app(self):
+        "Utility to travel up the cmd-chain."
+        while self.parent:
+            self = self.parent
+        return self
+
     @trt.default('log')
     def _log_default(self):
         "Mimic log-hierarchies for Configurable; their loggers are not hierarchical. "
@@ -579,7 +585,11 @@ class Cmd(trc.Application, Spec):
             fp.write(config_text)
 
     all_app_configurables = List(
-        help="A sequence of all app configurables to feed into `config` sub-command."
+        help="""
+        A sequence of all app configurables to feed into `config` sub-command.
+
+        Defined either on :class:`Cmd` superclass or on *root-cmd*.
+        """
     )
 
     #############

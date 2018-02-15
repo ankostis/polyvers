@@ -595,10 +595,4 @@ config_subcmds = (
 
 
 def all_configurables(cmd):
-    ## Fetch `all_app_configurables` trait from root cmd.
-    #
-    app = cmd
-    while app.parent:
-        app = app.parent
-
-    return list(config_subcmds) + app.all_app_configurables
+    return list(config_subcmds) + cmd.root_app().all_app_configurables
