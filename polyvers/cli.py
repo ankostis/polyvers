@@ -255,7 +255,7 @@ class StatusCmd(VersionSubcmd):
         %(cmd_chain)s [OPTIONS] [<project>]...
     """
     def run(self, *args):
-        pass
+        self.check_project_configs_exist()
 
 
 class SetverCmd(VersionSubcmd):
@@ -271,8 +271,8 @@ class SetverCmd(VersionSubcmd):
       use --force if you might.
     - Prefer not to add a 'v' prefix!
     """
-    def run(selfself, *args):
-        pass
+    def run(self, *args):
+        self.check_project_configs_exist()
 
 
 class BumpveCmd(VersionSubcmd):
@@ -290,7 +290,7 @@ class BumpveCmd(VersionSubcmd):
     - Don't add a 'v' prefix!
     """
     def run(self, *args):
-        pass
+        self.check_project_configs_exist()
 
 
 class LogconfCmd(cmdlets.Cmd):
