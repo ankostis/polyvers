@@ -6,10 +6,9 @@
 # You may not use this work except in compliance with the Licence.
 # You may obtain a copy of the Licence at: http://ec.europa.eu/idabc/eupl
 
-import io
 import logging
 import os
-from polyvers import cmdutils
+from polyvers import cmdlets
 from polyvers._vendor import traitlets as trt
 from polyvers.logconfutils import init_logging
 import tempfile
@@ -43,7 +42,7 @@ def test_CfgFilesRegistry_consolidate_posix_1():
         ('/d/foo\Bar/dooba/doo', None),
         ('/d/foo\Bar/dooba/doo', None),
     ]
-    c = cmdutils.CfgFilesRegistry()
+    c = cmdlets.CfgFilesRegistry()
     cons = c._consolidate(visited)
 
     exp = [
@@ -64,7 +63,7 @@ def test_CfgFilesRegistry_consolidate_posix_2():
         ('/d/foo\Bar/dooba/doo', None),
         ('/d/foo\Bar/dooba/doo', None),
     ]
-    c = cmdutils.CfgFilesRegistry()
+    c = cmdlets.CfgFilesRegistry()
     cons = c._consolidate(visited)
 
     exp = [
@@ -85,7 +84,7 @@ def test_CfgFilesRegistry_consolidate_win_1():
         ('d:\\foo\Bar\\dooba\\doo', None),
         ('d:\\foo\Bar\\dooba\\doo', None),
     ]
-    c = cmdutils.CfgFilesRegistry()
+    c = cmdlets.CfgFilesRegistry()
     cons = c._consolidate(visited)
 
     exp = [
@@ -106,7 +105,7 @@ def test_CfgFilesRegistry_consolidate_win_2():
         ('D:\\foo\Bar\\dooba\\doo', None),
         ('D:\\foo\Bar\\dooba\\doo', None),
     ]
-    c = cmdutils.CfgFilesRegistry()
+    c = cmdlets.CfgFilesRegistry()
     cons = c._consolidate(visited)
 
     exp = [
@@ -139,13 +138,13 @@ def test_CfgFilesRegistry(tmpdir):
     """
     touchpaths(tdir, paths)
 
-    cfr = cmdutils.CfgFilesRegistry()
+    cfr = cmdlets.CfgFilesRegistry()
     fpaths = cfr.collect_fpaths(['conf'])
     fpaths = [P(p).relto(tdir).replace('\\', '/') for p in fpaths]
     assert (fpaths ==
             'conf.json conf.py conf.d/a.json conf.d/a.py'.split()), fpaths
 
-    cfr = cmdutils.CfgFilesRegistry()
+    cfr = cmdlets.CfgFilesRegistry()
     fpaths = cfr.collect_fpaths(['conf.py'])
     fpaths = [P(p).relto(tdir).replace('\\', '/') for p in fpaths]
     assert (fpaths ==
@@ -153,7 +152,7 @@ def test_CfgFilesRegistry(tmpdir):
 
 
 def test_no_default_config_paths():
-    cmd = cmdutils.Cmd()
+    cmd = cmdlets.Cmd()
     cmd.initialize([])
     print(cmd._cfgfiles_registry.config_tuples)
     assert len(cmd.loaded_config_files) == 0
@@ -161,7 +160,7 @@ def test_no_default_config_paths():
 
 def test_default_loaded_paths():
     with tempfile.TemporaryDirectory(prefix=__name__) as tdir:
-        class MyCmd(cmdutils.Cmd):
+        class MyCmd(cmdlets.Cmd):
             ""
             @trt.default('config_paths')
             def _config_paths(self):
@@ -220,7 +219,7 @@ def test_collect_static_fpaths(param, var, exp, tmpdir):
     """)
 
     try:
-        cmd = cmdutils.Cmd()
+        cmd = cmdlets.Cmd()
         if param is not None:
             cmd.config_paths = [str(tdir / ff)
                                 for f in param

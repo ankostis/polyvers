@@ -8,8 +8,8 @@
 """Commands to inspect configurations and other cli infos."""
 
 from collections import OrderedDict
-import sys
 import os
+import sys
 from typing import Sequence, Text, List, Tuple  # @UnusedImport
 
 from toolz import dicttoolz as dtz
@@ -17,7 +17,7 @@ from toolz import dicttoolz as dtz
 import functools as fnt
 import os.path as osp
 
-from . import cmdutils as cu
+from . import cmdlets
 from ._vendor import traitlets as trt
 from ._vendor.traitlets import (
     Bool, Unicode, FuzzyEnum, Instance)  # @UnresolvedImport
@@ -124,7 +124,7 @@ def prepare_help_selector(only_class_in_values, verbose):
     return selector
 
 
-class ConfigCmd(cu.Cmd):
+class ConfigCmd(cmdlets.Cmd):
     "Commands to manage configurations and other cli infos."
 
     examples = Unicode("""
@@ -143,11 +143,11 @@ class ConfigCmd(cu.Cmd):
 
     def __init__(self, **kwds):
             super().__init__(
-                subcommands=cu.build_sub_cmds(*config_subcmds),
+                subcommands=cmdlets.build_sub_cmds(*config_subcmds),
                 **kwds)
 
 
-class WriteCmd(cu.Cmd):
+class WriteCmd(cmdlets.Cmd):
     """
     Store config defaults into specified path(s); '{confpath}' assumed if none specified.
 
@@ -175,7 +175,7 @@ class WriteCmd(cu.Cmd):
             self.write_default_config(fpath, self.force)
 
 
-class InfosCmd(cu.Cmd):
+class InfosCmd(cmdlets.Cmd):
     """
     List paths and other intallation infos.
 
@@ -204,7 +204,7 @@ class InfosCmd(cu.Cmd):
         import inspect
 
         if len(args) > 0:
-            raise cu.CmdException(
+            raise cmdlets.CmdException(
                 "Cmd %r takes no arguments, received %d: %r!"
                 % (self.name, len(args), args))
 
@@ -252,7 +252,7 @@ class InfosCmd(cu.Cmd):
             yield "  %s: %r" % (vname, os.environ.get(vname))
 
 
-class ShowCmd(cu.Cmd):
+class ShowCmd(cmdlets.Cmd):
     """
     Print configurations (defaults | files | merged) before any validations.
 
@@ -449,7 +449,7 @@ class ShowCmd(cu.Cmd):
 
         if source == 'files':
             if len(args) > 0:
-                raise cu.CmdException(
+                raise cmdlets.CmdException(
                     "Cmd '%s --source files' takes no arguments, received %d: %r!"
                     % (self.name, len(args), args))
 
@@ -466,7 +466,7 @@ class ShowCmd(cu.Cmd):
         yield from func(config, args)
 
 
-class DescCmd(cu.Cmd):
+class DescCmd(cmdlets.Cmd):
     """
     List and print help for configurable classes and parameters.
 

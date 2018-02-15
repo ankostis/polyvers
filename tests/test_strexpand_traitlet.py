@@ -17,6 +17,8 @@ texts = [
     ('{key}', {'key': 123}, '123'),
     ('a{key}b', {'key': 123}, 'a123b'),
 ]
+
+
 @pytest.mark.parametrize('s, ctxt, exp', texts)
 def test_StrExpand(s, ctxt, exp):
     class C1(HasTraits):
@@ -34,4 +36,3 @@ def test_StrExpand(s, ctxt, exp):
     class C4(HasTraits):
         s = StrExpand(ctxt=lambda _, __, ___: {})
     assert C4(s=s).s == s, s
-

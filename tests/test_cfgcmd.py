@@ -34,7 +34,7 @@ def test_infos_valid_yaml():
 
 
 def test_infos_smoketest():
-    cmd = ConfigCmd.make_cmd(['infos'])
+    cmd = ConfigCmd.make_cmd(['infos'])  # @UndefinedVariable
     res = mpu.collect_cmd(cmd.start())
     assert len(res) > 10, res
 

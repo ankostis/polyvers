@@ -15,8 +15,7 @@ import itertools as itt
 
 from . import APPNAME
 from . import __version__
-from . import cmdutils as cu
-from . import fileutils as fu
+from . import cmdlets
 from ._vendor import traitlets as trt
 from ._vendor.traitlets import List, Bool, Unicode  # @UnresolvedImport
 from ._vendor.traitlets import config as trc
@@ -31,7 +30,7 @@ CONFIG_VAR_NAME = '%s_CONFIG_PATHS' % APPNAME
 #######################
 
 
-class Base(cu.Spec):
+class Base(cmdlets.Spec):
     " Common base for configurables and apps."
 
     #: A stack of 3 dics used by `interpolation_context_factory()` class-method,
@@ -88,7 +87,7 @@ class Project(Base):
         """)
 
 
-class PolyversCmd(cu.Cmd, Project):
+class PolyversCmd(cmdlets.Cmd, Project):
     """
     Bump independently PEP-440 versions of sub-project in Git monorepos.
 
@@ -186,14 +185,14 @@ def config_paths(self):
 
 
 ## Patch Cmd's config-paths to apply to all subcmds.
-cu.Cmd.config_paths.default = config_paths
+cmdlets.Cmd.config_paths.default = config_paths
 
 
-class VersionSubcmd(cu.Cmd):
+class VersionSubcmd(cmdlets.Cmd):
     pass
 
 
-class InitCmd(cu.Cmd):
+class InitCmd(cmdlets.Cmd):
     """Generate configurations based on directory contents."""
     def run(self, *args):
         pass
@@ -243,15 +242,15 @@ class BumpveCmd(VersionSubcmd):
         pass
 
 
-class LogconfCmd(cu.Cmd):
+class LogconfCmd(cmdlets.Cmd):
     """Write a logging-configuration file that can filter logs selectively."""
     def run(self, *args):
         pass
 
 
-subcmds = cu.build_sub_cmds(InitCmd, StatusCmd,
-                            SetverCmd, BumpveCmd,
-                            LogconfCmd)
+subcmds = cmdlets.build_sub_cmds(InitCmd, StatusCmd,
+                                 SetverCmd, BumpveCmd,
+                                 LogconfCmd)
 subcmds['config'] = ('polyvers.cfgcmd.ConfigCmd',
                      "Commands to inspect configurations and other cli infos.")
 
@@ -275,15 +274,15 @@ PolyversCmd.flags = {
     #
     ('v', 'verbose'): (
         {'Spec': {'verbose': True}},
-        cu.Spec.verbose.help
+        cmdlets.Spec.verbose.help
     ),
     ('f', 'force'): (
         {'Spec': {'force': True}},
-        cu.Spec.force.help
+        cmdlets.Spec.force.help
     ),
     ('n', 'dry-run'): (
         {'Spec': {'force': True}},
-        cu.Spec.dry_run.help
+        cmdlets.Spec.dry_run.help
     ),
     ('c', 'commit'): (
         {},
