@@ -139,19 +139,20 @@ def chain_cmds(app_classes, argv=None, **root_kwds):
 
 class CfgFilesRegistry(contextlib.ContextDecorator):
     """
-    Locate and account config-files (``.json|.py``).
+    Locate and account extensioned files (by default ``.json|.py``).
 
     - Collects a Locate and (``.json|.py``) files present in the `path_list`, or
     - Invoke this for every "manually" visited config-file, successful or not.
+    - Files collected earlier should override next ones.
     """
 
-    def __init__(self, config_basename=None):
+    def __init__(self, supported_cfg_extensions='.json .py'.split()):
         """
-        :param config_basename:
-            if given, what to search within dirs.
+        :param list supported_cfg_extensions:
+            file extension (with dot) in the order to search.
         """
+        self.supported_cfg_extensions = tuple(supported_cfg_extensions)
         self._visited_tuples = []
-        self.config_basename = config_basename
 
     #: A list of 2-tuples ``(folder, fname(s))`` with loaded config-files
     #: in ascending order (last overrides earlier).
@@ -203,22 +204,20 @@ class CfgFilesRegistry(contextlib.ContextDecorator):
 
         return consolidated
 
-    def visit_file(self, fpath, miss=False, append=False):
+    def visit_file(self, fpath, loaded):
         """
         Invoke this in ascending order for every visited config-file.
 
-        :param miss:
-            Loaeded successful?
-        :param append:
-            set to true to add in descending order (file overriden by above files)
+        :param bool loaded:
+            Loaded successful?
         """
         base, fname = osp.split(fpath)
-        pair = (base, None if miss else fname)
-
-        if append:
-            self._visited_tuples.append(pair)
+        if loaded:
+            self._new_paths.add(fpath)
+            pair = (base, fname)
         else:
-            self._visited_tuples.insert(0, pair)
+            pair = (base, None)
+        self._visited_tuples.append(pair)
 
     def collect_fpaths(self, path_list):
         """
@@ -231,35 +230,42 @@ class CfgFilesRegistry(contextlib.ContextDecorator):
         :return:
             fully-normalized paths, with ext
         """
-        new_paths = iset()
+        new_paths = self._new_paths = iset()
+        cfg_exts = self.supported_cfg_extensions
 
-        def try_json_and_py(basepath):
-            found_any = False
-            for ext in ('.py', '.json'):
+        def try_file_extensions(basepath):
+            loaded_any = False
+            for ext in cfg_exts:
                 f = fu.ensure_file_ext(basepath, ext)
                 if f in new_paths:
                     continue
 
-                if osp.isfile(f):
-                    new_paths.add(f)
-                    self.visit_file(f, append=True)
-                    found_any = True
-                else:
-                    self.visit_file(f, miss=True, append=True)
+                loaded = osp.isfile(f)
+                self.visit_file(f, loaded=loaded)
+                loaded_any |= loaded
 
-            return found_any
+            ## Load any files in `conf.d/`, alphabetically-sorted.
+            #
+            for ext in ('', ) + cfg_exts:
+                if basepath.endswith(ext):
+                    conf_d = fu.ensure_file_ext(basepath.rstrip(ext), '.d')
+                    if os.path.isdir(conf_d):
+                        for f in sorted(os.listdir(conf_d)):
+                            loaded = f.endswith(cfg_exts)
+                            self.visit_file(osp.join(conf_d, f),
+                                            loaded=loaded)
+                            loaded_any |= loaded
+
+            return loaded_any
 
         def _derive_config_fpaths(path):  # -> List[Text]:
             """Return multiple *existent* fpaths for each config-file path (folder/file)."""
 
             p = fu.convpath(path)
-            if self.config_basename and osp.isdir(p):
-                try_json_and_py(osp.join(p, self.config_basename))
-            else:
-                found = try_json_and_py(p)
-                ## Do not strip ext if has matched WITH ext.
-                if not found:
-                    try_json_and_py(osp.splitext(p)[0])
+            loaded_any = try_file_extensions(p)
+            ## Do not strip ext if has matched WITH ext.
+            if not loaded_any:
+                try_file_extensions(osp.splitext(p)[0])
 
         for cf in path_list:
             _derive_config_fpaths(cf)
@@ -464,7 +470,7 @@ class Cmd(trc.Application, Spec):
     def _collect_static_fpaths(self):
         """Return fully-normalized paths, with ext."""
         config_paths = self.config_paths
-        self._cfgfiles_registry = CfgFilesRegistry(self.config_basename)
+        self._cfgfiles_registry = CfgFilesRegistry()
         fpaths = self._cfgfiles_registry.collect_fpaths(config_paths)
 
         return fpaths

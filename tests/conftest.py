@@ -8,8 +8,24 @@
 """Common pytest fixtures."""
 
 from polyvers import polyverslib as pvlib
-
+from py.path import local as P  # @UnresolvedImport
 import pytest
+
+
+def touchpaths(tdir, paths_txt):
+    """
+    :param tdir:
+        The dir to create the file-hierarchy under.
+    :param str paths_txt:
+        A multiline text specifying one file/dir per line to create.
+        Paths ending with '/' are treated as dirs.
+        Empty lines or those with '#' as the 1st non-space char are ignored.
+    """
+    tdir = P(tdir)
+    for f in paths_txt.split('\n'):
+        f = f.strip()
+        if f and not f.startswith('#'):
+            (tdir / f).ensure(dir=f.endswith('/'))
 
 
 @pytest.fixture(scope="module")

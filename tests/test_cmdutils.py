@@ -13,8 +13,9 @@ from polyvers import cmdutils
 from polyvers._vendor import traitlets as trt
 from polyvers.logconfutils import init_logging
 import tempfile
-
+from .conftest import touchpaths
 import pytest
+from py.path import local as P  # @UnresolvedImport
 
 import os.path as osp
 
@@ -74,6 +75,41 @@ def test_consolidate_2():
     assert cons == exp, visited
 
 
+def test_CfgFilesRegistry(tmpdir):
+    tdir = tmpdir.mkdir('cfgregistry')
+    tdir.chdir()
+    paths = """
+    ## loaded
+    #
+    conf.py
+    conf.json
+    conf.d/a.json
+    conf.d/a.py
+
+    ## ignored
+    #
+    conf
+    conf.bad
+    conf.d/conf.bad
+    conf.d/bad
+    conf.py.d/a.json
+    conf.json.d/a.json
+    """
+    touchpaths(tdir, paths)
+
+    cfr = cmdutils.CfgFilesRegistry()
+    fpaths = cfr.collect_fpaths(['conf'])
+    fpaths = [P(p).relto(tdir).replace('\\', '/') for p in fpaths]
+    assert (fpaths ==
+            'conf.json conf.py conf.d/a.json conf.d/a.py'.split()), fpaths
+
+    cfr = cmdutils.CfgFilesRegistry()
+    fpaths = cfr.collect_fpaths(['conf.py'])
+    fpaths = [P(p).relto(tdir).replace('\\', '/') for p in fpaths]
+    assert (fpaths ==
+            'conf.py conf.py.d/a.json conf.d/a.json conf.d/a.py'.split()), fpaths
+
+
 def test_no_default_config_paths():
     cmd = cmdutils.Cmd()
     cmd.initialize([])
@@ -119,62 +155,54 @@ test_paths = [
 
     (['a'], None, ['a.py']),
     (['b'], None, ['b.json']),
-    (['c'], None, ['c.py', 'c.json']),
+    (['c'], None, ['c.json', 'c.py']),
 
     (['c.json', 'c.py'], None, ['c.json', 'c.py']),
     (['c.json;c.py'], None, ['c.json', 'c.py']),
 
-    (['c', 'c.json;c.py'], None, ['c.py', 'c.json']),
-    (['c;c.json', 'c.py'], None, ['c.py', 'c.json']),
+    (['c', 'c.json;c.py'], None, ['c.json', 'c.py']),
+    (['c;c.json', 'c.py'], None, ['c.json', 'c.py']),
 
     (['a', 'b'], None, ['a.py', 'b.json']),
     (['b', 'a'], None, ['b.json', 'a.py']),
-    (['c'], None, ['c.py', 'c.json']),
-    (['a', 'c'], None, ['a.py', 'c.py', 'c.json']),
-    (['a', 'c'], None, ['a.py', 'c.py', 'c.json']),
-    (['a;c'], None, ['a.py', 'c.py', 'c.json']),
-    (['a;b', 'c'], None, ['a.py', 'b.json', 'c.py', 'c.json']),
+    (['c'], None, ['c.json', 'c.py']),
+    (['a', 'c'], None, ['a.py', 'c.json', 'c.py']),
+    (['a', 'c'], None, ['a.py', 'c.json', 'c.py']),
+    (['a;c'], None, ['a.py', 'c.json', 'c.py']),
+    (['a;b', 'c'], None, ['a.py', 'b.json', 'c.json', 'c.py']),
 
     ('b', 'a', ['b.json']),
 ]
 
 
 @pytest.mark.parametrize('param, var, exp', test_paths)
-def test_collect_static_fpaths(param, var, exp):
-    basename = 'c'
+def test_collect_static_fpaths(param, var, exp, tmpdir):
+    tdir = tmpdir.mkdir('collect_paths')
 
-    with tempfile.TemporaryDirectory(prefix=__name__) as tdir:
-        class MyCmd(cmdutils.Cmd):
-            ""
-            @trt.default('config_basename')
-            def _config_basename(self):
-                return basename
+    touchpaths(tdir, """
+        a.py
+        b.json
+        c.py
+        c.json
+    """)
 
-            @trt.default('config_paths')
-            def _config_fpaths(self):
-                return [tdir]
+    try:
+        cmd = cmdutils.Cmd()
+        if param is not None:
+            cmd.config_paths = [str(tdir / ff)
+                                for f in param
+                                for ff in f.split(os.pathsep)]
+        if var is not None:
+            os.environ['POLYVERS_CONFIG_PATHS'] = os.pathsep.join(
+                osp.join(tdir, ff)
+                for f in var
+                for ff in f.split(os.pathsep))
 
-        for f in ('a.py', 'b.json', 'c.py', 'c.json'):
-            io.open(osp.join(tdir, f), 'w').close()
-
+        paths = cmd._collect_static_fpaths()
+        paths = [P(p).relto(tdir).replace('\\', '/') for p in paths]
+        assert paths == exp, (param, var, exp)
+    finally:
         try:
-            exp = [osp.join(tdir, f) for f in exp]
-
-            cmd = cmdutils.Cmd()
-            if param is not None:
-                cmd.config_paths = [osp.join(tdir, ff)
-                                    for f in param
-                                    for ff in f.split(os.pathsep)]
-            if var is not None:
-                os.environ['POLYVERS_CONFIG_PATHS'] = os.pathsep.join(
-                    osp.join(tdir, ff)
-                    for f in var
-                    for ff in f.split(os.pathsep))
-
-            paths = cmd._collect_static_fpaths()
-            assert paths == exp, (param, var, exp)
-        finally:
-            try:
-                del os.environ['POLYVERS_CONFIG_PATHS']
-            except:
-                pass
+            del os.environ['POLYVERS_CONFIG_PATHS']
+        except Exception as _:
+            pass
