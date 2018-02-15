@@ -318,18 +318,11 @@ class ShowCmd(cmdlets.Cmd):
     def __init__(self, **kwds):
         kwds.setdefault('raise_config_file_errors', False)
         super().__init__(**kwds)
-
-    @trt.observe('parent')
-    def _inherit_parent_cmd(self, change):
-        aliases = self.parent and dict(self.parent.aliases) or {}
-        aliases.update({
+        self.aliases = {
             ('s', 'source'): ('ShowCmd.source',
                               ShowCmd.source.help)
-        })
-        self.aliases = aliases
-
-        flags = self.parent and dict(self.parent.flags) or {}
-        flags.update({
+        }
+        self.flags = {
             ('l', 'list'): (
                 {type(self).__name__: {'list': True}},
                 type(self).list.help
@@ -342,8 +335,7 @@ class ShowCmd(cmdlets.Cmd):
                 {type(self).__name__: {'sort': True}},
                 type(self).sort.help
             ),
-        })
-        self.flags = flags
+        }
 
     def initialize(self, argv=None):
         ## Copied from `Cmd.initialize()`.
@@ -535,13 +527,8 @@ class DescCmd(cmdlets.Cmd):
     ).tag(config=True)
 
     def __init__(self, **kwds):
-
         super().__init__(**kwds)
-
-    @trt.observe('parent')
-    def _inherit_parent_cmd(self, change):
-        flags = self.parent and dict(self.parent.flags) or {}
-        flags.update({
+        self.flags = {
             ('l', 'list'): (
                 {type(self).__name__: {'list': True}},
                 type(self).list.help
@@ -558,8 +545,7 @@ class DescCmd(cmdlets.Cmd):
                 {type(self).__name__: {'sort': True}},
                 type(self).sort.help
             ),
-        })
-        self.flags = flags
+        }
 
     def run(self, *args):
         ## Prefer to modify `class_names` after `initialize()`, or else,
