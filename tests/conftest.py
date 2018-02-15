@@ -28,7 +28,7 @@ def touchpaths(tdir, paths_txt):
             (tdir / f).ensure(dir=f.endswith('/'))
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="session")
 def ok_repo(tmpdir_factory):
     repo_dir = tmpdir_factory.mktemp('repo')
     repo_dir.chdir()
@@ -51,7 +51,7 @@ def ok_repo(tmpdir_factory):
     return repo_dir
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="session")
 def untagged_repo(tmpdir_factory):
     repo_dir = tmpdir_factory.mktemp('untagged')
     repo_dir.chdir()
@@ -67,6 +67,6 @@ def untagged_repo(tmpdir_factory):
     return repo_dir
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="session")
 def no_repo(tmpdir_factory):
     return tmpdir_factory.mktemp('norepo')
