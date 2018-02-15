@@ -436,6 +436,27 @@ class Cmd(trc.Application, Spec):
     ## CONFIG ##
     ############
 
+    @trt.observe('parent')
+    def _inherit_parent_cmd(self, change):
+        if self.parent:
+            parent = self.parent
+
+            if parent.flags:
+                if self.flags:
+                    flags = dict(parent.flags)
+                    flags.update(self.flags)
+                else:
+                    flags = parent.flags
+                self.flags = flags
+
+            if parent.aliases:
+                if self.aliases:
+                    aliases = dict(parent.aliases)
+                    aliases.update(self.aliases)
+                else:
+                    aliases = parent.aliases
+                self.aliases = aliases
+
     config_paths = PathList(
         help="""
         Absolute/relative folder/file path(s) to read "static" config-parameters from.
