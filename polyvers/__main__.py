@@ -18,7 +18,7 @@ def main(argv=None, **app_init_kwds):
     Handle some exceptions politely and return the exit-code.
 
     :param argv:
-        Invoke it without anything, or ``sys.argv[1:]``, or [].
+        If invoked with None, ``sys.argv[1:]`` assumed.
     """
     req_ver = (3, 6)
     if sys.version_info < req_ver:
