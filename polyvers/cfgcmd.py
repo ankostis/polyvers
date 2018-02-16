@@ -10,7 +10,7 @@
 from collections import OrderedDict
 import os
 import sys
-from typing import Sequence, Text, List, Tuple  # @UnusedImport
+from typing import Text, List  # @UnusedImport
 
 from toolz import dicttoolz as dtz
 
@@ -352,7 +352,7 @@ class ShowCmd(cmdlets.Cmd):
             try:
                 for kk, vv in v.items():
                     yield '  +--%s = %s' % (kk, vv)
-            except:  # @IgnorePep8
+            except Exception as _:
                 yield '  +--%s' % v
 
     def _yield_configs_and_defaults(self, config, search_terms,

@@ -8,7 +8,7 @@
 """Tests for AutoInstance traitlet."""
 
 import pytest
-from polyvers._vendor.traitlets import List, Instance, CInt
+from polyvers._vendor.traitlets import List, CInt  # @UnresolvedImport
 from polyvers._vendor.traitlets.config import Configurable, Config
 
 from polyvers.autoinstance_traitlet import AutoInstance
@@ -82,7 +82,6 @@ class B(Configurable):
 
 class AA(Configurable):
     aa = List(AutoInstance(B), config=True)
-
 
 
 def test_recursive_merge():

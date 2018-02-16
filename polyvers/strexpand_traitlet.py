@@ -6,7 +6,8 @@
 # You may obtain a copy of the Licence at: http://ec.europa.eu/idabc/eupl
 """Unicode traitlet interpolating `{abc}` patterns from a "context" dictionary."""
 
-from ._vendor.traitlets import TraitError, Unicode
+from ._vendor.traitlets import TraitError, Unicode  # @UnresolvedImport
+
 
 class StrExpand(Unicode):
     """
@@ -32,9 +33,8 @@ class StrExpand(Unicode):
                 try:
                     value = value.format(**ctxt)
                 except Exception as ex:
-                    msg = "Failed expanding value %r of `%s.%s` %s trait due to: %r" \
-                    % (value, type(obj).__name__, self.name, self.info(), ex)
+                    msg = ("Failed expanding value %r of `%s.%s` %s trait due to: %r"
+                           % (value, type(obj).__name__, self.name, self.info(), ex))
                     raise TraitError(msg)
-
 
         return value
