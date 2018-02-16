@@ -8,7 +8,6 @@
 """ Bump independently PEP-440 versions of sub-project in Git monorepos. """
 
 from collections import ChainMap
-from datetime import datetime
 import os
 
 import itertools as itt
@@ -42,6 +41,8 @@ class Base(cmdlets.Spec):
 
     @classmethod
     def interpolation_context_factory(cls, obj, trait, text):
+        from datetime import datetime
+
         maps = cls.interpolation_context
         if not maps:
             maps[2].update({'$' + k: v for k, v in os.environ.items()})
