@@ -39,7 +39,7 @@ test_requirements = [
 ]
 PROJECT = 'polyvers'
 setup(
-    name=PROJECT,
+    name='polyvers',
     version='0.0.0',
     description="Bump sub-project PEP-440 versions in Git monorepos independently.",
     long_description=readme + '\n\n' + history,
@@ -64,7 +64,11 @@ setup(
         'Programming Language :: Python :: 3.7',
     ],
     test_suite='tests',
+    python_requires='>=3.6',
     tests_require=test_requirements,
+    extras_require={
+        'test': test_requirements,
+    },
     setup_requires=setup_requirements,
     entry_points={
         'console_scripts': [

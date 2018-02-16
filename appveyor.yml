@@ -1,0 +1,22 @@
+build: false
+version: '0.0.0+build.{build}'
+clone_depth: 20
+environment:
+  GIT_PATH:   "C:\\Program Files\\Git\\mingw64\\libexec\\git-core"
+
+  matrix:
+   - PYTHON: "C:\\Python36-x64"
+     PYTHON_VERSION: "3.6.x"
+     PYTHON_ARCH: "64"
+
+init:
+  - "SET PATH=%PYTHON%;%PYTHON%\\Scripts;%GIT_PATH%;%PATH%"
+  - "ECHO %PYTHON% %PYTHON_VERSION% %PYTHON_ARCH%"
+  - "ECHO %PATH%"
+
+install:
+  - "%CMD_IN_ENV%  pip install --upgrade setuptools pip"
+  - "%CMD_IN_ENV%  pip install .[test]"
+
+test_script:
+  - "%CMD_IN_ENV%  pytest --pyargs -v tests"
