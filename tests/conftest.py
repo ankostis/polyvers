@@ -34,6 +34,8 @@ def ok_repo(tmpdir_factory):
     repo_dir.chdir()
     cmds = """
     git init
+    git config user.email "test@example.com"
+    git config user.name "Testing Bot"
     git commit --allow-empty  --no-edit -m some_msg
     git tag proj1-v0.0.0
     git commit --allow-empty  --no-edit -m some_msg
@@ -57,6 +59,8 @@ def untagged_repo(tmpdir_factory):
     repo_dir.chdir()
     cmds = """
     git init
+    git config user.email "test@example.com"
+    git config user.name "Testing Bot"
     git commit --allow-empty  --no-edit -m some_msg
     """
     for c in cmds.split('\n'):
