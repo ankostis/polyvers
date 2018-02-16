@@ -10,7 +10,10 @@ python:
 install: pip install -U tox-travis
 
 # command to run tests, e.g. python setup.py test
-script: tox
+script:
+  - pip install .[test]
+  - python setup.py build bdist_wheel
+  - tox
 
 
 matrix:
