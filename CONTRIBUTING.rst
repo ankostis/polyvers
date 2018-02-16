@@ -80,9 +80,9 @@ Ready to contribute? Here's how to set up `polyvers` for local development.
 
     $ flake8 polyvers tests
     $ python setup.py test or py.test
-    $ tox
+    $ pytest
 
-   To get flake8 and tox, just pip install them into your virtualenv.
+   To get flake8, just pip install them into your virtualenv.
 
 6. Commit your changes and push your branch to GitHub::
 
