@@ -11,7 +11,7 @@ from setuptools import setup, find_packages
 MIN_PYTHON = (3, 6)
 if sys.version_info < MIN_PYTHON:
     sys.exit("Sorry, Python >= %s is required, found: %s" %
-             ('.'.join(MIN_PYTHON), str(sys.version_info)))
+             ('.'.join(str(i) for i in MIN_PYTHON), str(sys.version_info)))
 
 
 with open('README.rst') as readme_file:
