@@ -7,16 +7,19 @@
 # You may obtain a copy of the Licence at: http://ec.europa.eu/idabc/eupl
 
 import logging
+from os import pathsep as PS
 import os
 from polyvers import cmdlets
 from polyvers._vendor import traitlets as trt
 from polyvers.logconfutils import init_logging
 import tempfile
-from .conftest import touchpaths
+
 import pytest
-from py.path import local as P  # @UnresolvedImport
 
 import os.path as osp
+from py.path import local as P  # @UnresolvedImport
+
+from .conftest import touchpaths
 
 
 init_logging(level=logging.DEBUG, logconf_files=[])
@@ -183,25 +186,25 @@ test_paths = [
 
     ([''], None, []),
     (None, 'a', []),
-    (None, 'a;', []),
+    (None, 'a%s' % PS, []),
 
     (['a'], None, ['a.py']),
     (['b'], None, ['b.json']),
     (['c'], None, ['c.json', 'c.py']),
 
     (['c.json', 'c.py'], None, ['c.json', 'c.py']),
-    (['c.json;c.py'], None, ['c.json', 'c.py']),
+    (['c.json%sc.py' % PS], None, ['c.json', 'c.py']),
 
-    (['c', 'c.json;c.py'], None, ['c.json', 'c.py']),
-    (['c;c.json', 'c.py'], None, ['c.json', 'c.py']),
+    (['c', 'c.json%sc.py' % PS], None, ['c.json', 'c.py']),
+    (['c%sc.json' % PS, 'c.py'], None, ['c.json', 'c.py']),
 
     (['a', 'b'], None, ['a.py', 'b.json']),
     (['b', 'a'], None, ['b.json', 'a.py']),
     (['c'], None, ['c.json', 'c.py']),
     (['a', 'c'], None, ['a.py', 'c.json', 'c.py']),
     (['a', 'c'], None, ['a.py', 'c.json', 'c.py']),
-    (['a;c'], None, ['a.py', 'c.json', 'c.py']),
-    (['a;b', 'c'], None, ['a.py', 'b.json', 'c.json', 'c.py']),
+    (['a%sc' % PS], None, ['a.py', 'c.json', 'c.py']),
+    (['a%sb' % PS, 'c'], None, ['a.py', 'b.json', 'c.json', 'c.py']),
 
     ('b', 'a', ['b.json']),
 ]
