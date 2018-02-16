@@ -26,11 +26,11 @@ mydir = osp.dirname(__file__)
 
 @pytest.mark.expected_failure()
 def test_infos_valid_yaml():
-    import yaml
+    from ruamel import yaml  # @UnresolvedImport
     res = mpu.collect_cmd(cfgcmd.InfosCmd().run())
     ystr = '\n'.join(res)
 
-    yaml.load(ystr)
+    yaml.safe_load(ystr)
 
 
 def test_infos_smoketest():
