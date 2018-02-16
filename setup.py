@@ -3,7 +3,16 @@
 
 """The setup script."""
 
+import sys
+
 from setuptools import setup, find_packages
+
+
+MIN_PYTHON = (3, 6)
+if sys.version_info < MIN_PYTHON:
+    sys.exit("Sorry, Python >= %s is required, found: %s" %
+             ('.'.join(MIN_PYTHON), str(sys.version_info)))
+
 
 with open('README.rst') as readme_file:
     readme = readme_file.read()
@@ -50,13 +59,10 @@ setup(
         'Intended Audience :: Developers',
         'License :: OSI Approved :: European Union Public Licence 1.1 (EUPL 1.1)',
         'Natural Language :: English',
-        "Programming Language :: Python :: 2",
-        'Programming Language :: Python :: 2.6',
-        'Programming Language :: Python :: 2.7',
         'Programming Language :: Python :: 3',
-        'Programming Language :: Python :: 3.3',
-        'Programming Language :: Python :: 3.4',
         'Programming Language :: Python :: 3.5',
+        'Programming Language :: Python :: 3.6',
+        'Programming Language :: Python :: 3.7',
     ],
     test_suite='tests',
     tests_require=test_requirements,

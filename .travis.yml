@@ -3,11 +3,8 @@
 
 language: python
 python:
-  - 3.5
-  - 3.4
-  - 3.3
-  - 2.7
-  - 2.6
+  - 3.6
+  - 3.7-dev
 
 # command to install dependencies, e.g. pip install -r requirements.txt --use-mirrors
 install: pip install -U tox-travis
@@ -16,3 +13,6 @@ install: pip install -U tox-travis
 script: tox
 
 
+matrix:
+  allow_failures:
+    - python: 3.7-dev
