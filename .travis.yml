@@ -9,7 +9,7 @@ python:
 # command to install dependencies, e.g. pip install -r requirements.txt --use-mirrors
 install:
   - pip install --upgrade setuptools pip
-  - pip install .[test] flake8
+  - pip install .[test]
   - python setup.py build bdist_wheel
 
 # command to run tests, e.g. python setup.py test
