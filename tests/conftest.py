@@ -46,7 +46,7 @@ def ok_repo(tmpdir_factory):
     for c in cmds.split('\n'):
         c = c and c.strip()
         if c:
-            pvlib.exec_cmd(c)
+            pvlib.exec_cmd(c.split())
 
     return repo_dir
 
@@ -62,7 +62,7 @@ def untagged_repo(tmpdir_factory):
     for c in cmds.split('\n'):
         c = c and c.strip()
         if c:
-            pvlib.exec_cmd(c)
+            pvlib.exec_cmd(c.split())
 
     return repo_dir
 
