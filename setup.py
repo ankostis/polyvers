@@ -13,6 +13,7 @@ with open('HISTORY.rst') as history_file:
 
 requirements = [
     'boltons',                  # for IndexSet
+    'toolz',
     'rainbow_logging_handler',
     'ruamel.yaml',              # for logconf
     'ipython_genutils',         # by vendorized `traitlets`
