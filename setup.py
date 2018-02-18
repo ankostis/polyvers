@@ -29,13 +29,9 @@ requirements = [
     'spectate',                 # by vendorized `traitlets`
 ]
 
-setup_requirements = [
-    'pytest-runner',
-    # TODO(ankostis): put setup requirements (distutils extensions, etc.) here
-]
-
 test_requirements = [
     'pytest',
+    'pytest-runner',
     'flake8',
     'flake8-builtins',
     'flake8-mutable',
@@ -72,7 +68,6 @@ setup(
     extras_require={
         'test': test_requirements,
     },
-    setup_requires=setup_requirements,
     entry_points={
         'console_scripts': [
             '%(p)s = %(p)s.__main__:main' % {'p': PROJECT}]},
