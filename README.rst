@@ -1,26 +1,28 @@
 .. image:: https://img.shields.io/pypi/v/polyvers.svg
-        :target: https://pypi.python.org/pypi/polyvers
+    :alt: Deployed in PyPi?
+    :target: https://pypi.python.org/pypi/polyvers
 
 .. image:: https://img.shields.io/travis/JRCSTU/polyvers.svg
-        :target: https://travis-ci.org/JRCSTU/polyvers
+    :alt: TravisCI (linux) build ok?
+    :target: https://travis-ci.org/JRCSTU/polyvers
 
 .. image:: https://ci.appveyor.com/api/projects/status/lyyjtmit5ti7tg1n?svg=true
-    :alt: Apveyor build status
+    :alt: Apveyor (Windows) build?
     :scale: 100%
     :target: https://ci.appveyor.com/project/ankostis/polyvers
 
 .. image:: https://coveralls.io/repos/github/ankostis/polyvers/badge.svg?branch=master
-    :alt: Coveralls status
+    :alt: Test-case coverage report
     :scale: 100%
     :target: https://coveralls.io/github/JRCSTU/polyvers
 
 .. image:: https://readthedocs.org/projects/polyvers/badge/?version=latest
-        :target: https://polyvers.readthedocs.io/en/latest/?badge=latest
-        :alt: Documentation Status
+    :target: https://polyvers.readthedocs.io/en/latest/?badge=latest
+    :alt: Auto-generated documentation status
 
 .. image:: https://pyup.io/repos/github/JRCSTU/polyvers/shield.svg
-     :target: https://pyup.io/repos/github/JRCSTU/polyvers/
-     :alt: Updates
+    :target: https://pyup.io/repos/github/JRCSTU/polyvers/
+    :alt: Dependencies needing updates?
 
 ==========================================================================
 Polyvers: Bump sub-project PEP-440 versions in Git monorepos independently
