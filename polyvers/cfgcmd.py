@@ -300,7 +300,7 @@ class ShowCmd(cmdlets.Cmd):
         respectively."""
     ).tag(config=True)
 
-    list = Bool(
+    list = Bool(  # noqa: A003 (override-builtins)
         help="Just list any matches."
     ).tag(config=True)
 
@@ -500,7 +500,7 @@ class DescCmd(cmdlets.Cmd):
               %(cmd_chain)s -t Spec.      # View help sorted alphabetically
     """)
 
-    list = Bool(
+    list = Bool(  # noqa: A003 (override-builtins)
         help="Just list any matches."
     ).tag(config=True)
 

@@ -72,6 +72,6 @@ def main(argv=None, **app_init_kwds):
 
 if __name__ == '__main__':
     if __package__ is None:
-        __package__ = "polyvers"  # @ReservedAssignment
+        __package__ = "polyvers"  # noqa: A001 @ReservedAssignment
 
     main(sys.argv[1:])

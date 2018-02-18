@@ -174,7 +174,7 @@ class CfgFilesRegistry(contextlib.ContextDecorator):
 
         Example::
 
-            >>> _consolidate([
+            >>> CfgFilesRegistry._consolidate([
             ... ('a/b/', None),
             ... ('a/b/', 'F1'),
             ... ('a/b/', 'F2'),
