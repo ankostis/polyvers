@@ -355,6 +355,21 @@ class ShowCmd(cmdlets.Cmd):
             except Exception as _:
                 yield '  +--%s' % v
 
+    def instanciate_class(self, cls, clsname, config):
+        try:
+            obj = cls(config=config)
+        except Exception as ex:
+            self.log.warning("Falied initializing class '%s' due to: %r",
+                             clsname, ex)
+
+            ## Assign config-values as dummy-object's attributes.
+            #  Note: no merging of values now!
+            #
+            class C:
+                pass
+            obj = C()
+            obj.__dict__ = dict(config[clsname])
+
     def _yield_configs_and_defaults(self, config, search_terms,
                                     merged: bool):
         verbose = self.verbose
@@ -394,30 +409,11 @@ class ShowCmd(cmdlets.Cmd):
             if not verbose and getattr(sup, trtname, None) is trait:
                 continue
 
-            ## Instanciate classes once, to merge values.
-            #
             obj = classes_configured.get(cls)
             if obj is None:
-                try:
-                    ## Exceptional rule for Project-zygote.
-                    #  TODO: delete when project rule is gone.
-                    #
-                    if cls.__name__ == 'Project':
-                        cls.new_instance('test', None, config)
-                    else:
-                        obj = cls(config=config)
-                except Exception as ex:
-                    self.log.warning("Falied initializing class '%s' due to: %r",
-                                     clsname, ex)
-
-                    ## Assign config-values as dummy-object's attributes.
-                    #  Note: no merging of values now!
-                    #
-                    class C:
-                        pass
-                    obj = C()
-                    obj.__dict__ = dict(config[clsname])
-                classes_configured[cls] = obj
+                ## Instantiate classes only once, to merge values.
+                classes_configured[cls] = self.instanciate_class(
+                    cls, clsname, config)
 
                 ## Print 1 class-line for all its traits.
                 #
