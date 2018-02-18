@@ -1,15 +1,25 @@
 .. image:: https://img.shields.io/pypi/v/polyvers.svg
         :target: https://pypi.python.org/pypi/polyvers
 
-.. image:: https://img.shields.io/travis/jrcstu/polyvers.svg
-        :target: https://travis-ci.org/jrcstu/polyvers
+.. image:: https://img.shields.io/travis/JRCSTU/polyvers.svg
+        :target: https://travis-ci.org/JRCSTU/polyvers
+
+.. image:: https://ci.appveyor.com/api/projects/status/lyyjtmit5ti7tg1n?svg=true
+    :alt: Apveyor build status
+    :scale: 100%
+    :target: https://ci.appveyor.com/project/ankostis/polyvers
+
+.. image:: https://coveralls.io/repos/github/ankostis/polyvers/badge.svg?branch=master
+    :alt: Coveralls status
+    :scale: 100%
+    :target: https://coveralls.io/github/JRCSTU/polyvers
 
 .. image:: https://readthedocs.org/projects/polyvers/badge/?version=latest
         :target: https://polyvers.readthedocs.io/en/latest/?badge=latest
         :alt: Documentation Status
 
-.. image:: https://pyup.io/repos/github/jrcstu/polyvers/shield.svg
-     :target: https://pyup.io/repos/github/jrcstu/polyvers/
+.. image:: https://pyup.io/repos/github/JRCSTU/polyvers/shield.svg
+     :target: https://pyup.io/repos/github/JRCSTU/polyvers/
      :alt: Updates
 
 ==========================================================================
