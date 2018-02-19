@@ -19,12 +19,12 @@ install:
 
 script:
   ## Test if `pip install .[test]` installs all deps.
-  - pytest -v --pyargs tests --cov=polyvers --cov-report term-missing
+  - pytest -v --cov=polyvers --cov-report term-missing
 
   ## Test exact versions.
   #
   - pip install -r requirements.txt -r requirements_dev.txt
-  - pytest -q --pyargs tests
+  - pytest -q
 
   - flake8 --show-source
 
