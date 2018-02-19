@@ -88,7 +88,45 @@ class Project(Base):
         """)
 
 
-class PolyversCmd(cmdlets.Cmd, Project):
+def find_git_root():
+    """
+    Search dirs up for a Git-repo.
+
+    :return:
+        a `pathlib` native path, or None
+    """
+    ## TODO: See GitPython for a comprehensive way.
+    from pathlib import Path as P
+
+    cwd = P().resolve()
+    for f in itt.chain([cwd], cwd.parents):
+        if (f / '.git').is_dir():
+            return f
+
+
+class MyCmd(cmdlets.Cmd):
+
+    @trt.default('config_paths')
+    def _config_paths(self):
+        basename = self.config_basename
+        paths = []
+
+        git_root = find_git_root()
+        if git_root:
+            paths.append(str(git_root / basename))
+        else:
+            paths.append('.')
+
+        paths.append('~/%s' % basename)
+
+        return paths
+
+
+# TODO: Will work when patched: https://github.com/ipython/traitlets/pull/449
+MyCmd.config_paths.metadata['envvar'] = CONFIG_VAR_NAME
+
+
+class PolyversCmd(MyCmd, Project):
     """
     Bump independently PEP-440 versions of sub-project in Git monorepos.
 
@@ -152,6 +190,17 @@ class PolyversCmd(cmdlets.Cmd, Project):
             - False make sense only if `use_leaf_releases=False`
         """)
 
+    @trt.default('subcommands')
+    def _subcommands(self):
+        subcmds = cmdlets.build_sub_cmds(InitCmd, StatusCmd,
+                                         SetverCmd, BumpveCmd,
+                                         LogconfCmd)
+        subcmds['config'] = (
+            'polyvers.mycfgcmd.ConfigCmd',
+            "Commands to inspect configurations and other cli infos.")
+
+        return subcmds
+
     def _my_text_interpolations(self):
         d = super()._my_text_interpolations()
         d.update({'appname': APPNAME})
@@ -163,42 +212,7 @@ class PolyversCmd(cmdlets.Cmd, Project):
                 InitCmd, StatusCmd, SetverCmd, BumpveCmd, LogconfCmd]
 
 
-def find_git_root():
-    """
-    Search dirs up for a Git-repo.
-
-    :return:
-        a `pathlib` native path, or None
-    """
-    ## TODO: See GitPython for a comprehensive way.
-    from pathlib import Path as P
-
-    cwd = P().resolve()
-    for f in itt.chain([cwd], cwd.parents):
-        if (f / '.git').is_dir():
-            return f
-
-
-def config_paths(self):
-    basename = self.config_basename
-    paths = []
-
-    git_root = find_git_root()
-    if git_root:
-        paths.append(str(git_root / basename))
-    else:
-        paths.append('.')
-
-    paths.append('~/%s' % basename)
-
-    return paths
-
-
-## Patch Cmd's config-paths to apply to all subcmds.
-cmdlets.Cmd.config_paths.default = config_paths
-
-
-class VersionSubcmd(cmdlets.Cmd):
+class VersionSubcmd(MyCmd):
     def check_project_configs_exist(self, scream=True):
         """
         Checks if any loaded config-file is a subdir of Git repo.
@@ -294,19 +308,11 @@ class BumpveCmd(VersionSubcmd):
         self.check_project_configs_exist()
 
 
-class LogconfCmd(cmdlets.Cmd):
+class LogconfCmd(MyCmd):
     """Write a logging-configuration file that can filter logs selectively."""
     def run(self, *args):
         pass
 
-
-subcmds = cmdlets.build_sub_cmds(InitCmd, StatusCmd,
-                                 SetverCmd, BumpveCmd,
-                                 LogconfCmd)
-subcmds['config'] = ('polyvers.cfgcmd.ConfigCmd',
-                     "Commands to inspect configurations and other cli infos.")
-
-PolyversCmd.subcommands = subcmds
 
 PolyversCmd.flags = {
     ## Inherited from Application
@@ -358,6 +364,3 @@ PolyversCmd.aliases = {
     ('m', 'message'): 'Project.message',
     ('u', 'sign-user'): 'Project.sign_user',
 }
-
-# TODO: Will work when patched: https://github.com/ipython/traitlets/pull/449
-PolyversCmd.config_paths.metadata['envvar'] = CONFIG_VAR_NAME

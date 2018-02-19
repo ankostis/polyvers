@@ -154,7 +154,7 @@ def test_CfgFilesRegistry(tmpdir):
             'conf.py conf.py.d/a.json conf.d/a.json conf.d/a.py'.split()), fpaths
 
 
-def test_no_default_config_paths():
+def test_no_default_config_paths(tmpdir):
     cmd = cmdlets.Cmd()
     cmd.initialize([])
     print(cmd._cfgfiles_registry.config_tuples)
