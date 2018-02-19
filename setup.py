@@ -32,6 +32,7 @@ requirements = [
 test_requirements = [
     'pytest',
     'pytest-runner',
+    'pytest-cov',
     'flake8',
     'flake8-builtins',
     'flake8-mutable',

@@ -13,7 +13,7 @@ matrix:
     - python: 3.7-dev
 
 install:
-  - pip install --upgrade setuptools pip pytest-cov python-coveralls
+  - pip install --upgrade setuptools pip
   - pip install .[test]
   - python setup.py build bdist_wheel
 
@@ -29,4 +29,5 @@ script:
   - flake8 --show-source
 
 after_success:
-    - if [[ $TRAVIS_PYTHON_VERSION == '3.6' ]]; then coveralls; fi
+  - pip install python-coveralls
+  - if [[ $TRAVIS_PYTHON_VERSION == '3.6' ]]; then coveralls; fi
