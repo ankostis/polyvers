@@ -53,11 +53,11 @@ def ensure_file_ext(fname, ext, *exts, is_regex=False):
     Ensure that the filepath ends with the extension(s) specified.
 
     :param str ext:
-        The 1st extension (with/without dot `'.'`) that will append if none matches,
+        The 1st extension to search & to append if none matches,
         so must not be a regex.
     :param str exts:
-        Other extensions. They may be regexes,
-        depending on `is_regex`; a `'$'` is added the end.
+        Other extensions. These may be regexes, depending on `is_regex`;
+        a `'$'` is always added at its end.
     :param bool is_regex:
         When true, the rest `exts` are parsed as case-insensitive regexes.
 
@@ -67,8 +67,6 @@ def ensure_file_ext(fname, ext, *exts, is_regex=False):
         'foo.bar'
         >>> ensure_file_ext('foo.', '.bar')
         'foo.bar'
-        >>> ensure_file_ext('foo', 'bar')
-        'foo.bar'
         >>> ensure_file_ext('foo.', 'bar')
         'foo.bar'
 
@@ -77,8 +75,16 @@ def ensure_file_ext(fname, ext, *exts, is_regex=False):
         >>> ensure_file_ext('foo.DDD', '.bar')
         'foo.DDD.bar'
 
+    Note that omitting dot('.') from extension does affect the results::
 
-    When more are given::
+        >>> ensure_file_ext('foo', 'bar')
+        'foo.bar'
+        >>> ensure_file_ext('foo.BAR', 'bar')
+        'foo.BAR'
+        >>> ensure_file_ext('fooBAR', 'bar')  # File allowed without extension!
+        'fooBAR'
+
+    When more extensions are given, the 1st is appended if none matches::
 
         >>> ensure_file_ext('foo.xlt', '.xlsx', '.XLT')
         'foo.xlt'
@@ -93,21 +99,18 @@ def ensure_file_ext(fname, ext, *exts, is_regex=False):
         'foo.xl^.xls'
 
     """
-    _, file_ext = os.path.splitext(fname)
-
     if is_regex:
-        ends_with_ext = any(re.match(e + '$', file_ext, re.IGNORECASE)
+        ends_with_ext = any(re.match(e + '$', fname, re.IGNORECASE)
                             for e
                             in (re.escape(ext),) + exts)
     else:
-        ends_with_ext = file_ext.lower() in set(e.lower()
-                                                for e
-                                                in (ext,) + exts)
+        ends_with_ext = fname.lower().endswith(tuple(e.lower()
+                                                     for e in (ext,) + exts))
 
     if not ends_with_ext:
-        if fname[-1] == '.':
+        if fname.endswith('.'):
             fname = fname[:-1]
-        if ext[0] == '.':
+        if ext.startswith('.'):
             ext = ext[1:]
         return '%s.%s' % (fname, ext)
 
