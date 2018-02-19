@@ -18,7 +18,14 @@ install:
   - python setup.py build bdist_wheel
 
 script:
-  - pytest --pyargs -v tests --cov=polyvers --cov-report term-missing
+  ## Test if `pip install .[test]` installs all deps.
+  - pytest -v --pyargs tests --cov=polyvers --cov-report term-missing
+
+  ## Test exact versions.
+  #
+  - pip install -r requirements.txt -r requirements_dev.txt
+  - pytest -q --pyargs tests
+
   - flake8 --show-source
 
 after_success:
