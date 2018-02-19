@@ -116,6 +116,7 @@ Quickstart
         __version__ = polyvers.version('baseproj')
         ...
 
+
 4. We can now use the ``polyvers`` command to inspect & set the same version to all
    sub-projects:
 
