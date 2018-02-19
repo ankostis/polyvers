@@ -27,3 +27,10 @@ ensure_ext_data = [
 def test_ensure_ext(inp, exp):
     got = fileutils.ensure_file_ext(*inp)
     assert got == exp, inp
+
+
+def test_ensure_ext_regex():
+    inp = 'foo.xlt', '.xlsx', r'\.xl\w{1,2}'
+    exp = 'foo.xlt'
+    got = fileutils.ensure_file_ext(*inp, is_regex=True)
+    assert got == exp, inp

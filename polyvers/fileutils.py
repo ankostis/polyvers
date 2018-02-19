@@ -93,14 +93,14 @@ def ensure_file_ext(fname, ext, *exts, is_regex=False):
 
     And when regexes::
 
-        >>> ensure_file_ext('foo.xlt', '.xlsx',  r'\.xl\w{1,2}', is_regex=True)
+        >>> ensure_file_ext('foo.xlt', '.xlsx', r'\.xl\w{1,2}', is_regex=True)
         'foo.xlt'
-        >>> ensure_file_ext('foo.xl^', '.xls',  r'\.xl\w{1,2}', is_regex=True)
+        >>> ensure_file_ext('foo.xl^', '.xls', r'\.xl\w{1,2}', is_regex=True)
         'foo.xl^.xls'
 
     """
     if is_regex:
-        ends_with_ext = any(re.match(e + '$', fname, re.IGNORECASE)
+        ends_with_ext = any(re.search(e + '$', fname, re.IGNORECASE)
                             for e
                             in (re.escape(ext),) + exts)
     else:
