@@ -155,6 +155,12 @@ def test_CfgFilesRegistry(tmpdir):
 
 
 def test_no_default_config_paths(tmpdir):
+    cwd = tmpdir.mkdir('cwd')
+    cwd.chdir()
+
+    home = tmpdir.mkdir('home')
+    os.environ['HOME'] = str(home)
+
     cmd = cmdlets.Cmd()
     cmd.initialize([])
     print(cmd._cfgfiles_registry.config_tuples)
