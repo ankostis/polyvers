@@ -4,7 +4,7 @@
 # Licensed under the EUPL 1.2+ (the 'Licence');
 # You may not use this work except in compliance with the Licence.
 # You may obtain a copy of the Licence at: http://ec.europa.eu/idabc/eupl
-"""Top-level package for Polyvers."""
+"""Top-level package for *polyvers* version-configuration tool."""
 
 APPNAME = 'polyvers'
 

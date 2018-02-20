@@ -16,6 +16,7 @@ Contents:
 
     installation
     usage
+    reference
     contributing
     history
 

@@ -5,7 +5,7 @@
 # You may not use this work except in compliance with the Licence.
 # You may obtain a copy of the Licence at: http://ec.europa.eu/idabc/eupl
 #
-""" Bump independently PEP-440 versions of sub-project in Git monorepos. """
+"""The code of *polyvers* shell-commands."""
 
 from collections import ChainMap
 import os
