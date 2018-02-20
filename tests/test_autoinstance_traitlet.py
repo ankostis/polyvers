@@ -5,8 +5,6 @@
 # You may not use this work except in compliance with the Licence.
 # You may obtain a copy of the Licence at: http://ec.europa.eu/idabc/eupl
 
-"""Tests for AutoInstance traitlet."""
-
 import pytest
 from polyvers._vendor.traitlets import List, CInt  # @UnresolvedImport
 from polyvers._vendor.traitlets.config import Configurable, Config

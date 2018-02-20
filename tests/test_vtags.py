@@ -5,10 +5,8 @@
 # Licensed under the EUPL 1.2+ (the 'Licence');
 # You may not use this work except in compliance with the Licence.
 # You may obtain a copy of the Licence at: http://ec.europa.eu/idabc/eupl
-"""Tests for `polyvers` package."""
 
 from polyvers import vtags
-
 import pytest
 
 import subprocess as subp
