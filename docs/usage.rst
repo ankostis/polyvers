@@ -2,6 +2,5 @@
 Usage
 =====
 
-To use Polyvers in a project::
-
-    import polyvers
+.. include:: ../README.rst
+    :start-after: _usage:

@@ -4,6 +4,12 @@
 Installation
 ============
 
+There are actually two projects to install, depending on your needs:
+
+- **polyvers** tool, for developing python monorepos,
+- **polyverslib**: a python library used by projects developed with *polyvers*
+  tool to discover their version on runtime from Git.
+
 
 Stable release
 --------------

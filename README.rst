@@ -1,3 +1,8 @@
+==========================================================================
+Polyvers: Bump sub-project PEP-440 versions in Git monorepos independently
+==========================================================================
+
+.. _opening-start:
 .. image:: https://img.shields.io/pypi/v/polyvers.svg
     :alt: Deployed in PyPi?
     :target: https://pypi.python.org/pypi/polyvers
@@ -24,12 +29,8 @@
     :target: https://pyup.io/repos/github/JRCSTU/polyvers/
     :alt: Dependencies needing updates?
 
-==========================================================================
-Polyvers: Bump sub-project PEP-440 versions in Git monorepos independently
-==========================================================================
-
 :version:       |version|
-:rel_date:      2018-02-03 00:00:00
+:rel_date:      |today|
 :Documentation: https://polyvers.readthedocs.io
 :repository:    https://github.com/JRCSTU/polyvers
 :pypi-repo:     https://pypi.org/project/polyvers/
@@ -40,8 +41,9 @@ Polyvers: Bump sub-project PEP-440 versions in Git monorepos independently
 
 A python 3.6+ command-line tool to manage `PEP-440 version-ids
 <https://www.python.org/dev/peps/pep-0440/>`_ of dependent sub-projects
-hosted in a *Git* `monorepos`_, independently.  When bumping the version of
-sub-project(s), *polyvers* does the following:
+hosted in a *Git* `monorepos`_, independently.
+
+When bumping the version of sub-project(s), *polyvers* does the following:
 
 - help you decide the next version of sub-projects, selectively and independently;
 - add x2 tagged commits:
@@ -55,14 +57,19 @@ sub-project(s), *polyvers* does the following:
 - enforce (customizable) validation rules and run (extensible) hooks.
 
 Additional utilities include:
-- library code to extract sub-project's version from past tags
-  (provided a a separate subproject here);
-- pip-install all subprojects in develop mode (``pip install -e``).
 
+- **polyverslib** library code to extract sub-project's version from past tags
+  (provided a a separate subproject here);
+- pip-install all subprojects in develop mode (``pip install -e <project>``).
+
+.. _opening-end:
 
 .. contents:: Table of Contents
   :backlinks: top
   :depth: 4
+
+
+.. _usage:
 
 Quickstart
 ==========
@@ -211,6 +218,8 @@ Quickstart
    the correlated version of the **bumped** ``baseproj``.  This trick is uneccesary
    for tags because they apply repo-wide, to all sub-projects.
 
+
+.. _features:
 
 Features
 ========
