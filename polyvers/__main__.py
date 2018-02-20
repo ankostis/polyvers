@@ -36,12 +36,12 @@ def main(argv=None, cmd_consumer=None, **app_init_kwds):
     #  enable DEBUG logging ; later will be set by `baseapp` traits.
     log_level = logging.DEBUG if (set('-v --verbose'.split()) & set(argv)) else None
 
-    ## Rename app!
-    #
-    #  NOTE: All imports in this file must be absolute!
     import polyvers as mypack
-    if sys.argv:
-        mypack.APPNAME = osp.basename(sys.argv[0])
+
+    # ## Rename app!
+    # #
+    # if sys.argv:
+    #     mypack.APPNAME = osp.basename(sys.argv[0])
 
     from . import logconfutils as mlu
     log = logging.getLogger('%s.main' % mypack.APPNAME)
