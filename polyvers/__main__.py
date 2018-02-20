@@ -13,7 +13,7 @@ import sys
 import os.path as osp
 
 
-def main(argv=None, **app_init_kwds):
+def main(argv=None, cmd_consumer=None, **app_init_kwds):
     """
     Handle some exceptions politely and return the exit-code.
 
@@ -60,7 +60,7 @@ def main(argv=None, **app_init_kwds):
 
     try:
         cmd = PolyversCmd.make_cmd(argv, **app_init_kwds)  # @UndefinedVariable
-        return mpu.pump_cmd(cmd.start()) and 0
+        return mpu.pump_cmd(cmd.start(), consumer=cmd_consumer) and 0
     except (cmdlets.CmdException, TraitError) as ex:
         log.debug('App exited due to: %r', ex, exc_info=1)
         ## Suppress stack-trace for "expected" errors but exit-code(1).
