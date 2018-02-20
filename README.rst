@@ -36,7 +36,7 @@ Polyvers: Bump sub-project PEP-440 versions in Git monorepos independently
 :pypi-repo:     https://pypi.org/project/polyvers/
 :keywords:      version-management, configuration-management, versioning,
                 git, monorepo, tool, library
-:copyright:     2018 European Commission (`JRC <https://ec.europa.eu/jrc/>`_)
+:copyright:     2018 JRC.C4(STU), European Commission (`JRC <https://ec.europa.eu/jrc/>`_)
 :license:       `EUPL 1.2 <https://joinup.ec.europa.eu/software/page/eupl>`_
 
 A python 3.6+ command-line tool to manage `PEP-440 version-ids

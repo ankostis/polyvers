@@ -58,7 +58,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'Polyvers'
-copyright = u"2018, Kostis Anagnostopoulos"
+copyright = u"2018, JRC.C4(STU), EC"
 
 # The version info for the project you're documenting, acts as replacement
 # for |version| and |release|, also used in various other places throughout
@@ -212,7 +212,7 @@ latex_elements = {
 latex_documents = [
     ('index', 'polyvers.tex',
      u'Polyvers Documentation',
-     u'Kostis Anagnostopoulos', 'manual'),
+     u'JRC', 'manual'),
 ]
 
 # The name of an image file (relative to this directory) to place at
