@@ -14,14 +14,8 @@ from polyvers.logconfutils import init_logging
 
 import pytest
 
-import os.path as osp
-
 
 init_logging(level=logging.DEBUG)
-
-log = logging.getLogger(__name__)
-
-mydir = osp.dirname(__file__)
 
 
 @pytest.mark.expected_failure()
