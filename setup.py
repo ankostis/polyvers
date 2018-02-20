@@ -50,7 +50,8 @@ setup(
     include_package_data=True,
     install_requires=requirements,
     license='EUPL 1.2',
-    zip_safe=False,
+    zip_safe=True,
+    platforms=['any'],
     keywords="version-management configuration-management versioning "
              "git monorepo tool library".split(),
     classifiers=[
