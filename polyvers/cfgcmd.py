@@ -191,6 +191,15 @@ class InfosCmd(cmdlets.Cmd):
         help="Extra infos to put at the top of the output of this command"
     )
 
+    def initialize(self, argv=None):
+        """Override to read configs from root-app."""
+        self.parse_command_line(argv)
+        root = self.root_app()
+        static_config = root.read_config_files()
+        static_config.merge(root.cli_config)
+
+        root.update_config(static_config)
+
     def _collect_env_vars(self, classes):
         classes = (cls
                    for cls
@@ -234,10 +243,11 @@ class InfosCmd(cmdlets.Cmd):
             yield '  %s: %s' % (k, v)
 
         yield "CONFIG:"
-        config_paths = l2_yaml_list_sep.join([''] + self.config_paths)
+        root = self.root_app()
+        config_paths = l2_yaml_list_sep.join([''] + root.config_paths)
         yield "  config_paths: %s" % (config_paths or 'null')
 
-        loaded_cfgs = self.loaded_config_files
+        loaded_cfgs = root.loaded_config_files
         if loaded_cfgs:
             yield "  LOADED_CONFIGS:"
             yield from (format_tuple(p, f) for p, f in loaded_cfgs)
