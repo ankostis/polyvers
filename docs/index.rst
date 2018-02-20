@@ -14,10 +14,8 @@ Contents:
     :caption: Table of Contents
     :name: mastertoc
 
-    installation
     usage
     reference
-    contributing
     history
 
 Indices and tables

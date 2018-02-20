@@ -77,15 +77,23 @@ Quickstart
 
    .. code-block:: console
 
-    $ pip install polyvers
-    ...
-    $ polyvers --version
-    0.0.0
-    $ polyvers --help
-    ...
+      $ pip install polyvers
+      ...
+      $ polyvers --version
+      0.0.0
+      $ polyvers --help
+      ...
 
-    $ polyvers status
-    polyvers: Neither `setup.py` nor `.polyvers(.json|.py|.salt)` config-files found!
+      $ polyvers status
+      polyvers: Neither `setup.py` nor `.polyvers(.json|.py|.salt)` config-files found!
+
+   .. Note::
+
+     There are actually two projects to install, depending on your needs:
+
+     - **polyvers** tool, for developing python monorepos,
+     - **polyverslib**: a python library used by projects developed with *polyvers*
+       tool to discover their version on runtime from Git.
 
 
 2. Assuming our *monorepo* project ``/monorepo.git/`` contains two sub-projects::
