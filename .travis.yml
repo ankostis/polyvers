@@ -14,16 +14,18 @@ matrix:
 
 install:
   - pip install --upgrade setuptools pip
-  - pip install .[test]
   - python setup.py build bdist_wheel
+  - pip install .[test]
+  - rm -rf polyvers  # Check ONLY installed package, not checked-out!
 
 script:
   ## Test if `pip install .[test]` installs all deps.
   - pytest -v --cov=polyvers --cov-report term-missing
 
-  ## Test exact versions.
+  ## Re-test EXACT deps on WHEEL.
   #
   - pip install -r requirements.txt -r requirements_dev.txt
+  - pip install dist/*.whl
   - pytest -q
 
   - flake8 --show-source
