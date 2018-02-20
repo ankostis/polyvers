@@ -20,6 +20,9 @@ def main(argv=None, **app_init_kwds):
     :param argv:
         If invoked with None, ``sys.argv[1:]`` assumed.
     """
+    if not globals().get('__package__'):
+        __package__ = "polyvers"  # noqa: A001 @ReservedAssignment
+
     req_ver = (3, 6)
     if sys.version_info < req_ver:
         raise NotImplemented(
@@ -40,7 +43,7 @@ def main(argv=None, **app_init_kwds):
     if sys.argv:
         mypack.APPNAME = osp.basename(sys.argv[0])
 
-    from polyvers import logconfutils as mlu
+    from . import logconfutils as mlu
     log = logging.getLogger('%s.main' % mypack.APPNAME)
     mlu.init_logging(level=log_level,
                      logconf_files=osp.join('~', '.%s.yaml' % mypack.APPNAME))
@@ -48,9 +51,9 @@ def main(argv=None, **app_init_kwds):
     ## Imports in separate try-block due to CmdException.
     #
     try:
-        from polyvers import cmdlets, mainpump as mpu
-        from polyvers._vendor.traitlets import TraitError
-        from polyvers.cli import PolyversCmd
+        from . import cmdlets, mainpump as mpu
+        from ._vendor.traitlets import TraitError
+        from .cli import PolyversCmd
     except Exception as ex:
         ## Print stacktrace to stderr and exit-code(-1).
         return mlu.exit_with_pride(ex, logger=log)
@@ -71,7 +74,4 @@ def main(argv=None, **app_init_kwds):
 
 
 if __name__ == '__main__':
-    if __package__ is None:
-        __package__ = "polyvers"  # noqa: A001 @ReservedAssignment
-
     main(sys.argv[1:])
