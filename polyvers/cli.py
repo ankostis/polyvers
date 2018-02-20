@@ -225,7 +225,7 @@ class VersionSubcmd(MyCmd):
         git_root = find_git_root()
         if not git_root:
             raise cmdlets.CmdException(
-                "Polyvers must be run from inside a Git repo!")
+                "Current-dir '%s' is not inside a git-repo!" % P().resolve())
 
         for p in self._cfgfiles_registry.collected_paths:
             try:
