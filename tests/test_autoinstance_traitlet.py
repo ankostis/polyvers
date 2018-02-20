@@ -66,11 +66,11 @@ def test_simple_merge(cfg, exp):
     a = A(config=Config(cfg))
 
     if exp is None:
-        assert len(a.a) == 0, cfg
+        assert len(a.a) == 0
     elif isinstance(exp, list):
-        assert exp == [e.i for e in a.a], cfg
+        assert exp == [e.i for e in a.a]
     else:
-        assert a.a[0].i == exp, cfg
+        assert a.a[0].i == exp
 
 
 class B(Configurable):

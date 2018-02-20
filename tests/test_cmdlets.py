@@ -53,7 +53,7 @@ def test_CfgFilesRegistry_consolidate_posix_1():
         ('/d/foo\Bar/dooba/doo', []),
     ]
     #print('FF\n', cons)
-    assert cons == exp, visited
+    assert cons == exp
 
 
 def test_CfgFilesRegistry_consolidate_posix_2():
@@ -74,7 +74,7 @@ def test_CfgFilesRegistry_consolidate_posix_2():
         ('/d/foo\Bar/dooba/doo', []),
     ]
     #print('FF\n', cons)
-    assert cons == exp, visited
+    assert cons == exp
 
 
 def test_CfgFilesRegistry_consolidate_win_1():
@@ -95,7 +95,7 @@ def test_CfgFilesRegistry_consolidate_win_1():
         ('d:\\foo\Bar\\dooba\\doo', []),
     ]
     #print('FF\n', cons)
-    assert cons == exp, visited
+    assert cons == exp
 
 
 def test_CfgFilesRegistry_consolidate_win_2():
@@ -116,7 +116,7 @@ def test_CfgFilesRegistry_consolidate_win_2():
         ('D:\\foo\Bar\\dooba\\doo', []),
     ]
     #print('FF\n', cons)
-    assert cons == exp, visited
+    assert cons == exp
 
 
 def test_CfgFilesRegistry(tmpdir):
@@ -144,14 +144,12 @@ def test_CfgFilesRegistry(tmpdir):
     cfr = cmdlets.CfgFilesRegistry()
     fpaths = cfr.collect_fpaths(['conf'])
     fpaths = [P(p).relto(tdir).replace('\\', '/') for p in fpaths]
-    assert (fpaths ==
-            'conf.json conf.py conf.d/a.json conf.d/a.py'.split()), fpaths
+    assert fpaths == 'conf.json conf.py conf.d/a.json conf.d/a.py'.split()
 
     cfr = cmdlets.CfgFilesRegistry()
     fpaths = cfr.collect_fpaths(['conf.py'])
     fpaths = [P(p).relto(tdir).replace('\\', '/') for p in fpaths]
-    assert (fpaths ==
-            'conf.py conf.py.d/a.json conf.d/a.json conf.d/a.py'.split()), fpaths
+    assert fpaths == 'conf.py conf.py.d/a.json conf.d/a.json conf.d/a.py'.split()
 
 
 def test_no_default_config_paths(tmpdir):

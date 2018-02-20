@@ -30,7 +30,7 @@ def test_infos_valid_yaml():
 def test_infos_smoketest():
     cmd = ConfigCmd.make_cmd(['infos'])  # @UndefinedVariable
     res = mpu.collect_cmd(cmd.start())
-    assert len(res) > 10, res
+    assert len(res) > 10
 
 
 @pytest.mark.parametrize(
@@ -45,7 +45,7 @@ def test_show_smoketest(case, nlines):
         case = [case]
     cmd = ConfigCmd.make_cmd(['show'] + case)
     res = mpu.collect_cmd(cmd.start(), dont_coalesce=True, assert_ok=True)
-    assert len(res) >= nlines, res
+    assert len(res) >= nlines
 
 
 @pytest.mark.parametrize(
@@ -63,4 +63,4 @@ def test_desc_smoketest(case, nlines):
         case = [case]
     cmd = ConfigCmd.make_cmd(['desc'] + case)
     res = mpu.collect_cmd(cmd.start(), dont_coalesce=True, assert_ok=True)
-    assert len(res) >= nlines, res
+    assert len(res) >= nlines

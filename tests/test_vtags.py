@@ -23,8 +23,7 @@ def test_get_all_vtags(ok_repo, untagged_repo, no_repo):
     assert dict(v) == {
         proj1: ['0.0.0', '0.0.1'],
         proj2: ['0.2.0', '0.2.1'],
-    }, v
-
+    }
     untagged_repo.chdir()
 
     v = vtags.find_all_subproject_vtags()
@@ -40,8 +39,7 @@ def test_get_p1_vtags(ok_repo, untagged_repo, no_repo):
     ok_repo.chdir()
 
     v = vtags.find_all_subproject_vtags(proj1)
-    assert dict(v) == {proj1: ['0.0.0', '0.0.1']}, v
-
+    assert dict(v) == {proj1: ['0.0.0', '0.0.1']}
     untagged_repo.chdir()
 
     v = vtags.find_all_subproject_vtags(proj1)
@@ -56,23 +54,21 @@ def test_get_p1_vtags(ok_repo, untagged_repo, no_repo):
 def test_get_p2_vtags(ok_repo):
     ok_repo.chdir()
     v = vtags.find_all_subproject_vtags(proj2)
-    assert dict(v) == {proj2: ['0.2.0', '0.2.1']}, v
+    assert dict(v) == {proj2: ['0.2.0', '0.2.1']}
 
 
 def test_get_BAD_project_vtag(ok_repo, untagged_repo, no_repo):
     ok_repo.chdir()
 
     v = vtags.find_all_subproject_vtags('foo')
-    assert dict(v) == {}, v
-
+    assert dict(v) == {}
     v = vtags.find_all_subproject_vtags('foo', proj1)
-    assert dict(v) == {proj1: ['0.0.0', '0.0.1']}, v
+    assert dict(v) == {proj1: ['0.0.0', '0.0.1']}
 
     untagged_repo.chdir()
 
     v = vtags.find_all_subproject_vtags('foo', 'bar')
-    assert dict(v) == {}, v
-
+    assert dict(v) == {}
     no_repo.chdir()
 
     with pytest.raises(subp.CalledProcessError):
@@ -86,8 +82,7 @@ def test_get_subproject_versions(ok_repo, untagged_repo, no_repo):
     assert v == {
         proj1: '0.0.1',
         proj2: '0.2.1',
-    }, v
-
+    }
     untagged_repo.chdir()
 
     v = vtags.get_subproject_versions()
@@ -108,4 +103,4 @@ def test_get_subproject_versions(ok_repo, untagged_repo, no_repo):
 def test_get_BAD_projects_versions(ok_repo):
     ok_repo.chdir()
     v = vtags.get_subproject_versions('foo')
-    assert dict(v) == {}, v
+    assert dict(v) == {}

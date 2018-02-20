@@ -22,7 +22,7 @@ from .conftest import assert_in_text
 def test_config_cmd(cmd, match, illegal):
     lc = ListConsumer()
     rc = main(cmd.split(), cmd_consumer=lc)
-    assert rc == 0, lc.items
+    assert rc == 0
     assert_in_text(lc.items, match, illegal)
     #print('\n'.join(lc.items))
 
@@ -31,4 +31,4 @@ def test_status_cmd():
     cmd = 'status'
     lc = ListConsumer()
     rc = main(cmd.split(), cmd_consumer=lc)
-    assert rc == 0, lc.items
+    assert rc == 0
