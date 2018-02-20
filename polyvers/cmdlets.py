@@ -619,6 +619,60 @@ class Cmd(trc.Application, Spec):
     )
 
     #############
+    ## SUBAPPS ##
+    #############
+    ## Overriden for existing sub-apps to die and new ones to receive parents
+    #  even when hierarchy changes (e.g. in TCs).
+    #  See https://github.com/ipython/traitlets/commit/e857996fafa814862706504cca51ac69bb8cec58#commitcomment-27681994
+
+    @trc.catch_config_error
+    def initialize_subcommand(self, subc, argv=None):
+        subapp, _ = self.subcommands.get(subc)
+
+        if isinstance(subapp, trc.six.string_types):
+            subapp = trc.import_item(subapp)
+
+        ## Cannot issubclass() on a non-type (SOhttp://stackoverflow.com/questions/8692430)
+        if isinstance(subapp, type) and issubclass(subapp, trc.Application):
+            # Clear existing instances before...
+            #type(self).clear_instance()
+            subapp.clear_instance()
+            # instantiating subapp...
+            self.subapp = subapp.instance(parent=self)
+        elif callable(subapp):
+            # or ask factory to create it...
+            self.subapp = subapp(self)
+        else:
+            raise AssertionError("Invalid mappings for subcommand '%s'!" % subc)
+
+        # ... and finally initialize subapp.
+        self.subapp.initialize(argv)
+
+    @classmethod
+    def clear_instance(cls):
+        if not cls.initialized():
+            return
+        cls._instance = None
+
+    @classmethod
+    def instance(cls, *args, **kwargs):
+        # Create and save the instance
+        if cls._instance is None:
+            inst = cls(*args, **kwargs)
+            obj = cls._instance = inst
+
+        elif isinstance(cls._instance, cls):
+            obj = cls._instance
+        else:
+            raise trc.MultipleInstanceError(
+                "An incompatible sibling of '%s' is already instanciated"
+                " as singleton: %s" % (cls.__name__, type(cls._instance).__name__)
+            )
+
+        return obj
+
+
+    #############
     ## STARTUP ##
     #############
 
