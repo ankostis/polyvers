@@ -196,7 +196,7 @@ class PolyversCmd(MyCmd, Project):
                                          SetverCmd, BumpveCmd,
                                          LogconfCmd)
         subcmds['config'] = (
-            'polyvers.mycfgcmd.ConfigCmd',
+            'polyvers.cfgcmd.ConfigCmd',
             "Commands to inspect configurations and other cli infos.")
 
         return subcmds
