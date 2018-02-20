@@ -28,6 +28,47 @@ def touchpaths(tdir, paths_txt):
             (tdir / f).ensure(dir=f.endswith('/'))
 
 
+def assert_in_text(text, require=None, forbid=None):
+    """
+    Checks strings are (not) contained in text.
+
+    :param text:
+        a string or a list of strings
+    :param require:
+        A string (or list of strings) that must require at some text's line.
+    :param forbid:
+        A string (or list of strings) that must NOT require at any text's line.
+    :raise AssertionError:
+        with all errors detected
+    """
+    if isinstance(text, str):
+        text = text.split('\n')
+
+    if isinstance(require, str):
+        require = [require]
+    if isinstance(forbid, str):
+        forbid = [forbid]
+
+    matches = set()
+    illegals = {}
+    for i, l in enumerate(text):
+        for mterm in require:
+            if mterm not in matches and mterm in l:
+                matches.add(mterm)
+
+        for iterm in forbid:
+            if iterm and iterm in l:
+                illegals[iterm] = i
+
+    missed = set(require) - matches
+    err1 = missed and "MISSES: %s" % ', '.join(missed) or ''
+    err2 = illegals and "ILLEGALS: \n  %s" % '\n  '.join(
+        "%r in line(%i): %s" % (k, v + 1, text[v]) for k, v in illegals.items()) or ''
+
+    if err1 or err2:
+        raise AssertionError("Text errors: %s %s" % (err1, err2))
+
+
 @pytest.fixture(scope="session")
 def ok_repo(tmpdir_factory):
     repo_dir = tmpdir_factory.mktemp('repo')
