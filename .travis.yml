@@ -28,8 +28,7 @@ script:
   - pip install dist/*.whl
   - pytest -q
 
-  - flake8 --show-source
-
 after_success:
   - pip install python-coveralls
   - if [[ $TRAVIS_PYTHON_VERSION == '3.6' ]]; then coveralls; fi
+  - flake8 --show-source
