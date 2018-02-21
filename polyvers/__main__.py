@@ -25,7 +25,7 @@ def main(argv=None, cmd_consumer=None, **app_init_kwds):
 
     req_ver = (3, 6)
     if sys.version_info < req_ver:
-        raise NotImplemented(
+        raise NotImplementedError(
             "Sorry, Python >= %s is required, found: %s" %
             (req_ver, sys.version_info))
 

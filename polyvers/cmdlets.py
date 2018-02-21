@@ -283,7 +283,7 @@ class CfgFilesRegistry(contextlib.ContextDecorator):
 class PathList(List):
     """Trait that splits unicode strings on `os.pathsep` to form a the list of paths."""
     def __init__(self, *args, **kwargs):
-        return super().__init__(*args, trait=Unicode(), **kwargs)
+        super().__init__(*args, trait=Unicode(), **kwargs)
 
     def validate(self, obj, value):
         """break all elements also into `os.pathsep` segments"""
@@ -463,7 +463,7 @@ class Cmd(trc.Application, Spec):
 
         - Sources for this parameter can either be CLI or ENV-VAR; since the loading
           of config-files depend on this parameter, file-configs are ignored.
-        - Multiple values may be given and each one may be separated by '(sep)s'.
+        - Multiple values may be given and each one may be separated by '%(sep)s'.
           Priority is descending, i.e. config-params from the 1st one overrides the rest.
         - For paths resolving to existing folders, the filenames `{basename}(.py|.json)`
           are appended and searched (in this order); otherwise, any file-extension
@@ -476,7 +476,7 @@ class Cmd(trc.Application, Spec):
         Examples:
           To read and apply in descending order: [~/my_conf, /tmp/conf.py, ~/.{appname}.json]
           you may issue:
-              <cmd> --config-paths=~/my_conf(sep)s/tmp/conf.py  --Cmd.config_paths=~/.{appname}.jso
+              <cmd> --config-paths=~/my_conf%(sep)s/tmp/conf.py  --Cmd.config_paths=~/.{appname}.jso
         """ % {'sep': osp.pathsep}
         ## TODO: Simplify path-loading when /ipython/traitlets#242 merged??
         #  NOTE: Patch default-value on `Cmd` so all subcmds load same configs.

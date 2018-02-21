@@ -207,7 +207,7 @@ class InfosCmd(cmdlets.Cmd):
         return [trait.metadata['envvar']
                 for cls in classes
                 for trait
-                in cls.class_own_traits(envvar=(lambda ev: bool(ev))).values()]
+                in cls.class_own_traits(envvar=bool).values()]
 
     def run(self, *args):
         import inspect
@@ -219,13 +219,6 @@ class InfosCmd(cmdlets.Cmd):
 
         sep = osp.sep
         l2_yaml_list_sep = '\n    - '
-
-        def sterilize(func, fallback=None):
-            try:
-                return func()
-            except Exception as ex:
-                return "<%s due to: %s(%s)>" % (
-                    fallback or 'invalid', type(ex).__name__, ex)
 
         def format_tuple(path, files: List[Text]):
             endpath = sep if path[-1] != sep else ''
