@@ -623,7 +623,7 @@ class Cmd(trc.Application, Spec):
     #############
     ## Overriden for existing sub-apps to die and new ones to receive parents
     #  even when hierarchy changes (e.g. in TCs).
-    #  See https://github.com/ipython/traitlets/commit/e857996fafa814862706504cca51ac69bb8cec58#commitcomment-27681994
+    #  See https://github.com/ipython/traitlets/commit/e857996#commitcomment-27681994
 
     @trc.catch_config_error
     def initialize_subcommand(self, subc, argv=None):
@@ -670,7 +670,6 @@ class Cmd(trc.Application, Spec):
             )
 
         return obj
-
 
     #############
     ## STARTUP ##

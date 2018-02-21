@@ -21,7 +21,7 @@ def main(argv=None, cmd_consumer=None, **app_init_kwds):
         If invoked with None, ``sys.argv[1:]`` assumed.
     """
     if not globals().get('__package__'):
-        __package__ = "polyvers"  # noqa: A001 @ReservedAssignment
+        __package__ = "polyvers"  # noqa: A001 F841 @ReservedAssignment
 
     req_ver = (3, 6)
     if sys.version_info < req_ver:

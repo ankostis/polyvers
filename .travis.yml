@@ -15,18 +15,19 @@ matrix:
 install:
   - pip install --upgrade setuptools pip
   - python setup.py build bdist_wheel
-  - pip install .[test]
-  - rm -rf polyvers  # Check ONLY installed package, not checked-out!
+  - pip install -e .[test]
 
 script:
   ## Test if `pip install .[test]` installs all deps.
-  - pytest -v --cov=polyvers --cov-report term-missing
+  - pytest -v
 
   ## Re-test EXACT deps on WHEEL.
   #
+  - pip uninstall polyvers -y
+  - rm -rf polyvers  # Check ONLY installed package, not checked-out!
   - pip install -r requirements.txt -r requirements_dev.txt
   - pip install dist/*.whl
-  - pytest -q
+  - pytest -q  --no-cov
 
 after_success:
   - pip install python-coveralls
