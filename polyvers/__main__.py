@@ -20,6 +20,7 @@ def main(argv=None, cmd_consumer=None, **app_init_kwds):
     :param argv:
         If invoked with None, ``sys.argv[1:]`` assumed.
     """
+    ## ...so run it again, for when invokced by setuptools cmd.
     if not globals().get('__package__'):
         __package__ = "polyvers"  # noqa: A001 F841 @ReservedAssignment
 
@@ -74,4 +75,8 @@ def main(argv=None, cmd_consumer=None, **app_init_kwds):
 
 
 if __name__ == '__main__':
+    ## Pep366 must always be the 1st thing to run.
+    if not globals().get('__package__'):
+        __package__ = "polyvers"  # noqa: A001 F841 @ReservedAssignment
+
     main(sys.argv[1:])
