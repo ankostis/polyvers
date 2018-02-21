@@ -23,11 +23,10 @@ script:
 
   ## Re-test EXACT deps on WHEEL, with COVERAGE.
   #
-  - pip uninstall polyvers -y
-  - rm -rf polyvers  # Check ONLY installed package, not checked-out!
   - pip install -q -r requirements.txt -r requirements_dev.txt
+  - pip uninstall polyvers -y
   - pip install -q dist/*.whl
-  - pytest -q --cov=polyvers --cov-report=term-missing --cov-config=setup.cfg
+  - pytest -q --cov=polyvers --cov-report=term-missing
 
 after_success:
   - pip install python-coveralls
