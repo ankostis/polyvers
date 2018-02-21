@@ -29,6 +29,10 @@ Polyvers: Bump sub-project PEP-440 versions in Git monorepos independently
     :target: https://pyup.io/repos/github/JRCSTU/polyvers/
     :alt: Dependencies needing updates?
 
+.. image:: https://api.codacy.com/project/badge/Grade/11b2545fd0264f1cab4c862998833503
+    :target: https://www.codacy.com/app/ankostis/polyvers_jrc
+    :alt: Code quality metric
+
 :version:       |version|
 :rel_date:      |today|
 :Documentation: https://polyvers.readthedocs.io
