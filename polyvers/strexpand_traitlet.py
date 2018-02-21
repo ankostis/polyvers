@@ -27,7 +27,8 @@ def enable_unicode_trait_interpolating(context_attr='interpolation_context'):
 
     def interpolating_validate(self, obj, value):
         ctxt = getattr(obj, context_attr, None)
-        if ctxt:
+        print(getattr(self, 'no_interpolation', None))
+        if ctxt and not self.metadata.get('no_interpolation'):
             try:
                 if callable(ctxt):
                     ctxt = ctxt(self, value)
