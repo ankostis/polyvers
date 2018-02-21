@@ -195,10 +195,10 @@ class InfosCmd(cmdlets.Cmd):
         """Override to read configs from root-app."""
         self.parse_command_line(argv)
         root = self.root_app()
-        static_config = root.read_config_files()
-        static_config.merge(root.cli_config)
+        cfg = root.read_config_files()
+        cfg.merge(root.cli_config)
 
-        root.update_config(static_config)
+        root.update_config(cfg)
 
     def _collect_env_vars(self, classes):
         classes = (cls
@@ -341,11 +341,11 @@ class ShowCmd(cmdlets.Cmd):
         }
 
     def initialize(self, argv=None):
-        ## Copied from `Cmd.initialize()`.
-        #
+        """Override to read configs from root-app and not merge them."""
         self.parse_command_line(argv)
-        cfg = self.read_config_files()
-        self._loaded_config = cfg
+        root = self.root_app()
+        cfg = root.read_config_files()
+        root._loaded_config = cfg
 
     def _yield_file_configs(self, config, classes=None):
         assert not classes, (classes, "should be empty")
@@ -452,7 +452,8 @@ class ShowCmd(cmdlets.Cmd):
         else:
             raise AssertionError('Impossible enum: %s' % source)
 
-        config = self._loaded_config
+        root = self.root_app()
+        config = root._loaded_config
 
         yield from func(config, args)
 
@@ -580,4 +581,4 @@ config_subcmds = (
 
 
 def all_configurables(cmd):
-    return list(config_subcmds) + cmd.root_app().all_app_configurables
+    return [ConfigCmd] + list(config_subcmds) + cmd.root_app().all_app_configurables

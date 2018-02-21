@@ -17,7 +17,7 @@ from .conftest import assert_in_text
 @pytest.mark.parametrize('cmd, match, illegal', [
     ('config infos', [], ['config_paths: null']),
     ('config desc', ['--Cmd.config_paths=', 'StatusCmd'], []),
-    ('config show', [], []),
+    ('config show Project', ['Project(Base)'], []),
 ])
 def test_config_cmd(cmd, match, illegal):
     lc = ListConsumer()
@@ -32,3 +32,4 @@ def test_status_cmd():
     lc = ListConsumer()
     rc = main(cmd.split(), cmd_consumer=lc)
     assert rc == 0
+    #print('\n'.join(lc.items))
