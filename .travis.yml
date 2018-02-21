@@ -21,13 +21,13 @@ script:
   ## Test if `pip install .[test]` installs all deps.
   - pytest -v
 
-  ## Re-test EXACT deps on WHEEL.
+  ## Re-test EXACT deps on WHEEL, with COVERAGE.
   #
   - pip uninstall polyvers -y
   - rm -rf polyvers  # Check ONLY installed package, not checked-out!
-  - pip install -r requirements.txt -r requirements_dev.txt
-  - pip install dist/*.whl
-  - pytest -q  --no-cov
+  - pip install -q -r requirements.txt -r requirements_dev.txt
+  - pip install -q dist/*.whl
+  - pytest -q --cov=polyvers --cov-report=term-missing --cov-config=setup.cfg
 
 after_success:
   - pip install python-coveralls
