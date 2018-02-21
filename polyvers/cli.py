@@ -19,7 +19,6 @@ from ._vendor import traitlets as trt
 from ._vendor.traitlets import List, Bool, Unicode  # @UnresolvedImport
 from ._vendor.traitlets import config as trc
 from .autoinstance_traitlet import AutoInstance
-from .strexpand_traitlet import StrExpand
 
 
 ####################
@@ -73,7 +72,7 @@ class Project(Base):
         help="The signing PGP user (email, key-id)."
     )
 
-    message = StrExpand(
+    message = Unicode(
         "chore(ver): bump {current_version} → {new_version}",
         config=True,
         help="""

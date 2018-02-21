@@ -4,37 +4,55 @@
 # Licensed under the EUPL 1.2+ (the 'Licence');
 # You may not use this work except in compliance with the Licence.
 # You may obtain a copy of the Licence at: http://ec.europa.eu/idabc/eupl
-"""Unicode traitlet interpolating `{abc}` patterns from a "context" dictionary."""
+"""
+Enable Unicode-trait to interpolate `%(key)s)` patterns from "context" dicts.
+"""
 
 from ._vendor.traitlets import TraitError, Unicode  # @UnresolvedImport
+import contextlib
 
 
-class StrExpand(Unicode):
+_original_Unicode_validate = Unicode.validate
+
+
+def enable_unicode_trait_interpolating(context_attr='interpolation_context'):
     """
-    PEP-3101 expansion of any  '{key}' from *context* dictionaries (``''.format(d)``).
+    Patch :class:`Unicode` trait to interpolate from a context-dict on defining class.
+
+    :patam str context_attr:
+        The name of the attribute to search on the defining class;
+        might be a dict or a callable returning a dict.
     """
-    def __init__(self, *args, **kw):
-        """
-        :param ctxt:
-            (optional) Either None, the *context* dict to interpolate from,
-            or the *context-factory* ``callable(param_name): [dict | None]``.
-        """
-        self.ctxt = kw.pop('ctxt', None)
-        super().__init__(*args, **kw)
+    global _original_Unicode_validate
 
-    def validate(self, obj, value):
-        value = super().validate(obj, value)
-
-        ctxt = self.ctxt
+    def interpolating_validate(self, obj, value):
+        ctxt = getattr(obj, context_attr, None)
         if ctxt:
-            if callable(ctxt):
-                ctxt = ctxt(obj, value, self.name)
-            if ctxt:
-                try:
-                    value = value.format(**ctxt)
-                except Exception as ex:
-                    msg = ("Failed expanding value %r of `%s.%s` %s trait due to: %r"
-                           % (value, type(obj).__name__, self.name, self.info(), ex))
-                    raise TraitError(msg)
+            try:
+                if callable(ctxt):
+                    ctxt = ctxt(self, value)
+                value %= ctxt
+            except Exception as ex:
+                msg = ("Failed expanding trait `%s.%s` due to: %r"
+                       "\n  Original text: %s"
+                       % (type(obj).__name__, self.name, ex, value))
+                raise TraitError(msg)
 
-        return value
+        return _original_Unicode_validate(self, obj, value)
+
+    Unicode.validate = interpolating_validate
+
+
+def dissable_unicode_trait_interpolating():
+    global _original_Unicode_validate
+
+    Unicode.validate = _original_Unicode_validate
+
+
+@contextlib.contextmanager
+def interpolating_unicodes(**kw):
+    enable_unicode_trait_interpolating(**kw)
+    try:
+        yield
+    finally:
+        dissable_unicode_trait_interpolating()
