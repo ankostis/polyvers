@@ -48,6 +48,7 @@ from collections import OrderedDict
 import contextlib
 import io
 import logging
+from os import PathLike
 import os
 import re
 
@@ -57,7 +58,8 @@ import os.path as osp
 
 from . import fileutils as fu, interp_traitlet as interp
 from ._vendor import traitlets as trt
-from ._vendor.traitlets import Bool, List, Unicode  # @UnresolvedImport
+from ._vendor.traitlets import (
+    Bool, List, Unicode, Instance, Union)  # @UnresolvedImport
 from ._vendor.traitlets import config as trc
 
 
@@ -283,14 +285,16 @@ class CfgFilesRegistry(contextlib.ContextDecorator):
 class PathList(List):
     """Trait that splits unicode strings on `os.pathsep` to form a the list of paths."""
     def __init__(self, *args, **kwargs):
-        super().__init__(*args, trait=Unicode(), **kwargs)
+        super().__init__(*args,
+                         trait=Union((Unicode(), Instance(PathLike))),
+                         **kwargs)
 
     def validate(self, obj, value):
         """break all elements also into `os.pathsep` segments"""
         value = super().validate(obj, value)
-        value = [cf2
+        value = [os.fspath(cf2)
                  for cf1 in value
-                 for cf2 in cf1.split(os.pathsep)]
+                 for cf2 in os.fspath(cf1).split(os.pathsep)]
         return value
 
     def from_string(self, s):

@@ -179,7 +179,31 @@ def test_default_loaded_paths():
         assert len(c.loaded_config_files) == 1
 
 
-test_paths = [
+test_paths0 = [
+    ([], []),
+    (['cc', 'cc.json'], ['cc', 'cc.json']),
+    (['c.json%sc.py' % PS], ['c.json', 'c.py']),
+    (['c', 'c.json%sc.py' % PS, 'jjj'], ['c', 'c.json', 'c.py', 'jjj']),
+]
+
+
+@pytest.mark.parametrize('inp, exp', test_paths0)
+def test_PathList_trait(inp, exp):
+    from pathlib import Path
+
+    class C(trt.HasTraits):
+        p = cmd.PathList()
+
+    c = C()
+    c.p = inp
+    assert c.p == exp
+
+    c = C()
+    c.p = [Path(i) for i in inp]
+    assert c.p == exp
+
+
+test_paths1 = [
     (None, None, []),
     (['cc', 'cc.json'], None, []),
 
@@ -214,7 +238,7 @@ test_paths = [
 ]
 
 
-@pytest.mark.parametrize('param, var, exp', test_paths)
+@pytest.mark.parametrize('param, var, exp', test_paths1)
 def test_collect_static_fpaths(param, var, exp, tmpdir):
     tdir = tmpdir.mkdir('collect_paths')
 
@@ -229,8 +253,8 @@ def test_collect_static_fpaths(param, var, exp, tmpdir):
         c = cmd.Cmd()
         if param is not None:
             c.config_paths = [str(tdir / ff)
-                                for f in param
-                                for ff in f.split(os.pathsep)]
+                              for f in param
+                              for ff in f.split(os.pathsep)]
         if var is not None:
             os.environ['POLYVERS_CONFIG_PATHS'] = os.pathsep.join(
                 osp.join(tdir, ff)
@@ -239,7 +263,7 @@ def test_collect_static_fpaths(param, var, exp, tmpdir):
 
         paths = c._collect_static_fpaths()
         paths = [P(p).relto(tdir).replace('\\', '/') for p in paths]
-        assert paths == exp, (param, var, exp)
+        assert paths == exp
     finally:
         try:
             del os.environ['POLYVERS_CONFIG_PATHS']
