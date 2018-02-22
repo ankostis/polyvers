@@ -7,9 +7,6 @@
 #
 """The code of *polyvers* shell-commands."""
 
-from collections import ChainMap
-import os
-
 import itertools as itt
 
 from . import APPNAME
@@ -20,7 +17,6 @@ from ._vendor.traitlets import List, Bool, Unicode  # @UnresolvedImport
 from ._vendor.traitlets import config as trc
 from .autoinstance_traitlet import AutoInstance
 
-
 ####################
 ## Config sources ##
 ####################
@@ -28,32 +24,7 @@ CONFIG_VAR_NAME = '%s_CONFIG_PATHS' % APPNAME
 #######################
 
 
-class Base(cmdlets.Spec):
-    " Common base for configurables and apps."
-
-    #: A stack of 3 dics used by `interpolation_factory()` class-method,
-    #: listed with 1st one winning over:
-    #:   0. vcs-info: writes affect this one only,
-    #:   1. time: (now, utcnow), always updated on access,
-    #:   2. env-vars, `$`-prefixed.
-    interpolation = ChainMap([{}, {}, {}])
-
-    @classmethod
-    def interpolation_factory(cls, obj, trait, text):
-        from datetime import datetime
-
-        maps = cls.interpolation
-        if not maps:
-            maps[2].update({'$' + k: v for k, v in os.environ.items()})
-        maps[1].update({
-            'now': datetime.now(),
-            'utcnow': datetime.utcnow(),
-        })
-
-        return cls.interpolation
-
-
-class Project(Base):
+class Project(cmdlets.Spec):
     tag = Bool(
         config=True,
         help="""
@@ -207,7 +178,7 @@ class PolyversCmd(MyCmd, Project):
 
     @trt.default('all_app_configurables')
     def _all_app_configurables(self):
-        return [type(self), Base, Project,
+        return [type(self), Project,
                 InitCmd, StatusCmd, SetverCmd, BumpveCmd, LogconfCmd]
 
 
