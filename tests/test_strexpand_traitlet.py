@@ -33,15 +33,21 @@ def test_Unicode_interpolation(s, ctxt, exp):
         interpolation = lambda _, __, v: v % ctxt
         s = Unicode().tag(no_interpolation=True)
 
+    class C4(HasTraits):
+        s = Unicode()
+
     assert C1(s=s).s == s
     assert C2(s=s).s == s
     assert C3(s=s).s == s
+    assert C4(s=s).s == s
 
     with interpolating_unicodes():
         assert C1(s=s).s == exp
         assert C2(s=s).s == exp
         assert C3(s=s).s == s
+        assert C4(s=s).s == s
 
     assert C1(s=s).s == s
     assert C2(s=s).s == s
     assert C3(s=s).s == s
+    assert C4(s=s).s == s
