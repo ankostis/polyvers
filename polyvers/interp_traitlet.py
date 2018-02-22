@@ -84,16 +84,14 @@ class InterpContext:
       1. time: ('now', 'utcnow'), always updated on access,
       2. env-vars, `$`-prefixed.
 
+    Append more dicts in ``self.ctxt.maps`` list if you wish.
+
     :ivar dict ctxt:
         the dictionary with all key-value interpolations
 
     """
-    def __init__(self, user_dicts_n=0):
-        """
-        :param int user_dicts_n:
-            how many extra dicts to insert in the context (apart from the 3)
-        """
-        dicts = [{} for _ in range(3 + user_dicts_n)]
+    def __init__(self):
+        dicts = [{} for _ in range(3)]
         dicts[1] = {
             'now': Now(),
             'utcnow': Now(is_utc=True),
