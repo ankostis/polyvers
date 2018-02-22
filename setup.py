@@ -27,6 +27,7 @@ requirements = [
     'ruamel.yaml',              # for logconf
     'ipython_genutils',         # by vendorized `traitlets`
     'spectate',                 # by vendorized `traitlets`
+    'ruamel.yaml>=0.15',
 ]
 
 test_requirements = [

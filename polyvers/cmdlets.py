@@ -61,6 +61,7 @@ from ._vendor import traitlets as trt
 from ._vendor.traitlets import (
     Bool, List, Unicode, Instance, Union)  # @UnresolvedImport
 from ._vendor.traitlets import config as trc
+from .yamlconfloader import YAMLFileConfigLoader
 
 
 def class2cmd_name(cls):
@@ -512,12 +513,12 @@ class Cmd(trc.Application, Spec):
     def _collect_static_fpaths(self):
         """Return fully-normalized paths, with ext."""
         config_paths = self.config_paths
-        self._cfgfiles_registry = CfgFilesRegistry()
+        self._cfgfiles_registry = CfgFilesRegistry('.json .yaml .py'.split())
         fpaths = self._cfgfiles_registry.collect_fpaths(config_paths)
 
         return fpaths
 
-    def _read_config_from_json_or_py(self, cfpath):
+    def _read_supported_configs(self, cfpath):
         """
         :param str cfpath:
             The absolute config-file path with either ``.py`` or ``.json`` ext.
@@ -526,6 +527,7 @@ class Cmd(trc.Application, Spec):
         loaders = {
             '.py': trc.PyFileConfigLoader,
             '.json': trc.JSONFileConfigLoader,
+            '.yaml': YAMLFileConfigLoader,
         }
         ext = osp.splitext(cfpath)[1]
         loader = loaders.get(str.lower(ext))
@@ -567,7 +569,7 @@ class Cmd(trc.Application, Spec):
         loaded = {}  # type: Dict[Text, Config]
 
         for cfpath in config_paths[::-1]:
-            config = self._read_config_from_json_or_py(cfpath)
+            config = self._read_supported_configs(cfpath)
             if config:
                 for filename, earlier_config in loaded.items():
                     collisions = earlier_config.collisions(config)

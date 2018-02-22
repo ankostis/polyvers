@@ -286,3 +286,20 @@ def test_help_smoketest():
     c.print_subcommands()
     c.print_examples()
     c.print_help()
+
+
+def test_yaml_config(tmpdir):
+    tdir = tmpdir.mkdir('yamlconfig')
+    conf_fpath = tdir / '.polyvers.yaml'
+    conf = """
+    Cmd:
+      verbose:
+        true
+    """
+    with open(conf_fpath, 'wt') as fout:
+        fout.write(tw.dedent(conf))
+
+    c = cmd.Cmd()
+    c.config_paths = [conf_fpath]
+    c.initialize(argv=[])
+    assert c.verbose is True
