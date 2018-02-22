@@ -8,7 +8,9 @@
 Enable Unicode-trait to pep3101-interpolate `{key}` patterns from "context" dicts.
 """
 
+from collections import ChainMap
 import contextlib
+import os
 
 from ._vendor.traitlets import TraitError, Unicode  # @UnresolvedImport
 
@@ -71,3 +73,33 @@ class Now:
         now = dt.now() if self.is_utc else dt.utcnow()
 
         return now.__format__(format_spec)
+
+
+class InterpContext:
+    """
+    A stack of 3 dics to be used as interpolation context.
+
+    The 3 stacked dicts are:
+      0. user-info: writes affect this dict only,
+      1. time: ('now', 'utcnow'), always updated on access,
+      2. env-vars, `$`-prefixed.
+
+    :ivar dict ctxt:
+        the dictionary with all key-value interpolations
+
+    """
+    def __init__(self, user_dicts_n=0):
+        """
+        :param int user_dicts_n:
+            how many extra dicts to insert in the context (apart from the 3)
+        """
+        dicts = [{} for _ in range(3 + user_dicts_n)]
+        dicts[1] = {
+            'now': Now(),
+            'utcnow': Now(is_utc=True),
+        }
+        self.ctxt = ChainMap(*dicts)
+        self.update_env()
+
+    def update_env(self):
+        self.ctxt.maps[2] = {'$' + k: v for k, v in os.environ.items()}

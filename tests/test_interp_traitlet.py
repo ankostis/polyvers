@@ -6,7 +6,7 @@
 # You may obtain a copy of the Licence at: http://ec.europa.eu/idabc/eupl
 
 from polyvers._vendor.traitlets import HasTraits, Unicode  # @UnresolvedImport
-from polyvers.interp_traitlet import interpolating_unicodes, Now
+from polyvers.interp_traitlet import interpolating_unicodes, Now, InterpContext
 
 import pytest
 
@@ -75,3 +75,13 @@ def test_dates_interpolation():
     assert c.s == C.s.default_value
     assert C().s == C.s.default_value
     assert C(s=now_frmt).s == now_frmt
+
+
+def test_InterpContext():
+    ctxt = InterpContext().ctxt
+
+    s = 'stop the clock at {now}!'
+    assert s.format(**ctxt) != s
+
+    ctxt['A'] = '42'
+    assert 'What? {A}'.format(**ctxt) == 'What? 42'
