@@ -9,11 +9,11 @@
 import logging
 from os import pathsep as PS
 import os
-from polyvers import cmdlets
+from polyvers import cmdlets as cmd
 from polyvers._vendor import traitlets as trt
 from polyvers.logconfutils import init_logging
 import tempfile
-
+import textwrap as tw
 import pytest
 
 import os.path as osp
@@ -45,7 +45,7 @@ def test_CfgFilesRegistry_consolidate_posix_1():
         ('/d/foo\Bar/dooba/doo', None),
         ('/d/foo\Bar/dooba/doo', None),
     ]
-    c = cmdlets.CfgFilesRegistry()
+    c = cmd.CfgFilesRegistry()
     cons = c._consolidate(visited)
 
     exp = [
@@ -66,7 +66,7 @@ def test_CfgFilesRegistry_consolidate_posix_2():
         ('/d/foo\Bar/dooba/doo', None),
         ('/d/foo\Bar/dooba/doo', None),
     ]
-    c = cmdlets.CfgFilesRegistry()
+    c = cmd.CfgFilesRegistry()
     cons = c._consolidate(visited)
 
     exp = [
@@ -87,7 +87,7 @@ def test_CfgFilesRegistry_consolidate_win_1():
         ('d:\\foo\Bar\\dooba\\doo', None),
         ('d:\\foo\Bar\\dooba\\doo', None),
     ]
-    c = cmdlets.CfgFilesRegistry()
+    c = cmd.CfgFilesRegistry()
     cons = c._consolidate(visited)
 
     exp = [
@@ -108,7 +108,7 @@ def test_CfgFilesRegistry_consolidate_win_2():
         ('D:\\foo\Bar\\dooba\\doo', None),
         ('D:\\foo\Bar\\dooba\\doo', None),
     ]
-    c = cmdlets.CfgFilesRegistry()
+    c = cmd.CfgFilesRegistry()
     cons = c._consolidate(visited)
 
     exp = [
@@ -141,12 +141,12 @@ def test_CfgFilesRegistry(tmpdir):
     """
     touchpaths(tdir, paths)
 
-    cfr = cmdlets.CfgFilesRegistry()
+    cfr = cmd.CfgFilesRegistry()
     fpaths = cfr.collect_fpaths(['conf'])
     fpaths = [P(p).relto(tdir).replace('\\', '/') for p in fpaths]
     assert fpaths == 'conf.json conf.py conf.d/a.json conf.d/a.py'.split()
 
-    cfr = cmdlets.CfgFilesRegistry()
+    cfr = cmd.CfgFilesRegistry()
     fpaths = cfr.collect_fpaths(['conf.py'])
     fpaths = [P(p).relto(tdir).replace('\\', '/') for p in fpaths]
     assert fpaths == 'conf.py conf.py.d/a.json conf.d/a.json conf.d/a.py'.split()
@@ -159,24 +159,24 @@ def test_no_default_config_paths(tmpdir):
     home = tmpdir.mkdir('home')
     os.environ['HOME'] = str(home)
 
-    cmd = cmdlets.Cmd()
-    cmd.initialize([])
-    print(cmd._cfgfiles_registry.config_tuples)
-    assert len(cmd.loaded_config_files) == 0
+    c = cmd.Cmd()
+    c.initialize([])
+    print(c._cfgfiles_registry.config_tuples)
+    assert len(c.loaded_config_files) == 0
 
 
 def test_default_loaded_paths():
     with tempfile.TemporaryDirectory(prefix=__name__) as tdir:
-        class MyCmd(cmdlets.Cmd):
+        class MyCmd(cmd.Cmd):
             ""
             @trt.default('config_paths')
             def _config_paths(self):
                 return [tdir]
 
-        cmd = MyCmd()
-        cmd.initialize([])
-        print(cmd._cfgfiles_registry.config_tuples)
-        assert len(cmd.loaded_config_files) == 1
+        c = MyCmd()
+        c.initialize([])
+        print(c._cfgfiles_registry.config_tuples)
+        assert len(c.loaded_config_files) == 1
 
 
 test_paths = [
@@ -226,9 +226,9 @@ def test_collect_static_fpaths(param, var, exp, tmpdir):
     """)
 
     try:
-        cmd = cmdlets.Cmd()
+        c = cmd.Cmd()
         if param is not None:
-            cmd.config_paths = [str(tdir / ff)
+            c.config_paths = [str(tdir / ff)
                                 for f in param
                                 for ff in f.split(os.pathsep)]
         if var is not None:
@@ -237,7 +237,7 @@ def test_collect_static_fpaths(param, var, exp, tmpdir):
                 for f in var
                 for ff in f.split(os.pathsep))
 
-        paths = cmd._collect_static_fpaths()
+        paths = c._collect_static_fpaths()
         paths = [P(p).relto(tdir).replace('\\', '/') for p in paths]
         assert paths == exp, (param, var, exp)
     finally:
@@ -248,7 +248,7 @@ def test_collect_static_fpaths(param, var, exp, tmpdir):
 
 
 def test_help_smoketest():
-    cls = cmdlets.Cmd
+    cls = cmd.Cmd
     cls.class_get_help()
     cls.class_config_section()
     cls.class_config_rst_doc()
