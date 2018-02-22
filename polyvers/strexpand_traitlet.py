@@ -5,7 +5,7 @@
 # You may not use this work except in compliance with the Licence.
 # You may obtain a copy of the Licence at: http://ec.europa.eu/idabc/eupl
 """
-Enable Unicode-trait to interpolate `%(key)s)` patterns from "context" dicts.
+Enable Unicode-trait to pep3101-interpolate `{key}` patterns from "context" dicts.
 """
 
 from ._vendor.traitlets import TraitError, Unicode  # @UnresolvedImport
@@ -30,7 +30,10 @@ def enable_unicode_trait_interpolating(context_attr='interpolation'):
         print(getattr(self, 'no_interpolation', None))
         if ctxt and not self.metadata.get('no_interpolation'):
             try:
-                value = ctxt(self, value) if callable(ctxt) else value % ctxt
+                if callable(ctxt):
+                    value = ctxt(self, value)
+                else:
+                    value = value.format(**ctxt)
             except Exception as ex:
                 msg = ("Failed expanding trait `%s.%s` due to: %r"
                        "\n  Original text: %s"

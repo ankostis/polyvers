@@ -12,10 +12,10 @@ from polyvers.strexpand_traitlet import interpolating_unicodes
 
 
 texts = [
-    ('%(key)s', {'key': 123}, '123'),
-    ('a%(key)sb', {'key': 123}, 'a123b'),
+    ('{key}', {'key': 123}, '123'),
+    ('a{key}b', {'key': 123}, 'a123b'),
 
-    ('foo', {'key': 123}, 'foo'),
+    ('foo', {}, 'foo'),
 ]
 
 
@@ -26,11 +26,11 @@ def test_Unicode_interpolation(s, ctxt, exp):
         s = Unicode()
 
     class C2(HasTraits):
-        interpolation = lambda _, __, v: v % ctxt
+        interpolation = lambda _, __, v: v.format(**ctxt)
         s = Unicode()
 
     class C3(HasTraits):
-        interpolation = lambda _, __, v: v % ctxt
+        interpolation = lambda _, __, v: v.format(**ctxt)
         s = Unicode().tag(no_interpolation=True)
 
     class C4(HasTraits):
