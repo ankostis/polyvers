@@ -51,3 +51,33 @@ def test_Unicode_interpolation(s, ctxt, exp):
     assert C2(s=s).s == s
     assert C3(s=s).s == s
     assert C4(s=s).s == s
+
+
+def test_dates_interpolation():
+    from datetime import datetime
+
+    class DT:
+        def __format__(self, format_spec):
+            return datetime.now().__format__(format_spec)
+
+    class C(HasTraits):
+        interpolation = {'now': DT()}
+        s = Unicode('stop the clock at {now}!')
+
+    now_frmt = '{now:%Y-%m-%d %H:%M}'
+
+    c = C()
+    c2 = C(s=now_frmt)
+
+    assert c.s == C.s.default_value
+    assert c2.s == now_frmt
+
+    with interpolating_unicodes():
+        assert C().s != C.s.default_value
+        assert C(s=now_frmt).s != now_frmt
+        assert c.s == C.s.default_value  # !! validate() defaults invoked once?
+        assert c2.s == now_frmt
+
+    assert c.s == C.s.default_value
+    assert C().s == C.s.default_value
+    assert C(s=now_frmt).s == now_frmt
