@@ -185,6 +185,11 @@ class InfosCmd(cmdlets.Cmd):
         <APPNAME>_CONFIG_PATHS      : where to read configuration-files.
     """
 
+    examples = Unicode("""
+        - Show parameter help for all classes/params containing 'foo' in their name::
+              {cmd_chain} foo
+    """)
+
     app_infos = Instance(
         dict,
         default_value={},
