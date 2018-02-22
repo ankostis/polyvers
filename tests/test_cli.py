@@ -12,6 +12,31 @@ from polyvers.mainpump import ListConsumer
 import pytest
 
 from .conftest import assert_in_text
+from polyvers import cli
+from polyvers import cmdlets as cmd
+
+
+all_cmds = [c
+            for c in cli.PolyversCmd().all_app_configurables
+            if issubclass(c, cmd.Cmd)]
+
+
+@pytest.mark.parametrize('cmd', all_cmds)
+def test_all_cmds_help_smoketest(cmd):
+    cmd.class_get_help()
+    cmd.class_config_section()
+    cmd.class_config_rst_doc()
+
+    c = cmd()
+    c.print_help()
+    c.document_config_options()
+    c.print_alias_help()
+    c.print_flag_help()
+    c.print_options()
+    c.print_subcommands()
+    c.print_examples()
+    #assert len(list(c.emit_examples())) > 1  TODO: Require cmd examples
+    c.print_help()
 
 
 @pytest.mark.parametrize('cmd, match, illegal', [
