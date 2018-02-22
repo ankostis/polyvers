@@ -55,7 +55,7 @@ from boltons.setutils import IndexedSet as iset
 
 import os.path as osp
 
-from . import fileutils as fu
+from . import fileutils as fu, interp_traitlet as interp
 from ._vendor import traitlets as trt
 from ._vendor.traitlets import Bool, List, Unicode  # @UnresolvedImport
 from ._vendor.traitlets import config as trc
@@ -303,6 +303,15 @@ class CmdException(Exception):
     pass
 
 
+#: Client-code may add more dicts in `interpolation_context.maps` list.
+cmd_interpolation_context = interp.InterpContext()
+#: The 4th dict is for help interpolations.
+cmd_interpolation_context.ctxt.maps.append({
+    'appname': '<APP>',
+    'cmd_chain': '<CMD>'
+})
+
+
 class Spec(trc.Configurable):
     verbose = Bool(
         config=True,
@@ -315,6 +324,8 @@ class Spec(trc.Configurable):
     dry_run = Bool(
         config=True,
         help="Do not write files - just pretend.")
+
+    interpolations = cmd_interpolation_context
 
 
 class Cmd(trc.Application, Spec):
@@ -375,14 +386,10 @@ class Cmd(trc.Application, Spec):
             {appname} desc <class>.<param>
     """.strip())
 
-    def _my_text_interpolations(self):
-        return {'appname': '<set `appname` in `Cmd._my_text_interpolations()>',
-                'cmd_chain': cmd_line_chain(self)}
-
     def emit_description(self):
         ## Overridden for interpolating app-name.
         txt = self.description or self.__doc__
-        txt %= self._my_text_interpolations()
+        txt.format(**self.interpolations.ctxt)
         for p in trc.wrap_paragraphs('%s: %s' % (cmd_line_chain(self), txt)):
             yield p
             yield ''
@@ -394,7 +401,7 @@ class Cmd(trc.Application, Spec):
         header = 'Options'
         yield header
         yield '=' * len(header)
-        for p in trc.wrap_paragraphs(self.option_description % self._my_text_interpolations()):
+        for p in trc.wrap_paragraphs(self.option_description.format(**self.interpolations.ctxt)):
             yield p
             yield ''
 
@@ -408,7 +415,7 @@ class Cmd(trc.Application, Spec):
         ## Overridden for interpolating app-name.
         if self.examples:
             txt = self.examples
-            txt = txt.strip() % self._my_text_interpolations()
+            txt = txt.strip().format(**self.interpolations.ctxt)
             yield "Examples"
             yield "--------"
             yield ''
@@ -421,16 +428,15 @@ class Cmd(trc.Application, Spec):
         If classes=False (the default), print `--help-all` msg.
         """
         if not classes:
-            interps = self._my_text_interpolations()
             yield trc.dedent("""
             --------
             - For available option, configuration-params & examples, use:
-                  %(cmd_chain)s help (OR --help-all)
+                  {cmd_chain} help (OR --help-all)
             - For help on specific classes/params, use:
-                  %(appname)s config desc <class-or-param-1>...
+                  {appname} config desc <class-or-param-1>...
             - To inspect configuration values:
-                  %(appname)s config show <class-or-param-1>...
-            """ % interps)
+                  {appname} config show <class-or-param-1>...
+            """.format(**self.interpolations.ctxt))
 
     ############
     ## CONFIG ##
@@ -465,7 +471,7 @@ class Cmd(trc.Application, Spec):
           of config-files depend on this parameter, file-configs are ignored.
         - Multiple values may be given and each one may be separated by '%(sep)s'.
           Priority is descending, i.e. config-params from the 1st one overrides the rest.
-        - For paths resolving to existing folders, the filenames `{basename}(.py|.json)`
+        - For paths resolving to existing folders, the filenames `<basename>(.py|.json)`
           are appended and searched (in this order); otherwise, any file-extension
           is ignored, and the mentioned extensions are combined and searched.
 
@@ -706,6 +712,9 @@ class Cmd(trc.Application, Spec):
             ## Only the final child reads file-configs.
             #  Also avoid contaminations with user if generating-config.
             return
+
+        self.interpolations.ctxt.maps[3]['cmd_chain'] = cmd_line_chain(self)
+        self.interpolations.ctxt.maps[3]['appname'] = self.root_app().name
 
         static_config = self.read_config_files()
         static_config.merge(self.cli_config)

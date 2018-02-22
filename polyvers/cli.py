@@ -101,19 +101,19 @@ class PolyversCmd(MyCmd, Project):
     Bump independently PEP-440 versions of sub-project in Git monorepos.
 
     SYNTAX:
-      %(cmd_chain)s <sub-cmd> ...
+      {cmd_chain} <sub-cmd> ...
     """
     version = __version__
     examples = Unicode("""
         - Let it guess the configurations for your monorepo::
-              %(cmd_chain)s init
+              {cmd_chain} init
           You may specify different configurations paths with:
-              %(cmd_chain)s --config-paths /foo/bar/:~/.%(appname)s.yaml:.
+              {cmd_chain} --config-paths /foo/bar/:~/.%(appname)s.yaml:.
 
         - Use then the main sub-commands::
-              %(cmd_chain)s status
-              %(cmd_chain)s setver 0.0.0.dev0 -c '1st commit, untagged'
-              %(cmd_chain)s bump -t 'Mostly model changes, tagged'
+              {cmd_chain} status
+              {cmd_chain} setver 0.0.0.dev0 -c '1st commit, untagged'
+              {cmd_chain} bump -t 'Mostly model changes, tagged'
 
         PEP-440 Version Samples:
         - Pre-releases: when working on new features:
@@ -237,7 +237,7 @@ class StatusCmd(VersionSubcmd):
     List the versions of project(s).
 
     SYNTAX:
-        %(cmd_chain)s [OPTIONS] [<project>]...
+        {cmd_chain} [OPTIONS] [<project>]...
     """
     def run(self, *args):
         self.check_project_configs_exist()
@@ -248,7 +248,7 @@ class SetverCmd(VersionSubcmd):
     Set the version of project(s) exacty as given.
 
     SYNTAX:
-        %(cmd_chain)s [OPTIONS] <version> [<project>]...
+        {cmd_chain} [OPTIONS] <version> [<project>]...
 
     - If no <version-offset> specified, increase the last part (e.g 0.0.dev0-->dev1).
     - If no project(s) specified, increase the versions for all projects.
@@ -265,8 +265,8 @@ class BumpveCmd(VersionSubcmd):
     Increase the version of project(s) by the given offset.
 
     SYNTAX:
-        %(cmd_chain)s [OPTIONS] [<version-offset>] [<project>]...
-        %(cmd_chain)s [OPTIONS] --part <offset> [<project>]...
+        {cmd_chain} [OPTIONS] [<version-offset>] [<project>]...
+        {cmd_chain} [OPTIONS] --part <offset> [<project>]...
 
     - If no <version-offset> specified, increase the last part (e.g 0.0.dev0-->dev1).
     - If no project(s) specified, increase the versions for all projects.

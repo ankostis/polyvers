@@ -245,3 +245,20 @@ def test_collect_static_fpaths(param, var, exp, tmpdir):
             del os.environ['POLYVERS_CONFIG_PATHS']
         except Exception as _:
             pass
+
+
+def test_help_smoketest():
+    cls = cmdlets.Cmd
+    cls.class_get_help()
+    cls.class_config_section()
+    cls.class_config_rst_doc()
+
+    c = cls()
+    c.print_help()
+    c.document_config_options()
+    c.print_alias_help()
+    c.print_flag_help()
+    c.print_options()
+    c.print_subcommands()
+    c.print_examples()
+    c.print_help()

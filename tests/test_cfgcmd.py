@@ -9,7 +9,8 @@
 import logging
 from polyvers import cfgcmd
 from polyvers import mainpump as mpu
-from polyvers.cfgcmd import ConfigCmd
+from polyvers.cfgcmd import ConfigCmd, all_configurables
+import polyvers.cmdlets as cmd
 from polyvers.logconfutils import init_logging
 
 import pytest
@@ -64,3 +65,27 @@ def test_desc_smoketest(case, nlines):
     cmd = ConfigCmd.make_cmd(['desc'] + case)
     res = mpu.collect_cmd(cmd.start(), dont_coalesce=True, assert_ok=True)
     assert len(res) >= nlines
+
+
+all_cmds = [c
+            for c in all_configurables(ConfigCmd())
+            if issubclass(c, cmd.Cmd)]
+
+
+@pytest.mark.parametrize('cmd', all_cmds)
+def test_all_cmds_help_smoketest(cmd):
+    cmd.class_get_help()
+    cmd.class_config_section()
+    cmd.class_config_rst_doc()
+
+    c = cmd()
+    c.print_help()
+    c.document_config_options()
+    c.print_alias_help()
+    c.print_flag_help()
+    c.print_options()
+    c.print_subcommands()
+    c.print_examples()
+    c.print_help()
+
+

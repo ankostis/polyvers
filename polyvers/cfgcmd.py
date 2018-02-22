@@ -129,16 +129,16 @@ class ConfigCmd(cmdlets.Cmd):
 
     examples = Unicode("""
         - Ask help on parameters affecting the source of the configurations::
-              %(cmd_chain)s desc  config_paths  show_config
+              {cmd_chain} desc  config_paths  show_config
 
         - Show config-param values for all params containing word "mail"::
-              %(cmd_chain)s show  --versbose  mail
+              {cmd_chain} show  --versbose  mail
 
         - Show values originating from files::
-              %(cmd_chain)s show  --source file
+              {cmd_chain} show  --source file
 
         - Show configuration paths::
-              %(cmd_chain)s paths
+              {cmd_chain} paths
     """)
 
     def __init__(self, **kwds):
@@ -149,10 +149,10 @@ class ConfigCmd(cmdlets.Cmd):
 
 class WriteCmd(cmdlets.Cmd):
     """
-    Store config defaults into specified path(s); '{confpath}' assumed if none specified.
+    Store config defaults into specified path(s); The 1st in `config_paths` assumed if not given.
 
     SYNTAX
-        %(cmd_chain)s [OPTIONS] [<config-path-1>] ...
+        {cmd_chain} [OPTIONS] [<config-path-1>] ...
 
     - If a path resolves to a folder, the filename '{appname}_config.py' is appended.
     - It OVERWRITES any pre-existing configuration file(s)!
@@ -160,7 +160,7 @@ class WriteCmd(cmdlets.Cmd):
 
     examples = Unicode("""
         - Generate a config-file at your home folder::
-              %(cmd_chain)s ~/my_conf
+              {cmd_chain} ~/my_conf
 
         - To re-use the generated custom config-file alone, use the option::
               --config-paths=~/my_conf  ...
@@ -260,8 +260,8 @@ class ShowCmd(cmdlets.Cmd):
     Print configurations (defaults | files | merged) before any validations.
 
     SYNTAX
-        %(cmd_chain)s [OPTIONS] [--source=(merged | default)] [<search-term-1> ...]
-        %(cmd_chain)s [OPTIONS] --source file
+        {cmd_chain} [OPTIONS] [--source=(merged | default)] [<search-term-1> ...]
+        {cmd_chain} [OPTIONS] --source file
 
     - Search-terms are matched case-insensitively against '<class>.<param>'.
     - Use --verbose to view values for config-params as they apply in the
@@ -275,18 +275,18 @@ class ShowCmd(cmdlets.Cmd):
 
     examples = Unicode("""
         - View all "merged" configuration values::
-              %(cmd_chain)s
+              {cmd_chain}
 
         - View all "default" or "in file" configuration values, respectively::
-              %(cmd_chain)s --source defaults
-              %(cmd_chain)s --s f
+              {cmd_chain} --source defaults
+              {cmd_chain} --s f
 
         - View help on specific parameters::
-              %(cmd_chain)s config_paths
-              %(cmd_chain)s -e '.*path.*'
+              {cmd_chain} config_paths
+              {cmd_chain} -e '.*path.*'
 
         - List classes matching a regex::
-              %(cmd_chain)s -ecl '.*cmd$'
+              {cmd_chain} -ecl '.*cmd$'
     """)
 
     verbose = Bool(
@@ -463,7 +463,7 @@ class DescCmd(cmdlets.Cmd):
     List and print help for configurable classes and parameters.
 
     SYNTAX
-        %(cmd_chain)s [-l] [-c] [-t] [-v] [<search-term> ...]
+        {cmd_chain} [-l] [-c] [-t] [-v] [<search-term> ...]
 
     - If no search-terms provided, returns all.
     - Search-terms are matched case-insensitively against '<class>.<param>',
@@ -477,27 +477,27 @@ class DescCmd(cmdlets.Cmd):
 
     examples = Unicode(r"""
         - Just List::
-              %(cmd_chain)s --list         # List configurable parameters.
-              %(cmd_chain)s -l --class     # List configurable classes.
-              %(cmd_chain)s -l --verbose   # List config params in all hierarchy.
+              {cmd_chain} --list         # List configurable parameters.
+              {cmd_chain} -l --class     # List configurable classes.
+              {cmd_chain} -l --verbose   # List config params in all hierarchy.
 
         -  Exploit the fact that <class>.<param> are separated with a dot('.)::
-              %(cmd_chain)s -l Cmd.        # List commands and their own params.
-              %(cmd_chain)s -lv Cmd.       # List commands including inherited params.
-              %(cmd_chain)s -l ceiver.     # List params of TStampReceiver spec class.
-              %(cmd_chain)s -l .user       # List parameters starting with 'user' prefix.
+              {cmd_chain} -l Cmd.        # List commands and their own params.
+              {cmd_chain} -lv Cmd.       # List commands including inherited params.
+              {cmd_chain} -l ceiver.     # List params of TStampReceiver spec class.
+              {cmd_chain} -l .user       # List parameters starting with 'user' prefix.
 
         -  Use regular expressions (--regex)::
-              %(cmd_chain)s -le  ^t.+cmd   # List params for cmds starting with 't'.
-              %(cmd_chain)s -le  date$     # List params ending with 'date'.
-              %(cmd_chain)s -le  mail.*\.  # Search 'mail' anywhere in class-names.
-              %(cmd_chain)s -le  \..*mail  # Search 'mail' anywhere in param-names.
+              {cmd_chain} -le  ^t.+cmd   # List params for cmds starting with 't'.
+              {cmd_chain} -le  date$     # List params ending with 'date'.
+              {cmd_chain} -le  mail.*\.  # Search 'mail' anywhere in class-names.
+              {cmd_chain} -le  \..*mail  # Search 'mail' anywhere in param-names.
 
         Tip:
           Do all of the above and remove -l.
           For instance::
-              %(cmd_chain)s -c DescCmd    # View help for this cmd without its parameters.
-              %(cmd_chain)s -t Spec.      # View help sorted alphabetically
+              {cmd_chain} -c DescCmd    # View help for this cmd without its parameters.
+              {cmd_chain} -t Spec.      # View help sorted alphabetically
     """)
 
     list = Bool(  # noqa: A003 (override-builtins)
@@ -513,7 +513,7 @@ class DescCmd(cmdlets.Cmd):
         Search terms as regular-expressions.
 
         Example:
-             %(cmd_chain)s -e ^DescCmd.regex
+             {cmd_chain} -e ^DescCmd.regex
 
         will print the help-text of this parameter (--regex, -e).
         """
