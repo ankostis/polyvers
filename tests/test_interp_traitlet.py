@@ -5,10 +5,10 @@
 # You may not use this work except in compliance with the Licence.
 # You may obtain a copy of the Licence at: http://ec.europa.eu/idabc/eupl
 
-import pytest
-
 from polyvers._vendor.traitlets import HasTraits, Unicode  # @UnresolvedImport
-from polyvers.strexpand_traitlet import interpolating_unicodes
+from polyvers.interp_traitlet import interpolating_unicodes, Now
+
+import pytest
 
 
 texts = [
@@ -54,14 +54,8 @@ def test_Unicode_interpolation(s, ctxt, exp):
 
 
 def test_dates_interpolation():
-    from datetime import datetime
-
-    class DT:
-        def __format__(self, format_spec):
-            return datetime.now().__format__(format_spec)
-
     class C(HasTraits):
-        interpolation = {'now': DT()}
+        interpolation = {'now': Now()}
         s = Unicode('stop the clock at {now}!')
 
     now_frmt = '{now:%Y-%m-%d %H:%M}'

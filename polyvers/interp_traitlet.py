@@ -8,8 +8,9 @@
 Enable Unicode-trait to pep3101-interpolate `{key}` patterns from "context" dicts.
 """
 
-from ._vendor.traitlets import TraitError, Unicode  # @UnresolvedImport
 import contextlib
+
+from ._vendor.traitlets import TraitError, Unicode  # @UnresolvedImport
 
 
 _original_Unicode_validate = Unicode.validate
@@ -58,3 +59,15 @@ def interpolating_unicodes(**kw):
         yield
     finally:
         dissable_unicode_trait_interpolating()
+
+
+class Now:
+    def __init__(self, is_utc=False):
+        self.is_utc = is_utc
+
+    def __format__(self, format_spec):
+        from datetime import datetime as dt
+
+        now = dt.now() if self.is_utc else dt.utcnow()
+
+        return now.__format__(format_spec)
