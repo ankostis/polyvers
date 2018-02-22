@@ -22,15 +22,15 @@ texts = [
 @pytest.mark.parametrize('s, ctxt, exp', texts)
 def test_Unicode_interpolation(s, ctxt, exp):
     class C1(HasTraits):
-        interpolation_context = ctxt
+        interpolation = ctxt
         s = Unicode()
 
     class C2(HasTraits):
-        interpolation_context = lambda _, __, ____: ctxt
+        interpolation = lambda _, __, v: v % ctxt
         s = Unicode()
 
     class C3(HasTraits):
-        interpolation_context = lambda _, __, ____: ctxt
+        interpolation = lambda _, __, v: v % ctxt
         s = Unicode().tag(no_interpolation=True)
 
     assert C1(s=s).s == s

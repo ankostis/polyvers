@@ -15,7 +15,7 @@ import contextlib
 _original_Unicode_validate = Unicode.validate
 
 
-def enable_unicode_trait_interpolating(context_attr='interpolation_context'):
+def enable_unicode_trait_interpolating(context_attr='interpolation'):
     """
     Patch :class:`Unicode` trait to interpolate from a context-dict on defining class.
 
@@ -30,9 +30,7 @@ def enable_unicode_trait_interpolating(context_attr='interpolation_context'):
         print(getattr(self, 'no_interpolation', None))
         if ctxt and not self.metadata.get('no_interpolation'):
             try:
-                if callable(ctxt):
-                    ctxt = ctxt(self, value)
-                value %= ctxt
+                value = ctxt(self, value) if callable(ctxt) else value % ctxt
             except Exception as ex:
                 msg = ("Failed expanding trait `%s.%s` due to: %r"
                        "\n  Original text: %s"

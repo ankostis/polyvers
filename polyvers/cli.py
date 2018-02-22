@@ -31,18 +31,18 @@ CONFIG_VAR_NAME = '%s_CONFIG_PATHS' % APPNAME
 class Base(cmdlets.Spec):
     " Common base for configurables and apps."
 
-    #: A stack of 3 dics used by `interpolation_context_factory()` class-method,
+    #: A stack of 3 dics used by `interpolation_factory()` class-method,
     #: listed with 1st one winning over:
     #:   0. vcs-info: writes affect this one only,
     #:   1. time: (now, utcnow), always updated on access,
     #:   2. env-vars, `$`-prefixed.
-    interpolation_context = ChainMap([{}, {}, {}])
+    interpolation = ChainMap([{}, {}, {}])
 
     @classmethod
-    def interpolation_context_factory(cls, obj, trait, text):
+    def interpolation_factory(cls, obj, trait, text):
         from datetime import datetime
 
-        maps = cls.interpolation_context
+        maps = cls.interpolation
         if not maps:
             maps[2].update({'$' + k: v for k, v in os.environ.items()})
         maps[1].update({
@@ -50,7 +50,7 @@ class Base(cmdlets.Spec):
             'utcnow': datetime.utcnow(),
         })
 
-        return cls.interpolation_context
+        return cls.interpolation
 
 
 class Project(Base):
