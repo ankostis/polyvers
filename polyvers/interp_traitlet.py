@@ -9,7 +9,6 @@ Enable Unicode-trait to pep3101-interpolate `{key}` patterns from "context" dict
 """
 
 from collections import ChainMap
-import contextlib
 import os
 
 from ._vendor.traitlets import TraitError, Unicode  # @UnresolvedImport
@@ -18,20 +17,32 @@ from ._vendor.traitlets import TraitError, Unicode  # @UnresolvedImport
 _original_Unicode_validate = Unicode.validate
 
 
-def enable_unicode_trait_interpolating(context_attr='interpolation'):
+class Template(Unicode):
     """
-    Patch :class:`Unicode` trait to interpolate from a context-dict on defining class.
+    A Unicode PEP-3101 expanding any '{key}' from *context* dictionaries (``s.format(d)``).
 
-    :patam str context_attr:
+    To disable interpolation, tag trait with ``'interp_enabled'`` as false.
+
+    :ivar str context_attr:
         The name of the attribute to search on the defining class;
-        might be a dict or a callable returning a dict.
+        might be a context-dict or a callable performing the interpolation.
+        [Default: ''interpolation'']
     """
-    global _original_Unicode_validate
+    context_attr = 'interpolation'
 
-    def interpolating_validate(self, obj, value):
-        ctxt = getattr(obj, context_attr, None)
-        print(getattr(self, 'no_interpolation', None))
-        if ctxt and not self.metadata.get('no_interpolation'):
+    def __init__(self, *args, context_attr=None, **kw):
+        """
+        :param str context_attr:
+            The name of the attribute to search on the defining class;
+            might be a context-dict or a callable performing the interpolation.
+        """
+        if context_attr:
+            self.context_attr = context_attr
+        super().__init__(*args, **kw)
+
+    def validate(self, obj, value):
+        ctxt = getattr(obj, self.context_attr, None)
+        if ctxt and self.metadata.get('interp_enabled', True):
             try:
                 if callable(ctxt):
                     value = ctxt(self, value)
@@ -43,24 +54,7 @@ def enable_unicode_trait_interpolating(context_attr='interpolation'):
                        % (type(obj).__name__, self.name, ex, value))
                 raise TraitError(msg)
 
-        return _original_Unicode_validate(self, obj, value)
-
-    Unicode.validate = interpolating_validate
-
-
-def dissable_unicode_trait_interpolating():
-    global _original_Unicode_validate
-
-    Unicode.validate = _original_Unicode_validate
-
-
-@contextlib.contextmanager
-def interpolating_unicodes(**kw):
-    enable_unicode_trait_interpolating(**kw)
-    try:
-        yield
-    finally:
-        dissable_unicode_trait_interpolating()
+        return super().validate(obj, value)
 
 
 class Now:
