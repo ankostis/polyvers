@@ -88,5 +88,3 @@ def test_all_cmds_help_smoketest(cmd):
     c.print_examples()
     assert len(list(c.emit_examples())) > 1
     c.print_help()
-
-
