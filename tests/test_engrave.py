@@ -6,10 +6,13 @@
 # You may not use this work except in compliance with the Licence.
 # You may obtain a copy of the Licence at: http://ec.europa.eu/idabc/eupl
 #
+from pathlib import Path
 from polyvers import engrave
-import textwrap as tw
-import pytest
 from polyvers._vendor.traitlets.config import Config
+
+import pytest
+
+import textwrap as tw
 
 
 def test_prepare_glob_list():
@@ -107,13 +110,8 @@ def fileset(tmpdir):
     ('/**/f*', ),
 ])
 def test_glob(patterns, fileset):
-    from pathlib import Path
-    
-    def as_posix(paths):
-        return [str(Path(f).as_posix()) for f in paths]
-    
-    files = list(engrave.glob_files(patterns))
-    assert as_posix(files) == 'a/f1 a/f2 a/f3 b/f1 b/f2 b/f3'.split()
+    files = engrave.glob_files(patterns)
+    assert files == 'a/f1 a/f2 a/f3 b/f1 b/f2 b/f3'.split()
 
 
 def test_engrave(fileset):

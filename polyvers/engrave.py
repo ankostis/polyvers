@@ -34,15 +34,18 @@ def as_glob_pattern(fpath):
     return fpath.replace('\\', '')
 
 
-def glob_files(patterns):
-        from glob import iglob
+def glob_files(patterns, mybase='.'):
+        from pathlib import Path
         import itertools as itt
         from boltons.setutils import IndexedSet as iset
 
         patterns = [as_glob_pattern(fpat) for fpat in patterns]
-        files = itt.chain.from_iterable(iglob(fpat, recursive=True)
-                                        for fpat in patterns)
-        files = iset(files)
+
+        mybase = Path(mybase)
+        files = iset(itt.chain.from_iterable(mybase.glob(fpat)
+                                             for fpat in patterns))
+
+        files = [str(f.as_posix()) for f in files]
 
         return files
 
