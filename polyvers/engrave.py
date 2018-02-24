@@ -34,6 +34,19 @@ def as_glob_pattern(fpath):
     return fpath.replace('\\', '')
 
 
+def glob_files(patterns):
+        from glob import iglob
+        import itertools as itt
+        from boltons.setutils import IndexedSet as iset
+
+        patterns = [as_glob_pattern(fpat) for fpat in patterns]
+        files = itt.chain.from_iterable(iglob(fpat, recursive=True)
+                                        for fpat in patterns)
+        files = iset(files)
+
+        return files
+
+
 def _enact_all_tmp_files(tmpfiles):
     import shutil
 
@@ -110,16 +123,10 @@ class Engrave(cmd.Spec):
             os.remove(npath)
 
     def engrave_all(self):
-        from glob import iglob
-        import itertools as itt
-
         self._tmpfiles = {}
-        files = [as_glob_pattern(fpath) for fpath in self.files]
-        files = itt.chain.from_iterable(iglob(fpath, recursive=True)
-                                        for fpath in files)
         visited = set()
         tmpfiles = {}
-        for fpath in files:
+        for fpath in glob_files(self.files):
             if fpath in visited:
                 continue
             visited.add(fpath)

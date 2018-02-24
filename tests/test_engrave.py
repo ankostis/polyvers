@@ -100,6 +100,22 @@ def fileset(tmpdir):
     return tmpdir
 
 
+@pytest.mark.parametrize('patterns', [
+    ('/a/f*', 'b/f?'),
+    ('/a/f*', 'b/f1', '/b/f2', 'b/?3'),
+    ('**/f*', ),
+    ('/**/f*', ),
+])
+def test_glob(patterns, fileset):
+    from pathlib import Path
+    
+    def as_posix(paths):
+        return [str(Path(f).as_posix()) for f in paths]
+    
+    files = list(engrave.glob_files(patterns))
+    assert as_posix(files) == 'a/f1 a/f2 a/f3 b/f1 b/f2 b/f3'.split()
+
+
 def test_engrave(fileset):
     cfg = Config()
     cfg.Engrave.files = ['/a/f*', 'b/f1', '/b/f2', 'b/?3']
