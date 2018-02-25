@@ -11,13 +11,15 @@ from os import pathsep as PS
 import os
 from polyvers import cmdlets as cmd
 from polyvers._vendor import traitlets as trt
+from polyvers._vendor.traitlets import Int  # @UnresolvedImport
 from polyvers.logconfutils import init_logging
 import tempfile
-import textwrap as tw
+
 import pytest
 
 import os.path as osp
 from py.path import local as P  # @UnresolvedImport
+import textwrap as tw
 
 from .conftest import touchpaths
 
@@ -29,10 +31,15 @@ log = logging.getLogger(__name__)
 mydir = osp.dirname(__file__)
 
 
-def mix_dics(d1, d2):
-    d = d1.copy()
-    d.update(d2)
-    return d
+def test_Replaceable():
+    class C(trt.HasTraits, cmd.Replaceable):
+        a = Int()
+
+    c = C(a=1)
+    cc = c.replace(a=2)
+
+    assert c.a == 1
+    assert cc.a == 2
 
 
 def test_CfgFilesRegistry_consolidate_posix_1():

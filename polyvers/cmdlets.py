@@ -317,6 +317,18 @@ cmd_interpolation_context.ctxt.maps.append({
 })
 
 
+class Replaceable:
+    """Mixin to enable classes to clone like namedtupple's ``replace()``."""
+    def replace(self, **changes):
+        from copy import deepcopy
+
+        c = deepcopy(self)
+        for attr, value in changes.items():
+            setattr(c, attr, value)
+
+        return c
+
+
 class Spec(trc.Configurable):
     verbose = Bool(
         config=True,
