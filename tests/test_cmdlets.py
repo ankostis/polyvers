@@ -315,8 +315,6 @@ def test_all_cmds_help_version():
         c.make_cmd(argv=['--version'])
 
 
-
-
 def test_yaml_config(tmpdir):
     tdir = tmpdir.mkdir('yamlconfig')
     conf_fpath = tdir / '.polyvers.yaml'

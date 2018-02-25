@@ -19,8 +19,8 @@ import os.path as osp
 
 from . import cmdlets
 from ._vendor import traitlets as trt
-from ._vendor.traitlets import (
-    Bool, Unicode, FuzzyEnum, Instance)  # @UnresolvedImport
+from ._vendor.traitlets import Bool, Unicode, FuzzyEnum, Instance  # @UnresolvedImport
+from ._vendor.traitlets import config as trc
 
 
 def prepare_matcher(terms, is_regex):
@@ -77,8 +77,6 @@ def prepare_search_map(all_classes, own_traits):
 
 
 def prepare_help_selector(only_class_in_values, verbose):
-    from ._vendor.traitlets import config as trc
-
     if only_class_in_values:
         if verbose:
             def selector(ne, cls):
@@ -140,6 +138,36 @@ class ConfigCmd(cmdlets.Cmd):
         - Show configuration paths::
               {cmd_chain} paths
     """)
+
+    flags = {
+        'show-config': ({
+            'Application': {
+                'show_config': True,
+            },
+        }, trc.Application.show_config.help),
+        'show-config-json': ({
+            'Application': {
+                'show_config_json': True,
+            },
+        }, trc.Application.show_config_json.help),
+
+        ('v', 'verbose'): (
+            {'Spec': {'verbose': True}},
+            cmdlets.Spec.verbose.help
+        ),
+        ('f', 'force'): (
+            {'Spec': {'force': True}},
+            cmdlets.Spec.force.help
+        ),
+        ('n', 'dry-run'): (
+            {'Spec': {'force': True}},
+            cmdlets.Spec.dry_run.help
+        ),
+    }
+
+    def _inherit_parent_cmd(self, change):
+        "Break cmdlet inheritance of main-cmd's flags, aliases and classes. "
+        pass
 
     def __init__(self, **kwds):
             super().__init__(
