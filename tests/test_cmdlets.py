@@ -42,6 +42,14 @@ def test_Replaceable():
     assert cc.a == 2
 
 
+def test_Strable():
+    class C(trt.HasTraits, cmd.Strable):
+        a = Int()
+
+    c = C(a=1)
+    assert str(c) == 'C(a=1)'
+
+
 def test_CfgFilesRegistry_consolidate_posix_1():
     visited = [
         ('/d/foo/bar/.appname', None),

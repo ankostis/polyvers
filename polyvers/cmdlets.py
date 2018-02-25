@@ -329,6 +329,14 @@ class Replaceable:
         return c
 
 
+class Strable:
+    "Provide a ``__str__()`` with all traits of this ``HasTraits``."
+    def __str__(self):
+        values = ', '.join('%s=%s' % tpair for tpair in self.trait_values().items())
+        name = getattr(self, 'name', type(self).__name__)
+        return '%s(%s)' % (name, values)
+
+
 class Spec(trc.Configurable):
     verbose = Bool(
         config=True,
