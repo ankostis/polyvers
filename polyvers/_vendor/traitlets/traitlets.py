@@ -3282,8 +3282,8 @@ class CRegExp(TraitType):
     def validate(self, obj, value):
         try:
             return re.compile(value)
-        except:
-            self.error(obj, value)
+        except Exception as ex:
+            self.error(obj, value, ex)
 
 
 class UseEnum(TraitType):
