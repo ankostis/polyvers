@@ -14,9 +14,6 @@ import os
 from ._vendor.traitlets import TraitError, Unicode  # @UnresolvedImport
 
 
-_original_Unicode_validate = Unicode.validate
-
-
 class Template(Unicode):
     """
     A Unicode PEP-3101 expanding any '{key}' from *context* dictionaries (``s.format(d)``).
