@@ -88,3 +88,15 @@ def test_all_cmds_help_smoketest(cmd):
     c.print_examples()
     assert len(list(c.emit_examples())) > 1
     c.print_help()
+
+
+@pytest.mark.parametrize('cmd', all_cmds)
+def test_all_cmds_help_version(cmd):
+    with pytest.raises(SystemExit):
+        cmd.make_cmd(argv=['help'])
+    with pytest.raises(SystemExit):
+        cmd.make_cmd(argv=['--help'])
+    with pytest.raises(SystemExit):
+        cmd.make_cmd(argv=['--help-all'])
+    with pytest.raises(SystemExit):
+        cmd.make_cmd(argv=['--version'])

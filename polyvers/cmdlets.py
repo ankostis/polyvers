@@ -474,19 +474,24 @@ class Cmd(trc.Application, Spec):
 
             if parent.flags:
                 if self.flags:
-                    flags = dict(parent.flags)
-                    flags.update(self.flags)
+                    flags = dict(parent.flags, **self.flags)
                 else:
                     flags = parent.flags
                 self.flags = flags
 
             if parent.aliases:
                 if self.aliases:
-                    aliases = dict(parent.aliases)
-                    aliases.update(self.aliases)
+                    aliases = dict(parent.aliases, **self.aliases)
                 else:
                     aliases = parent.aliases
                 self.aliases = aliases
+
+            if parent.classes:
+                if self.classes:
+                    classes = dict(parent.classes, **self.classes)
+                else:
+                    classes = parent.classes
+                self.classes = classes
 
     config_paths = PathList(
         help="""

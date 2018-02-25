@@ -303,6 +303,20 @@ def test_help_smoketest():
     c.print_help()
 
 
+def test_all_cmds_help_version():
+    c = cmd.Cmd
+    with pytest.raises(SystemExit):
+        c.make_cmd(argv=['help'])
+    with pytest.raises(SystemExit):
+        c.make_cmd(argv=['--help'])
+    with pytest.raises(SystemExit):
+        c.make_cmd(argv=['--help-all'])
+    with pytest.raises(SystemExit):
+        c.make_cmd(argv=['--version'])
+
+
+
+
 def test_yaml_config(tmpdir):
     tdir = tmpdir.mkdir('yamlconfig')
     conf_fpath = tdir / '.polyvers.yaml'
