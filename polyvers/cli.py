@@ -9,13 +9,12 @@
 
 import itertools as itt
 
-from . import APPNAME
-from . import __version__
-from . import cmdlets
+from . import APPNAME, __version__, cmdlets, interp_traitlet as interp
 from ._vendor import traitlets as trt
 from ._vendor.traitlets import List, Bool, Unicode  # @UnresolvedImport
 from ._vendor.traitlets import config as trc
 from .autoinstance_traitlet import AutoInstance
+
 
 ####################
 ## Config sources ##
@@ -43,7 +42,7 @@ class Project(cmdlets.Spec):
         help="The signing PGP user (email, key-id)."
     )
 
-    message = Unicode(
+    message = interp.Template(
         "chore(ver): bump {current_version} → {new_version}",
         config=True,
         help="""
@@ -104,7 +103,7 @@ class PolyversCmd(MyCmd, Project):
       {cmd_chain} <sub-cmd> ...
     """
     version = __version__
-    examples = Unicode("""
+    examples = interp.Template("""
         - Let it guess the configurations for your monorepo::
               {cmd_chain} init
           You may specify different configurations paths with:
@@ -178,8 +177,12 @@ class PolyversCmd(MyCmd, Project):
 
     @trt.default('all_app_configurables')
     def _all_app_configurables(self):
-        return [type(self), Project,
-                InitCmd, StatusCmd, SetverCmd, BumpveCmd, LogconfCmd]
+        from . import engrave
+        return [type(self),
+                Project,
+                InitCmd, StatusCmd, SetverCmd, BumpveCmd, LogconfCmd,
+                engrave.Engrave,
+                ]
 
 
 class VersionSubcmd(MyCmd):

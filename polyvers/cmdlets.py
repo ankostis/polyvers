@@ -308,15 +308,6 @@ class CmdException(Exception):
     pass
 
 
-#: Client-code may add more dicts in `interpolation_context.maps` list.
-cmd_interpolation_context = interp.InterpContext()
-#: The 4th dict is for help interpolations.
-cmd_interpolation_context.ctxt.maps.append({
-    'appname': '<APP>',
-    'cmd_chain': '<CMD>'
-})
-
-
 class Replaceable:
     """Mixin to enable classes to clone like namedtupple's ``replace()``."""
     def replace(self, **changes):
@@ -337,6 +328,25 @@ class Strable:
         return '%s(%s)' % (name, values)
 
 
+class CmdletsInterpolationManager(interp.InterpolationContextManager):
+    """
+    Adds another layer map `cmdlets_map` to interp-manager for help & cmd mechanics.
+
+    Client-code may add more dicts in `interpolation_context.maps` list.
+    """
+    def __init__(self, *args, **kw):
+        super().__init__(*args, **kw)
+        self.cmdlets_map = {
+            'appname': '<APP>',
+            'cmd_chain': '<CMD>',
+        }
+        self.ctxt.maps.append(self.cmdlets_map)
+
+
+#: That's the singleton interp-manager used by all cmdlet configurables.
+cmdlets_interpolation_manager = CmdletsInterpolationManager()
+
+
 class Spec(trc.Configurable):
     verbose = Bool(
         config=True,
@@ -350,7 +360,8 @@ class Spec(trc.Configurable):
         config=True,
         help="Do not write files - just pretend.")
 
-    interpolations = cmd_interpolation_context
+    _interp_manager = cmdlets_interpolation_manager
+    interpolations = cmdlets_interpolation_manager.ctxt
 
 
 class Cmd(trc.Application, Spec):
@@ -402,7 +413,7 @@ class Cmd(trc.Application, Spec):
     ## HELP ##
     ##########
 
-    option_description = Unicode("""
+    option_description = interp.Template("""
         Options are convenience aliases to configurable class-params,
         as listed in the "Equivalent to" description-line of the aliases.
         To see all configurable class-params for some <cmd>, use::
@@ -414,7 +425,7 @@ class Cmd(trc.Application, Spec):
     def emit_description(self):
         ## Overridden for interpolating app-name.
         txt = self.description or self.__doc__
-        txt.format(**self.interpolations.ctxt)
+        txt.format(**self.interpolations)
         for p in trc.wrap_paragraphs('%s: %s' % (cmd_line_chain(self), txt)):
             yield p
             yield ''
@@ -426,7 +437,8 @@ class Cmd(trc.Application, Spec):
         header = 'Options'
         yield header
         yield '=' * len(header)
-        for p in trc.wrap_paragraphs(self.option_description.format(**self.interpolations.ctxt)):
+        opt_desc = self.option_description.format(**self.interpolations)
+        for p in trc.wrap_paragraphs(opt_desc):
             yield p
             yield ''
 
@@ -439,8 +451,8 @@ class Cmd(trc.Application, Spec):
     def emit_examples(self):
         ## Overridden for interpolating app-name.
         if self.examples:
-            txt = self.examples
-            txt = txt.strip().format(**self.interpolations.ctxt)
+            txt = self.examples.format(**self.interpolations)
+            txt = txt.strip()
             yield "Examples"
             yield "--------"
             yield ''
@@ -453,7 +465,7 @@ class Cmd(trc.Application, Spec):
         If classes=False (the default), print `--help-all` msg.
         """
         if not classes:
-            yield trc.dedent("""
+            epilogue = trc.dedent("""
             --------
             - For available option, configuration-params & examples, use:
                   {cmd_chain} help (OR --help-all)
@@ -461,7 +473,8 @@ class Cmd(trc.Application, Spec):
                   {appname} config desc <class-or-param-1>...
             - To inspect configuration values:
                   {appname} config show <class-or-param-1>...
-            """.format(**self.interpolations.ctxt))
+            """)
+            yield epilogue.format(**self.interpolations)
 
     ############
     ## CONFIG ##
@@ -720,6 +733,11 @@ class Cmd(trc.Application, Spec):
         """True if dispatching to another command."""
         return isinstance(self.subapp, trc.Application)  # subapp == trait | subcmd | None
 
+    def update_interp_context(self, argv=None):
+        cmdlets_map = self._interp_manager.cmdlets_map
+        cmdlets_map['cmd_chain'] = cmd_line_chain(self)
+        cmdlets_map['appname'] = self.root_app().name
+
     @trc.catch_config_error
     def initialize(self, argv=None):
         """
@@ -738,8 +756,7 @@ class Cmd(trc.Application, Spec):
             #  Also avoid contaminations with user if generating-config.
             return
 
-        self.interpolations.ctxt.maps[3]['cmd_chain'] = cmd_line_chain(self)
-        self.interpolations.ctxt.maps[3]['appname'] = self.root_app().name
+        self.update_interp_context()
 
         static_config = self.read_config_files()
         static_config.merge(self.cli_config)

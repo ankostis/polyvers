@@ -21,17 +21,16 @@ class Template(Unicode):
     To disable interpolation, tag trait with ``'interp_enabled'`` as false.
 
     :ivar str context_attr:
-        The name of the attribute to search on the defining class;
-        might be a context-dict or a callable performing the interpolation.
+        The name of the attribute of the defining class holding the context dict.
         [Default: ''interpolation'']
     """
-    context_attr = 'interpolation'
+    context_attr = 'interpolations'
 
     def __init__(self, *args, context_attr=None, **kw):
         """
         :param str context_attr:
-            The name of the attribute to search on the defining class;
-            might be a context-dict or a callable performing the interpolation.
+            The name of the attribute of the defining class holding the context dict.
+            [Default: ''interpolation'']
         """
         if context_attr:
             self.context_attr = context_attr
@@ -41,19 +40,12 @@ class Template(Unicode):
         ctxt = getattr(obj, self.context_attr, None)
         if ctxt and self.metadata.get('interp_enabled', True):
             try:
-                if callable(ctxt):
-                    value = ctxt(self, value)
-                else:
-                    value = value.format(**ctxt)
+                value = value.format(**ctxt)
             except KeyError as ex:
                 msg = ("Unknown key %r in template `%s.%s`!"
                        "\n  Use '{ikeys}' to view all available interpolations."
                        "\n  Original text: %s"
                        % (str(ex), type(obj).__name__, self.name, value))
-            except Exception as ex:
-                msg = ("Expanding template `%s.%s` failed due to: %r"
-                       "\n  Original text: %s"
-                       % (type(obj).__name__, self.name, ex, value))
                 raise TraitError(msg)
 
         return super().validate(obj, value)
@@ -79,7 +71,7 @@ class Keys:
         return ', '.join(self.mydict.keys())
 
 
-class InterpContext:
+class InterpolationContextManager:
     """
     A stack of 3 dics to be used as interpolation context.
 
@@ -95,14 +87,17 @@ class InterpContext:
 
     """
     def __init__(self):
-        dicts = [{} for _ in range(3)]
-        self.ctxt = ChainMap(*dicts)
-        self.ctxt.maps[1] = {
+        self.time_map = {}
+        self.env_map = {}
+        self.ctxt = ChainMap({}, self.time_map, self.env_map)
+
+        self.update_env()
+        self.time_map.update({
             'now': Now(),
             'utcnow': Now(is_utc=True),
             'ikeys': Keys(self.ctxt),
-        }
-        self.update_env()
+        })
 
     def update_env(self):
-        self.ctxt.maps[2] = {'$' + k: v for k, v in os.environ.items()}
+        self.env_map.clear()
+        self.env_map.update({'$' + k: v for k, v in os.environ.items()})

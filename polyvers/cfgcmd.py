@@ -17,9 +17,9 @@ from toolz import dicttoolz as dtz
 import functools as fnt
 import os.path as osp
 
-from . import cmdlets
+from . import cmdlets, interp_traitlet as interp
 from ._vendor import traitlets as trt
-from ._vendor.traitlets import Bool, Unicode, FuzzyEnum, Instance  # @UnresolvedImport
+from ._vendor.traitlets import Bool, FuzzyEnum, Instance  # @UnresolvedImport
 from ._vendor.traitlets import config as trc
 
 
@@ -80,7 +80,8 @@ def prepare_help_selector(only_class_in_values, verbose):
     if only_class_in_values:
         if verbose:
             def selector(ne, cls):
-                return cls.class_get_help()
+                htext = cls.class_get_help()
+                return htext.format(**cls.interpolations)
         else:
             def selector(ne, cls):
                 from ipython_genutils.text import wrap_paragraphs
@@ -107,8 +108,8 @@ def prepare_help_selector(only_class_in_values, verbose):
                 except AttributeError:
                     pass
 
-                return '\n'.join(help_lines)
-
+                htext = '\n'.join(help_lines)
+                return htext.format(**cls.interpolations)
     else:
         def selector(name, v):
             cls, attr = v
@@ -125,7 +126,7 @@ def prepare_help_selector(only_class_in_values, verbose):
 class ConfigCmd(cmdlets.Cmd):
     "Commands to manage configurations and other cli infos."
 
-    examples = Unicode("""
+    examples = interp.Template("""
         - Ask help on parameters affecting the source of the configurations::
               {cmd_chain} desc  config_paths  show_config
 
@@ -186,7 +187,7 @@ class WriteCmd(cmdlets.Cmd):
     - It OVERWRITES any pre-existing configuration file(s)!
     """
 
-    examples = Unicode("""
+    examples = interp.Template("""
         - Generate a config-file at your home folder::
               {cmd_chain} ~/my_conf
 
@@ -213,7 +214,7 @@ class InfosCmd(cmdlets.Cmd):
         <APPNAME>_CONFIG_PATHS      : where to read configuration-files.
     """
 
-    examples = Unicode("""
+    examples = interp.Template("""
         - Show parameter help for all classes/params containing 'foo' in their name::
               {cmd_chain} foo
     """)
@@ -226,6 +227,7 @@ class InfosCmd(cmdlets.Cmd):
 
     def initialize(self, argv=None):
         """Override to read configs from root-app."""
+        self.update_interp_context()
         self.parse_command_line(argv)
         root = self.root_app()
         cfg = root.read_config_files()
@@ -306,7 +308,7 @@ class ShowCmd(cmdlets.Cmd):
       to view configured values accurately on runtime.
     """
 
-    examples = Unicode("""
+    examples = interp.Template("""
         - View all "merged" configuration values::
               {cmd_chain}
 
@@ -375,6 +377,7 @@ class ShowCmd(cmdlets.Cmd):
 
     def initialize(self, argv=None):
         """Override to read configs from root-app and not merge them."""
+        self.update_interp_context()
         self.parse_command_line(argv)
         root = self.root_app()
         cfg = root.read_config_files()
@@ -508,7 +511,7 @@ class DescCmd(cmdlets.Cmd):
       previous ones); use --sort for alphabetical order.
     """
 
-    examples = Unicode(r"""
+    examples = interp.Template(r"""
         - Just List::
               {cmd_chain} --list         # List configurable parameters.
               {cmd_chain} -l --class     # List configurable classes.
