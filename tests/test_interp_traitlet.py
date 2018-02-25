@@ -75,5 +75,7 @@ def test_InterpContext():
     s = 'stop the clock at {now}!'
     assert s.format(**ctxt) != s
 
+    assert 'Keys we have: {ikeys}'.format(**ctxt) != 'Keys we have: {ikeys}'
+
     ctxt['A'] = '42'
     assert 'What? {A}'.format(**ctxt) == 'What? 42'

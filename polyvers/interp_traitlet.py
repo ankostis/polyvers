@@ -45,8 +45,13 @@ class Template(Unicode):
                     value = ctxt(self, value)
                 else:
                     value = value.format(**ctxt)
+            except KeyError as ex:
+                msg = ("Unknown key %r in template `%s.%s`!"
+                       "\n  Use '{ikeys}' to view all available interpolations."
+                       "\n  Original text: %s"
+                       % (str(ex), type(obj).__name__, self.name, value))
             except Exception as ex:
-                msg = ("Failed expanding trait `%s.%s` due to: %r"
+                msg = ("Expanding template `%s.%s` failed due to: %r"
                        "\n  Original text: %s"
                        % (type(obj).__name__, self.name, ex, value))
                 raise TraitError(msg)
@@ -66,6 +71,14 @@ class Now:
         return now.__format__(format_spec)
 
 
+class Keys:
+    def __init__(self, mydict):
+        self.mydict = mydict
+
+    def __format__(self, format_spec):
+        return ', '.join(self.mydict.keys())
+
+
 class InterpContext:
     """
     A stack of 3 dics to be used as interpolation context.
@@ -83,11 +96,12 @@ class InterpContext:
     """
     def __init__(self):
         dicts = [{} for _ in range(3)]
-        dicts[1] = {
+        self.ctxt = ChainMap(*dicts)
+        self.ctxt.maps[1] = {
             'now': Now(),
             'utcnow': Now(is_utc=True),
+            'ikeys': Keys(self.ctxt),
         }
-        self.ctxt = ChainMap(*dicts)
         self.update_env()
 
     def update_env(self):
