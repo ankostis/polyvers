@@ -8,6 +8,8 @@
 #
 """Search and replace version-ids in files."""
 
+from pathlib import Path
+
 from . import cmdlets as cmd
 from ._vendor.traitlets import List, Tuple, Unicode, CRegExp  # @UnresolvedImport
 
@@ -35,7 +37,6 @@ def as_glob_pattern(fpath):
 
 
 def glob_files(patterns, mybase='.'):
-        from pathlib import Path
         import itertools as itt
         from boltons.setutils import IndexedSet as iset
 
@@ -45,8 +46,11 @@ def glob_files(patterns, mybase='.'):
         files = iset(itt.chain.from_iterable(mybase.glob(fpat)
                                              for fpat in patterns))
 
-        files = [str(f.as_posix()) for f in files]
+        ## Filter paths outside mybase.
+        files = [f for f in files
+                 if '..' not in str(f.relative_to(mybase))]
 
+        assert all(isinstance(f, Path) for f in files)
         return files
 
 
@@ -108,7 +112,7 @@ class Engrave(cmd.Spec):
         # https://stackoverflow.com/a/31499114/548792
         import os
 
-        npath = fpath + '$'
+        npath = str(fpath) + '$'
         changed = False
         with self._fopen(fpath, 'r') as finp, self._fopen(npath, 'w') as fout:
             for line in finp:
