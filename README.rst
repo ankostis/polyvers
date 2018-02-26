@@ -16,10 +16,10 @@ Polyvers: Bump sub-project PEP-440 versions in Git monorepos independently
     :scale: 100%
     :target: https://ci.appveyor.com/project/ankostis/polyvers
 
-.. image:: https://coveralls.io/repos/github/JRCSTU/polyvers/badge.svg?branch=master
+.. image:: https://coveralls.io/repos/github/JRCSTU/polyvers/badge.svg?branch=master&service=github
     :alt: Test-case coverage report
     :scale: 100%
-    :target: https://coveralls.io/github/JRCSTU/polyvers?branch=master
+    :target: https://coveralls.io/github/JRCSTU/polyvers?branch=master&service=github
 
 .. image:: https://readthedocs.org/projects/polyvers/badge/?version=latest
     :target: https://polyvers.readthedocs.io/en/latest/?badge=latest
