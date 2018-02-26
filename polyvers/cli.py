@@ -43,17 +43,13 @@ class Project(cmdlets.Spec):
     )
 
     message = interp.Template(
-        "chore(ver): bump {current_version} → {new_version}",
+        "chore(ver): bump {{current_version}} → {{new_version}}",
         config=True,
         help="""
             The message for commits and per-project tags.
 
-            Available interpolations:
-            - `{current_version}`
-            - `{new_version}`
-            - `{now}`
-            - `{utcnow:%d.%m.%Y}`
-            - <`{$ENV_VAR}`>
+            Available interpolations (apart from env-vars prefixed with '$'):
+            {ikeys}
         """)
 
 

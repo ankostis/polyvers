@@ -363,6 +363,18 @@ class Spec(trc.Configurable):
     _interp_manager = cmdlets_interpolation_manager
     interpolations = cmdlets_interpolation_manager.ctxt
 
+    @classmethod
+    def class_get_help(cls, inst=None):
+        text = trc.Configurable.class_get_help(inst)
+        obj = inst if inst else cls
+        return text.format(**obj.interpolations)
+
+    @classmethod
+    def class_get_trait_help(cls, trait, inst=None, helptext=None):
+        text = trc.Configurable.class_get_trait_help(trait, inst=None, helptext=None)
+        obj = inst if inst else cls
+        return text.format(**obj.interpolations)
+
 
 class Cmd(trc.Application, Spec):
     "Common machinery for all (sub)commands."
