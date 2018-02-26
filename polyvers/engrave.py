@@ -19,7 +19,7 @@ def as_glob_pattern(fpath):
     fpath = fpath.strip()
 
     ## Remove comments/empty-lines.
-    if not fpath or fpath.startswith('#'):
+    if not fpath or fpath.startswith('#') or fpath.startswith('..'):
         return
 
     if fpath.startswith('!'):
@@ -28,7 +28,8 @@ def as_glob_pattern(fpath):
         return '!' + as_glob_pattern(fpath[1:])
 
     ## TODO: Handle '!' and escaping with '\' like .gitignore
-    if fpath.startswith('/'):
+    if fpath.startswith(('./', '/')):
+        fpath = fpath.lstrip('./')
         fpath = fpath.lstrip('/')
     else:
         fpath = '**/' + fpath

@@ -31,6 +31,7 @@ def test_prepare_glob_list():
           \\!foo
 
         //abc
+        ./foobar
 
         123/567
     """).split('\n')
@@ -43,6 +44,7 @@ def test_prepare_glob_list():
         !abc
         **/!foo
         abc
+        foobar
         **/123/567
     """).strip().split('\n')
 
