@@ -44,7 +44,26 @@ def prepare_glob_list(patterns):
     return patterns
 
 
-def glob_files(patterns, mybase='.'):
+def glob_filter_in_mybase(files, mybase):
+    return [f for f in files
+            if '..' not in str(f.relative_to(mybase))]
+
+
+def glob_filter_out_other_bases(files, other_bases):
+    other_bases = [Path(ob) for ob in other_bases]
+    nfiles = []
+    for f in files:
+        try:
+            for obase in other_bases:
+                f.relative_to(obase)
+        except ValueError:
+            ## If not in other-base, `relative_to()` screams!
+            nfiles.append(f)
+
+    return nfiles
+
+
+def glob_files(patterns, mybase='.', other_bases=[]):
         import itertools as itt
         from boltons.setutils import IndexedSet as iset
 
@@ -54,9 +73,9 @@ def glob_files(patterns, mybase='.'):
         files = iset(itt.chain.from_iterable(mybase.glob(fpat)
                                              for fpat in patterns))
 
-        ## Filter paths outside mybase.
-        files = [f for f in files
-                 if '..' not in str(f.relative_to(mybase))]
+        files = glob_filter_in_mybase(files, mybase)
+        if other_bases:
+            files = glob_filter_out_other_bases(files, other_bases)
 
         assert all(isinstance(f, Path) for f in files)
         return files

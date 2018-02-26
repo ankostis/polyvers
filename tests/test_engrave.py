@@ -121,8 +121,13 @@ def test_glob(patterns, fileset):
 
 def test_glob_relative(fileset):
     (fileset / 'a').chdir()
-    files = engrave.glob_files(['*', '../b/f*'], mybase='.')
+    files = engrave.glob_files(['*', '../b/f*'])
     assert posixize(files) == 'f1 f2 f3'.split()
+
+
+def test_glob_otherbases(fileset):
+    files = engrave.glob_files(['*/*'], other_bases=['b'])
+    assert posixize(files) == 'a/f1 a/f2 a/f3'.split()
 
 
 def test_engrave(fileset):
