@@ -37,6 +37,7 @@ test_requirements = [
     'flake8',
     'flake8-builtins',
     'flake8-mutable',
+    'mypy',
 ]
 PROJECT = 'polyvers'
 setup(

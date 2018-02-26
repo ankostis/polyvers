@@ -27,8 +27,9 @@ script:
   - pip uninstall polyvers -y
   - pip install -q dist/*.whl
   - pytest -q --cov=polyvers --cov-report=term-missing
+  - flake8 --show-source
+  - mypy -m polyvers.engrave
 
 after_success:
   - pip install python-coveralls
   - if [[ $TRAVIS_PYTHON_VERSION == '3.6' ]]; then coveralls; fi
-  - flake8 --show-source
