@@ -58,9 +58,8 @@ import os.path as osp
 
 from . import fileutils as fu, interp_traitlet as interp
 from ._vendor import traitlets as trt
-from ._vendor.traitlets import (
-    Bool, List, Unicode, Instance, Union)  # @UnresolvedImport
 from ._vendor.traitlets import config as trc
+from ._vendor.traitlets.traitlets import Bool, List, Unicode, Instance, Union
 from .yamlconfloader import YAMLFileConfigLoader
 
 
@@ -311,13 +310,11 @@ class CmdException(Exception):
 class Replaceable:
     """Mixin to enable classes to clone like namedtupple's ``replace()``."""
     def replace(self, **changes):
-        from copy import deepcopy
+        mytraits = self.trait_values()
+        mytraits.update(**changes)
+        clone = type(self)(**mytraits)
 
-        c = deepcopy(self)
-        for attr, value in changes.items():
-            setattr(c, attr, value)
-
-        return c
+        return clone
 
 
 class Strable:

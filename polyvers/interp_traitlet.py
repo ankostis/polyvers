@@ -11,7 +11,7 @@ Enable Unicode-trait to pep3101-interpolate `{key}` patterns from "context" dict
 from collections import ChainMap
 import os
 
-from ._vendor.traitlets import TraitError, Unicode  # @UnresolvedImport
+from ._vendor.traitlets.traitlets import TraitError, Unicode
 
 
 class Template(Unicode):

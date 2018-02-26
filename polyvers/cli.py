@@ -11,7 +11,7 @@ import itertools as itt
 
 from . import APPNAME, __version__, cmdlets, interp_traitlet as interp
 from ._vendor import traitlets as trt
-from ._vendor.traitlets import List, Bool, Unicode  # @UnresolvedImport
+from ._vendor.traitlets.traitlets import List, Bool, Unicode
 from ._vendor.traitlets import config as trc
 from .autoinstance_traitlet import AutoInstance
 

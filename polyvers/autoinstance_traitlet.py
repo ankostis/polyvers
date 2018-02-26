@@ -7,7 +7,7 @@
 
 """AutoInstance traitlet creates an instance from config-params."""
 
-from ._vendor.traitlets import TraitError, Instance  # @UnresolvedImport
+from ._vendor.traitlets.traitlets import TraitError, Instance
 from ._vendor.traitlets.config.configurable import Configurable
 
 

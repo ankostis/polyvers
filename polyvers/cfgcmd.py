@@ -19,7 +19,7 @@ import os.path as osp
 
 from . import cmdlets, interp_traitlet as interp
 from ._vendor import traitlets as trt
-from ._vendor.traitlets import Bool, FuzzyEnum, Instance  # @UnresolvedImport
+from ._vendor.traitlets.traitlets import Bool, FuzzyEnum, Instance
 from ._vendor.traitlets import config as trc
 
 
