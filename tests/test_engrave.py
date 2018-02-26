@@ -6,6 +6,7 @@
 # You may not use this work except in compliance with the Licence.
 # You may obtain a copy of the Licence at: http://ec.europa.eu/idabc/eupl
 #
+from pathlib import Path
 from polyvers import engrave
 from polyvers._vendor.traitlets.config import Config
 
@@ -117,6 +118,12 @@ def fileset(tmpdir):
 def test_glob(patterns, fileset):
     files = engrave.glob_files(patterns)
     assert posixize(files) == 'a/f1 a/f2 a/f3 b/f1 b/f2 b/f3'.split()
+
+
+def test_glob_mybase():
+    files = [Path('../a')]
+    assert engrave.glob_filter_in_mybase(files, '.') == []
+    assert engrave.glob_filter_in_mybase(files, Path('.').resolve() / 'b') == []
 
 
 def test_glob_relative(fileset):

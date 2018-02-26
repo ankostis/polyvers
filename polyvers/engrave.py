@@ -45,8 +45,17 @@ def prepare_glob_list(patterns):
 
 
 def glob_filter_in_mybase(files, mybase):
-    return [f for f in files
-            if '..' not in str(f.relative_to(mybase))]
+    assert all(isinstance(f, Path) for f in files)
+    nfiles = []
+    for f in files:
+        try:
+            rpath = f.relative_to(mybase)
+            if '..' not in str(rpath):
+                nfiles.append(f)
+        except ValueError as _:
+            "Skip it, outside mybase"
+
+    return nfiles
 
 
 def glob_filter_out_other_bases(files, other_bases):
@@ -87,13 +96,6 @@ def _enact_all_tmp_files(tmpfiles):
     for fpath, npath in tmpfiles.items():
         shutil.copystat(fpath, npath)
         shutil.move(npath, fpath)
-
-
-def prepare_glob_list(files):
-    files = [as_glob_pattern(fpath) for fpath in files]
-    files = [fpath for fpath in files if fpath]
-
-    return files
 
 
 class Engrave(cmd.Spec):
