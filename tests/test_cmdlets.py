@@ -182,13 +182,7 @@ def test_no_default_config_paths(tmpdir):
 
 def test_default_loaded_paths():
     with tempfile.TemporaryDirectory(prefix=__name__) as tdir:
-        class MyCmd(cmd.Cmd):
-            ""
-            @trt.default('config_paths')
-            def _config_paths(self):
-                return [tdir]
-
-        c = MyCmd()
+        c = cmd.Cmd(config_paths=[tdir])
         c.initialize([])
         print(c._cfgfiles_registry.config_tuples)
         assert len(c.loaded_config_files) == 1
