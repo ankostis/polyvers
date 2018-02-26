@@ -6,13 +6,22 @@
 # You may not use this work except in compliance with the Licence.
 # You may obtain a copy of the Licence at: http://ec.europa.eu/idabc/eupl
 #
+import logging
 from pathlib import Path
 from polyvers import engrave
 from polyvers._vendor.traitlets.config import Config
+from polyvers.engrave import GrepSpec, slices_to_ids
+from polyvers.logconfutils import init_logging
+from polyvers.slice_traitlet import _parse_slice
+import re
 
 import pytest
 
+import itertools as itt
 import textwrap as tw
+
+
+init_logging(level=logging.DEBUG, logconf_files=[])
 
 
 def posixize(paths):
@@ -55,7 +64,8 @@ stays the same
 a = b
 stays the same
 """
-f1_vgrep = (r'^(\w+) *= *(\w+)', r'A\1A = B\2B')
+f1_vgrep = {'regex': r'(?m)^(\w+) *= *(\w+)',
+            'subst': r'A\1A = B\2B'}
 f11 = """
 stays the same
 AaA = BbB
@@ -63,12 +73,14 @@ stays the same
 """
 
 f2 = """
-CHANGE leave
+CHANGE
+THESE
 leave
 """
-f2_vgrep = ('CHANGE', 'changed')
+f2_vgrep = {'regex': r'(?m)^CHANGE\s+THESE$',
+            'subst': 'changed them'}
 f22 = """
-changed leave
+changed them
 leave
 """
 
@@ -137,9 +149,43 @@ def test_glob_otherbases(fileset):
     assert posixize(files) == 'a/f1 a/f2 a/f3'.split()
 
 
+slices_test_data = [
+    ('-1:', 5, [4]),
+    ([1, '3'], 5, [1, 3]),
+    (':', 2, [0, 1]),
+    (0, 1, [0]),
+    (':', 0, []),
+    ('5', 2, []),
+    ('5', 2, []),
+]
+
+
+@pytest.mark.parametrize('slices, listlen, exp', slices_test_data)
+def test_slices_to_ids(slices, listlen, exp):
+    thelist = list(range(listlen))
+    slices = slices if isinstance(slices, list) else [slices]
+    slices = [_parse_slice(s) for s in slices]
+    got = slices_to_ids(slices, thelist)
+    assert got == exp
+
+
+@pytest.mark.parametrize('slices, listlen, exp', slices_test_data)
+def test_MatchSpec_slicing(slices, listlen, exp):
+    m = re.match('.*', '')  # Get hold of some re.match object.
+    hits = list(itt.repeat(m, listlen))
+
+    gs = GrepSpec(hits=hits, slices=slices, regex='')
+    hits_indices = gs._get_hits_indices()
+    assert hits_indices == exp
+
+    gs.hits_indices = hits_indices
+    hits = list(gs._yield_masked_hits())
+    assert len(hits_indices) == len(hits)
+
+
 def test_engrave(fileset):
     cfg = Config()
-    cfg.Engrave.files = ['/a/f*', 'b/f1', '/b/f2', 'b/?3']
+    cfg.Engrave.patterns = ['/a/f*', 'b/f1', '/b/f2', 'b/?3']
     cfg.Engrave.vgreps = [f1_vgrep, f2_vgrep]
 
     e = engrave.Engrave(config=cfg)

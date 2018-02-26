@@ -177,7 +177,7 @@ class PolyversCmd(MyCmd, Project):
         return [type(self),
                 Project,
                 InitCmd, StatusCmd, SetverCmd, BumpveCmd, LogconfCmd,
-                engrave.Engrave,
+                engrave.Engrave, engrave.GrepSpec,
                 ]
 
 

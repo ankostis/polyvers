@@ -8,10 +8,21 @@
 #
 """Search and replace version-ids in files."""
 
+from collections import OrderedDict as odict
+import logging
 from pathlib import Path
+import re
+from typing import List, Tuple, Dict, Match, Union, Optional, Iterator
 
 from . import cmdlets as cmd
-from ._vendor.traitlets import List, Tuple, Unicode, CRegExp  # @UnresolvedImport
+from ._vendor.traitlets.traitlets import (
+    Union as UnionTrait, Instance, List as ListTrait, Unicode, Int, CRegExp)
+from .autoinstance_traitlet import AutoInstance
+from .interp_traitlet import Template
+from .slice_traitlet import Slice as SliceTrait
+
+
+log = logging.getLogger(__name__)
 
 
 def as_glob_pattern(fpath):
@@ -72,7 +83,7 @@ def glob_filter_out_other_bases(files, other_bases):
     return nfiles
 
 
-def glob_files(patterns, mybase='.', other_bases=[]):
+def glob_files(patterns: List[str], mybase='.', other_bases=[]) -> List[Path]:
         import itertools as itt
         from boltons.setutils import IndexedSet as iset
 
@@ -90,30 +101,184 @@ def glob_files(patterns, mybase='.', other_bases=[]):
         return files
 
 
-def _enact_all_tmp_files(tmpfiles):
-    import shutil
+PatternClass = type(re.compile('.*'))  # For traitlets
+MatchClass = type(re.match('.*', ''))  # For traitlets
 
-    for fpath, npath in tmpfiles.items():
-        shutil.copystat(fpath, npath)
-        shutil.move(npath, fpath)
+
+def slices_to_ids(slices, thelist):
+    from boltons.setutils import IndexedSet as iset
+
+    all_ids = list(range(len(thelist)))
+    mask_ids = iset()
+    for aslice in slices:
+        mask_ids.update(all_ids[aslice])
+
+    return list(mask_ids)
+
+
+class GrepSpec(cmd.Spec, cmd.Strable, cmd.Replaceable):
+    def __init__(self, *args, **kw):
+        super().__init__(*args, **kw)
+
+    regex = CRegExp(
+        help="What to search"
+    ).tag(config=True)
+
+    subst = Template(
+        help="""
+        What to replace with.
+
+        Inside them, supported extensions are:
+        - captured groups with '\\1 or '\g<foo>' expressions
+          (see Python's regex documentation)
+        - interpolation variables; Keys available (apart from env-vars prefixed with '$'):
+          {ikeys}
+        """
+    ).tag(config=True)
+
+    slices = UnionTrait(
+        (SliceTrait(), ListTrait(SliceTrait())),
+        help="""
+        Which of the `hits` to substitute, in "slice" notation(s); all if not given.
+
+        Example::
+
+            gs = GrepSpec()
+            gs.slices = 0                ## Only the 1st match.
+            gs.slices = '1:'             ## Everything except the 1st match
+            gs.slices = ['1:3', '-1:']   ## Only 2nd, 3rd and the last match.
+                "
+
+        """
+    ).tag(config=True)
+
+    hits = ListTrait(Instance(MatchClass))
+    hits_indices = ListTrait(Int(), allow_null=True, default_value=None)
+
+    def collect_grep_hits(self, ftext: str) -> Union['GrepSpec']:
+        """
+        :return:
+            a clone with updated `hits`, or None if nothing matched
+        """
+        hits: List[Match] = list(self.regex.finditer(ftext))
+        if hits:
+            return self.replace(hits=hits)
+
+    def _get_hits_indices(self) -> Optional[List[int]]:
+        """
+        :return:
+            A list with the list-indices of hits kept, or None if no `slices` given.
+        """
+        slices: Union[slice, List[slice]] = self.slices
+        if slices:
+            if not isinstance(slices, list):
+                slices = [slices]
+
+            hits_indices = slices_to_ids(slices, self.hits)
+
+            return hits_indices
+
+    def _yield_masked_hits(self) -> Iterator[Match]:
+        hits = self.hits
+        hits_indices = self.hits_indices
+        if hits_indices is None:
+            yield from hits
+        else:
+            for i in hits_indices:
+                yield hits[i]
+
+    def substitute_grep_hits(self, fpath: Path, ftext: str) -> Optional[Tuple[str, 'GrepSpec']]:
+        """
+        :return:
+            A 2-TUPLE ``(<substituted-ftext>, <updated-grep-spec>)``, where
+            ``<updated-grep-spec>`` is a *possibly* clone with updated
+            `hits_indices` (if one used), or the same if no idices used,
+            or None if no hits remained. after hits-slices filtering
+        """
+        orig_ftext = ftext
+
+        hits_indices = self._get_hits_indices()
+        if hits_indices:
+            nsubs = len(hits_indices)
+            clone = self.replace(hits_indices=hits_indices)
+            log.debug(
+                "Replacing %i out of %i matches in file '%s' of pattern '%s'."
+                "\n  %s",
+                nsubs, len(self.hits), fpath, self.regex, hits_indices)
+        else:
+            nsubs = len(self.hits)
+            clone = self
+
+        for m in clone._yield_masked_hits():
+            ftext = ftext[:m.start()] + m.expand(clone.subst) + ftext[m.end():]
+
+        if nsubs:
+            return (ftext, clone)
+        else:
+            assert ftext == orig_ftext, (ftext, orig_ftext)
+
+
+class FileSpec(cmd.Spec, cmd.Strable, cmd.Replaceable):
+    fpath = Instance(Path)
+    ftext = Unicode()
+    vgreps = ListTrait(Instance(GrepSpec))
+
+    def collect_file_hits(self) -> Optional['FileSpec']:
+        """
+        :return:
+            a clone with `vgreps` updated, or none if nothing matched
+        """
+        new_greps: List[GrepSpec] = []
+        ftext = self.ftext
+        for vg in self.vgreps:
+            nvgrep = vg.collect_grep_hits(ftext)
+            if nvgrep:
+                new_greps.append(nvgrep)
+
+        if new_greps:
+            return self.replace(vgreps=new_greps)
+
+    def substitute_file_hits(self) -> Optional['FileSpec']:
+        """
+        :return:
+            a clone with substituted `vgreps` updated, or none if nothing substituted
+        """
+        new_greps: List[GrepSpec] = []
+        ftext = self.ftext
+        fpath = self.fpath
+        for vg in self.vgreps:
+            subst_res = vg.substitute_grep_hits(fpath, ftext)
+            if subst_res:
+                ftext, nvgrep = subst_res
+                new_greps.append(nvgrep)
+
+        if new_greps:
+            return self.replace(ftext=ftext, vgreps=new_greps)
+        else:
+            assert self.ftext == ftext, (self.ftext, ftext)
+
+    @property
+    def nhits(self):
+        return sum(len(vg.hits) for vg in self.vgreps)
+
+
+FilesMap = Dict[Path, FileSpec]
 
 
 class Engrave(cmd.Spec):
     """File-patterns to search and replace with version-id patterns."""
 
-    files = List(
+    patterns = ListTrait(
         #Unicode(),
         help="A list of POSIX file patterns (.gitgnore-like) to search and replace"
     ).tag(config=True)
 
-    vgreps = List(
-        Tuple(CRegExp(), Unicode()),
+    vgreps = ListTrait(
+        AutoInstance(GrepSpec),
         help="""
-        A list of 2-tuples (search, replace) patterns.
+        A list of `GrepSpec` for engraving (search & replace) version-ids or other infos.
 
-        - The `search` part is a regular expression.
-        - The `replace` may use any capture groups (see Python's regex documentation)
-          or interpolation variables.
+        Use `{appname} config desc GrepSpec` to see its syntax.
         """
     ).tag(config=True)
 
@@ -131,42 +296,66 @@ class Engrave(cmd.Spec):
         """
     ).tag(config=True)
 
-    def _fopen(self, fpath, mode):
-        import io
+    def _fread(self, fpath: Path):
+        return fpath.read_text(
+            encoding=self.encoding, errors=self.encoding_errors)
 
-        return io.open(fpath, mode=mode,
-                       encoding=self.encoding, errors=self.encoding_errors)
+    def _fwrite(self, fpath: Path, text: str):
+        fpath.write_text(
+            text, encoding=self.encoding, errors=self.encoding_errors)
 
-    def proc_file(self, fpath, tmpfiles):
-        # https://stackoverflow.com/a/31499114/548792
-        import os
+    def read_files(self, files: List[Path]) -> FilesMap:
+        file_specs: FilesMap = odict()
 
-        npath = str(fpath) + '$'
-        changed = False
-        with self._fopen(fpath, 'r') as finp, self._fopen(npath, 'w') as fout:
-            for line in finp:
-                nline = line
+        for fpath in files:
+            ## TODO: try-catch file-reading.
+            ftext = self._fread(fpath)
 
-                for regex, replace in self.vgreps:
-                    nline = regex.sub(replace, nline)
+            file_specs[fpath] = FileSpec(fpath=fpath, ftext=ftext, vgreps=self.vgreps)
 
-                fout.write(nline)
-                changed |= (nline != line)
+        return file_specs
 
-        if changed:
-            tmpfiles[fpath] = npath
-        else:
-            os.remove(npath)
+    def collect_all_hits(self, file_specs: FilesMap) -> FilesMap:
+        hits: FilesMap = odict()
+        for fpath, filespec in file_specs.items():
+            ## TODO: try-catch regex matching.
+            nfilespec = filespec.collect_file_hits()
+            if nfilespec:
+                hits[fpath] = nfilespec
+
+        return hits
+
+    def substitute_all_hits(self, hits: FilesMap) -> FilesMap:
+        substs: FilesMap = odict()
+        for fpath, filespec in hits.items():
+            ## TODO: try-catch regex substitution.
+            nfilespec = filespec.substitute_file_hits()
+            if nfilespec:
+                substs[fpath] = nfilespec
+
+        return substs
+
+    def write_engraves(self, substs: FilesMap) -> None:
+        if not self.dry_run:
+            for fpath, filespec in substs.items():
+                ## TODO: try-catch regex matching.
+                self._fwrite(fpath, filespec.ftext)
+
+    def _log_action(self, filespecs_map: FilesMap, action: str):
+        file_lines = ''.join(
+            "\n  %s: %r %s" % (fpath, filespec.nhits, action)
+            for fpath, filespec in filespecs_map.items())
+        log.info("%sed files: %s", action.capitalize(), file_lines)
 
     def engrave_all(self):
-        self._tmpfiles = {}
-        visited = set()
-        tmpfiles = {}
-        for fpath in glob_files(self.files):
-            if fpath in visited:
-                continue
-            visited.add(fpath)
+        files: List[Path] = glob_files(self.patterns)
 
-            self.proc_file(fpath, tmpfiles)
+        file_specs: FilesMap = self.read_files(files)
 
-        _enact_all_tmp_files(tmpfiles)
+        file_hits: FilesMap = self.collect_all_hits(file_specs)
+        self._log_action(file_hits, 'match')
+
+        substs: FilesMap = self.substitute_all_hits(file_hits)
+        self._log_action(substs, 'graft')
+
+        self.write_engraves(substs)
