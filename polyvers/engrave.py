@@ -70,6 +70,9 @@ def glob_filter_in_mybase(files, mybase):
 
 
 def glob_filter_out_other_bases(files, other_bases):
+    if not other_bases:
+        return files
+
     other_bases = [Path(ob) for ob in other_bases]
     nfiles = []
     for f in files:
@@ -83,7 +86,9 @@ def glob_filter_out_other_bases(files, other_bases):
     return nfiles
 
 
-def glob_files(patterns: List[str], mybase='.', other_bases=[]) -> List[Path]:
+def glob_files(patterns: List[str],
+               mybase: Union[str, Path] = '.',
+               other_bases: Union[str, Path] = None) -> List[Path]:
         import itertools as itt
         from boltons.setutils import IndexedSet as iset
 
