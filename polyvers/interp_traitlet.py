@@ -68,7 +68,7 @@ class Keys:
         self.mydict = mydict
 
     def __format__(self, format_spec):
-        return ', '.join(self.mydict.keys())
+        return ', '.join(k for k in self.mydict.keys() if not k.startswith('$'))
 
 
 class InterpolationContextManager:
