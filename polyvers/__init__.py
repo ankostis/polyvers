@@ -15,3 +15,11 @@ __license__ = "EUPL 1.2"
 __title__ = "polyvers"
 __summary__ = "Bump independently versions on multi-project git repos"
 __uri__ = "https://github.com/JRCSTU/polyvers"
+__music__ = {
+    "Patria, by David August":
+    "https://soundcloud.com/davidaugust/david-august-patria-feat-sissi-rada",
+    "mix by Sissi Rada":
+    "https://www.mixcloud.com/sissy-makropoulou/52s-show-on-dfwallace/",
+    "mix by Elsa Hewitt":
+    "https://www.mixcloud.com/elsarosemaryx/eh-autumn-mixtape-003/",
+}
