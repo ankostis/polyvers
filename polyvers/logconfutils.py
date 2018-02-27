@@ -83,6 +83,27 @@ def _setup_color_logs(frmt):
         rlog.addHandler(color_handler)
 
 
+def verbosity_from_argv(args):
+    import re
+
+    verbosity = 0
+    for a in args:
+        if a == '--verbose':
+            verbosity += 1
+        if re.match('^-[a-z]+', a, re.I):
+            verbosity += a.count('v')
+
+    return verbosity
+
+
+def log_level_from_argv(args):
+    verbosity = verbosity_from_argv(args)
+    levels = [logging.WARNING, logging.INFO, logging.DEBUG]
+    level = levels[min(len(levels) - 1, verbosity)]
+
+    return level
+
+
 def init_logging(
         level=None,
         logconf_files=None,

@@ -347,7 +347,7 @@ cmdlets_interpolation_manager = CmdletsInterpolationManager()
 class Spec(trc.Configurable):
     verbose = Bool(
         config=True,
-        help="Set logging-level to DEBUG.")
+        help="Repeated use increase logging-level from WARNING-->INFO-->DEBUG.")
 
     force = Bool(
         config=True,

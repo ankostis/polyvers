@@ -35,7 +35,8 @@ def main(argv=None, cmd_consumer=None, **app_init_kwds):
 
     ## At these early stages, any log cmd-line option
     #  enable DEBUG logging ; later will be set by `baseapp` traits.
-    log_level = logging.DEBUG if (set('-v --verbose'.split()) & set(argv)) else None
+    from . import logconfutils as mlu
+    log_level = mlu.log_level_from_argv(argv)
 
     import polyvers as mypack
 
@@ -44,7 +45,6 @@ def main(argv=None, cmd_consumer=None, **app_init_kwds):
     # if sys.argv:
     #     mypack.APPNAME = osp.basename(sys.argv[0])
 
-    from . import logconfutils as mlu
     log = logging.getLogger('%s.main' % mypack.APPNAME)
     mlu.init_logging(level=log_level,
                      logconf_files=osp.join('~', '.%s.yaml' % mypack.APPNAME))
