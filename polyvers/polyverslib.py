@@ -151,6 +151,22 @@ def describe_project(project, default=None, tag_date=False, debug=False):
     return (vid, cdate) if tag_date else vid
 
 
+def describe_project_py27(project, default=None):
+    "Python == 2.7 & < 3.6 function."
+    import subprocess as subp
+
+    try:
+        version = subp.check_output('git describe --match %s-v*' % project)
+        version = version and version.strip()
+        if version:
+            return version.decode('utf-8', errors='surrogateescape')
+    except:  # noqa;  E722
+        pass
+
+    if not version:
+        return default
+
+
 def main(*args):
     """
     Describe a single or multiple projects.
