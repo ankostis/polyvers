@@ -10,7 +10,7 @@ import logging
 from pathlib import Path
 from polyvers import engrave
 from polyvers._vendor.traitlets.config import Config
-from polyvers.engrave import GrepSpec, slices_to_ids
+from polyvers.engrave import GrepSpec, _slices_to_ids
 from polyvers.logconfutils import init_logging
 from polyvers.slice_traitlet import _parse_slice
 import re
@@ -28,7 +28,7 @@ def posixize(paths):
     return [f.as_posix() for f in paths]
 
 
-def test_prepare_glob_list():
+def test_prepare_glob_pairs():
     patterns = tw.dedent("""
         abc
           dddf/
@@ -45,18 +45,18 @@ def test_prepare_glob_list():
 
         123/567
     """).split('\n')
-    pats = engrave.prepare_glob_list(patterns)
-    assert pats == tw.dedent("""
-        **/abc
-        **/dddf/
-        !**/ghh
-        abc
-        !abc
-        **/!foo
-        abc
-        foobar
-        **/123/567
-    """).strip().split('\n')
+    pat_pairs = engrave._prepare_glob_pairs(patterns)
+    assert pat_pairs == [
+        ('**/abc', None),
+        ('**/dddf/', None),
+        (None, '**/ghh'),
+        ('abc', None),
+        (None, 'abc'),
+        ('**/!foo', None),
+        ('abc', None),
+        ('foobar', None),
+        ('**/123/567', None),
+    ]
 
 
 f1 = """
@@ -132,10 +132,23 @@ def test_glob(patterns, fileset):
     assert posixize(files) == 'a/f1 a/f2 a/f3 b/f1 b/f2 b/f3'.split()
 
 
+@pytest.mark.parametrize('patterns, exp', [
+    ('!a !/b/ /**/f*', ''),
+    ('/a/f* !b /b/f*', 'a/f1 a/f2 a/f3'),
+    ('/a/f* !/b/ /b/f*', 'a/f1 a/f2 a/f3'),
+    ('!b/ /a/f*', 'a/f1 a/f2 a/f3'),
+
+    ('/a/f* /b/f* !a/ !b/', 'a/f1 a/f2 a/f3 b/f1 b/f2 b/f3'),
+])
+def test_glob_negatives(patterns, exp, fileset):
+    files = engrave.glob_files(patterns.split())
+    assert posixize(files) == exp.split()
+
+
 def test_glob_mybase():
     files = [Path('../a')]
-    assert engrave.glob_filter_in_mybase(files, '.') == []
-    assert engrave.glob_filter_in_mybase(files, Path('.').resolve() / 'b') == []
+    assert engrave._glob_filter_in_mybase(files, '.') == []
+    assert engrave._glob_filter_in_mybase(files, Path('.').resolve() / 'b') == []
 
 
 def test_glob_relative(fileset):
@@ -165,7 +178,7 @@ def test_slices_to_ids(slices, listlen, exp):
     thelist = list(range(listlen))
     slices = slices if isinstance(slices, list) else [slices]
     slices = [_parse_slice(s) for s in slices]
-    got = slices_to_ids(slices, thelist)
+    got = _slices_to_ids(slices, thelist)
     assert got == exp
 
 

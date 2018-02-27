@@ -25,18 +25,24 @@ from .slice_traitlet import Slice as SliceTrait
 log = logging.getLogger(__name__)
 
 
-def as_glob_pattern(fpath):
-    "Add '**' in relative names, and eliminate comments"
+def _as_glob_pattern_pair(fpath):
+    """
+    Add '**' in relative names, eliminate comments and split in positive/negatives
+
+    :return:
+        a 2-tuple(positive, negative), one always None
+    """
     fpath = fpath.strip()
 
     ## Remove comments/empty-lines.
     if not fpath or fpath.startswith('#') or fpath.startswith('..'):
-        return
+        return (None, None)
 
     if fpath.startswith('!'):
         # raise NotImplementedError('Negative match pattern %r not supported!' %
         #                           fpath)
-        return '!' + as_glob_pattern(fpath[1:])
+        (positive, negative) = _as_glob_pattern_pair(fpath[1:])
+        return (negative, positive)
 
     ## TODO: Handle '!' and escaping with '\' like .gitignore
     if fpath.startswith(('./', '/')):
@@ -45,17 +51,37 @@ def as_glob_pattern(fpath):
     else:
         fpath = '**/' + fpath
 
-    return fpath.replace('\\', '')
+    return (fpath.replace('\\', ''), None)
 
 
-def prepare_glob_list(patterns):
-    patterns = [as_glob_pattern(fpat) for fpat in patterns]
-    patterns = [pat for pat in patterns if pat]
+def _prepare_glob_pairs(patterns):
+    pat_pairs = [_as_glob_pattern_pair(fpat) for fpat in patterns]
+    pat_pairs = [pair for pair in pat_pairs if any(pair)]
 
-    return patterns
+    return pat_pairs
 
 
-def glob_filter_in_mybase(files, mybase):
+def _glob_find_files(pattern_pairs: Tuple[str, str], mybase: Path):
+    from boltons.setutils import IndexedSet as iset
+
+    files = iset()
+    notfiles = set()  # type: ignore
+    for positive, negative in pattern_pairs:
+        if positive:
+            new_files = iset(mybase.glob(positive))
+            cleared_files = [f for f in new_files
+                             if not any(nf in f.parents for nf in notfiles)]
+            files.update(cleared_files)
+        elif negative:
+            new_notfiles = mybase.glob(negative)
+            notfiles.update(new_notfiles)
+        else:
+            raise AssertionError("Both in (positive, negative) pair ar None!")
+
+    return files
+
+
+def _glob_filter_in_mybase(files, mybase):
     assert all(isinstance(f, Path) for f in files)
     nfiles = []
     for f in files:
@@ -69,7 +95,7 @@ def glob_filter_in_mybase(files, mybase):
     return nfiles
 
 
-def glob_filter_out_other_bases(files, other_bases):
+def _glob_filter_out_other_bases(files, other_bases):
     if not other_bases:
         return files
 
@@ -89,18 +115,14 @@ def glob_filter_out_other_bases(files, other_bases):
 def glob_files(patterns: List[str],
                mybase: Union[str, Path] = '.',
                other_bases: Union[str, Path] = None) -> List[Path]:
-        import itertools as itt
-        from boltons.setutils import IndexedSet as iset
-
-        patterns = prepare_glob_list(patterns)
+        pattern_pairs = _prepare_glob_pairs(patterns)
 
         mybase = Path(mybase)
-        files = iset(itt.chain.from_iterable(mybase.glob(fpat)
-                                             for fpat in patterns))
+        files = _glob_find_files(pattern_pairs, mybase)
 
-        files = glob_filter_in_mybase(files, mybase)
+        files = _glob_filter_in_mybase(files, mybase)
         if other_bases:
-            files = glob_filter_out_other_bases(files, other_bases)
+            files = _glob_filter_out_other_bases(files, other_bases)
 
         assert all(isinstance(f, Path) for f in files)
         return files
@@ -110,7 +132,7 @@ PatternClass = type(re.compile('.*'))  # For traitlets
 MatchClass = type(re.match('.*', ''))  # For traitlets
 
 
-def slices_to_ids(slices, thelist):
+def _slices_to_ids(slices, thelist):
     from boltons.setutils import IndexedSet as iset
 
     all_ids = list(range(len(thelist)))
@@ -179,7 +201,7 @@ class GrepSpec(cmd.Spec, cmd.Strable, cmd.Replaceable):
             if not isinstance(slices, list):
                 slices = [slices]
 
-            hits_indices = slices_to_ids(slices, self.hits)
+            hits_indices = _slices_to_ids(slices, self.hits)
 
             return hits_indices
 
