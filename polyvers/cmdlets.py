@@ -495,14 +495,14 @@ class Cmd(trc.Application, Spec):
             parent = self.parent
 
             if parent.flags:
-                flags = dict(parent.flags)
-                flags.update(self.flags)
-                self.flags = flags
+                flags = self.flags
+                for k, v in parent.flags.items():
+                    flags.setdefault(k, v)
 
             if parent.aliases:
-                aliases = dict(parent.aliases)
-                aliases.update(self.aliases)
-                self.aliases = aliases
+                aliases = self.aliases
+                for k, v in parent.aliases.items():
+                    aliases.setdefault(k, v)
 
             ## Need also classes bc flags/aliases may depend on them
             #
