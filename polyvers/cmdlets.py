@@ -56,7 +56,7 @@ from boltons.setutils import IndexedSet as iset
 
 import os.path as osp
 
-from . import fileutils as fu, interp_traitlet as interp
+from . import fileutils as fu, interpctxt
 from ._vendor import traitlets as trt
 from ._vendor.traitlets import config as trc
 from ._vendor.traitlets.traitlets import Bool, List, Unicode, Instance, Union
@@ -325,7 +325,7 @@ class Strable:
         return '%s(%s)' % (name, values)
 
 
-class CmdletsInterpolationManager(interp.InterpolationContextManager):
+class CmdletsInterpolationManager(interpctxt.InterpolationContextManager):
     """
     Adds another layer map `cmdlets_map` to interp-manager for help & cmd mechanics.
 
@@ -422,7 +422,7 @@ class Cmd(trc.Application, Spec):
     ## HELP ##
     ##########
 
-    option_description = interp.Template("""
+    option_description = interpctxt.Template("""
         Options are convenience aliases to configurable class-params,
         as listed in the "Equivalent to" description-line of the aliases.
         To see all configurable class-params for some <cmd>, use::

@@ -6,7 +6,7 @@
 # You may obtain a copy of the Licence at: http://ec.europa.eu/idabc/eupl
 
 from polyvers._vendor.traitlets.traitlets import HasTraits
-from polyvers.interp_traitlet import Template, Now, InterpolationContextManager
+from polyvers.interpctxt import Template, Now, InterpolationContextManager
 
 import pytest
 

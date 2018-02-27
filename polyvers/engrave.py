@@ -14,11 +14,10 @@ from pathlib import Path
 import re
 from typing import List, Tuple, Dict, Match, Union, Optional, Iterator
 
-from . import cmdlets as cmd
+from . import cmdlets as cmd, interpctxt
 from ._vendor.traitlets.traitlets import (
     Union as UnionTrait, Instance, List as ListTrait, Unicode, Int, CRegExp)
 from .autoinstance_traitlet import AutoInstance
-from .interp_traitlet import Template
 from .slice_traitlet import Slice as SliceTrait
 
 
@@ -68,12 +67,12 @@ def _glob_find_files(pattern_pairs: Tuple[str, str], mybase: Path):
     notfiles = set()  # type: ignore
     for positive, negative in pattern_pairs:
         if positive:
-            new_files = iset(mybase.glob(positive))
+            new_files: Iterator[Path] = iset(mybase.glob(positive))
             cleared_files = [f for f in new_files
                              if not any(nf in f.parents for nf in notfiles)]
             files.update(cleared_files)
         elif negative:
-            new_notfiles = mybase.glob(negative)
+            new_notfiles: Iterator[Path] = mybase.glob(negative)
             notfiles.update(new_notfiles)
         else:
             raise AssertionError("Both in (positive, negative) pair ar None!")
@@ -151,7 +150,7 @@ class GrepSpec(cmd.Spec, cmd.Strable, cmd.Replaceable):
         help="What to search"
     ).tag(config=True)
 
-    subst = Template(
+    subst = interpctxt.Template(
         help="""
         What to replace with.
 

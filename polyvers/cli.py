@@ -9,7 +9,7 @@
 
 import itertools as itt
 
-from . import APPNAME, __version__, cmdlets, interp_traitlet as interp
+from . import APPNAME, __version__, cmdlets, interpctxt
 from ._vendor import traitlets as trt
 from ._vendor.traitlets.traitlets import List, Bool, Unicode
 from ._vendor.traitlets import config as trc
@@ -42,7 +42,7 @@ class Project(cmdlets.Spec):
         help="The signing PGP user (email, key-id)."
     )
 
-    message = interp.Template(
+    message = interpctxt.Template(
         "chore(ver): bump {{current_version}} → {{new_version}}",
         config=True,
         help="""
@@ -99,7 +99,7 @@ class PolyversCmd(MyCmd, Project):
       {cmd_chain} <sub-cmd> ...
     """
     version = __version__
-    examples = interp.Template("""
+    examples = interpctxt.Template("""
         - Let it guess the configurations for your monorepo::
               {cmd_chain} init
           You may specify different configurations paths with:
