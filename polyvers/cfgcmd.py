@@ -141,17 +141,6 @@ class ConfigCmd(cmdlets.Cmd):
     """)
 
     flags = {
-        'show-config': ({
-            'Application': {
-                'show_config': True,
-            },
-        }, trc.Application.show_config.help),
-        'show-config-json': ({
-            'Application': {
-                'show_config_json': True,
-            },
-        }, trc.Application.show_config_json.help),
-
         ('v', 'verbose'): (
             {'Spec': {'verbose': True}},
             cmdlets.Spec.verbose.help
@@ -164,6 +153,7 @@ class ConfigCmd(cmdlets.Cmd):
             {'Spec': {'force': True}},
             cmdlets.Spec.dry_run.help
         ),
+        **cmdlets.Cmd.flags
     }
 
     def _inherit_parent_cmd(self, change):
@@ -355,7 +345,6 @@ class ShowCmd(cmdlets.Cmd):
 
     def __init__(self, **kwds):
         kwds.setdefault('raise_config_file_errors', False)
-        super().__init__(**kwds)
         self.aliases = {
             ('s', 'source'): ('ShowCmd.source',
                               ShowCmd.source.help)
@@ -374,6 +363,7 @@ class ShowCmd(cmdlets.Cmd):
                 type(self).sort.help
             ),
         }
+        super().__init__(**kwds)
 
     def initialize(self, argv=None):
         """Override to read configs from root-app and not merge them."""
@@ -563,7 +553,6 @@ class DescCmd(cmdlets.Cmd):
     ).tag(config=True)
 
     def __init__(self, **kwds):
-        super().__init__(**kwds)
         self.flags = {
             ('l', 'list'): (
                 {type(self).__name__: {'list': True}},
@@ -582,6 +571,7 @@ class DescCmd(cmdlets.Cmd):
                 type(self).sort.help
             ),
         }
+        super().__init__(**kwds)
 
     def run(self, *args):
         ## Prefer to modify `class_names` after `initialize()`, or else,
