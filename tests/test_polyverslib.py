@@ -8,15 +8,14 @@
 from polyvers import polyverslib as pvlib
 import re
 
+
 proj1 = 'proj1'
 proj2 = 'proj-2'
 
 
-def rfc2822_now():
-    from datetime import datetime
-    import email.utils as emu
-
-    return emu.format_datetime(datetime.now())[:12]  # till hour
+def rfc2822_today():
+    ## TCs may fail if run when day changes :-)
+    return pvlib.rfc2822_now()[:12]  # till hour
 
 
 ##############
@@ -32,34 +31,29 @@ def test_describe_project_p1(ok_repo, untagged_repo, no_repo):
     assert v.startswith('proj1-v0.0.1')
     v, d = pvlib.describe_project(proj1, tag_date=True)
     assert v.startswith('proj1-v0.0.1')
-    assert d.startswith(rfc2822_now())
+    assert d.startswith(rfc2822_today())
     v, d = pvlib.describe_project(proj1, default='<unused>', tag_date=True)
     assert v.startswith('proj1-v0.0.1')
-    assert d.startswith(rfc2822_now())
+    assert d.startswith(rfc2822_today())
 
     untagged_repo.chdir()
 
     v = pvlib.describe_project('foo')
-    assert not v
+    assert v is None
     v = pvlib.describe_project('foo', default='<unused>')
     assert v == '<unused>'
     v, d = pvlib.describe_project('foo', tag_date=True)
-    assert not v and not d
+    assert v is None
+    assert d.startswith(rfc2822_today())
     v, d = pvlib.describe_project('foo', default=(1, 2), tag_date=True)
     assert v, d == (1, 2)
 
     no_repo.chdir()
 
     v = pvlib.describe_project(proj1)
-    assert v == '<git-error>'
+    assert v is None
     v = pvlib.describe_project(proj1, default='<unused>')
     assert v == '<unused>'
-
-    v = pvlib.describe_project(proj1, default='<unused>', debug=True)
-    assert v == '<unused>'
-
-    v, d = pvlib.describe_project(proj1, default=tuple('ab'), tag_date=True, debug=True)
-    assert v == 'a' and d == 'b'
 
 
 def test_describe_project_p2(ok_repo):
@@ -68,7 +62,7 @@ def test_describe_project_p2(ok_repo):
     v = pvlib.describe_project(proj2)
     assert v.startswith('proj-2-v0.2.1')
     v, d = pvlib.describe_project(proj2, tag_date=True)
-    assert d.startswith(rfc2822_now())
+    assert d.startswith(rfc2822_today())
 
 
 def test_describe_project_BAD(ok_repo, untagged_repo, no_repo):
@@ -79,9 +73,11 @@ def test_describe_project_BAD(ok_repo, untagged_repo, no_repo):
     v = pvlib.describe_project('foo', default='<unused>')
     assert v == '<unused>'
     v, d = pvlib.describe_project('foo', tag_date=True)
-    assert not v and not d
-    pair = pvlib.describe_project('foo', default=('a', 'b'), tag_date=True)
-    assert pair == ('a', 'b')
+    assert not v
+    assert d.startswith(rfc2822_today())
+    v, d = pvlib.describe_project('foo', default='a', tag_date=True)
+    assert v == 'a'
+    assert d.startswith(rfc2822_today())
 
 
 ##############
@@ -131,5 +127,5 @@ def test_MAIN_describe_projects(ok_repo, untagged_repo, no_repo,
 
     pvlib.main(proj1)
     out, err = capsys.readouterr()
-    assert out == '<git-error>\n'
+    assert out == ''  # No error reported
     #assert caplog.records()

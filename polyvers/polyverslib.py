@@ -7,164 +7,97 @@
 # You may obtain a copy of the Licence at: http://ec.europa.eu/idabc/eupl
 #
 """
-Python code to discover sub-project versions in Git *polyvers* monorepos.
+Python-2.7 safe code to discover sub-project versions in Git *polyvers* monorepos.
 
 The *polyvers* version-configuration tool is generating tags like::
 
     proj-foo-v0.1.0
 
-On purpose python code here kept with as few dependencies as possible."""
+On purpose python code here kept with as few dependencies as possible.
+"""
 
-import logging
-import re
 import sys
 
 import subprocess as sbp
 
 
 vtag_fnmatch_frmt = '%s-v*'
-vtag_regex = re.compile(r'^([-.\w]+)-v(\d.+)$', re.IGNORECASE)
 
 
-def format_syscmd(cmd):
-    if isinstance(cmd, (list, tuple)):
-        cmd = ' '.join('"%s"' % s if ' ' in s else s
-                       for s in cmd)
-    else:
-        assert isinstance(cmd, str), cmd
-
-    return cmd
-
-
-def exec_cmd(cmd,
-             dry_run=False,
-             check_stdout=None,
-             check_stderr=None,
-             check_returncode=True,
-             encoding='utf-8', encoding_errors='surrogateescape',
-             **popen_kws):
+def clean_cmd_result(res):  # type: (bytes) -> str
     """
-    param check_stdout:
-        None: Popen(stdout=None), printed
-        False: Popen(stdout=sbp.DEVNULL), ignored
-        True: Popen(stdout=sbp.PIPE), collected & returned
+    :return:
+        only if there is something in `res`, as utf-8 decoded string
     """
-    log = logging.getLogger(__name__)
-    call_types = {
-        None: {'label': 'EXEC', 'stream': None},
-        False: {'label': 'EXEC(no-stdout)', 'stream': sbp.DEVNULL},
-        True: {'label': 'CALL', 'stream': sbp.PIPE},
-    }
-    stdout_ctype = call_types[check_stdout]
-    cmd_label = stdout_ctype['label']
-    cmd_str = format_syscmd(cmd)
-
-    log.debug('%s%s %r', 'DRY_' if dry_run else '', cmd_label, cmd_str)
-
-    if dry_run:
-        return
-
-    ##WARN: python 3.6 `encoding` & `errors` kwds in `Popen`.
-    res = sbp.run(
-        cmd,
-        stdout=stdout_ctype['stream'],
-        stderr=call_types[check_stderr]['stream'],
-        encoding=encoding,
-        errors=encoding_errors,
-        **popen_kws
-    )
-    if res.returncode:
-        log.warning('%s %r failed with %s!\n  stdout: %s\n  stderr: %s',
-                    cmd_label, cmd_str, res.returncode, res.stdout, res.stderr)
-    elif check_stdout or check_stderr:
-        log.debug('%s %r ok: \n  stdout: %s\n  stderr: %s',
-                  cmd_label, cmd_str, res.stdout, res.stderr)
-
-    if check_returncode:
-        res.check_returncode()
-
-    return res
+    res = res and res.strip()
+    if res:
+        return res.decode('utf-8', errors='surrogateescape')
 
 
-def describe_project(project, default=None, tag_date=False, debug=False):
+def rfc2822_now():
+    """Py2.7 code from https://stackoverflow.com/a/3453277/548792"""
+    from datetime import datetime
+    import time
+    from email import utils
+
+    nowdt = datetime.now()
+    nowtuple = nowdt.timetuple()
+    nowtimestamp = time.mktime(nowtuple)
+    now = utils.formatdate(nowtimestamp)
+
+    return now
+
+
+def describe_project(project, default=None, tag_date=False):
     """
     A ``git describe`` replacement based on sub-project's vtags, if any.
 
     :param str project:
         Used as the prefix of vtags when searching them.
     :param str default:
-        What to return if git cmd fails.  If `tag_date` asked, remember
-        to return a tuple.
-    :param bool debug:
-        Version id(s) contain error?
+        What *version* to return if git cmd fails.
     :param bool tag_date:
-        return 2-tuple(version-id, last commit's date)
+        return 2-tuple(version-id, last commit's date).  If cannot derive it
+        from git, report now!
+        RFC2822 sample: 'Thu, 09 Mar 2017 10:50:00 -0000'
     :return:
         when `tag_date` is false:
-            the version-id (possibly null), or '<git-error>' if ``git`` command
-            failed.
+            the version-id or `default` if command failed/returned nothing
         otherwise:
             the tuple (version, commit-RFC2822-date)
 
-    .. TIP::
-        It is to be used in ``__init__.py`` files like this::
-
-            __version__ = describe_project('myproj')
-
-        ...or::
-
-            __version__, __updated__ = describe_project('myproj', date=True)
-
-
-    Same results also retrieved by `git` command::
-
-        git describe --tags --match <PROJECT>-v*
-
-    ``--tags`` needed to consider also unannotated tags, as ``git tag`` does.
+    .. Note::
+       This is a python==2.7 & python<3.6 safe function; there is also the similar
+       function with elaborate error-handling :func:`polyvers.vtags.describe_project`
+       used by the tool internally.
     """
-    vid = cdate = None
+    version = None
     tag_pattern = vtag_fnmatch_frmt % project
-    cmd = 'git describe --tags --match'.split() + [tag_pattern]
+    cmd = 'git describe --tags --match %s' % tag_pattern
     try:
-        res = exec_cmd(cmd, check_stdout=True, check_stderr=True)
-        out = res.stdout
-        vid = out and out.strip()
-
-        if tag_date:
-            log_cmd = "git log -n1 --format=format:%cD".split()
-            res = exec_cmd(log_cmd, check_stdout=True, check_stderr=True)
-            out = res.stdout
-            cdate = out and out.strip()
-    except sbp.CalledProcessError as ex:
-        if default:
-            return default
-        else:
-            err = ex.stderr
-            if 'No annotated tags' in err or 'No names found' in err:
-                vid = None
-            else:
-                if debug:
-                    vid = '<git-error: %s>' % err.strip().replace('\n', ' # ')
-                else:
-                    vid = '<git-error>'
-
-    return (vid, cdate) if tag_date else vid
-
-
-def describe_project_py27(project, default=None):
-    "Python == 2.7 & < 3.6 function."
-    import subprocess as subp
-
-    try:
-        version = subp.check_output('git describe --match %s-v*' % project)
-        version = version and version.strip()
-        if version:
-            return version.decode('utf-8', errors='surrogateescape')
+        res = sbp.check_output(cmd.split())
+        version = clean_cmd_result(res)
     except:  # noqa;  E722
         pass
 
     if not version:
-        return default
+        version = default
+
+    if tag_date:
+        cdate = None
+        try:
+                log_cmd = "git log -n1 --format=format:%cD"
+                res = sbp.check_output(log_cmd.split())
+                cdate = clean_cmd_result(res)
+        except:  # noqa;  E722
+            pass
+
+        if not cdate:
+            cdate = rfc2822_now()
+
+        return (version, cdate)
+
+    return version
 
 
 def main(*args):
@@ -184,17 +117,10 @@ def main(*args):
                   (doc, cmdname))
             exit(0)
 
-    verbose = False
-    for o in ('-v', '--verbose'):
-        if o in args:
-            verbose = True
-            args.remove(o)
-
-    logging.basicConfig(level=logging.DEBUG if verbose else logging.INFO)
     if len(args) == 1:
-        res = describe_project(args[0], debug=verbose)
+        res = describe_project(args[0])
     else:
-        res = '\n'.join('%s: %s' % (p, describe_project(p, debug=verbose))
+        res = '\n'.join('%s: %s' % (p, describe_project(p))
                         for p in args)
 
     if res:

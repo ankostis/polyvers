@@ -10,9 +10,13 @@
 
 from collections import defaultdict
 import logging
-import sys
+from polyvers import oscmd, polyverslib, cmdlets
+import re
 
-import polyvers.polyverslib as pvlib
+import subprocess as sbp
+
+
+vtag_regex = re.compile(r'^([-.\w]+)-v(\d.+)$', re.IGNORECASE)
 
 
 def find_all_subproject_vtags(*projects):
@@ -26,16 +30,16 @@ def find_all_subproject_vtags(*projects):
     :raise subprocess.CalledProcessError:
         if `git` executable not in PATH
     """
-    tag_patterns = [pvlib.vtag_fnmatch_frmt % p
+    tag_patterns = [polyverslib.vtag_fnmatch_frmt % p
                     for p in projects or ('*', )]
     cmd = 'git tag --merged HEAD -l'.split() + tag_patterns
-    res = pvlib.exec_cmd(cmd, check_stdout=True, check_stderr=True)
+    res = oscmd.exec_cmd(cmd, check_stdout=True, check_stderr=True)
     out = res.stdout
     tags = out and out.strip().split('\n') or []
 
     project_versions = defaultdict(list)
     for t in tags:
-        m = pvlib.vtag_regex.match(t)
+        m = vtag_regex.match(t)
         if m:
             pname, ver = m.groups()
             project_versions[pname].append(ver)
@@ -59,16 +63,31 @@ def get_subproject_versions(*projects):
             for proj, versions in vtags.items()}
 
 
-def describe_project(project, tag_date=False, debug=False):
+def rfc2822_now():
+    from datetime import datetime
+    import email.utils as emu
+
+    return emu.format_datetime(datetime.now())
+
+
+class NoVersionError(cmdlets.CmdException):
+    "Sub-project has not yet been version with a *vtag*. "
+    pass
+
+
+def describe_project(project, default=None, tag_date=False):
     """
-    A ``git describe`` replacement based on project's vtags, if any.
+    A ``git describe`` replacement based on sub-project's vtags, if any.
 
     :param str project:
         Used as the prefix of vtags when searching them.
-    :param bool debug:
-        Version id(s) contain error?
+    :param str default:
+        What *version* to return on failutes (no project vtags or no git repo).
+        If that is `None`, any git command failure gets raised.
     :param bool tag_date:
-        return 2-uple(version-id, last commit's date)
+        return 2-tuple(version-id, last commit's date).  If cannot derive it
+        from git, report now!
+        RFC2822 sample: 'Thu, 09 Mar 2017 10:50:00 -0000'
     :return:
         when `tag_date` is false:
             the version-id (possibly null), or '<git-error>' if ``git`` command
@@ -85,39 +104,51 @@ def describe_project(project, tag_date=False, debug=False):
 
             __version__, __updated__ = describe_project('myproj', date=True)
 
+    :raise NoVersionError:
+        if sub-project is not *vtagged*, and no `default` given.
+    :raise sbp.CalledProcessError:
+        for any other error while executing *git*.
 
-    Same results also retrieved by `git` command::
+    .. Tip::
+       Same results also retrieved by `git` command::
 
-        git describe --tags --match <PROJECT>-v*
+           git describe --tags --match <PROJECT>-v*
 
-    ``--tags`` needed to consider also unannotated tags, as ``git tag`` does.
+       ``--tags`` needed to consider also unannotated tags, as ``git tag`` does.
     """
-    import subprocess as sbp
-
-    vid = cdate = None
-    tag_pattern = pvlib.vtag_fnmatch_frmt % project
+    version = cdate = None
+    tag_pattern = polyverslib.vtag_fnmatch_frmt % project
     cmd = 'git describe --tags --match'.split() + [tag_pattern]
     try:
-        res = pvlib.exec_cmd(cmd, check_stdout=True, check_stderr=True)
+        res = oscmd.exec_cmd(cmd, check_stdout=True, check_stderr=True)
         out = res.stdout
-        vid = out and out.strip()
+        version = out and out.strip()
+    except sbp.CalledProcessError as ex:
+        if default is not None:
+            version = default
+        else:
+            err = ex.stderr
+            if 'No annotated tags' in err or 'No names found' in err:
+                raise NoVersionError(
+                    "No *vtag* for sub-project '%s'!" % project) from ex
+            else:
+                raise
 
-        if tag_date:
+    if tag_date:
+        try:
             log_cmd = "git log -n1 --format=format:%cD".split()
-            res = pvlib.exec_cmd(log_cmd, check_stdout=True, check_stderr=True)
+            res = oscmd.exec_cmd(log_cmd, check_stdout=True, check_stderr=True)
             out = res.stdout
             cdate = out and out.strip()
-    except sbp.CalledProcessError as ex:
-        err = ex.stderr
-        if 'No annotated tags' in err or 'No names found' in err:
-            vid = None
-        else:
-            if debug:
-                vid = '<git-error: %s>' % err.strip().replace('\n', ' # ')
+        except:  # noqa;  E722
+            if default is not None:
+                cdate = rfc2822_now()
             else:
-                vid = '<git-error>'
+                raise
 
-    return (vid, cdate) if tag_date else vid
+        return (version, cdate)
+
+    return version
 
 
 def main(*args):
@@ -128,6 +159,7 @@ def main(*args):
         usually ``*sys.argv[1:]``
     """
     import os.path as osp
+    import sys
 
     for o in ('-h', '--help'):
         if o in args:
@@ -153,4 +185,6 @@ def main(*args):
 
 
 if __name__ == '__main__':
+    import sys
+
     main(*sys.argv[1:])

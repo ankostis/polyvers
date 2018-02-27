@@ -7,7 +7,7 @@
 # You may obtain a copy of the Licence at: http://ec.europa.eu/idabc/eupl
 """Common pytest fixtures."""
 
-from polyvers import polyverslib as pvlib
+from polyvers import oscmd
 from py.path import local as P  # @UnresolvedImport
 import pytest
 
@@ -89,7 +89,7 @@ def ok_repo(tmpdir_factory):
     for c in cmds.split('\n'):
         c = c and c.strip()
         if c:
-            pvlib.exec_cmd(c.split())
+            oscmd.exec_cmd(c.split())
 
     return repo_dir
 
@@ -107,7 +107,7 @@ def untagged_repo(tmpdir_factory):
     for c in cmds.split('\n'):
         c = c and c.strip()
         if c:
-            pvlib.exec_cmd(c.split())
+            oscmd.exec_cmd(c.split())
 
     return repo_dir
 
