@@ -15,6 +15,7 @@ The *polyvers* version-configuration tool is generating tags like::
 
 On purpose python code here kept with as few dependencies as possible.
 """
+from __future__ import print_function
 
 import sys
 
@@ -48,6 +49,18 @@ def rfc2822_now():
     return now
 
 
+def _my_run(cmd):
+    "For commands with small output/stderr."
+    proc = sbp.Popen(cmd.split(), stdout=sbp.PIPE, stderr=sbp.PIPE, bufsize=-1)
+    res, err = proc.communicate()
+
+    if proc.returncode != 0:
+        print(err, file=sys.stderr)
+        raise sbp.CalledProcessError(proc.returncode, cmd)
+    else:
+        return clean_cmd_result(res)
+
+
 def describe_project(project, default=None, tag_date=False):
     """
     A ``git describe`` replacement based on sub-project's vtags, if any.
@@ -73,24 +86,27 @@ def describe_project(project, default=None, tag_date=False):
     """
     version = None
     tag_pattern = vtag_fnmatch_frmt % project
-    cmd = 'git describe --tags --match %s' % tag_pattern
     try:
-        res = sbp.check_output(cmd.split())
-        version = clean_cmd_result(res)
-    except:  # noqa;  E722
-        pass
+        cmd = 'git describe --tags --match %s' % tag_pattern
+        version = _my_run(cmd)
+    except:  # noqa;  E722"
+        if default is None:
+            raise
+
+    if not version:
+        version = default
 
     if not version:
         version = default
 
     if tag_date:
         cdate = None
+        cmd = "git log -n1 --format=format:%cD"
         try:
-                log_cmd = "git log -n1 --format=format:%cD"
-                res = sbp.check_output(log_cmd.split())
-                cdate = clean_cmd_result(res)
+                cdate = _my_run(cmd)
         except:  # noqa;  E722
-            pass
+            if default is None:
+                raise
 
         if not cdate:
             cdate = rfc2822_now()
@@ -120,7 +136,7 @@ def main(*args):
     if len(args) == 1:
         res = describe_project(args[0])
     else:
-        res = '\n'.join('%s: %s' % (p, describe_project(p))
+        res = '\n'.join('%s: %s' % (p, describe_project(p, default=''))
                         for p in args)
 
     if res:

@@ -8,6 +8,10 @@
 from polyvers import polyverslib as pvlib
 import re
 
+import pytest
+
+import subprocess as sbp
+
 
 proj1 = 'proj1'
 proj2 = 'proj-2'
@@ -30,30 +34,32 @@ def test_describe_project_p1(ok_repo, untagged_repo, no_repo):
     v = pvlib.describe_project(proj1, default='<unused>')
     assert v.startswith('proj1-v0.0.1')
     v, d = pvlib.describe_project(proj1, tag_date=True)
-    assert v.startswith('proj1-v0.0.1')
-    assert d.startswith(rfc2822_today())
+    assert v.startswith('proj1-v0.0.1') and d.startswith(rfc2822_today())
     v, d = pvlib.describe_project(proj1, default='<unused>', tag_date=True)
-    assert v.startswith('proj1-v0.0.1')
-    assert d.startswith(rfc2822_today())
+    assert v.startswith('proj1-v0.0.1') and d.startswith(rfc2822_today())
 
     untagged_repo.chdir()
 
-    v = pvlib.describe_project('foo')
-    assert v is None
+    with pytest.raises(sbp.CalledProcessError):
+        pvlib.describe_project('foo')
     v = pvlib.describe_project('foo', default='<unused>')
     assert v == '<unused>'
-    v, d = pvlib.describe_project('foo', tag_date=True)
-    assert v is None
-    assert d.startswith(rfc2822_today())
+    with pytest.raises(sbp.CalledProcessError):
+        pvlib.describe_project('foo', tag_date=True)
     v, d = pvlib.describe_project('foo', default=(1, 2), tag_date=True)
-    assert v, d == (1, 2)
+    assert v == (1, 2) and d.startswith(rfc2822_today())
 
     no_repo.chdir()
 
-    v = pvlib.describe_project(proj1)
-    assert v is None
+    with pytest.raises(sbp.CalledProcessError):
+        pvlib.describe_project(proj1)
     v = pvlib.describe_project(proj1, default='<unused>')
-    assert v == '<unused>'
+    assert v == '<unused>' and d.startswith(rfc2822_today())
+
+    with pytest.raises(sbp.CalledProcessError):
+        pvlib.describe_project('foo', tag_date=True)
+    v, d = pvlib.describe_project('foo', default='123', tag_date=True)
+    assert v == '123' and d.startswith(rfc2822_today())
 
 
 def test_describe_project_p2(ok_repo):
@@ -68,16 +74,14 @@ def test_describe_project_p2(ok_repo):
 def test_describe_project_BAD(ok_repo, untagged_repo, no_repo):
     ok_repo.chdir()
 
-    v = pvlib.describe_project('foo')
-    assert not v
+    with pytest.raises(sbp.CalledProcessError):
+        pvlib.describe_project('foo')
     v = pvlib.describe_project('foo', default='<unused>')
     assert v == '<unused>'
-    v, d = pvlib.describe_project('foo', tag_date=True)
-    assert not v
-    assert d.startswith(rfc2822_today())
+    with pytest.raises(sbp.CalledProcessError):
+        pvlib.describe_project('foo', tag_date=True)
     v, d = pvlib.describe_project('foo', default='a', tag_date=True)
-    assert v == 'a'
-    assert d.startswith(rfc2822_today())
+    assert v == 'a' and d.startswith(rfc2822_today())
 
 
 ##############
@@ -90,13 +94,11 @@ def test_MAIN_describe_projects(ok_repo, untagged_repo, no_repo,
 
     pvlib.main()
     out, err = capsys.readouterr()
-    assert not out
-    assert not err
+    assert not out and not err
 
     pvlib.main(proj1)
     out, err = capsys.readouterr()
-    assert out.startswith('proj1-v0.0.1')
-    assert not err
+    assert out.startswith('proj1-v0.0.1') and not err
     pvlib.main(proj2)
     out, err = capsys.readouterr()
     assert out.startswith('proj-2-v0.2.1')
@@ -105,27 +107,26 @@ def test_MAIN_describe_projects(ok_repo, untagged_repo, no_repo,
     pvlib.main(proj1, proj2, 'foo')
     out, err = capsys.readouterr()
     assert re.match(
-        r'proj1: proj1-v0.0.1-2-\w+\nproj-2: proj-2-v0.2.1\nfoo: None', out)
+        r'proj1: proj1-v0.0.1-2-\w+\nproj-2: proj-2-v0.2.1\nfoo: ', out)
     #assert 'No names found' in caplog.text()
 
     untagged_repo.chdir()
 
     pvlib.main()
     out, err = capsys.readouterr()
-    assert not out
-    assert not err
-    pvlib.main('foo')
-    out, err = capsys.readouterr()
-    assert not out
-    #assert 'No names found' in caplog.text()
+    assert not out and not err
+    with pytest.raises(sbp.CalledProcessError):
+        pvlib.main('foo')
     pvlib.main('foo', 'bar')
     out, err = capsys.readouterr()
-    assert out == 'foo: None\nbar: None\n'
+    assert out == 'foo: \nbar: \n'
     #assert 'No names found' in caplog.text()
 
     no_repo.chdir()
 
-    pvlib.main(proj1)
+    with pytest.raises(sbp.CalledProcessError):
+        pvlib.main(proj1)
+    pvlib.main('foo', 'bar')
     out, err = capsys.readouterr()
-    assert out == ''  # No error reported
+    assert out == 'foo: \nbar: \n'
     #assert caplog.records()
