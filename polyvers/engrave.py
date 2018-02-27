@@ -14,7 +14,7 @@ from pathlib import Path
 import re
 from typing import List, Tuple, Dict, Match, Union, Optional, Iterator
 
-from . import cmdlets as cmd, interpctxt
+from . import cmdlets, interpctxt
 from ._vendor.traitlets.traitlets import (
     Union as UnionTrait, Instance, List as ListTrait, Unicode, Int, CRegExp)
 from .autoinstance_traitlet import AutoInstance
@@ -142,7 +142,7 @@ def _slices_to_ids(slices, thelist):
     return list(mask_ids)
 
 
-class GrepSpec(cmd.Spec, cmd.Strable, cmd.Replaceable):
+class GrepSpec(cmdlets.Spec, cmdlets.Strable, cmdlets.Replaceable):
     def __init__(self, *args, **kw):
         super().__init__(*args, **kw)
 
@@ -244,7 +244,7 @@ class GrepSpec(cmd.Spec, cmd.Strable, cmd.Replaceable):
             assert ftext == orig_ftext, (ftext, orig_ftext)
 
 
-class FileSpec(cmd.Spec, cmd.Strable, cmd.Replaceable):
+class FileSpec(cmdlets.Spec, cmdlets.Strable, cmdlets.Replaceable):
     fpath = Instance(Path)
     ftext = Unicode()
     vgreps = ListTrait(Instance(GrepSpec))
@@ -291,7 +291,7 @@ class FileSpec(cmd.Spec, cmd.Strable, cmd.Replaceable):
 FilesMap = Dict[Path, FileSpec]
 
 
-class Engrave(cmd.Spec):
+class Engrave(cmdlets.Spec):
     """File-patterns to search and replace with version-id patterns."""
 
     patterns = ListTrait(

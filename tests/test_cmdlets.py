@@ -9,7 +9,7 @@
 import logging
 from os import pathsep as PS
 import os
-from polyvers import cmdlets as cmd
+from polyvers import cmdlets
 from polyvers._vendor import traitlets as trt
 from polyvers._vendor.traitlets.traitlets import Int
 from polyvers.logconfutils import init_logging
@@ -32,7 +32,7 @@ mydir = osp.dirname(__file__)
 
 
 def test_Replaceable():
-    class C(trt.HasTraits, cmd.Replaceable):
+    class C(trt.HasTraits, cmdlets.Replaceable):
         a = Int()
 
     c = C(a=1)
@@ -43,7 +43,7 @@ def test_Replaceable():
 
 
 def test_Strable():
-    class C(trt.HasTraits, cmd.Strable):
+    class C(trt.HasTraits, cmdlets.Strable):
         a = Int()
 
     c = C(a=1)
@@ -60,7 +60,7 @@ def test_CfgFilesRegistry_consolidate_posix_1():
         ('/d/foo\Bar/dooba/doo', None),
         ('/d/foo\Bar/dooba/doo', None),
     ]
-    c = cmd.CfgFilesRegistry()
+    c = cmdlets.CfgFilesRegistry()
     cons = c._consolidate(visited)
 
     exp = [
@@ -81,7 +81,7 @@ def test_CfgFilesRegistry_consolidate_posix_2():
         ('/d/foo\Bar/dooba/doo', None),
         ('/d/foo\Bar/dooba/doo', None),
     ]
-    c = cmd.CfgFilesRegistry()
+    c = cmdlets.CfgFilesRegistry()
     cons = c._consolidate(visited)
 
     exp = [
@@ -102,7 +102,7 @@ def test_CfgFilesRegistry_consolidate_win_1():
         ('d:\\foo\Bar\\dooba\\doo', None),
         ('d:\\foo\Bar\\dooba\\doo', None),
     ]
-    c = cmd.CfgFilesRegistry()
+    c = cmdlets.CfgFilesRegistry()
     cons = c._consolidate(visited)
 
     exp = [
@@ -123,7 +123,7 @@ def test_CfgFilesRegistry_consolidate_win_2():
         ('D:\\foo\Bar\\dooba\\doo', None),
         ('D:\\foo\Bar\\dooba\\doo', None),
     ]
-    c = cmd.CfgFilesRegistry()
+    c = cmdlets.CfgFilesRegistry()
     cons = c._consolidate(visited)
 
     exp = [
@@ -156,12 +156,12 @@ def test_CfgFilesRegistry(tmpdir):
     """
     touchpaths(tdir, paths)
 
-    cfr = cmd.CfgFilesRegistry()
+    cfr = cmdlets.CfgFilesRegistry()
     fpaths = cfr.collect_fpaths(['conf'])
     fpaths = [P(p).relto(tdir).replace('\\', '/') for p in fpaths]
     assert fpaths == 'conf.json conf.py conf.d/a.json conf.d/a.py'.split()
 
-    cfr = cmd.CfgFilesRegistry()
+    cfr = cmdlets.CfgFilesRegistry()
     fpaths = cfr.collect_fpaths(['conf.py'])
     fpaths = [P(p).relto(tdir).replace('\\', '/') for p in fpaths]
     assert fpaths == 'conf.py conf.py.d/a.json conf.d/a.json conf.d/a.py'.split()
@@ -174,7 +174,7 @@ def test_no_default_config_paths(tmpdir):
     home = tmpdir.mkdir('home')
     os.environ['HOME'] = str(home)
 
-    c = cmd.Cmd()
+    c = cmdlets.Cmd()
     c.initialize([])
     print(c._cfgfiles_registry.config_tuples)
     assert len(c.loaded_config_files) == 0
@@ -182,7 +182,7 @@ def test_no_default_config_paths(tmpdir):
 
 def test_default_loaded_paths():
     with tempfile.TemporaryDirectory(prefix=__name__) as tdir:
-        c = cmd.Cmd(config_paths=[tdir])
+        c = cmdlets.Cmd(config_paths=[tdir])
         c.initialize([])
         print(c._cfgfiles_registry.config_tuples)
         assert len(c.loaded_config_files) == 1
@@ -201,7 +201,7 @@ def test_PathList_trait(inp, exp):
     from pathlib import Path
 
     class C(trt.HasTraits):
-        p = cmd.PathList()
+        p = cmdlets.PathList()
 
     c = C()
     c.p = inp
@@ -259,7 +259,7 @@ def test_collect_static_fpaths(param, var, exp, tmpdir):
     """)
 
     try:
-        c = cmd.Cmd()
+        c = cmdlets.Cmd()
         if param is not None:
             c.config_paths = [str(tdir / ff)
                               for f in param
@@ -281,7 +281,7 @@ def test_collect_static_fpaths(param, var, exp, tmpdir):
 
 
 def test_help_smoketest():
-    cls = cmd.Cmd
+    cls = cmdlets.Cmd
     cls.class_get_help()
     cls.class_config_section()
     cls.class_config_rst_doc()
@@ -298,7 +298,7 @@ def test_help_smoketest():
 
 
 def test_all_cmds_help_version():
-    c = cmd.Cmd
+    c = cmdlets.Cmd
     with pytest.raises(SystemExit):
         c.make_cmd(argv=['help'])
     with pytest.raises(SystemExit):
@@ -320,7 +320,7 @@ def test_yaml_config(tmpdir):
     with open(conf_fpath, 'wt') as fout:
         fout.write(tw.dedent(conf))
 
-    c = cmd.Cmd()
+    c = cmdlets.Cmd()
     c.config_paths = [conf_fpath]
     c.initialize(argv=[])
     assert c.verbose is True

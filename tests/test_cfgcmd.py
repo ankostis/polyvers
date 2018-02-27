@@ -7,10 +7,8 @@
 # You may obtain a copy of the Licence at: http://ec.europa.eu/idabc/eupl
 
 import logging
-from polyvers import cfgcmd
-from polyvers import mainpump as mpu
+from polyvers import cfgcmd, cmdlets, mainpump as mpu
 from polyvers.cfgcmd import ConfigCmd, all_configurables
-import polyvers.cmdlets as cmd
 from polyvers.logconfutils import init_logging
 
 import pytest
@@ -69,7 +67,7 @@ def test_desc_smoketest(case, nlines):
 
 all_cmds = [c
             for c in all_configurables(ConfigCmd())
-            if issubclass(c, cmd.Cmd)]
+            if issubclass(c, cmdlets.Cmd)]
 
 
 @pytest.mark.parametrize('cmd', all_cmds)

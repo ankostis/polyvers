@@ -95,7 +95,7 @@ def describe_project(project, tag_date=False, debug=False):
     :param bool debug:
         Version id(s) contain error?
     :param bool tag_date:
-        return 2-uple(version-id, last commit's date)
+        return 2-tuple(version-id, last commit's date)
     :return:
         when `tag_date` is false:
             the version-id (possibly null), or '<git-error>' if ``git`` command

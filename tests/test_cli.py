@@ -6,19 +6,18 @@
 # You may not use this work except in compliance with the Licence.
 # You may obtain a copy of the Licence at: http://ec.europa.eu/idabc/eupl
 #
+from polyvers import cli, cmdlets
 from polyvers.__main__ import main
 from polyvers.mainpump import ListConsumer
 
 import pytest
 
 from .conftest import assert_in_text
-from polyvers import cli
-from polyvers import cmdlets as cmd
 
 
 all_cmds = [c
             for c in cli.PolyversCmd().all_app_configurables
-            if issubclass(c, cmd.Cmd)]
+            if issubclass(c, cmdlets.Cmd)]
 
 
 @pytest.mark.parametrize('cmd', all_cmds)
