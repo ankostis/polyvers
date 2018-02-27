@@ -7,9 +7,10 @@
 # You may obtain a copy of the Licence at: http://ec.europa.eu/idabc/eupl
 """Common pytest fixtures."""
 
-from polyvers import oscmd
-from py.path import local as P  # @UnresolvedImport
 import pytest
+
+from py.path import local as P  # @UnresolvedImport
+import subprocess as sbp
 
 
 def touchpaths(tdir, paths_txt):
@@ -89,7 +90,7 @@ def ok_repo(tmpdir_factory):
     for c in cmds.split('\n'):
         c = c and c.strip()
         if c:
-            oscmd.exec_cmd(c.split())
+            sbp.check_call(c.split())
 
     return repo_dir
 
@@ -107,7 +108,7 @@ def untagged_repo(tmpdir_factory):
     for c in cmds.split('\n'):
         c = c and c.strip()
         if c:
-            oscmd.exec_cmd(c.split())
+            sbp.check_call(c.split())
 
     return repo_dir
 

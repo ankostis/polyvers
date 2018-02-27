@@ -3,15 +3,15 @@
 
 """The setup script."""
 
-import sys
+#import sys
 
 from setuptools import setup, find_packages
 
 
-MIN_PYTHON = (3, 6)
-if sys.version_info < MIN_PYTHON:
-    sys.exit("Sorry, Python >= %s is required, found: %s" %
-             ('.'.join(str(i) for i in MIN_PYTHON), str(sys.version_info)))
+# MIN_PYTHON = (3, 6)
+# if sys.version_info < MIN_PYTHON:
+#     sys.exit("Sorry, Python >= %s is required, found: %s" %
+#              ('.'.join(str(i) for i in MIN_PYTHON), str(sys.version_info)))
 
 
 with open('README.rst') as readme_file:
@@ -37,7 +37,7 @@ test_requirements = [
     'flake8',
     'flake8-builtins',
     'flake8-mutable',
-    'mypy',
+    #'mypy',
 ]
 PROJECT = 'polyvers'
 setup(
@@ -62,15 +62,15 @@ setup(
         'License :: OSI Approved :: European Union Public Licence 1.1 (EUPL 1.1)',
         'Natural Language :: English',
         'Programming Language :: Python :: 3',
-        'Programming Language :: Python :: 3.5',
         'Programming Language :: Python :: 3.6',
         'Programming Language :: Python :: 3.7',
     ],
     test_suite='tests',
-    python_requires='>=3.6',
+    #python_requires='>=3.6',
     tests_require=test_requirements,
     extras_require={
         'test': test_requirements,
+        'test:python_version>="3"': ['mypy']
     },
     entry_points={
         'console_scripts': [

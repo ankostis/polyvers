@@ -5,6 +5,9 @@ git:
 
 language: python
 python:
+  - 2.7
+  - 3.4
+  - 3.5
   - 3.6
   - 3.7-dev
 
@@ -19,16 +22,37 @@ install:
 
 script:
   ## Test if `pip install .[test]` installs all deps.
-  - pytest -v
+  - |
+    if [[ $TRAVIS_PYTHON_VERSION == '3.6' ]]; then
+        pytest -v
+    else
+        ## Only check *polyverslib* in older Pythons.
+        pytest -v tests/test_polyverslib.py
+    fi
 
   ## Re-test EXACT deps on WHEEL, with COVERAGE.
   #
-  - pip install -q -r requirements.txt -r requirements_dev.txt
-  - pip uninstall polyvers -y
-  - pip install -q dist/*.whl
-  - pytest -q --cov=polyvers --cov-report=term-missing
-  - flake8 --show-source
-  - mypy -m polyvers.engrave
+  - |
+    if [[ $TRAVIS_PYTHON_VERSION == '3.6' ]]; then
+        pip install -q -r requirements.txt -r requirements_dev.txt
+        pip uninstall polyvers -y
+        pip install -q dist/*.whl
+    fi
+
+  - |
+    if [[ $TRAVIS_PYTHON_VERSION == '3.6' ]]; then
+        pytest -q --cov=polyvers --cov-report=term-missing
+    fi
+
+  - |
+    if [[ $TRAVIS_PYTHON_VERSION == '3.6' ]]; then
+        flake8 --show-source
+    fi
+
+  - |
+    if [[ $TRAVIS_PYTHON_VERSION == '3.6' ]]; then
+        mypy -m polyvers.engrave
+    fi
 
 after_success:
   - pip install python-coveralls

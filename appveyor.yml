@@ -8,6 +8,15 @@ environment:
    - PYTHON: "C:\\Python36-x64"
      PYTHON_VERSION: "3.6.x"
      PYTHON_ARCH: "64"
+   - PYTHON: "C:\\Python35-x64"
+     PYTHON_VERSION: "3.5.x"
+     PYTHON_ARCH: "64"
+   - PYTHON: "C:\\Python34-x64"
+     PYTHON_VERSION: "3.4.x"
+     PYTHON_ARCH: "64"
+   - PYTHON: "C:\\Python27-x64"
+     PYTHON_VERSION: "2.7.x"
+     PYTHON_ARCH: "64"
 
 init:
   - "SET PATH=%PYTHON%;%PYTHON%\\Scripts;%GIT_PATH%;%PATH%"
@@ -19,4 +28,9 @@ install:
   - "%CMD_IN_ENV%  pip install .[test]"
 
 test_script:
-  - "%CMD_IN_ENV%  pytest --pyargs -v tests"
+  -   IF "%PYTHON_VERSION%"=="3.6" (
+        %CMD_IN_ENV% pytest --pyargs -v tests
+    ) ELSE (
+        %CMD_IN_ENV% pytest -v tests/test_polyverslib.py
+    )
+
