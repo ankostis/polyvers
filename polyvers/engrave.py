@@ -375,6 +375,7 @@ class Engrave(cmd.Spec):
 
     def engrave_all(self):
         files: List[Path] = glob_files(self.patterns)
+        log.info("Searching files: %s", ', '.join(str(f) for f in files))
 
         file_specs: FilesMap = self.read_files(files)
 
