@@ -26,9 +26,14 @@ def rfc2822_now():
 def test_describe_project_p1(ok_repo, untagged_repo, no_repo):
     ok_repo.chdir()
 
-    v = pvlib.describe_project(proj1)
+    v = pvlib.describe_project(proj1,)
+    assert v.startswith('proj1-v0.0.1')
+    v = pvlib.describe_project(proj1, default='<unused>')
     assert v.startswith('proj1-v0.0.1')
     v, d = pvlib.describe_project(proj1, tag_date=True)
+    assert v.startswith('proj1-v0.0.1')
+    assert d.startswith(rfc2822_now())
+    v, d = pvlib.describe_project(proj1, default='<unused>', tag_date=True)
     assert v.startswith('proj1-v0.0.1')
     assert d.startswith(rfc2822_now())
 
@@ -36,21 +41,25 @@ def test_describe_project_p1(ok_repo, untagged_repo, no_repo):
 
     v = pvlib.describe_project('foo')
     assert not v
+    v = pvlib.describe_project('foo', default='<unused>')
+    assert v == '<unused>'
     v, d = pvlib.describe_project('foo', tag_date=True)
-    assert not v
-    assert not d
+    assert not v and not d
+    v, d = pvlib.describe_project('foo', default=(1, 2), tag_date=True)
+    assert v, d == (1, 2)
 
     no_repo.chdir()
 
     v = pvlib.describe_project(proj1)
     assert v == '<git-error>'
+    v = pvlib.describe_project(proj1, default='<unused>')
+    assert v == '<unused>'
 
-    v = pvlib.describe_project(proj1, debug=True)
-    assert 'Not a git repository' in v
+    v = pvlib.describe_project(proj1, default='<unused>', debug=True)
+    assert v == '<unused>'
 
-    v, d = pvlib.describe_project(proj1, tag_date=True, debug=True)
-    assert 'Not a git repository' in v
-    assert not d
+    v, d = pvlib.describe_project(proj1, default=tuple('ab'), tag_date=True, debug=True)
+    assert v == 'a' and d == 'b'
 
 
 def test_describe_project_p2(ok_repo):
@@ -67,26 +76,12 @@ def test_describe_project_BAD(ok_repo, untagged_repo, no_repo):
 
     v = pvlib.describe_project('foo')
     assert not v
+    v = pvlib.describe_project('foo', default='<unused>')
+    assert v == '<unused>'
     v, d = pvlib.describe_project('foo', tag_date=True)
-    assert not v
-    assert not d
-
-    untagged_repo.chdir()
-
-    v = pvlib.describe_project('foo')
-    assert not v
-    v, d = pvlib.describe_project('foo', tag_date=True)
-    assert not v
-    assert not d
-
-    no_repo.chdir()
-
-    v = pvlib.describe_project('foo')
-    assert v == '<git-error>'
-
-    v, d = pvlib.describe_project('foo', tag_date=True)
-    assert v == '<git-error>'
-    assert not d
+    assert not v and not d
+    pair = pvlib.describe_project('foo', default=('a', 'b'), tag_date=True)
+    assert pair == ('a', 'b')
 
 
 ##############

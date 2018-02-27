@@ -86,12 +86,15 @@ def exec_cmd(cmd,
     return res
 
 
-def describe_project(project, tag_date=False, debug=False):
+def describe_project(project, default=None, tag_date=False, debug=False):
     """
-    A ``git describe`` replacement based on project's vtags, if any.
+    A ``git describe`` replacement based on sub-project's vtags, if any.
 
     :param str project:
         Used as the prefix of vtags when searching them.
+    :param str default:
+        What to return if git cmd fails.  If `tag_date` asked, remember
+        to return a tuple.
     :param bool debug:
         Version id(s) contain error?
     :param bool tag_date:
@@ -133,14 +136,17 @@ def describe_project(project, tag_date=False, debug=False):
             out = res.stdout
             cdate = out and out.strip()
     except sbp.CalledProcessError as ex:
-        err = ex.stderr
-        if 'No annotated tags' in err or 'No names found' in err:
-            vid = None
+        if default:
+            return default
         else:
-            if debug:
-                vid = '<git-error: %s>' % err.strip().replace('\n', ' # ')
+            err = ex.stderr
+            if 'No annotated tags' in err or 'No names found' in err:
+                vid = None
             else:
-                vid = '<git-error>'
+                if debug:
+                    vid = '<git-error: %s>' % err.strip().replace('\n', ' # ')
+                else:
+                    vid = '<git-error>'
 
     return (vid, cdate) if tag_date else vid
 
