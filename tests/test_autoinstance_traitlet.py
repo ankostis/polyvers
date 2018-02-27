@@ -6,7 +6,7 @@
 # You may obtain a copy of the Licence at: http://ec.europa.eu/idabc/eupl
 
 import pytest
-from polyvers._vendor.traitlets import List, CInt  # @UnresolvedImport
+from polyvers._vendor.traitlets.traitlets import List, CInt
 from polyvers._vendor.traitlets.config import Configurable, Config
 
 from polyvers.autoinstance_traitlet import AutoInstance

@@ -5,7 +5,7 @@
 # You may not use this work except in compliance with the Licence.
 # You may obtain a copy of the Licence at: http://ec.europa.eu/idabc/eupl
 
-from polyvers._vendor.traitlets import HasTraits, TraitError  # @UnresolvedImport
+from polyvers._vendor.traitlets.traitlets import HasTraits, TraitError
 from polyvers.slice_traitlet import _parse_slice, Slice
 
 import pytest

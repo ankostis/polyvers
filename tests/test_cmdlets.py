@@ -11,7 +11,7 @@ from os import pathsep as PS
 import os
 from polyvers import cmdlets as cmd
 from polyvers._vendor import traitlets as trt
-from polyvers._vendor.traitlets import Int  # @UnresolvedImport
+from polyvers._vendor.traitlets.traitlets import Int
 from polyvers.logconfutils import init_logging
 import tempfile
 
