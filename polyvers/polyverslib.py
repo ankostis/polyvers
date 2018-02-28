@@ -112,6 +112,16 @@ def polyversion(project, default=None,
     :return:
         the version-id or `default` if command failed/returned nothing
 
+    .. TIP::
+        It is to be used in ``__init__.py`` files like this::
+
+            __version__ = polyversion('myproj')
+
+        ...or in ``setup.py`` where a default is needed for *develop* mode
+        to work::
+
+            version=polyversion('myproj', '0.0.0)
+
     .. NOTE::
        This is a python==2.7 & python<3.6 safe function; there is also the similar
        function with elaborate error-handling :func:`polyvers.vtags.descrive_project()`
@@ -141,7 +151,7 @@ def polyversion(project, default=None,
 
 def polytime(no_raise=False):
     """
-    The date of the last commit of the project.
+    The timestamp of the last commit of the git repo.
 
     :param str no_raise:
         If true, never fail and return current-time
