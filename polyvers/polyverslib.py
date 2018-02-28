@@ -18,11 +18,22 @@ On purpose python code here kept with as few dependencies as possible.
 from __future__ import print_function
 
 import sys
+import re
 
 import subprocess as sbp
 
 
+#: The default pattern globbing for *vtags* with ``git describe --match <pattern>``.
 vtag_fnmatch_frmt = '%s-v*'
+
+#: The default regex pattern breaking *vtags* into 3 capturing groups.
+#: See :pep:`0426` for project-name characters and format.
+vtag_regex = re.compile(r"""(?xi)
+    ^(?P<project>[A-Z0-9]|[A-Z0-9][A-Z0-9._-]*?[A-Z0-9])
+    -
+    v(?P<version>\d[^-]*)
+    (?:-(?P<descid>\d+-g[a-f\d]+))?$
+""")
 
 
 def clean_cmd_result(res):  # type: (bytes) -> str
@@ -61,7 +72,36 @@ def _my_run(cmd):
         return clean_cmd_result(res)
 
 
-def describe_project(project, default=None, tag_date=False):
+def split_vtag(vtag, vtag_regex):
+    try:
+        m = vtag_regex.match(vtag)
+        if not m:
+            raise ValueError(
+                "Unparseable *vtag* from `vtag_regex`!")
+        mg = m.groupdict()
+        return mg['project'], mg['version'], mg['descid']
+    except Exception as ex:
+        print("Matching vtag '%s' failed due to: %s" %
+              (vtag, ex), file=sys.stderr)
+        raise
+
+
+def _extract_version(project, vtag_regex, tag_pattern):
+    cmd = 'git describe --tags --match %s' % tag_pattern
+    vtag = _my_run(cmd)
+    matched_project, version, descid = split_vtag(vtag, vtag_regex)
+    if matched_project != project:
+        print("Matched  vtag project '%s' different from expected '%s'!" %
+              (matched_project, project), file=sys.stderr)
+    if descid:
+        version = '%s+%s' % (version, descid.replace('-', '.'))
+
+    return version
+
+
+def describe_project(project, default=None, tag_date=False,
+                     vtag_fnmatch_frmt=vtag_fnmatch_frmt,
+                     vtag_regex=vtag_regex):
     """
     A ``git describe`` replacement based on sub-project's vtags, if any.
 
@@ -73,6 +113,16 @@ def describe_project(project, default=None, tag_date=False):
         return 2-tuple(version-id, last commit's date).  If cannot derive it
         from git, report now!
         RFC2822 sample: 'Thu, 09 Mar 2017 10:50:00 -0000'
+    :param str vtag_fnmatch_frmt:
+        The pattern globbing for *vtags* with ``git describe --match <pattern>``.
+        See :data:`vtag_fnmatch_frmt`
+    :param regex vtag_regex:
+        The regex pattern breaking apart *vtags*, with 3 named capturing groups:
+        - ``project``,
+        - ``version`` (without the 'v'),
+        - ``descid`` (optional) anything following the dash('-') after
+          the version in ``git-describe`` result.
+        See :data:`vtag_regex`
     :return:
         when `tag_date` is false:
             the version-id or `default` if command failed/returned nothing
@@ -87,8 +137,7 @@ def describe_project(project, default=None, tag_date=False):
     version = None
     tag_pattern = vtag_fnmatch_frmt % project
     try:
-        cmd = 'git describe --tags --match %s' % tag_pattern
-        version = _my_run(cmd)
+        version = _extract_version(project, vtag_regex, tag_pattern)
     except:  # noqa;  E722"
         if default is None:
             raise
