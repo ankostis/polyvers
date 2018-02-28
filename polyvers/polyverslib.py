@@ -89,20 +89,7 @@ def split_vtag(vtag, vtag_regex):
         raise
 
 
-def _extract_version(project, vtag_regex, tag_pattern):
-    cmd = 'git describe --tags --match %s' % tag_pattern
-    vtag = _my_run(cmd)
-    matched_project, version, descid = split_vtag(vtag, vtag_regex)
-    if matched_project != project:
-        print("Matched  vtag project '%s' different from expected '%s'!" %
-              (matched_project, project), file=sys.stderr)
-    if descid:
-        version = '%s+%s' % (version, descid.replace('-', '.'))
-
-    return version
-
-
-def polyversion(project, default=None, tag_date=False,
+def polyversion(project, default=None,
                 vtag_fnmatch_frmt=vtag_fnmatch_frmt,
                 vtag_regex=vtag_regex):
     """
@@ -112,10 +99,6 @@ def polyversion(project, default=None, tag_date=False,
         Used as the prefix of vtags when searching them.
     :param str default:
         What *version* to return if git cmd fails.
-    :param bool tag_date:
-        return 2-tuple(version-id, last commit's date).  If cannot derive it
-        from git, report now!
-        RFC2822 sample: 'Thu, 09 Mar 2017 10:50:00 -0000'
     :param str vtag_fnmatch_frmt:
         The pattern globbing for *vtags* with ``git describe --match <pattern>``.
         See :data:`vtag_fnmatch_frmt`
@@ -127,10 +110,7 @@ def polyversion(project, default=None, tag_date=False,
           the version in ``git-describe`` result.
         See :data:`vtag_regex`
     :return:
-        when `tag_date` is false:
-            the version-id or `default` if command failed/returned nothing
-        otherwise:
-            the tuple (version, commit-RFC2822-date)
+        the version-id or `default` if command failed/returned nothing
 
     .. NOTE::
        This is a python==2.7 & python<3.6 safe function; there is also the similar
@@ -140,7 +120,15 @@ def polyversion(project, default=None, tag_date=False,
     version = None
     tag_pattern = vtag_fnmatch_frmt % project
     try:
-        version = _extract_version(project, vtag_regex, tag_pattern)
+        cmd = 'git describe --tags --match %s' % tag_pattern
+        vtag = _my_run(cmd)
+        matched_project, version, descid = split_vtag(vtag, vtag_regex)
+        if matched_project != project:
+            print("Matched  vtag project '%s' different from expected '%s'!" %
+                  (matched_project, project), file=sys.stderr)
+        if descid:
+            local_part = descid.replace('-', '.')
+            version = '%s+%s' % (version, local_part)
     except:  # noqa;  E722"
         if default is None:
             raise
@@ -148,24 +136,30 @@ def polyversion(project, default=None, tag_date=False,
     if not version:
         version = default
 
-    if not version:
-        version = default
-
-    if tag_date:
-        cdate = None
-        cmd = "git log -n1 --format=format:%cD"
-        try:
-                cdate = _my_run(cmd)
-        except:  # noqa;  E722
-            if default is None:
-                raise
-
-        if not cdate:
-            cdate = rfc2822_tstamp()
-
-        return (version, cdate)
-
     return version
+
+
+def polytime(no_raise=False):
+    """
+    The date of the last commit of the project.
+
+    :param str no_raise:
+        If true, never fail and return current-time
+    :return:
+        the commit-date if in git repo, or now; :rfc:`2822` formatted
+    """
+    cdate = None
+    cmd = "git log -n1 --format=format:%cD"
+    try:
+            cdate = _my_run(cmd)
+    except:  # noqa;  E722
+        if not no_raise:
+            raise
+
+    if not cdate:
+        cdate = rfc2822_tstamp()
+
+    return cdate
 
 
 def main(*args):

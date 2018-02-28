@@ -73,10 +73,11 @@ def test_polyversion_p1(ok_repo, untagged_repo, no_repo):
     assert v.startswith(proj1_ver)
     v = pvlib.polyversion(proj1, default='<unused>')
     assert v.startswith(proj1_ver)
-    v, d = pvlib.polyversion(proj1, tag_date=True)
-    assert v.startswith(proj1_ver) and d.startswith(rfc2822_today())
-    v, d = pvlib.polyversion(proj1, default='<unused>', tag_date=True)
-    assert v.startswith(proj1_ver) and d.startswith(rfc2822_today())
+
+    d = pvlib.polytime()
+    assert d.startswith(rfc2822_today())
+    d = pvlib.polytime(no_raise=True)
+    assert d.startswith(rfc2822_today())
 
     untagged_repo.chdir()
 
@@ -84,22 +85,23 @@ def test_polyversion_p1(ok_repo, untagged_repo, no_repo):
         pvlib.polyversion('foo')
     v = pvlib.polyversion('foo', default='<unused>')
     assert v == '<unused>'
-    with pytest.raises(sbp.CalledProcessError):
-        pvlib.polyversion('foo', tag_date=True)
-    v, d = pvlib.polyversion('foo', default=(1, 2), tag_date=True)
-    assert v == (1, 2) and d.startswith(rfc2822_today())
+
+    pvlib.polytime()
+    assert d.startswith(rfc2822_today())
+    d = pvlib.polytime(no_raise=True)
+    assert d.startswith(rfc2822_today())
 
     no_repo.chdir()
 
     with pytest.raises(sbp.CalledProcessError):
         pvlib.polyversion(proj1)
     v = pvlib.polyversion(proj1, default='<unused>')
-    assert v == '<unused>' and d.startswith(rfc2822_today())
+    assert v == '<unused>'
 
     with pytest.raises(sbp.CalledProcessError):
-        pvlib.polyversion('foo', tag_date=True)
-    v, d = pvlib.polyversion('foo', default='123', tag_date=True)
-    assert v == '123' and d.startswith(rfc2822_today())
+        pvlib.polytime()
+    d = pvlib.polytime(no_raise=True)
+    assert d.startswith(rfc2822_today())
 
 
 def test_polyversion_p2(ok_repo):
@@ -107,21 +109,18 @@ def test_polyversion_p2(ok_repo):
 
     v = pvlib.polyversion(proj2)
     assert v.startswith(proj2_ver)
-    v, d = pvlib.polyversion(proj2, tag_date=True)
+
+    d = pvlib.polytime()
     assert d.startswith(rfc2822_today())
 
 
-def test_polyversion_BAD(ok_repo, untagged_repo, no_repo):
+def test_polyversion_BAD(ok_repo):
     ok_repo.chdir()
 
     with pytest.raises(sbp.CalledProcessError):
         pvlib.polyversion('foo')
     v = pvlib.polyversion('foo', default='<unused>')
     assert v == '<unused>'
-    with pytest.raises(sbp.CalledProcessError):
-        pvlib.polyversion('foo', tag_date=True)
-    v, d = pvlib.polyversion('foo', default='a', tag_date=True)
-    assert v == 'a' and d.startswith(rfc2822_today())
 
 
 ##############
