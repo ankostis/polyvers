@@ -28,7 +28,8 @@ import subprocess as sbp
 #: The default pattern globbing for *vtags* with ``git describe --match <pattern>``.
 vtag_fnmatch_frmt = '%s-v*'
 
-#: The default regex pattern breaking *vtags* into 3 capturing groups.
+#: The default regex pattern breaking *vtags* and/or ``git-describe`` output
+#: into 3 capturing groups.
 #: See :pep:`0426` for project-name characters and format.
 vtag_regex = re.compile(r"""(?xi)
     ^(?P<project>[A-Z0-9]|[A-Z0-9][A-Z0-9._-]*?[A-Z0-9])
@@ -89,6 +90,12 @@ def split_vtag(vtag, vtag_regex):
         raise
 
 
+def version_from_descid(version, descid):
+    """Combine ``git-describe`` parts in a :pep:`440` version with "local" part."""
+    local_part = descid.replace('-', '.')
+    return '%s+%s' % (version, local_part)
+
+
 def polyversion(project, default=None,
                 vtag_fnmatch_frmt=vtag_fnmatch_frmt,
                 vtag_regex=vtag_regex):
@@ -108,6 +115,8 @@ def polyversion(project, default=None,
         - ``version`` (without the 'v'),
         - ``descid`` (optional) anything following the dash('-') after
           the version in ``git-describe`` result.
+
+        See :pep:`0426` for project-name characters and format.
         See :data:`vtag_regex`
     :return:
         the version-id or `default` if command failed/returned nothing
@@ -137,8 +146,7 @@ def polyversion(project, default=None,
             print("Matched  vtag project '%s' different from expected '%s'!" %
                   (matched_project, project), file=sys.stderr)
         if descid:
-            local_part = descid.replace('-', '.')
-            version = '%s+%s' % (version, local_part)
+            version = version_from_descid(version, descid)
     except:  # noqa;  E722"
         if default is None:
             raise
