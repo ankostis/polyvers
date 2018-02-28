@@ -9,6 +9,7 @@
 import fnmatch
 from polyvers import polyverslib as pvlib
 import re
+import sys
 
 import pytest
 
@@ -105,6 +106,18 @@ def test_polyversion_BAD(ok_repo):
     assert v == '<unused>'
 
 
+@pytest.mark.skipif(sys.version_info < (3, ),
+                    reason="FileNotFoundError not in PY27, OSError only.")
+def test_polyversion_BAD_no_git_cmd(ok_repo, monkeypatch):
+    ok_repo.chdir()
+    monkeypatch.setenv('PATH', '')
+
+    with pytest.raises(FileNotFoundError):
+        pvlib.polyversion('foo')
+    v = pvlib.polyversion('foo', '0.1.1')
+    assert v == '0.1.1'
+
+
 def test_polytime_p1(ok_repo, untagged_repo, no_repo):
     ok_repo.chdir()
 
@@ -132,6 +145,18 @@ def test_polytime_p2(ok_repo):
     ok_repo.chdir()
 
     d = pvlib.polytime()
+    assert d.startswith(rfc2822_today())
+
+
+@pytest.mark.skipif(sys.version_info < (3, ),
+                    reason="FileNotFoundError not in PY27, OSError only.")
+def test_polytime_BAD_no_git_cmd(ok_repo, monkeypatch):
+    ok_repo.chdir()
+    monkeypatch.setenv('PATH', '')
+
+    with pytest.raises(FileNotFoundError):
+        pvlib.polytime()
+    d = pvlib.polytime(no_raise=True)
     assert d.startswith(rfc2822_today())
 
 
