@@ -140,6 +140,7 @@ class ConfigCmd(cmdlets.Cmd):
               {cmd_chain} paths
     """)
 
+    ## TODO: separate Spec from cmdlets, and ConfigCmd flags.
     flags = {
         ('v', 'verbose'): (
             {'Spec': {'verbose': True}},
@@ -153,7 +154,7 @@ class ConfigCmd(cmdlets.Cmd):
             {'Spec': {'force': True}},
             cmdlets.Spec.dry_run.help
         ),
-        **cmdlets.Cmd.flags
+        **cmdlets.Cmd.flags  # @UndefinedVariable
     }
 
     def _inherit_parent_cmd(self, change):

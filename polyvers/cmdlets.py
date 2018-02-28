@@ -349,6 +349,10 @@ class Spec(trc.Configurable):
         config=True,
         help="Repeated use increase logging-level from WARNING-->INFO-->DEBUG.")
 
+    debug = Bool(
+        config=True,
+        help="Change certain actions, to discover possible problems.")
+
     force = Bool(
         config=True,
         help="Force things to perform their duties without complaints.")

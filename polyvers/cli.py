@@ -264,6 +264,11 @@ PolyversCmd.flags = {
         {'Spec': {'force': True}},
         cmdlets.Spec.dry_run.help
     ),
+    ('d', 'debug'): (
+        {'Spec': {'force': True}},
+        cmdlets.Spec.debug.help
+    ),
+
     ('c', 'commit'): (
         {},
         PolyversCmd.commit.help
