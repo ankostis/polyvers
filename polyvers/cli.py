@@ -158,7 +158,7 @@ class PolyversCmd(MyCmd, Project):
     @trt.default('subcommands')
     def _subcommands(self):
         subcmds = cmdlets.build_sub_cmds(InitCmd, StatusCmd,
-                                         SetverCmd, BumpveCmd,
+                                         BumpCmd,
                                          LogconfCmd)
         subcmds['config'] = (
             'polyvers.cfgcmd.ConfigCmd',
@@ -176,7 +176,7 @@ class PolyversCmd(MyCmd, Project):
         from . import engrave
         return [type(self),
                 Project,
-                InitCmd, StatusCmd, SetverCmd, BumpveCmd, LogconfCmd,
+                InitCmd, StatusCmd, BumpCmd, LogconfCmd,
                 engrave.Engrave, engrave.GrepSpec,
                 ]
 
@@ -242,24 +242,7 @@ class StatusCmd(VersionSubcmd):
         self.check_project_configs_exist()
 
 
-class SetverCmd(VersionSubcmd):
-    """
-    Set the version of project(s) exacty as given.
-
-    SYNTAX:
-        {cmd_chain} [OPTIONS] <version> [<project>]...
-
-    - If no <version-offset> specified, increase the last part (e.g 0.0.dev0-->dev1).
-    - If no project(s) specified, increase the versions for all projects.
-    - Denied if version for some projects is backward-in-time or has jumped parts;
-      use --force if you might.
-    - Prefer not to add a 'v' prefix!
-    """
-    def run(self, *args):
-        self.check_project_configs_exist()
-
-
-class BumpveCmd(VersionSubcmd):
+class BumpCmd(VersionSubcmd):
     """
     Increase the version of project(s) by the given offset.
 
