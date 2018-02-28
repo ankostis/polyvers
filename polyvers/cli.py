@@ -9,9 +9,9 @@
 
 import itertools as itt
 
-from . import APPNAME, __version__, cmdlets, interpctxt
+from . import APPNAME, __version__, cmdlets, interpctxt, vtags
 from ._vendor import traitlets as trt
-from ._vendor.traitlets.traitlets import List, Bool, Unicode
+from ._vendor.traitlets.traitlets import List, Bool
 from ._vendor.traitlets import config as trc
 from .autoinstance_traitlet import AutoInstance
 
@@ -21,36 +21,6 @@ from .autoinstance_traitlet import AutoInstance
 ####################
 CONFIG_VAR_NAME = '%s_CONFIG_PATHS' % APPNAME
 #######################
-
-
-class Project(cmdlets.Spec):
-    tag = Bool(
-        config=True,
-        help="""
-        Enable tagging, per-project.
-
-        Adds a signed tag with name/msg from `tag_name`/`message` (commit implied).
-
-        """)
-    sign_tags = Bool(
-        config=True,
-        help="Enable PGP-signing of tags (see also `sign_user`)."
-    )
-
-    sign_user = Unicode(
-        config=True,
-        help="The signing PGP user (email, key-id)."
-    )
-
-    message = interpctxt.Template(
-        "chore(ver): bump {{current_version}} → {{new_version}}",
-        config=True,
-        help="""
-            The message for commits and per-project tags.
-
-            Available interpolations (apart from env-vars prefixed with '$'):
-            {ikeys}
-        """)
 
 
 def find_git_root():
@@ -91,7 +61,7 @@ class MyCmd(cmdlets.Cmd):
 MyCmd.config_paths.metadata['envvar'] = CONFIG_VAR_NAME
 
 
-class PolyversCmd(MyCmd, Project):
+class PolyversCmd(MyCmd):
     """
     Bump independently PEP-440 versions of sub-project in Git monorepos.
 
@@ -122,10 +92,10 @@ class PolyversCmd(MyCmd, Project):
             X.YaN.devM          # Developmental release of an alpha release
             X.Y.postN.devM      # Developmental release of a post-release
     """)
-    classes = [Project]
+    classes = [vtags.Project]
 
     projects = List(
-        AutoInstance(Project),
+        AutoInstance(vtags.Project),
         config=True)
 
     use_leaf_releases = Bool(
@@ -175,7 +145,7 @@ class PolyversCmd(MyCmd, Project):
     def _all_app_configurables(self):
         from . import engrave
         return [type(self),
-                Project,
+                vtags.Project,
                 InitCmd, StatusCmd, BumpCmd, LogconfCmd,
                 engrave.Engrave, engrave.GrepSpec,
                 ]
@@ -304,11 +274,11 @@ PolyversCmd.flags = {
     ),
     ('t', 'tag'): (
         {'Project': {'tag': True}},
-        Project.tag.help
+        vtags.Project.tag.help
     ),
     ('s', 'sign-tags'): (
         {'Project': {'sign_tags': True}},
-        Project.sign_tags.help
+        vtags.Project.sign_tags.help
     ),
 }
 
