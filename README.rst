@@ -1,6 +1,6 @@
-==========================================================================
-Polyvers: Bump sub-project PEP-440 versions in Git monorepos independently
-==========================================================================
+==================================================================
+Polyvers: Bump independently sub-project versions in Git monorepos
+==================================================================
 
 .. _opening-start:
 .. image:: https://img.shields.io/pypi/v/polyvers.svg
@@ -34,7 +34,7 @@ Polyvers: Bump sub-project PEP-440 versions in Git monorepos independently
     :alt: Code quality metric
 
 :version:       |version|
-:rel_date:      |today|
+:updated:       |today|
 :Documentation: https://polyvers.readthedocs.io
 :repository:    https://github.com/JRCSTU/polyvers
 :pypi-repo:     https://pypi.org/project/polyvers/
