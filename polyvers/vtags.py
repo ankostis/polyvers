@@ -10,6 +10,7 @@
 
 from collections import defaultdict
 import logging
+import os
 from polyvers import oscmd, polyverslib, cmdlets
 import re
 
@@ -63,49 +64,21 @@ def get_subproject_versions(*projects):
             for proj, versions in vtags.items()}
 
 
-def rfc2822_now():
-    from datetime import datetime
-    import email.utils as emu
-
-    return emu.format_datetime(datetime.now())
-
-
-class NoVersionError(cmdlets.CmdException):
+class GitVoidError(cmdlets.CmdException):
     "Sub-project has not yet been version with a *vtag*. "
     pass
 
 
-def describe_project(project, default=None, tag_date=False):
+def git_describe(project):
     """
-    A ``git describe`` replacement based on sub-project's vtags, if any.
+    Gets sub-project's version as derived from ``git describe`` on its *vtag*.
 
     :param str project:
         Used as the prefix of vtags when searching them.
-    :param str default:
-        What *version* to return on failutes (no project vtags or no git repo).
-        If that is `None`, any git command failure gets raised.
-    :param bool tag_date:
-        return 2-tuple(version-id, last commit's date).  If cannot derive it
-        from git, report now!
-        RFC2822 sample: 'Thu, 09 Mar 2017 10:50:00 -0000'
     :return:
-        when `tag_date` is false:
-            the version-id (possibly null), or '<git-error>' if ``git`` command
-            failed.
-        otherwise:
-            the tuple (version, commit-RFC2822-date)
-
-    .. TIP::
-        It is to be used in ``__init__.py`` files like this::
-
-            __version__ = describe_project('myproj')
-
-        ...or::
-
-            __version__, __updated__ = describe_project('myproj', date=True)
-
-    :raise NoVersionError:
-        if sub-project is not *vtagged*, and no `default` given.
+        the *vtag* or raise
+    :raise GitVoidError:
+        if sub-project is not *vtagged* or CWD not within a git repo.
     :raise sbp.CalledProcessError:
         for any other error while executing *git*.
 
@@ -114,46 +87,72 @@ def describe_project(project, default=None, tag_date=False):
        for extracting just the version part from a *vtag*; use this one
        from within project sources.
 
-    .. TIP::
-       Same results also retrieved by `git` command::
+    .. INFO::
+       Same results can be retrieved by this `git` command::
 
            git describe --tags --match <PROJECT>-v*
 
-       ``--tags`` needed to consider also unannotated tags, as ``git tag`` does.
+       where ``--tags`` is needed to consider also unannotated tags,
+       as ``git tag`` does.
     """
-    version = cdate = None
-    tag_pattern = polyverslib.vtag_fnmatch_frmt % project
+    vtag = None
+    tag_pattern = polyverslib.vtag_fnmatch_frmt % project  # TODO: from project.
     cmd = 'git describe --tags --match'.split() + [tag_pattern]
     try:
         res = oscmd.exec_cmd(cmd, check_stdout=True, check_stderr=True)
         out = res.stdout
-        version = out and out.strip()
+        vtag = out and out.strip()
+
+        return vtag
     except sbp.CalledProcessError as ex:
-        if default is not None:
-            version = default
+        err = ex.stderr
+        if "does not have any commits yet" in err or "No names found" in err:
+            raise GitVoidError(
+                "No *vtag* for sub-project '%s'!" % project) from ex
+        elif "Not a git repository" in err:
+            raise GitVoidError(err) from ex
         else:
-            err = ex.stderr
-            if 'No annotated tags' in err or 'No names found' in err:
-                raise NoVersionError(
-                    "No *vtag* for sub-project '%s'!" % project) from ex
-            else:
-                raise
+            raise
 
-    if tag_date:
-        try:
-            log_cmd = "git log -n1 --format=format:%cD".split()
-            res = oscmd.exec_cmd(log_cmd, check_stdout=True, check_stderr=True)
-            out = res.stdout
-            cdate = out and out.strip()
-        except:  # noqa;  E722
-            if default is not None:
-                cdate = rfc2822_now()
-            else:
-                raise
 
-        return (version, cdate)
+def last_commit_tstamp():
+    """
+    Report the timestamp of the last commit of the git repo.
 
-    return version
+    :return:
+        last commit's timestamp in :rfc:`2822` format
+
+    :raise GitVoidError:
+        if there arn't any commits yet or CWD not within a git repo.
+    :raise sbp.CalledProcessError:
+        for any other error while executing *git*.
+
+    .. INFO::
+       Same results can be retrieved by this `git` command::
+
+           git describe --tags --match <PROJECT>-v*
+
+       where ``--tags`` is needed to consider also unannotated tags,
+       as ``git tag`` does.
+    """
+    cdate = None
+    try:
+        log_cmd = "git log -n1 --format=format:%cD".split()
+        res = oscmd.exec_cmd(log_cmd, check_stdout=True, check_stderr=True)
+        out = res.stdout
+        cdate = out and out.strip()
+
+        return cdate
+    except sbp.CalledProcessError as ex:
+        err = ex.stderr
+        if "does not have any commits yet" in err:
+            raise GitVoidError("No commits yet!") from ex
+        elif 'Not a git repository' in err:
+            raise GitVoidError(
+                "Current-dir '%s' is not within a git repository!" %
+                os.curdir) from ex
+        else:
+            raise
 
 
 def main(*args):

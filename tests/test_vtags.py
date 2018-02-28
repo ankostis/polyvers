@@ -7,14 +7,18 @@
 # You may obtain a copy of the Licence at: http://ec.europa.eu/idabc/eupl
 
 from polyvers import vtags
+from polyvers import polyverslib
 
 import pytest
 
 import subprocess as sbp
+import sys
 
 
 proj1 = 'proj1'
+proj1_desc = 'proj1-v0.0.1-2-g'
 proj2 = 'proj-2'
+proj2_desc = 'proj-2-v0.2.1'
 
 
 def test_get_all_vtags(ok_repo, untagged_repo, no_repo):
@@ -113,61 +117,79 @@ def test_get_BAD_projects_versions(ok_repo):
 
 def rfc2822_today():
     ## TCs may fail if run when day changes :-)
-    return vtags.rfc2822_now()[:12]  # till hour
+    return polyverslib.rfc2822_tstamp()[:12]  # till hour
 
 
-def test_describe_project_p1(ok_repo, untagged_repo, no_repo):
+def test_git_describe_p1(ok_repo, untagged_repo, no_repo):
     ok_repo.chdir()
 
-    v = vtags.describe_project(proj1,)
-    assert v.startswith('proj1-v0.0.1')
-    v = vtags.describe_project(proj1, default='<unused>')
-    assert v.startswith('proj1-v0.0.1')
-    v, d = vtags.describe_project(proj1, tag_date=True)
-    assert v.startswith('proj1-v0.0.1') and d.startswith(rfc2822_today())
-    v, d = vtags.describe_project(proj1, default='<unused>', tag_date=True)
-    assert v.startswith('proj1-v0.0.1') and d.startswith(rfc2822_today())
+    v = vtags.git_describe(proj1,)
+    assert v.startswith(proj1_desc)
 
     untagged_repo.chdir()
 
-    with pytest.raises(vtags.NoVersionError):
-        v = vtags.describe_project('foo')
-    v = vtags.describe_project('foo', default='<unused>')
-    assert v == '<unused>'
-    with pytest.raises(vtags.NoVersionError):
-        vtags.describe_project('foo', tag_date=True)
-    v, d = vtags.describe_project('foo', default=(1, 2, 3), tag_date=True)
-    assert v == (1, 2, 3) and d.startswith(rfc2822_today())
+    with pytest.raises(vtags.GitVoidError):
+        v = vtags.git_describe('foo')
 
     no_repo.chdir()
 
-    with pytest.raises(sbp.CalledProcessError):
-        vtags.describe_project(proj1)
-    v = vtags.describe_project(proj1, default='<unused>')
-    assert v == '<unused>'
-
-    v, d = vtags.describe_project(proj1, default='ab', tag_date=True)
-    assert v == 'ab' and d.startswith(rfc2822_today())
+    with pytest.raises(vtags.GitVoidError):
+        vtags.git_describe(proj1)
 
 
-def test_describe_project_p2(ok_repo):
+def test_git_describe_p2(ok_repo):
     ok_repo.chdir()
 
-    v = vtags.describe_project(proj2)
-    assert v.startswith('proj-2-v0.2.1')
-    v, d = vtags.describe_project(proj2, tag_date=True)
+    v = vtags.git_describe(proj2)
+    assert v == proj2_desc
+
+
+def test_git_describe_BAD(ok_repo, untagged_repo, no_repo):
+    ok_repo.chdir()
+
+    with pytest.raises(vtags.GitVoidError):
+        vtags.git_describe('foo')
+
+
+@pytest.mark.skipif(sys.version_info < (3, ),
+                    reason="FileNotFoundError not in PY27, OSError only.")
+def test_git_describe_BAD_no_git_cmd(ok_repo, monkeypatch):
+    ok_repo.chdir()
+    monkeypatch.setenv('PATH', '')
+
+    with pytest.raises(FileNotFoundError):
+        vtags.git_describe('foo')
+
+
+def test_last_commit_tstamp_p1(ok_repo, untagged_repo, no_repo):
+    ok_repo.chdir()
+
+    d = vtags.last_commit_tstamp()
     assert d.startswith(rfc2822_today())
 
+    untagged_repo.chdir()
 
-def test_describe_project_BAD(ok_repo, untagged_repo, no_repo):
+    d = vtags.last_commit_tstamp()
+    assert d.startswith(rfc2822_today())
+
+    no_repo.chdir()
+
+    with pytest.raises(vtags.GitVoidError):
+        vtags.last_commit_tstamp()
+
+
+def test_last_commit_tstamp_BAD_no_commits(empty_repo):
+    empty_repo.chdir()
+
+    with pytest.raises(vtags.GitVoidError):
+        vtags.last_commit_tstamp()
+
+
+@pytest.mark.skipif(sys.version_info < (3, ),
+                    reason="FileNotFoundError not in PY27, OSError only.")
+def test_last_commit_tstamp_BAD_no_git_cmd(ok_repo, monkeypatch):
     ok_repo.chdir()
+    monkeypatch.setenv('PATH', '')
 
-    with pytest.raises(vtags.NoVersionError):
-        vtags.describe_project('foo')
-    v = vtags.describe_project('foo', default='<unused>')
-    assert v == '<unused>'
-    with pytest.raises(vtags.NoVersionError):
-        vtags.describe_project('foo', tag_date=True)
-
-    v, d = vtags.describe_project('foo', default='a', tag_date=True)
-    assert v == 'a' and d.startswith(rfc2822_today())
+    with pytest.raises(FileNotFoundError):
+        vtags.last_commit_tstamp()
