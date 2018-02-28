@@ -48,13 +48,14 @@ def clean_cmd_result(res):  # type: (bytes) -> str
         return res.decode('utf-8', errors='surrogateescape')
 
 
-def rfc2822_now():
+def rfc2822_tstamp(nowdt=None):
     """Py2.7 code from https://stackoverflow.com/a/3453277/548792"""
     from datetime import datetime
     import time
     from email import utils
 
-    nowdt = datetime.now()
+    if nowdt is None:
+        nowdt = datetime.now()
     nowtuple = nowdt.timetuple()
     nowtimestamp = time.mktime(nowtuple)
     now = utils.formatdate(nowtimestamp)
@@ -160,7 +161,7 @@ def polyversion(project, default=None, tag_date=False,
                 raise
 
         if not cdate:
-            cdate = rfc2822_now()
+            cdate = rfc2822_tstamp()
 
         return (version, cdate)
 

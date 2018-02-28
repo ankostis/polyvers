@@ -23,7 +23,7 @@ proj2_ver = '0.2.1'
 
 def rfc2822_today():
     ## TCs may fail if run when day changes :-)
-    return pvlib.rfc2822_now()[:12]  # till hour
+    return pvlib.rfc2822_tstamp()[:12]  # till hour
 
 
 split_vtag_validation_patterns = [
