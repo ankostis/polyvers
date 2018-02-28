@@ -75,6 +75,13 @@ else:
     raise ValueError("Unsupported value for environment variable: 'TRAITLETS_APPLICATION_RAISE_CONFIG_FILE_ERROR' is set to '%s' which is none of  {'0', '1', 'false', 'true', ''}."% _envvar )
 
 
+def classes_resolved(classes):
+    def import_class(klass):
+        return import_item(klass) if isinstance(klass, six.string_types) else klass
+
+    return [import_class(i) for i in classes]
+
+
 def catch_config_error(method):
     """Method decorator for catching invalid config (Trait/ArgumentErrors) during init.
 
@@ -160,7 +167,7 @@ class Application(SingletonConfigurable):
         yielded once.
         """
         if classes is None:
-            classes = self.classes
+            classes = classes_resolved(self.classes)
 
         seen = set()
         for c in classes:
@@ -314,7 +321,7 @@ class Application(SingletonConfigurable):
         # Ensure my class is in self.classes, so my attributes appear in command line
         # options and config files.
         cls = self.__class__
-        if cls not in self.classes:
+        if cls not in self.classes and cls.__name__ not in self.classes:
             if self.classes is cls.classes:
                 # class attr, assign instead of insert
                 self.classes = [cls] + self.classes
@@ -393,7 +400,7 @@ class Application(SingletonConfigurable):
             return
 
         classdict = {}
-        for cls in self.classes:
+        for cls in classes_resolved(self.classes):
             # include all parents (up to, but excluding Configurable) in available names
             for c in cls.mro()[:-3]:
                 classdict[c.__name__] = c
@@ -622,7 +629,7 @@ class Application(SingletonConfigurable):
         # it will be a dict by parent classname of classes in our list
         # that are descendents
         mro_tree = defaultdict(list)
-        for cls in self.classes:
+        for cls in classes_resolved(self.classes):
             clsname = cls.__name__
             for parent in cls.mro()[1:-3]:
                 # exclude cls itself and Configurable,HasTraits,object
@@ -802,7 +809,7 @@ class Application(SingletonConfigurable):
           any traits themselves.
         """
         if classes is None:
-            classes = self.classes
+            classes = classes_resolved(self.classes)
 
         cls_to_config = OrderedDict( (cls, bool(cls.class_own_traits(config=True)))
                               for cls
@@ -829,7 +836,7 @@ class Application(SingletonConfigurable):
         """generate default config file from Configurables"""
         lines = ["# Configuration file for %s." % self.name]
         lines.append('')
-        classes = self.classes if classes is None else classes
+        classes = classes_resolved(self.classes) if classes is None else classes
         config_classes = list(self._classes_with_config_traits(classes))
         for cls in config_classes:
             lines.append(cls.class_config_section(config_classes))
