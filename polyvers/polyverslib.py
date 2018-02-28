@@ -99,9 +99,9 @@ def _extract_version(project, vtag_regex, tag_pattern):
     return version
 
 
-def describe_project(project, default=None, tag_date=False,
-                     vtag_fnmatch_frmt=vtag_fnmatch_frmt,
-                     vtag_regex=vtag_regex):
+def polyversion(project, default=None, tag_date=False,
+                vtag_fnmatch_frmt=vtag_fnmatch_frmt,
+                vtag_regex=vtag_regex):
     """
     A ``git describe`` replacement based on sub-project's vtags, if any.
 
@@ -183,9 +183,9 @@ def main(*args):
             exit(0)
 
     if len(args) == 1:
-        res = describe_project(args[0])
+        res = polyversion(args[0])
     else:
-        res = '\n'.join('%s: %s' % (p, describe_project(p, default=''))
+        res = '\n'.join('%s: %s' % (p, polyversion(p, default=''))
                         for p in args)
 
     if res:
