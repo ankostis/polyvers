@@ -6,6 +6,7 @@
 #import sys
 
 from setuptools import setup, find_packages
+from polyvers.polyverslib import polyversion
 
 
 # MIN_PYTHON = (3, 6)
@@ -41,8 +42,8 @@ test_requirements = [
 ]
 PROJECT = 'polyvers'
 setup(
-    name='polyvers',
-    version='0.0.0',
+    name=PROJECT,
+    version=polyversion(PROJECT, '0.0.0'),
     description="Bump sub-project PEP-440 versions in Git monorepos independently.",
     long_description=readme + '\n\n' + history,
     author="Kostis Anagnostopoulos",
@@ -50,6 +51,7 @@ setup(
     url='https://github.com/jrcstu/polyvers',
     packages=find_packages(exclude=['tests']),
     include_package_data=True,
+    #setup_requires=['polyversion'],
     install_requires=requirements,
     license='EUPL 1.2',
     zip_safe=True,

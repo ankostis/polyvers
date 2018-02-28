@@ -6,15 +6,18 @@
 # You may obtain a copy of the Licence at: http://ec.europa.eu/idabc/eupl
 """Top-level package for *polyvers* version-configuration tool."""
 
+from polyvers.polyverslib import polyversion, polytime
+
+
 APPNAME = 'polyvers'
 
-__version__ = '0.0.0'
-
-__copyright__ = "Copyright (C) 2015-2017 European Commission (JRC)"
-__license__ = "EUPL 1.2"
-__title__ = "polyvers"
+__version__ = polyversion(APPNAME, '0.0.0')
+__updated__ = polytime()
+__title__ = APPNAME
 __summary__ = "Bump independently versions on multi-project git repos"
 __uri__ = "https://github.com/JRCSTU/polyvers"
+__license__ = "EUPL 1.2"
+__copyright__ = "Copyright (C) 2015-2017 European Commission (JRC)"
 __music__ = {
     "Patria, by David August":
     "https://soundcloud.com/davidaugust/david-august-patria-feat-sissi-rada",
