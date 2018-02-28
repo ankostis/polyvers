@@ -114,5 +114,22 @@ def untagged_repo(tmpdir_factory):
 
 
 @pytest.fixture(scope="session")
+def empty_repo(tmpdir_factory):
+    repo_dir = tmpdir_factory.mktemp('untagged')
+    repo_dir.chdir()
+    cmds = """
+    git init
+    git config user.email "test@example.com"
+    git config user.name "Testing Bot"
+    """
+    for c in cmds.split('\n'):
+        c = c and c.strip()
+        if c:
+            sbp.check_call(c.split())
+
+    return repo_dir
+
+
+@pytest.fixture(scope="session")
 def no_repo(tmpdir_factory):
     return tmpdir_factory.mktemp('norepo')

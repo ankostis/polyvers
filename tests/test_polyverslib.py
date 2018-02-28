@@ -97,8 +97,17 @@ def test_polyversion_p2(ok_repo):
     assert v == proj2_ver
 
 
-def test_polyversion_BAD(ok_repo):
+def test_polyversion_BAD_project(ok_repo):
     ok_repo.chdir()
+
+    with pytest.raises(sbp.CalledProcessError):
+        pvlib.polyversion('foo')
+    v = pvlib.polyversion('foo', default='<unused>')
+    assert v == '<unused>'
+
+
+def test_polyversion_BAD_no_commits(empty_repo):
+    empty_repo.chdir()
 
     with pytest.raises(sbp.CalledProcessError):
         pvlib.polyversion('foo')
@@ -146,6 +155,13 @@ def test_polytime_p2(ok_repo):
 
     d = pvlib.polytime()
     assert d.startswith(rfc2822_today())
+
+
+def test_polytime_BAD_no_commits(empty_repo):
+    empty_repo.chdir()
+
+    with pytest.raises(sbp.CalledProcessError):
+        pvlib.polytime()
 
 
 @pytest.mark.skipif(sys.version_info < (3, ),
