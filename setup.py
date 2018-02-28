@@ -6,7 +6,7 @@
 #import sys
 
 from setuptools import setup, find_packages
-from polyvers.polyverslib import polyversion
+from polyvers import polyversion
 
 
 # MIN_PYTHON = (3, 6)

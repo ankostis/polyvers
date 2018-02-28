@@ -6,8 +6,9 @@
 # You may obtain a copy of the Licence at: http://ec.europa.eu/idabc/eupl
 """Top-level package for *polyvers* version-configuration tool."""
 
+## TODO: Move to `polyversion` subproject.
 from polyvers.polyverslib import polyversion, polytime
-
+__all__ = ['polyversion', 'polytime']
 
 APPNAME = 'polyvers'
 
