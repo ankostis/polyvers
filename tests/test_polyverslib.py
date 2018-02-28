@@ -74,22 +74,12 @@ def test_polyversion_p1(ok_repo, untagged_repo, no_repo):
     v = pvlib.polyversion(proj1, default='<unused>')
     assert v.startswith(proj1_ver)
 
-    d = pvlib.polytime()
-    assert d.startswith(rfc2822_today())
-    d = pvlib.polytime(no_raise=True)
-    assert d.startswith(rfc2822_today())
-
     untagged_repo.chdir()
 
     with pytest.raises(sbp.CalledProcessError):
         pvlib.polyversion('foo')
     v = pvlib.polyversion('foo', default='<unused>')
     assert v == '<unused>'
-
-    pvlib.polytime()
-    assert d.startswith(rfc2822_today())
-    d = pvlib.polytime(no_raise=True)
-    assert d.startswith(rfc2822_today())
 
     no_repo.chdir()
 
@@ -98,20 +88,12 @@ def test_polyversion_p1(ok_repo, untagged_repo, no_repo):
     v = pvlib.polyversion(proj1, default='<unused>')
     assert v == '<unused>'
 
-    with pytest.raises(sbp.CalledProcessError):
-        pvlib.polytime()
-    d = pvlib.polytime(no_raise=True)
-    assert d.startswith(rfc2822_today())
-
 
 def test_polyversion_p2(ok_repo):
     ok_repo.chdir()
 
     v = pvlib.polyversion(proj2)
-    assert v.startswith(proj2_ver)
-
-    d = pvlib.polytime()
-    assert d.startswith(rfc2822_today())
+    assert v == proj2_ver
 
 
 def test_polyversion_BAD(ok_repo):
@@ -121,6 +103,36 @@ def test_polyversion_BAD(ok_repo):
         pvlib.polyversion('foo')
     v = pvlib.polyversion('foo', default='<unused>')
     assert v == '<unused>'
+
+
+def test_polytime_p1(ok_repo, untagged_repo, no_repo):
+    ok_repo.chdir()
+
+    d = pvlib.polytime()
+    assert d.startswith(rfc2822_today())
+    d = pvlib.polytime(no_raise=True)
+    assert d.startswith(rfc2822_today())
+
+    untagged_repo.chdir()
+
+    pvlib.polytime()
+    assert d.startswith(rfc2822_today())
+    d = pvlib.polytime(no_raise=True)
+    assert d.startswith(rfc2822_today())
+
+    no_repo.chdir()
+
+    with pytest.raises(sbp.CalledProcessError):
+        pvlib.polytime()
+    d = pvlib.polytime(no_raise=True)
+    assert d.startswith(rfc2822_today())
+
+
+def test_polytime_p2(ok_repo):
+    ok_repo.chdir()
+
+    d = pvlib.polytime()
+    assert d.startswith(rfc2822_today())
 
 
 ##############
