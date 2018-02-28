@@ -9,7 +9,6 @@
 """Python code to report sub-project "vtags" in Git *polyvers* monorepos."""
 
 from collections import defaultdict
-import logging
 import os
 from polyvers import oscmd, polyverslib, cmdlets
 import re
@@ -153,42 +152,3 @@ def last_commit_tstamp():
                 os.curdir) from ex
         else:
             raise
-
-
-def main(*args):
-    """
-    List vtags for the given sub-project, or all if none given.
-
-    :param args:
-        usually ``*sys.argv[1:]``
-    """
-    import os.path as osp
-    import sys
-
-    for o in ('-h', '--help'):
-        if o in args:
-            doc = main.__doc__.split('\n')[1].strip()
-            cmdname = osp.basename(sys.argv[0])
-            print("%s\n\nUsage: %s [-v|--verbose] [PROJ-1]..." %
-                  (doc, cmdname))
-            exit(0)
-
-    verbose = False
-    for o in ('-v', '--verbose'):
-        if o in args:
-            verbose = True
-            args.remove(o)
-
-    logging.basicConfig(level=logging.DEBUG if verbose else logging.INFO)
-    vdict = get_subproject_versions(*args)
-    res = '\n'.join('%s: %s' % pair
-                    for pair in vdict.items())
-
-    if res:
-        print(res)
-
-
-if __name__ == '__main__':
-    import sys
-
-    main(*sys.argv[1:])
