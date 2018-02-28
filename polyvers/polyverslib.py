@@ -9,11 +9,13 @@
 """
 Python-2.7 safe code to discover sub-project versions in Git *polyvers* monorepos.
 
-The *polyvers* version-configuration tool is generating tags like::
+The *polyvers* version-configuration tool is generating **vtags** like::
 
     proj-foo-v0.1.0
 
-On purpose python code here kept with as few dependencies as possible.
+And assuming :func:`polyversion()` is invoked from within a Git repo, it may return
+either ``0.1.0`` or ``0.1.0+2.gcaffe00``, if 2 commits have passed since
+last *vtag*.
 """
 from __future__ import print_function
 
@@ -103,7 +105,7 @@ def polyversion(project, default=None, tag_date=False,
                 vtag_fnmatch_frmt=vtag_fnmatch_frmt,
                 vtag_regex=vtag_regex):
     """
-    A ``git describe`` replacement based on sub-project's vtags, if any.
+    Report *vtag* derived sub-project-version; use it from within it's sources.
 
     :param str project:
         Used as the prefix of vtags when searching them.
@@ -129,9 +131,9 @@ def polyversion(project, default=None, tag_date=False,
         otherwise:
             the tuple (version, commit-RFC2822-date)
 
-    .. Note::
+    .. NOTE::
        This is a python==2.7 & python<3.6 safe function; there is also the similar
-       function with elaborate error-handling :func:`polyvers.vtags.describe_project`
+       function with elaborate error-handling :func:`polyvers.vtags.descrive_project()`
        used by the tool internally.
     """
     version = None

@@ -109,7 +109,12 @@ def describe_project(project, default=None, tag_date=False):
     :raise sbp.CalledProcessError:
         for any other error while executing *git*.
 
-    .. Tip::
+    .. NOTE::
+       There is also the python==2.7 & python<3.6 safe :func:`polyvers.polyversion()``
+       for extracting just the version part from a *vtag*; use this one
+       from within project sources.
+
+    .. TIP::
        Same results also retrieved by `git` command::
 
            git describe --tags --match <PROJECT>-v*
