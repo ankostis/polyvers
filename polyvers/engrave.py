@@ -142,24 +142,9 @@ def _slices_to_ids(slices, thelist):
     return list(mask_ids)
 
 
-class GraftSpec(cmdlets.Spec, cmdlets.Strable, cmdlets.Replaceable):
-    def __init__(self, *args, **kw):
-        super().__init__(*args, **kw)
-
+class GrepSpec(cmdlets.Spec, cmdlets.Strable, cmdlets.Replaceable):
     regex = CRegExp(
         help="What to search"
-    ).tag(config=True)
-
-    subst = interpctxt.Template(
-        help="""
-        What to replace with.
-
-        Inside them, supported extensions are:
-        - captured groups with '\\1 or '\g<foo>' expressions
-          (see Python's regex documentation)
-        - interpolation variables; Keys available (apart from env-vars prefixed with '$'):
-          {ikeys}
-        """
     ).tag(config=True)
 
     slices = UnionTrait(
@@ -212,6 +197,20 @@ class GraftSpec(cmdlets.Spec, cmdlets.Strable, cmdlets.Replaceable):
         else:
             for i in hits_indices:
                 yield hits[i]
+
+
+class GraftSpec(GrepSpec):
+    subst = interpctxt.Template(
+        help="""
+        What to replace with.
+
+        Inside them, supported extensions are:
+        - captured groups with '\\1 or '\g<foo>' expressions
+          (see Python's regex documentation)
+        - interpolation variables; Keys available (apart from env-vars prefixed with '$'):
+          {ikeys}
+        """
+    ).tag(config=True)
 
     def substitute_grep_hits(self, fpath: Path, ftext: str) -> Optional[Tuple[str, 'GraftSpec']]:
         """
