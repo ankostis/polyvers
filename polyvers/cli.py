@@ -8,6 +8,8 @@
 """The code of *polyvers* shell-commands."""
 
 import itertools as itt
+from pathlib import Path
+from typing import Optional
 
 from . import APPNAME, __version__, __updated__, cmdlets, interpctxt, vtags
 from ._vendor import traitlets as trt
@@ -23,7 +25,7 @@ CONFIG_VAR_NAME = '%s_CONFIG_PATHS' % APPNAME
 #######################
 
 
-def find_git_root():
+def find_git_root() -> Optional[Path]:
     """
     Search dirs up for a Git-repo.
 
@@ -31,10 +33,8 @@ def find_git_root():
         a `pathlib` native path, or None
     """
     ## TODO: See GitPython for a comprehensive way.
-    from pathlib import Path as P
-
-    cwd = P().resolve()
-    for f in itt.chain([cwd], cwd.parents):
+    cwd = Path()
+    for f in itt.chain([cwd], cwd.resolve().parents):
         if (f / '.git').is_dir():
             return f
 
