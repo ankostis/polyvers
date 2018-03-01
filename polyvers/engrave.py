@@ -341,6 +341,9 @@ class Engrave(cmdlets.Spec):
 
         return file_specs
 
+    def collect_glob_files(self) -> List[Path]:
+        return glob_files(self.globs)
+
     def collect_all_hits(self, file_specs: FilesMap) -> FilesMap:
         hits: FilesMap = odict()
         for fpath, filespec in file_specs.items():
@@ -373,14 +376,19 @@ class Engrave(cmdlets.Spec):
             for fpath, filespec in filespecs_map.items())
         log.info("%sed files: %s", action.capitalize(), file_lines)
 
-    def engrave_all(self):
-        files: List[Path] = glob_files(self.globs)
+    def scan_all_hits(self) -> FilesMap:
+        files: List[Path] = self.collect_glob_files()
         log.info("Searching files: %s", ', '.join(str(f) for f in files))
 
         file_specs: FilesMap = self.read_files(files)
 
         file_hits: FilesMap = self.collect_all_hits(file_specs)
         self._log_action(file_hits, 'match')
+
+        return file_hits
+
+    def engrave_all(self):
+        file_hits: FilesMap = self.scan_all_hits()
 
         substs: FilesMap = self.substitute_all_hits(file_hits)
         self._log_action(substs, 'graft')
