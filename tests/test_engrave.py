@@ -192,7 +192,7 @@ def test_MatchSpec_slicing(slices, listlen, exp):
     assert hits_indices == exp
 
     gs.hits_indices = hits_indices
-    hits = list(gs._yield_masked_hits())
+    hits = gs.valid_hits()
     assert len(hits_indices) == len(hits)
 
 

@@ -12,7 +12,7 @@ from collections import OrderedDict as odict
 import logging
 from pathlib import Path
 import re
-from typing import List, Tuple, Dict, Match, Union, Optional, Iterator
+from typing import List, Tuple, Dict, Match, Union, Optional
 
 from . import cmdlets, interpctxt
 from ._vendor.traitlets.traitlets import (
@@ -72,12 +72,12 @@ def _glob_find_files(pattern_pairs: Tuple[str, str], mybase: Path):
     notfiles = set()  # type: ignore
     for positive, negative in pattern_pairs:
         if positive:
-            new_files: Iterator[Path] = iset(mybase.glob(positive))
+            new_files = iset(mybase.glob(positive))
             cleared_files = [f for f in new_files
                              if not any(nf in f.parents for nf in notfiles)]
             files.update(cleared_files)
         elif negative:
-            new_notfiles: Iterator[Path] = mybase.glob(negative)
+            new_notfiles = mybase.glob(negative)
             notfiles.update(new_notfiles)
         else:
             raise AssertionError("Both in (positive, negative) pair ar None!")
@@ -214,14 +214,13 @@ class GraftSpec(cmdlets.Spec, cmdlets.Strable, cmdlets.Replaceable):
 
             return hits_indices
 
-    def _yield_masked_hits(self) -> Iterator[Match]:
+    def valid_hits(self) -> List[Match]:
         hits = self.hits
         hits_indices = self.hits_indices
         if hits_indices is None:
-            yield from hits
+            return hits
         else:
-            for i in hits_indices:
-                yield hits[i]
+            return [hits[i] for i in hits_indices]
 
     def substitute_graft_hits(self, fpath: Path, ftext: str) -> Optional[Tuple[str, 'GraftSpec']]:
         """
@@ -245,7 +244,7 @@ class GraftSpec(cmdlets.Spec, cmdlets.Strable, cmdlets.Replaceable):
             nsubs = len(self.hits)
             clone = self
 
-        for m in clone._yield_masked_hits():
+        for m in clone.valid_hits():
             ftext = ftext[:m.start()] + m.expand(clone.subst) + ftext[m.end():]
 
         if nsubs:
@@ -295,7 +294,7 @@ class FileSpec(cmdlets.Spec, cmdlets.Strable, cmdlets.Replaceable):
 
     @property
     def nhits(self):
-        return sum(len(vg.hits) for vg in self.grafts)
+        return sum(len(vg.valid_hits()) for vg in self.grafts)
 
 
 FilesMap = Dict[Path, FileSpec]
@@ -393,7 +392,8 @@ class Engrave(cmdlets.Spec):
                       other_bases: Union[FLikeList, None] = None) -> FilesMap:
         files: FPaths = self.collect_glob_files(mybase=mybase,
                                                 other_bases=other_bases)
-        log.info("Searching files: %s", ', '.join(str(f) for f in files))
+        log.info("Globbed files in '%s': %s",
+                 Path(mybase).resolve(), ', '.join(str(f) for f in files))
 
         file_specs: FilesMap = self.read_files(files)
 
