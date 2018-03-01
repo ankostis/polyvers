@@ -684,7 +684,7 @@ class Cmd(trc.Application, Spec):
     #  even when hierarchy changes (e.g. in TCs).
     #  See https://github.com/ipython/traitlets/commit/e857996#commitcomment-27681994
 
-    @trc.catch_config_error
+    @trc.catch_config_error  # Needed, bc does not invoke super().
     def initialize_subcommand(self, subc, argv=None):
         subapp, _ = self.subcommands.get(subc)
 
