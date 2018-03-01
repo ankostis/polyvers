@@ -9,7 +9,7 @@
 
 import itertools as itt
 
-from . import APPNAME, __version__, cmdlets, interpctxt, vtags
+from . import APPNAME, __version__, __updated__, cmdlets, interpctxt, vtags
 from ._vendor import traitlets as trt
 from ._vendor.traitlets.traitlets import List, Bool
 from ._vendor.traitlets import config as trc
@@ -149,6 +149,14 @@ class PolyversCmd(MyCmd):
                 InitCmd, StatusCmd, BumpCmd, LogconfCmd,
                 engrave.Engrave, engrave.GrepSpec,
                 ]
+
+    def collect_app_infos(self):
+        """Provide extra infos to `config infos` subcommand."""
+        return {
+            'version': __version__,
+            'updated': __updated__,
+            ## TODO: add more app-infos.
+        }
 
 
 class VersionSubcmd(MyCmd):

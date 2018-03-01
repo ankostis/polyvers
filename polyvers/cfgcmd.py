@@ -235,6 +235,10 @@ class InfosCmd(cmdlets.Cmd):
                 for trait
                 in cls.class_own_traits(envvar=bool).values()]
 
+    def collect_app_infos(self):
+        """Overridde in ROOT-APP to provide app infos such as version, release-date, etc"""
+        return {}
+
     def run(self, *args):
         import inspect
 
@@ -252,9 +256,15 @@ class InfosCmd(cmdlets.Cmd):
 
         app_name = self.name
         app_path = inspect.getfile(type(self))
+        root = self.root_app()
 
         # TODO: paths not valid YAML!  ...and renable TC.
         yield "APP:"
+        app_infos_func = getattr(root, 'collect_app_infos', None)
+        if app_infos_func:
+            for kv in app_infos_func().items():
+                yield "  %s: %s" % kv
+
         yield "  %s_path: %s" % (app_name, app_path)
         yield "  python_path: %s" % sys.prefix
 
@@ -262,7 +272,6 @@ class InfosCmd(cmdlets.Cmd):
             yield '  %s: %s' % (k, v)
 
         yield "CONFIG:"
-        root = self.root_app()
         config_paths = l2_yaml_list_sep.join([''] + root.config_paths)
         yield "  config_paths: %s" % (config_paths or 'null')
 
