@@ -295,7 +295,7 @@ class Engrave(cmdlets.Spec):
     """File-patterns to search and replace with version-id patterns."""
 
     patterns = ListTrait(
-        #Unicode(),
+        Unicode(),
         help="A list of POSIX file patterns (.gitgnore-like) to search and replace"
     ).tag(config=True)
 
