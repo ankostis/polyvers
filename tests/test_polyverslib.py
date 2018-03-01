@@ -22,11 +22,6 @@ proj2 = 'proj-2'
 proj2_ver = '0.2.1'
 
 
-def rfc2822_today():
-    ## TCs may fail if run when day changes :-)
-    return pvlib.rfc2822_tstamp()[:12]  # till hour
-
-
 split_vtag_validation_patterns = [
     ('proj', None),
     ('proj-1.0.5', None),
@@ -127,34 +122,34 @@ def test_polyversion_BAD_no_git_cmd(ok_repo, monkeypatch):
     assert v == '0.1.1'
 
 
-def test_polytime_p1(ok_repo, untagged_repo, no_repo):
+def test_polytime_p1(ok_repo, untagged_repo, no_repo, today):
     ok_repo.chdir()
 
     d = pvlib.polytime()
-    assert d.startswith(rfc2822_today())
+    assert d.startswith(today)
     d = pvlib.polytime(no_raise=True)
-    assert d.startswith(rfc2822_today())
+    assert d.startswith(today)
 
     untagged_repo.chdir()
 
     pvlib.polytime()
-    assert d.startswith(rfc2822_today())
+    assert d.startswith(today)
     d = pvlib.polytime(no_raise=True)
-    assert d.startswith(rfc2822_today())
+    assert d.startswith(today)
 
     no_repo.chdir()
 
     with pytest.raises(sbp.CalledProcessError):
         pvlib.polytime()
     d = pvlib.polytime(no_raise=True)
-    assert d.startswith(rfc2822_today())
+    assert d.startswith(today)
 
 
-def test_polytime_p2(ok_repo):
+def test_polytime_p2(ok_repo, today):
     ok_repo.chdir()
 
     d = pvlib.polytime()
-    assert d.startswith(rfc2822_today())
+    assert d.startswith(today)
 
 
 def test_polytime_BAD_no_commits(empty_repo):
@@ -166,14 +161,14 @@ def test_polytime_BAD_no_commits(empty_repo):
 
 @pytest.mark.skipif(sys.version_info < (3, ),
                     reason="FileNotFoundError not in PY27, OSError only.")
-def test_polytime_BAD_no_git_cmd(ok_repo, monkeypatch):
+def test_polytime_BAD_no_git_cmd(ok_repo, monkeypatch, today):
     ok_repo.chdir()
     monkeypatch.setenv('PATH', '')
 
     with pytest.raises(FileNotFoundError):
         pvlib.polytime()
     d = pvlib.polytime(no_raise=True)
-    assert d.startswith(rfc2822_today())
+    assert d.startswith(today)
 
 
 ##############

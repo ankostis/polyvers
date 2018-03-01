@@ -70,6 +70,20 @@ def assert_in_text(text, require=None, forbid=None):
         raise AssertionError("Text errors: %s %s" % (err1, err2))
 
 
+@pytest.fixture()
+def today():
+    """A :rfc:`2822` formated timestamp: ``Thu, 01 Mar 2018 09:46:47 +0000`` """
+
+    from polyvers.polyverslib import rfc2822_tstamp
+
+    ## TCs may fail if run when day changes :-)
+    #  Unfortunately cannot compare full-date (``[:12]   #till hour``)
+    #  format Git does return single-digit month-day,
+    #  not '01' as the mail-standard does::
+    #     Thu, 1 Mar 2018 09:46:47 +0000
+    return rfc2822_tstamp()[:5]  # till Day-of-week
+
+
 @pytest.fixture(scope="session")
 def ok_repo(tmpdir_factory):
     repo_dir = tmpdir_factory.mktemp('repo')

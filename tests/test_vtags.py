@@ -7,7 +7,6 @@
 # You may obtain a copy of the Licence at: http://ec.europa.eu/idabc/eupl
 
 from polyvers import vtags
-from polyvers import polyverslib
 
 import pytest
 
@@ -120,11 +119,6 @@ def test_get_BAD_projects_versions(projspec, ok_repo):
 ## DESCRIBE ##
 ##############
 
-def rfc2822_today():
-    ## TCs may fail if run when day changes :-)
-    return polyverslib.rfc2822_tstamp()[:12]  # till hour
-
-
 def test_git_describe_p1(projspec, ok_repo, untagged_repo, no_repo):
     ok_repo.chdir()
 
@@ -166,16 +160,16 @@ def test_git_describe_BAD_no_git_cmd(projspec, ok_repo, monkeypatch):
         projspec.git_describe('foo')
 
 
-def test_last_commit_tstamp_p1(projspec, ok_repo, untagged_repo, no_repo):
+def test_last_commit_tstamp_p1(projspec, ok_repo, untagged_repo, no_repo, today):
     ok_repo.chdir()
 
     d = projspec.last_commit_tstamp()
-    assert d.startswith(rfc2822_today())
+    assert d.startswith(today)
 
     untagged_repo.chdir()
 
     d = projspec.last_commit_tstamp()
-    assert d.startswith(rfc2822_today())
+    assert d.startswith(today)
 
     no_repo.chdir()
 
