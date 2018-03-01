@@ -24,6 +24,11 @@ from .slice_traitlet import Slice as SliceTrait
 log = logging.getLogger(__name__)
 
 
+FPaths = List[Path]
+FLike = Union[str, Path]
+FLikeList = List[FLike]
+
+
 def _as_glob_pattern_pair(fpath):
     """
     Add '**' in relative names, eliminate comments and split in positive/negatives
@@ -80,7 +85,8 @@ def _glob_find_files(pattern_pairs: Tuple[str, str], mybase: Path):
     return files
 
 
-def _glob_filter_in_mybase(files, mybase):
+def _glob_filter_in_mybase(files: FPaths,
+                           mybase: Path):
     assert all(isinstance(f, Path) for f in files)
     nfiles = []
     for f in files:
@@ -94,11 +100,14 @@ def _glob_filter_in_mybase(files, mybase):
     return nfiles
 
 
-def _glob_filter_out_other_bases(files, other_bases):
+def _glob_filter_out_other_bases(files: FPaths,
+                                 other_bases: FPaths):
     if not other_bases:
         return files
 
-    other_bases = [Path(ob) for ob in other_bases]
+    assert all(isinstance(f, Path) for f in files)
+    assert all(isinstance(f, Path) for f in other_bases)
+
     nfiles = []
     for f in files:
         try:
@@ -112,8 +121,8 @@ def _glob_filter_out_other_bases(files, other_bases):
 
 
 def glob_files(patterns: List[str],
-               mybase: Union[str, Path] = '.',
-               other_bases: Union[str, Path] = None) -> List[Path]:
+               mybase: FLike = '.',
+               other_bases: Union[FLikeList, None] = None) -> FPaths:
         pattern_pairs = _prepare_glob_pairs(patterns)
 
         mybase = Path(mybase)
@@ -121,7 +130,8 @@ def glob_files(patterns: List[str],
 
         files = _glob_filter_in_mybase(files, mybase)
         if other_bases:
-            files = _glob_filter_out_other_bases(files, other_bases)
+            other_paths: FPaths = [Path(ob) for ob in other_bases]
+            files = _glob_filter_out_other_bases(files, other_paths)
 
         assert all(isinstance(f, Path) for f in files)
         return files
@@ -330,7 +340,7 @@ class Engrave(cmdlets.Spec):
         fpath.write_text(
             text, encoding=self.encoding, errors=self.encoding_errors)
 
-    def read_files(self, files: List[Path]) -> FilesMap:
+    def read_files(self, files: FPaths) -> FilesMap:
         file_specs: FilesMap = odict()
 
         for fpath in files:
@@ -341,8 +351,10 @@ class Engrave(cmdlets.Spec):
 
         return file_specs
 
-    def collect_glob_files(self) -> List[Path]:
-        return glob_files(self.globs)
+    def collect_glob_files(self,
+                           mybase: FLike = '.',
+                           other_bases: Union[FLikeList, None] = None) -> FPaths:
+        return glob_files(self.globs, mybase, other_bases)
 
     def collect_all_hits(self, file_specs: FilesMap) -> FilesMap:
         hits: FilesMap = odict()
@@ -376,8 +388,11 @@ class Engrave(cmdlets.Spec):
             for fpath, filespec in filespecs_map.items())
         log.info("%sed files: %s", action.capitalize(), file_lines)
 
-    def scan_all_hits(self) -> FilesMap:
-        files: List[Path] = self.collect_glob_files()
+    def scan_all_hits(self,
+                      mybase: FLike = '.',
+                      other_bases: Union[FLikeList, None] = None) -> FilesMap:
+        files: FPaths = self.collect_glob_files(mybase=mybase,
+                                                other_bases=other_bases)
         log.info("Searching files: %s", ', '.join(str(f) for f in files))
 
         file_specs: FilesMap = self.read_files(files)
