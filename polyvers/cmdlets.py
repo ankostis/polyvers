@@ -393,7 +393,9 @@ class Cmd(trc.Application, Spec):
         - This functions is the 1st half of :meth:`launch_instance()` which
           invokes and discards :meth:`start()` results.
         """
-        ## Overriden just to return `start()`.
+        ## Overriden just to return `start()` AND fix ipython/traitlets#474
+        #  when cmds inherit same class.
+        app.clear_instance()
         cmd = app.instance(**kwargs)
         cmd.initialize(argv)
 
