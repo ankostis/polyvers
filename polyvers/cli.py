@@ -39,29 +39,7 @@ def find_git_root():
             return f
 
 
-class MyCmd(cmdlets.Cmd):
-
-    @trt.default('config_paths')
-    def _config_paths(self):
-        basename = self.config_basename
-        paths = []
-
-        git_root = find_git_root()
-        if git_root:
-            paths.append(str(git_root / basename))
-        else:
-            paths.append('.')
-
-        paths.append('~/%s' % basename)
-
-        return paths
-
-
-# TODO: Will work when patched: https://github.com/ipython/traitlets/pull/449
-MyCmd.config_paths.metadata['envvar'] = CONFIG_VAR_NAME
-
-
-class PolyversCmd(MyCmd):
+class PolyversCmd(cmdlets.Cmd):
     """
     Bump independently PEP-440 versions of sub-project in Git monorepos.
 
@@ -150,6 +128,21 @@ class PolyversCmd(MyCmd):
                 engrave.Engrave, engrave.GrepSpec,
                 ]
 
+    @trt.default('config_paths')
+    def _config_paths(self):
+        basename = self.config_basename
+        paths = []
+
+        git_root = find_git_root()
+        if git_root:
+            paths.append(str(git_root / basename))
+        else:
+            paths.append('.')
+
+        paths.append('~/%s' % basename)
+
+        return paths
+
     def collect_app_infos(self):
         """Provide extra infos to `config infos` subcommand."""
         return {
@@ -159,7 +152,7 @@ class PolyversCmd(MyCmd):
         }
 
 
-class VersionSubcmd(MyCmd):
+class VersionSubcmd(PolyversCmd):
     def check_project_configs_exist(self, scream=True):
         """
         Checks if any loaded config-file is a subdir of Git repo.
@@ -238,11 +231,14 @@ class BumpCmd(VersionSubcmd):
         self.check_project_configs_exist()
 
 
-class LogconfCmd(MyCmd):
+class LogconfCmd(PolyversCmd):
     """Write a logging-configuration file that can filter logs selectively."""
     def run(self, *args):
         pass
 
+
+# TODO: Will work when patched: https://github.com/ipython/traitlets/pull/449
+PolyversCmd.config_paths.metadata['envvar'] = CONFIG_VAR_NAME
 
 PolyversCmd.flags = {
     ## Inherited from Application
