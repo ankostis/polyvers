@@ -74,7 +74,7 @@ def _my_run(cmd, cwd):
     res, err = proc.communicate()
 
     if proc.returncode != 0:
-        print(err, file=sys.stderr)
+        print('%s\n  cmd: %s' % (err, cmd), file=sys.stderr)
         raise sbp.CalledProcessError(proc.returncode, cmd)
     else:
         return clean_cmd_result(res)
