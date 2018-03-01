@@ -247,45 +247,45 @@ class GrepSpec(cmdlets.Spec, cmdlets.Strable, cmdlets.Replaceable):
 class FileSpec(cmdlets.Spec, cmdlets.Strable, cmdlets.Replaceable):
     fpath = Instance(Path)
     ftext = Unicode()
-    vgreps = ListTrait(Instance(GrepSpec))
+    greps = ListTrait(Instance(GrepSpec))
 
     def collect_file_hits(self) -> Optional['FileSpec']:
         """
         :return:
-            a clone with `vgreps` updated, or none if nothing matched
+            a clone with `greps` updated, or none if nothing matched
         """
         new_greps: List[GrepSpec] = []
         ftext = self.ftext
-        for vg in self.vgreps:
+        for vg in self.greps:
             nvgrep = vg.collect_grep_hits(ftext)
             if nvgrep:
                 new_greps.append(nvgrep)
 
         if new_greps:
-            return self.replace(vgreps=new_greps)
+            return self.replace(greps=new_greps)
 
     def substitute_file_hits(self) -> Optional['FileSpec']:
         """
         :return:
-            a clone with substituted `vgreps` updated, or none if nothing substituted
+            a clone with substituted `greps` updated, or none if nothing substituted
         """
         new_greps: List[GrepSpec] = []
         ftext = self.ftext
         fpath = self.fpath
-        for vg in self.vgreps:
+        for vg in self.greps:
             subst_res = vg.substitute_grep_hits(fpath, ftext)
             if subst_res:
                 ftext, nvgrep = subst_res
                 new_greps.append(nvgrep)
 
         if new_greps:
-            return self.replace(ftext=ftext, vgreps=new_greps)
+            return self.replace(ftext=ftext, greps=new_greps)
         else:
             assert self.ftext == ftext, (self.ftext, ftext)
 
     @property
     def nhits(self):
-        return sum(len(vg.hits) for vg in self.vgreps)
+        return sum(len(vg.hits) for vg in self.greps)
 
 
 FilesMap = Dict[Path, FileSpec]
@@ -299,7 +299,7 @@ class Engrave(cmdlets.Spec):
         help="A list of POSIX file patterns (.gitgnore-like) to search and replace"
     ).tag(config=True)
 
-    vgreps = ListTrait(
+    greps = ListTrait(
         AutoInstance(GrepSpec),
         help="""
         A list of `GrepSpec` for engraving (search & replace) version-ids or other infos.
@@ -337,7 +337,7 @@ class Engrave(cmdlets.Spec):
             ## TODO: try-catch file-reading.
             ftext = self._fread(fpath)
 
-            file_specs[fpath] = FileSpec(fpath=fpath, ftext=ftext, vgreps=self.vgreps)
+            file_specs[fpath] = FileSpec(fpath=fpath, ftext=ftext, greps=self.greps)
 
         return file_specs
 

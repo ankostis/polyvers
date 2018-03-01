@@ -199,7 +199,7 @@ def test_MatchSpec_slicing(slices, listlen, exp):
 def test_engrave(fileset):
     cfg = Config()
     cfg.Engrave.globs = ['/a/f*', 'b/f1', '/b/f2', 'b/?3']
-    cfg.Engrave.vgreps = [f1_vgrep, f2_vgrep]
+    cfg.Engrave.greps = [f1_vgrep, f2_vgrep]
 
     e = engrave.Engrave(config=cfg)
     e.engrave_all()
