@@ -265,11 +265,14 @@ PolyversCmd.flags = {
         cmdlets.Spec.force.help
     ),
     ('n', 'dry-run'): (
-        {'Spec': {'force': True}},
+        {'Spec': {'dry_run': True}},
         cmdlets.Spec.dry_run.help
     ),
     ('d', 'debug'): (
-        {'Spec': {'force': True}},
+        {'Spec': {
+            'debug': True,
+            'raise_config_file_errors': True,
+        }},
         cmdlets.Spec.debug.help
     ),
 
