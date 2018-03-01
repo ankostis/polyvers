@@ -20,6 +20,19 @@ from ...traitlets.traitlets import (
     default,
 )
 from ipython_genutils.text import indent, dedent, wrap_paragraphs
+import io
+
+from ruamel import yaml
+
+
+_Y = yaml.YAML(typ='rt')
+
+
+def yaml_dump(obj):
+    sio = io.StringIO()
+    _Y.dump(obj, sio)
+
+    return sio.getvalue()
 
 
 #-----------------------------------------------------------------------------
@@ -380,6 +393,75 @@ class Configurable(HasTraits):
             lines.append('# c.%s.%s = %s' % (cls.__name__, name, default_repr))
             lines.append('')
         return '\n'.join(lines)
+
+    @classmethod
+    def class_config_yaml(cls, outer_cfg, classes=None):
+        """Get the config section for this class.
+
+        Parameters
+        ----------
+        classes: list, optional
+            The list of other classes in the config file.
+            Used to reduce redundant information.
+        """
+        from ruamel.yaml.comments import CommentedMap  # @UnresolvedImport
+
+        def c(s):
+            """return a commented, wrapped block."""
+            s = '\n\n'.join(wrap_paragraphs(s, 78))
+
+            return '# ' + s.replace('\n', '\n#  ')
+
+        # section header
+        breaker = '#' * 79
+        parent_classes = ', '.join(
+            p.__name__ for p in cls.__bases__
+            if issubclass(p, Configurable)
+        )
+
+        s = "# %s(%s) configuration" % (cls.__name__, parent_classes)
+        head_lines = [breaker, s, breaker]
+        # get the description trait
+        desc = cls.class_traits().get('description')
+        if desc:
+            desc = desc.default_value
+        if not desc:
+            # no description from trait, use __doc__
+            desc = getattr(cls, '__doc__', '')
+        if desc:
+            head_lines.append(c(desc))
+            head_lines.append('')
+        outer_cfg[cls.__name__] = cfg = CommentedMap()
+        cfg.yaml_set_start_comment('\n'.join(head_lines))
+
+        for name, trait in sorted(cls.class_traits(config=True).items()):
+            cfg[name] = tcfg = CommentedMap()
+            trait_lines = []
+            default_repr = trait.default_value_repr()
+
+            if classes:
+                defining_class = cls._defining_class(trait, classes)
+            else:
+                defining_class = cls
+            if defining_class is cls:
+                # cls owns the trait, show full help
+                if trait.help:
+                    trait_lines.append(c(trait.help))
+                if 'Enum' in type(trait).__name__:
+                    # include Enum choices
+                    trait_lines.append('#  Choices: %s' % trait.info())
+                trait_lines.append('#  Default: %s' % default_repr)
+            else:
+                # Trait appears multiple times and isn't defined here.
+                # Truncate help to first line + "See also Original.trait"
+                if trait.help:
+                    trait_lines.append(c(trait.help.split('\n', 1)[0]))
+                trait_lines.append('#  See also: %s.%s' % (defining_class.__name__, name))
+
+            tcfg[name] = default_repr
+            tcfg.yaml_set_start_comment('\n'.join(trait_lines))
+
+        return '#' + yaml_dump(cfg).replace('\n', '\n#')
 
     @classmethod
     def class_config_rst_doc(cls):

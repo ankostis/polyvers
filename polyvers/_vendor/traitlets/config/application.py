@@ -835,6 +835,16 @@ class Application(SingletonConfigurable):
             lines.append(cls.class_config_section(config_classes))
         return '\n'.join(lines)
 
+    def generate_config_file_yaml(self, classes=None):
+        """generate default config file from Configurables"""
+        lines = ["# Configuration file for %s." % self.name]
+        lines.append('')
+        classes = self.classes if classes is None else classes
+        config_classes = list(self._classes_with_config_traits(classes))
+        for cls in config_classes:
+            lines.append(cls.class_config_section(config_classes))
+        return '\n'.join(lines)
+
     def exit(self, exit_status=0):
         self.log.debug("Exiting application: %s" % self.name)
         sys.exit(exit_status)
