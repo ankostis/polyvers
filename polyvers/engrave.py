@@ -142,7 +142,7 @@ def _slices_to_ids(slices, thelist):
     return list(mask_ids)
 
 
-class GrepSpec(cmdlets.Spec, cmdlets.Strable, cmdlets.Replaceable):
+class GraftSpec(cmdlets.Spec, cmdlets.Strable, cmdlets.Replaceable):
     def __init__(self, *args, **kw):
         super().__init__(*args, **kw)
 
@@ -169,7 +169,7 @@ class GrepSpec(cmdlets.Spec, cmdlets.Strable, cmdlets.Replaceable):
 
         Example::
 
-            gs = GrepSpec()
+            gs = GraftSpec()
             gs.slices = 0                ## Only the 1st match.
             gs.slices = '1:'             ## Everything except the 1st match
             gs.slices = ['1:3', '-1:']   ## Only 2nd, 3rd and the last match.
@@ -181,7 +181,7 @@ class GrepSpec(cmdlets.Spec, cmdlets.Strable, cmdlets.Replaceable):
     hits = ListTrait(Instance(MatchClass))
     hits_indices = ListTrait(Int(), allow_null=True, default_value=None)
 
-    def collect_grep_hits(self, ftext: str) -> Union['GrepSpec']:
+    def collect_grep_hits(self, ftext: str) -> Union['GraftSpec']:
         """
         :return:
             a clone with updated `hits`, or None if nothing matched
@@ -213,7 +213,7 @@ class GrepSpec(cmdlets.Spec, cmdlets.Strable, cmdlets.Replaceable):
             for i in hits_indices:
                 yield hits[i]
 
-    def substitute_grep_hits(self, fpath: Path, ftext: str) -> Optional[Tuple[str, 'GrepSpec']]:
+    def substitute_grep_hits(self, fpath: Path, ftext: str) -> Optional[Tuple[str, 'GraftSpec']]:
         """
         :return:
             A 2-TUPLE ``(<substituted-ftext>, <updated-grep-spec>)``, where
@@ -247,14 +247,14 @@ class GrepSpec(cmdlets.Spec, cmdlets.Strable, cmdlets.Replaceable):
 class FileSpec(cmdlets.Spec, cmdlets.Strable, cmdlets.Replaceable):
     fpath = Instance(Path)
     ftext = Unicode()
-    vgreps = ListTrait(Instance(GrepSpec))
+    vgreps = ListTrait(Instance(GraftSpec))
 
     def collect_file_hits(self) -> Optional['FileSpec']:
         """
         :return:
             a clone with `vgreps` updated, or none if nothing matched
         """
-        new_greps: List[GrepSpec] = []
+        new_greps: List[GraftSpec] = []
         ftext = self.ftext
         for vg in self.vgreps:
             nvgrep = vg.collect_grep_hits(ftext)
@@ -269,7 +269,7 @@ class FileSpec(cmdlets.Spec, cmdlets.Strable, cmdlets.Replaceable):
         :return:
             a clone with substituted `vgreps` updated, or none if nothing substituted
         """
-        new_greps: List[GrepSpec] = []
+        new_greps: List[GraftSpec] = []
         ftext = self.ftext
         fpath = self.fpath
         for vg in self.vgreps:
@@ -300,11 +300,11 @@ class Engrave(cmdlets.Spec):
     ).tag(config=True)
 
     vgreps = ListTrait(
-        AutoInstance(GrepSpec),
+        AutoInstance(GraftSpec),
         help="""
-        A list of `GrepSpec` for engraving (search & replace) version-ids or other infos.
+        A list of `GraftSpec` for engraving (search & replace) version-ids or other infos.
 
-        Use `{appname} config desc GrepSpec` to see its syntax.
+        Use `{appname} config desc GraftSpec` to see its syntax.
         """
     ).tag(config=True)
 

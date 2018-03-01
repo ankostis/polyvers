@@ -10,7 +10,7 @@ import logging
 from pathlib import Path
 from polyvers import engrave
 from polyvers._vendor.traitlets.config import Config
-from polyvers.engrave import GrepSpec, _slices_to_ids
+from polyvers.engrave import GraftSpec, _slices_to_ids
 from polyvers.logconfutils import init_logging
 from polyvers.slice_traitlet import _parse_slice
 import re
@@ -187,7 +187,7 @@ def test_MatchSpec_slicing(slices, listlen, exp):
     m = re.match('.*', '')  # Get hold of some re.match object.
     hits = list(itt.repeat(m, listlen))
 
-    gs = GrepSpec(hits=hits, slices=slices, regex='')
+    gs = GraftSpec(hits=hits, slices=slices, regex='')
     hits_indices = gs._get_hits_indices()
     assert hits_indices == exp
 
