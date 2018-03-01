@@ -10,7 +10,7 @@ import logging
 from pathlib import Path
 from polyvers import engrave
 from polyvers._vendor.traitlets.config import Config
-from polyvers.engrave import GrepSpec, _slices_to_ids
+from polyvers.engrave import GraftSpec, _slices_to_ids
 from polyvers.logconfutils import init_logging
 from polyvers.slice_traitlet import _parse_slice
 import re
@@ -64,7 +64,7 @@ stays the same
 a = b
 stays the same
 """
-f1_vgrep = {'regex': r'(?m)^(\w+) *= *(\w+)',
+f1_graft = {'regex': r'(?m)^(\w+) *= *(\w+)',
             'subst': r'A\1A = B\2B'}
 f11 = """
 stays the same
@@ -77,7 +77,7 @@ CHANGE
 THESE
 leave
 """
-f2_vgrep = {'regex': r'(?m)^CHANGE\s+THESE$',
+f2_graft = {'regex': r'(?m)^CHANGE\s+THESE$',
             'subst': 'changed them'}
 f22 = """
 changed them
@@ -187,7 +187,7 @@ def test_MatchSpec_slicing(slices, listlen, exp):
     m = re.match('.*', '')  # Get hold of some re.match object.
     hits = list(itt.repeat(m, listlen))
 
-    gs = GrepSpec(hits=hits, slices=slices, regex='')
+    gs = GraftSpec(hits=hits, slices=slices, regex='')
     hits_indices = gs._get_hits_indices()
     assert hits_indices == exp
 
@@ -199,7 +199,7 @@ def test_MatchSpec_slicing(slices, listlen, exp):
 def test_engrave(fileset):
     cfg = Config()
     cfg.Engrave.globs = ['/a/f*', 'b/f1', '/b/f2', 'b/?3']
-    cfg.Engrave.greps = [f1_vgrep, f2_vgrep]
+    cfg.Engrave.grafts = [f1_graft, f2_graft]
 
     e = engrave.Engrave(config=cfg)
     e.engrave_all()

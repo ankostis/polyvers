@@ -125,7 +125,7 @@ class PolyversCmd(cmdlets.Cmd):
         return [type(self),
                 vtags.Project,
                 InitCmd, StatusCmd, BumpCmd, LogconfCmd,
-                engrave.Engrave, engrave.GrepSpec,
+                engrave.Engrave, engrave.GraftSpec,
                 ]
 
     @trt.default('config_paths')
