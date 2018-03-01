@@ -29,7 +29,7 @@ def posixize(paths):
 
 
 def test_prepare_glob_pairs():
-    patterns = tw.dedent("""
+    globs = tw.dedent("""
         abc
           dddf/
         ## ffgg
@@ -45,7 +45,7 @@ def test_prepare_glob_pairs():
 
         123/567
     """).split('\n')
-    pat_pairs = engrave._prepare_glob_pairs(patterns)
+    pat_pairs = engrave._prepare_glob_pairs(globs)
     assert pat_pairs == [
         ('**/abc', None),
         ('**/dddf/', None),
@@ -121,18 +121,18 @@ def fileset(tmpdir):
     return tmpdir
 
 
-@pytest.mark.parametrize('patterns', [
+@pytest.mark.parametrize('globs', [
     ('/a/f*', 'b/f?'),
     ('/a/f*', 'b/f1', '/b/f2', 'b/?3'),
     ('**/f*', ),
     ('/**/f*', ),
 ])
-def test_glob(patterns, fileset):
-    files = engrave.glob_files(patterns)
+def test_glob(globs, fileset):
+    files = engrave.glob_files(globs)
     assert posixize(files) == 'a/f1 a/f2 a/f3 b/f1 b/f2 b/f3'.split()
 
 
-@pytest.mark.parametrize('patterns, exp', [
+@pytest.mark.parametrize('globs, exp', [
     ('!a !/b/ /**/f*', ''),
     ('/a/f* !b /b/f*', 'a/f1 a/f2 a/f3'),
     ('/a/f* !/b/ /b/f*', 'a/f1 a/f2 a/f3'),
@@ -140,8 +140,8 @@ def test_glob(patterns, fileset):
 
     ('/a/f* /b/f* !a/ !b/', 'a/f1 a/f2 a/f3 b/f1 b/f2 b/f3'),
 ])
-def test_glob_negatives(patterns, exp, fileset):
-    files = engrave.glob_files(patterns.split())
+def test_glob_negatives(globs, exp, fileset):
+    files = engrave.glob_files(globs.split())
     assert posixize(files) == exp.split()
 
 
@@ -198,7 +198,7 @@ def test_MatchSpec_slicing(slices, listlen, exp):
 
 def test_engrave(fileset):
     cfg = Config()
-    cfg.Engrave.patterns = ['/a/f*', 'b/f1', '/b/f2', 'b/?3']
+    cfg.Engrave.globs = ['/a/f*', 'b/f1', '/b/f2', 'b/?3']
     cfg.Engrave.vgreps = [f1_vgrep, f2_vgrep]
 
     e = engrave.Engrave(config=cfg)

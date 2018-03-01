@@ -294,7 +294,7 @@ FilesMap = Dict[Path, FileSpec]
 class Engrave(cmdlets.Spec):
     """File-patterns to search and replace with version-id patterns."""
 
-    patterns = ListTrait(
+    globs = ListTrait(
         Unicode(),
         help="A list of POSIX file patterns (.gitgnore-like) to search and replace"
     ).tag(config=True)
@@ -374,7 +374,7 @@ class Engrave(cmdlets.Spec):
         log.info("%sed files: %s", action.capitalize(), file_lines)
 
     def engrave_all(self):
-        files: List[Path] = glob_files(self.patterns)
+        files: List[Path] = glob_files(self.globs)
         log.info("Searching files: %s", ', '.join(str(f) for f in files))
 
         file_specs: FilesMap = self.read_files(files)
