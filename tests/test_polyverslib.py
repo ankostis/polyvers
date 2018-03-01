@@ -13,6 +13,7 @@ import sys
 
 import pytest
 
+import os.path as osp
 import subprocess as sbp
 
 
@@ -58,116 +59,113 @@ def test_fnmatch_format(inp, exp):
         assert fnmatch.fnmatch(inp, frmt)
 
 
+def test_caller_fpath():
+    caller_dir = pvlib._caller_fpath(1)
+    assert caller_dir == osp.dirname(__file__)
+
+    caller_dir = pvlib._caller_fpath(0)
+    exp = osp.join(osp.dirname(__file__), '..', 'polyvers')
+    assert osp.realpath(exp) == caller_dir
+
+
 ##############
 ## DESCRIBE ##
 ##############
 
 def test_polyversion_p1(ok_repo, untagged_repo, no_repo):
-    ok_repo.chdir()
+    ## OK REPO
 
-    v = pvlib.polyversion(proj1,)
+    v = pvlib.polyversion(proj1, repo_path=ok_repo)
     assert v.startswith(proj1_ver)
-    v = pvlib.polyversion(proj1, default='<unused>')
+    v = pvlib.polyversion(proj1, default='<unused>', repo_path=ok_repo)
     assert v.startswith(proj1_ver)
 
-    untagged_repo.chdir()
+    ## UNTAGGED REPO
 
     with pytest.raises(sbp.CalledProcessError):
-        pvlib.polyversion('foo')
-    v = pvlib.polyversion('foo', default='<unused>')
+        pvlib.polyversion('foo', repo_path=untagged_repo)
+    v = pvlib.polyversion('foo', default='<unused>', repo_path=untagged_repo)
     assert v == '<unused>'
 
-    no_repo.chdir()
+    ## NO REPO
 
     with pytest.raises(sbp.CalledProcessError):
-        pvlib.polyversion(proj1)
-    v = pvlib.polyversion(proj1, default='<unused>')
+        pvlib.polyversion(proj1, repo_path=no_repo)
+    v = pvlib.polyversion(proj1, default='<unused>', repo_path=no_repo)
     assert v == '<unused>'
 
 
 def test_polyversion_p2(ok_repo):
-    ok_repo.chdir()
-
-    v = pvlib.polyversion(proj2)
+    v = pvlib.polyversion(proj2, repo_path=ok_repo)
     assert v == proj2_ver
 
 
 def test_polyversion_BAD_project(ok_repo):
-    ok_repo.chdir()
-
     with pytest.raises(sbp.CalledProcessError):
-        pvlib.polyversion('foo')
-    v = pvlib.polyversion('foo', default='<unused>')
+        pvlib.polyversion('foo', repo_path=ok_repo)
+    v = pvlib.polyversion('foo', default='<unused>', repo_path=ok_repo)
     assert v == '<unused>'
 
 
 def test_polyversion_BAD_no_commits(empty_repo):
-    empty_repo.chdir()
-
     with pytest.raises(sbp.CalledProcessError):
-        pvlib.polyversion('foo')
-    v = pvlib.polyversion('foo', default='<unused>')
+        pvlib.polyversion('foo', repo_path=empty_repo)
+    v = pvlib.polyversion('foo', default='<unused>', repo_path=empty_repo)
     assert v == '<unused>'
 
 
 @pytest.mark.skipif(sys.version_info < (3, ),
                     reason="FileNotFoundError not in PY27, OSError only.")
 def test_polyversion_BAD_no_git_cmd(ok_repo, monkeypatch):
-    ok_repo.chdir()
     monkeypatch.setenv('PATH', '')
 
     with pytest.raises(FileNotFoundError):
-        pvlib.polyversion('foo')
-    v = pvlib.polyversion('foo', '0.1.1')
+        pvlib.polyversion('foo', repo_path=ok_repo)
+    v = pvlib.polyversion('foo', '0.1.1', repo_path=ok_repo)
     assert v == '0.1.1'
 
 
 def test_polytime_p1(ok_repo, untagged_repo, no_repo, today):
-    ok_repo.chdir()
+    ## OK REPO
 
-    d = pvlib.polytime()
+    d = pvlib.polytime(repo_path=ok_repo)
     assert d.startswith(today)
-    d = pvlib.polytime(no_raise=True)
-    assert d.startswith(today)
-
-    untagged_repo.chdir()
-
-    pvlib.polytime()
-    assert d.startswith(today)
-    d = pvlib.polytime(no_raise=True)
+    d = pvlib.polytime(no_raise=True, repo_path=ok_repo)
     assert d.startswith(today)
 
-    no_repo.chdir()
+    ## UNTAGGED REPO
+
+    pvlib.polytime(repo_path=untagged_repo)
+    assert d.startswith(today)
+    d = pvlib.polytime(no_raise=True, repo_path=untagged_repo)
+    assert d.startswith(today)
+
+    ## NO REPO
 
     with pytest.raises(sbp.CalledProcessError):
-        pvlib.polytime()
-    d = pvlib.polytime(no_raise=True)
+        pvlib.polytime(repo_path=no_repo)
+    d = pvlib.polytime(no_raise=True, repo_path=no_repo)
     assert d.startswith(today)
 
 
 def test_polytime_p2(ok_repo, today):
-    ok_repo.chdir()
-
-    d = pvlib.polytime()
+    d = pvlib.polytime(repo_path=ok_repo)
     assert d.startswith(today)
 
 
 def test_polytime_BAD_no_commits(empty_repo):
-    empty_repo.chdir()
-
     with pytest.raises(sbp.CalledProcessError):
-        pvlib.polytime()
+        pvlib.polytime(repo_path=empty_repo)
 
 
 @pytest.mark.skipif(sys.version_info < (3, ),
                     reason="FileNotFoundError not in PY27, OSError only.")
 def test_polytime_BAD_no_git_cmd(ok_repo, monkeypatch, today):
-    ok_repo.chdir()
     monkeypatch.setenv('PATH', '')
 
     with pytest.raises(FileNotFoundError):
-        pvlib.polytime()
-    d = pvlib.polytime(no_raise=True)
+        pvlib.polytime(repo_path=ok_repo)
+    d = pvlib.polytime(no_raise=True, repo_path=ok_repo)
     assert d.startswith(today)
 
 

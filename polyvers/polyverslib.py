@@ -19,9 +19,12 @@ last *vtag*.
 """
 from __future__ import print_function
 
-import sys
+import inspect
+import os
 import re
+import sys
 
+import os.path as osp
 import subprocess as sbp
 
 
@@ -64,9 +67,10 @@ def rfc2822_tstamp(nowdt=None):
     return now
 
 
-def _my_run(cmd):
+def _my_run(cmd, cwd):
     "For commands with small output/stderr."
-    proc = sbp.Popen(cmd.split(), stdout=sbp.PIPE, stderr=sbp.PIPE, bufsize=-1)
+    proc = sbp.Popen(cmd.split(), stdout=sbp.PIPE, stderr=sbp.PIPE,
+                     cwd=str(cwd), bufsize=-1)
     res, err = proc.communicate()
 
     if proc.returncode != 0:
@@ -74,6 +78,18 @@ def _my_run(cmd):
         raise sbp.CalledProcessError(proc.returncode, cmd)
     else:
         return clean_cmd_result(res)
+
+
+def _caller_fpath(nframes_back=2):
+    frame = inspect.currentframe()
+    try:
+        for _ in range(nframes_back):
+            frame = frame.f_back
+        fpath = inspect.getframeinfo(frame).filename
+
+        return osp.dirname(fpath)
+    finally:
+        del frame
 
 
 def split_vtag(vtag, vtag_regex):
@@ -96,16 +112,19 @@ def version_from_descid(version, descid):
     return '%s+%s' % (version, local_part)
 
 
-def polyversion(project, default=None,
+def polyversion(project, default=None, repo_path=None,
                 vtag_fnmatch_frmt=vtag_fnmatch_frmt,
                 vtag_regex=vtag_regex):
     """
-    Report *vtag* derived sub-project-version; use it from within it's sources.
+    Report the *vtag* of the `project` in the git repo hosting the source-file calling this.
 
     :param str project:
         Used as the prefix of vtags when searching them.
     :param str default:
         What *version* to return if git cmd fails.
+    :param str repo_path:
+        A path inside the git repo hosting the `project` in question; if missing,
+        derived from the calling stack.
     :param str vtag_fnmatch_frmt:
         The pattern globbing for *vtags* with ``git describe --match <pattern>``.
         See :data:`vtag_fnmatch_frmt`
@@ -119,7 +138,8 @@ def polyversion(project, default=None,
         See :pep:`0426` for project-name characters and format.
         See :data:`vtag_regex`
     :return:
-        the version-id or `default` if command failed/returned nothing
+        The version-id derived from the *vtag*, or `default` if
+        command failed/returned nothing.
 
     .. TIP::
         It is to be used in ``__init__.py`` files like this::
@@ -137,10 +157,12 @@ def polyversion(project, default=None,
        used by the tool internally.
     """
     version = None
+    if not repo_path:
+        repo_path = _caller_fpath()
     tag_pattern = vtag_fnmatch_frmt % project
     try:
         cmd = 'git describe --tags --match %s' % tag_pattern
-        vtag = _my_run(cmd)
+        vtag = _my_run(cmd, cwd=repo_path)
         matched_project, version, descid = split_vtag(vtag, vtag_regex)
         if matched_project != project:
             print("Matched  vtag project '%s' different from expected '%s'!" %
@@ -157,19 +179,24 @@ def polyversion(project, default=None,
     return version
 
 
-def polytime(no_raise=False):
+def polytime(no_raise=False, repo_path=None):
     """
-    The timestamp of the last commit of the git repo.
+    The timestamp of last commit in git repo hosting the source-file calling this.
 
     :param str no_raise:
         If true, never fail and return current-time
+    :param str repo_path:
+        A path inside the git repo hosting the `project` in question; if missing,
+        derived from the calling stack.
     :return:
         the commit-date if in git repo, or now; :rfc:`2822` formatted
     """
     cdate = None
+    if not repo_path:
+        repo_path = _caller_fpath()
     cmd = "git log -n1 --format=format:%cD"
     try:
-            cdate = _my_run(cmd)
+            cdate = _my_run(cmd, cwd=repo_path)
     except:  # noqa;  E722
         if not no_raise:
             raise
@@ -187,8 +214,6 @@ def main(*args):
     :param args:
         usually ``*sys.argv[1:]``
     """
-    import os.path as osp
-
     for o in ('-h', '--help'):
         if o in args:
             doc = main.__doc__.split('\n')[1].strip()
@@ -198,9 +223,10 @@ def main(*args):
             exit(0)
 
     if len(args) == 1:
-        res = polyversion(args[0])
+        res = polyversion(args[0], repo_path=os.curdir)
     else:
-        res = '\n'.join('%s: %s' % (p, polyversion(p, default=''))
+        res = '\n'.join('%s: %s' % (p, polyversion(p, default='',
+                                                   repo_path=os.curdir))
                         for p in args)
 
     if res:
