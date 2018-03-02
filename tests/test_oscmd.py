@@ -6,20 +6,20 @@
 # You may not use this work except in compliance with the Licence.
 # You may obtain a copy of the Licence at: http://ec.europa.eu/idabc/eupl
 
-from polyvers.oscmd import oscmd
+from polyvers.oscmd import cmd
 
 
 def test_cmd(ok_repo):
     ok_repo.chdir()
 
-    cmdlist = oscmd.python._(c=True)._("print('a')").cmdlist
+    cmdlist = cmd.python._(c=True)._("print('a')")._cmdlist
     assert cmdlist == "python -c print('a')".split()
 
-    res = oscmd.date()
+    res = cmd.date()
     assert isinstance(res, str) and res
 
-    res = oscmd.python._(c=True)._("print('a')")()
+    res = cmd.python._(c=True)._("print('a')")()
     assert res.strip() == 'a'
 
-    res = oscmd.git('log', n=1)
+    res = cmd.git.log(n=1)
     assert res.count('\n') >= 4

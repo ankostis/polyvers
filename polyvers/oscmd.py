@@ -83,13 +83,13 @@ def exec_cmd(cmd,
 
 class _Cli:
     def __init__(self, popen_kw: Dict, cmd: str):
-        self.popen_kw = popen_kw
-        self.cmdlist = [cmd]
+        self._popen_kw = popen_kw
+        self._cmdlist = [cmd]
 
-    def __extend_cmdlist(self, args, kw):
+    def _extend_cmdlist(self, args, kw):
         def kv2arg(k, v):
             nk = len(k)
-            if isinstance(v, bool):
+            if isinstance(v, bool) or v is None:
                 if v:
                     return '-' + k if len(k) == 1 else '--' + k
                 else:
@@ -100,19 +100,25 @@ class _Cli:
                 frmt = '-%s%s' if nk == 1 else '--%s=%s'
                 return frmt % (k, v)
 
-        arglist = self.cmdlist
+        arglist = self._cmdlist
         arglist.extend(args)
         arglist.extend(kv2arg(*kv) for kv in kw.items())
 
+    def __getattr__(self, attr):
+        if attr == '__wrapped__':  # PYTEST MAGIC!
+            return None
+        self._cmdlist.append(attr)
+        return self
+
     def __call__(self, *args, **kw):
-        self.__extend_cmdlist(args, kw)
-        res = exec_cmd(self.cmdlist, **self.popen_kw)
+        self._extend_cmdlist(args, kw)
+        res = exec_cmd(self._cmdlist, **self._popen_kw)
         self.rc = res.returncode
         self.stderr = res.stderr
         return res.stdout
 
     def _(self, *args, **kw):
-        self.__extend_cmdlist(args, kw)
+        self._extend_cmdlist(args, kw)
         return self
 
 
@@ -124,4 +130,4 @@ class PopenCmd:
         return _Cli(self._popen_kw, attr)
 
 
-oscmd = PopenCmd(check_stdout=True, check_stderr=True)
+cmd = PopenCmd(check_stdout=True, check_stderr=True)
