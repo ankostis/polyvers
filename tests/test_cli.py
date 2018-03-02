@@ -20,28 +20,6 @@ all_cmds = [c
             if issubclass(c, cmdlets.Cmd)]
 
 
-def test_git_repo(ok_repo, no_repo):
-    ok_repo.chdir()
-    got = cli.find_git_root()
-    assert ok_repo.samefile(got)
-
-    ndir = (ok_repo / 'abc')
-    ndir.mkdir()
-    ndir.chdir()
-    got = cli.find_git_root()
-    assert ok_repo.samefile(got)
-
-    ndir = (ndir / 'def')
-    ndir.mkdir()
-    ndir.chdir()
-    got = cli.find_git_root()
-    assert ok_repo.samefile(got)
-
-    no_repo.chdir()
-    got = cli.find_git_root()
-    assert got is None
-
-
 @pytest.mark.parametrize('cmd', all_cmds)
 def test_all_cmds_help_smoketest(cmd):
     cmd.class_get_help()

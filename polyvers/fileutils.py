@@ -9,8 +9,11 @@
 """Generic utils."""
 
 import os
+from pathlib import Path
 import re
+from typing import Optional
 
+import itertools as itt
 import os.path as osp
 
 
@@ -135,3 +138,20 @@ def ensure_dir_exists(path, mode=0o755):
                 raise
     elif not os.path.isdir(path):
         raise IOError("%r exists but is not a directory" % path)
+
+
+def find_git_root() -> Optional[Path]:
+    """
+    Search dirs up for a Git-repo.
+
+    :return:
+        a `pathlib` native path, or None
+    """
+    ## TODO: See GitPython for a comprehensive way.
+    cwd = Path()
+    for f in itt.chain([cwd], cwd.resolve().parents):
+        if (f / '.git').is_dir():
+            return f
+
+    # raise vtags.GitVoidError(
+    #     "Current-dir '%s' is not within a git repository!" % Path.cwd())

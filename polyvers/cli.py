@@ -7,14 +7,10 @@
 #
 """The code of *polyvers* shell-commands."""
 
-import itertools as itt
-from pathlib import Path
-from typing import Optional
-
-from . import APPNAME, __version__, __updated__, cmdlets, interpctxt, vtags
+from . import APPNAME, __version__, __updated__, cmdlets, interpctxt, vtags, fileutils as fu
 from ._vendor import traitlets as trt
-from ._vendor.traitlets.traitlets import List, Bool
 from ._vendor.traitlets import config as trc
+from ._vendor.traitlets.traitlets import List, Bool
 from .autoinstance_traitlet import AutoInstance
 
 
@@ -23,20 +19,6 @@ from .autoinstance_traitlet import AutoInstance
 ####################
 CONFIG_VAR_NAME = '%s_CONFIG_PATHS' % APPNAME
 #######################
-
-
-def find_git_root() -> Optional[Path]:
-    """
-    Search dirs up for a Git-repo.
-
-    :return:
-        a `pathlib` native path, or None
-    """
-    ## TODO: See GitPython for a comprehensive way.
-    cwd = Path()
-    for f in itt.chain([cwd], cwd.resolve().parents):
-        if (f / '.git').is_dir():
-            return f
 
 
 class PolyversCmd(cmdlets.Cmd):
@@ -133,7 +115,7 @@ class PolyversCmd(cmdlets.Cmd):
         basename = self.config_basename
         paths = []
 
-        git_root = find_git_root()
+        git_root = fu.find_git_root()
         if git_root:
             paths.append(str(git_root / basename))
         else:
@@ -162,7 +144,7 @@ class VersionSubcmd(PolyversCmd):
         """
         from pathlib import Path as P
 
-        git_root = find_git_root()
+        git_root = fu.find_git_root()
         if not git_root:
             raise cmdlets.CmdException(
                 "Current-dir '%s' is not inside a git-repo!" % P().resolve())
