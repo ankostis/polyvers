@@ -327,7 +327,7 @@ class Strable:
 
 class CmdletsInterpolationManager(interpctxt.InterpolationContextManager):
     """
-    Adds `cmdlets_map` maps into interp-manager for for help & cmd mechanics.
+    Adds `cmdlets_map` into interp-manager for for help & cmd mechanics.
 
     Client-code may add more dicts in `interpolation_context.maps` list.
     """
@@ -361,7 +361,7 @@ class Spec(trc.Configurable):
         config=True,
         help="Do not write files - just pretend.")
 
-    _interp_manager = cmdlets_interpolation_manager
+    interpman = cmdlets_interpolation_manager
     interpolations = cmdlets_interpolation_manager.ctxt
 
     @classmethod
@@ -749,7 +749,7 @@ class Cmd(trc.Application, Spec):
         return isinstance(self.subapp, trc.Application)  # subapp == trait | subcmd | None
 
     def update_interp_context(self, argv=None):
-        cmdlets_map = self._interp_manager.cmdlets_map
+        cmdlets_map = self.interpman.cmdlets_map
         cmdlets_map['cmd_chain'] = cmd_line_chain(self)
         cmdlets_map['appname'] = self.root_app().name
 
