@@ -216,10 +216,10 @@ class InfosCmd(cmdlets.Cmd):
         help="Extra infos to put at the top of the output of this command"
     )
 
+    #@trc.catch_config_error NOT needed, invoking super()!
     def initialize(self, argv=None):
         """Override to read configs from root-app."""
-        self.update_interp_context()
-        self.parse_command_line(argv)
+        super().initialize(argv)
         root = self.root_app()
         cfg = root.read_config_files()
         cfg.merge(root.cli_config)
@@ -375,10 +375,10 @@ class ShowCmd(cmdlets.Cmd):
         }
         super().__init__(**kwds)
 
+    #@trc.catch_config_error NOT needed, invoking super()!
     def initialize(self, argv=None):
         """Override to read configs from root-app and not merge them."""
-        self.update_interp_context()
-        self.parse_command_line(argv)
+        super().initialize(argv)
         root = self.root_app()
         cfg = root.read_config_files()
         root._loaded_config = cfg

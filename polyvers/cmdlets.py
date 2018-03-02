@@ -753,7 +753,7 @@ class Cmd(trc.Application, Spec):
         cmdlets_map['cmd_chain'] = cmd_line_chain(self)
         cmdlets_map['appname'] = self.root_app().name
 
-    @trc.catch_config_error
+    #@trc.catch_config_error NOT needed, invoking super()!
     def initialize(self, argv=None):
         """
         Invoked after __init__() by `make_cmd()` to apply configs and build subapps.
@@ -765,12 +765,13 @@ class Cmd(trc.Application, Spec):
         and update any :attr:`config_paths`, then it reads all file-configs, and
         then re-apply cmd-line configs as overrides (trick copied from `jupyter-core`).
         """
-        self.parse_command_line(argv)
+        super().initialize(argv)
         if self._is_dispatching():
             ## Only the final child reads file-configs.
             #  Also avoid contaminations with user if generating-config.
             return
 
+        self._dump_config()
         self.update_interp_context()
 
         static_config = self.read_config_files()
