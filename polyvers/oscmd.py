@@ -97,7 +97,8 @@ class _Cli:
                         raise ValueError('Cannot negate -%s!' % k)
                     return '--no-' + k
             else:
-                return '%s=%s' % (k, v)
+                frmt = '-%s%s' if nk == 1 else '--%s=%s'
+                return frmt % (k, v)
 
         arglist = self.cmdlist
         arglist.extend(args)

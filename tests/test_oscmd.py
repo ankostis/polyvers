@@ -9,7 +9,9 @@
 from polyvers.oscmd import oscmd
 
 
-def test_cmd():
+def test_cmd(ok_repo):
+    ok_repo.chdir()
+
     cmdlist = oscmd.python._(c=True)._("print('a')").cmdlist
     assert cmdlist == "python -c print('a')".split()
 
@@ -18,3 +20,6 @@ def test_cmd():
 
     res = oscmd.python._(c=True)._("print('a')")()
     assert res.strip() == 'a'
+
+    res = oscmd.git('log', n=1)
+    assert res.count('\n') >= 4
