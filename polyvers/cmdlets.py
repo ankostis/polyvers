@@ -327,7 +327,7 @@ class Strable:
 
 class CmdletsInterpolationManager(interpctxt.InterpolationContextManager):
     """
-    Adds another layer map `cmdlets_map` to interp-manager for help & cmd mechanics.
+    Adds `cmdlets_map` maps into interp-manager for for help & cmd mechanics.
 
     Client-code may add more dicts in `interpolation_context.maps` list.
     """

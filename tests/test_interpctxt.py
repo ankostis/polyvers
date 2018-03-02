@@ -65,3 +65,14 @@ def test_InterpolationContextManager():
 
     ctxt['A'] = '42'
     assert 'What? {A}'.format(**ctxt) == 'What? 42'
+
+
+def test_InterpolationContextManager_temp_keys():
+    ctxtman = InterpolationContextManager()
+
+    frmt = "Lucky {b}!"
+    with ctxtman.keys(b=13) as ictxt:
+        assert frmt.format(**ictxt) == "Lucky 13!"
+
+    with pytest.raises(KeyError):
+        frmt.format(**ictxt)

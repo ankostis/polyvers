@@ -9,6 +9,7 @@ Enable Unicode-trait to pep3101-interpolate `{key}` patterns from "context" dict
 """
 
 from collections import ChainMap
+import contextlib
 import os
 
 from ._vendor.traitlets.traitlets import TraitError, Unicode
@@ -73,12 +74,14 @@ class Keys:
 
 class InterpolationContextManager:
     """
-    A stack of 3 dics to be used as interpolation context.
+    A stack of 4 dics to be used as interpolation context.
 
-    The 3 stacked dicts are:
-      0. user-info: writes affect this dict only,
-      1. time: ('now', 'utcnow'), always updated on access,
-      2. env-vars, `$`-prefixed.
+    The 4 stacked dicts are:
+      0. user-info: writes affect permanently this dict only;
+      1. tmp-keys: using :meth:`keys` as context-manager affect this
+         dict only;
+      3. time: ('now', 'utcnow'), always updated on access;
+      3. env-vars, `$`-prefixed.
 
     Append more dicts in ``self.ctxt.maps`` list if you wish.
 
@@ -88,8 +91,9 @@ class InterpolationContextManager:
     """
     def __init__(self):
         self.time_map = {}
+        self._temp_map = {}
         self.env_map = {}
-        self.ctxt = ChainMap({}, self.time_map, self.env_map)
+        self.ctxt = ChainMap({}, self._temp_map, self.time_map, self.env_map)
 
         self.update_env()
         self.time_map.update({
@@ -101,3 +105,12 @@ class InterpolationContextManager:
     def update_env(self):
         self.env_map.clear()
         self.env_map.update({'$' + k: v for k, v in os.environ.items()})
+
+    @contextlib.contextmanager
+    def keys(self, **keys):
+        """Temporarily place key-value pairs into context."""
+        self._temp_map.update(keys)
+        try:
+            yield self.ctxt
+        finally:
+            self._temp_map.clear()
