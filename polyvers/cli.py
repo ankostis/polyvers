@@ -238,10 +238,13 @@ class LogconfCmd(PolyversCmd):
 
 
 # TODO: Will work when patched: https://github.com/ipython/traitlets/pull/449
-PolyversCmd.config_paths.metadata['envvar'] = CONFIG_VAR_NAME
+PolyversCmd.config_paths.tag(envvar=CONFIG_VAR_NAME)
+trc.Application.raise_config_file_errors.tag(config=True)
+trc.Application.raise_config_file_errors.help = \
+    'Whether failing to load config files should prevent startup.'
 
 PolyversCmd.flags = {
-    ## Inherited from Application
+    ## Copied from Application
     #
     'show-config': ({
         'Application': {
@@ -268,9 +271,11 @@ PolyversCmd.flags = {
         {'Spec': {'dry_run': True}},
         cmdlets.Spec.dry_run.help
     ),
-    ('d', 'debug'): (
-        {'Spec': {
+    ('d', 'debug'): ({
+        'Spec': {
             'debug': True,
+        }, 'Application': {
+            'show_config': True,
             'raise_config_file_errors': True,
         }},
         cmdlets.Spec.debug.help
