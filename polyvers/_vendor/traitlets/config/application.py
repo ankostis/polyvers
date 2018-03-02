@@ -177,7 +177,8 @@ class Application(SingletonConfigurable):
     argv = List()
 
     # Whether failing to load config files should prevent startup
-    raise_config_file_errors = Bool(TRAITLETS_APPLICATION_RAISE_CONFIG_FILE_ERROR)
+    raise_config_file_errors = Bool(TRAITLETS_APPLICATION_RAISE_CONFIG_FILE_ERROR,
+                                    config=True)
 
     # The log level for the application
     log_level = Enum((0,10,20,30,40,50,'DEBUG','INFO','WARN','ERROR','CRITICAL'),
@@ -299,16 +300,6 @@ class Application(SingletonConfigurable):
         help="Instead of starting the Application, dump configuration to stdout (as JSON)"
     ).tag(config=True)
 
-    @observe('show_config_json')
-    def _show_config_json_changed(self, change):
-        self.show_config = change.new
-
-    @observe('show_config')
-    def _show_config_changed(self, change):
-        if change.new:
-            self._save_start = self.start
-            self.start = self.start_show_config
-
     def __init__(self, **kwargs):
         SingletonConfigurable.__init__(self, **kwargs)
         # Ensure my class is in self.classes, so my attributes appear in command line
@@ -334,7 +325,9 @@ class Application(SingletonConfigurable):
         Override in subclasses.
         """
         self.parse_command_line(argv)
-
+        if self.subapp is None and (
+                self.show_config or self.show_config_json):
+            self._dump_config()
 
     def start(self):
         """Start the app mainloop.
@@ -344,7 +337,7 @@ class Application(SingletonConfigurable):
         if self.subapp is not None:
             return self.subapp.start()
 
-    def start_show_config(self):
+    def _dump_config(self):
         """start function used when show_config is True"""
         config = self.config.copy()
         # exclude show_config flags from displayed config
