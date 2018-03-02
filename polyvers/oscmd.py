@@ -15,13 +15,8 @@ The *polyvers* version-configuration tool is generating tags like::
 On purpose python code here kept with as few dependencies as possible."""
 
 import logging
-import re
 
 import subprocess as sbp
-
-
-vtag_fnmatch_frmt = '%s-v*'
-vtag_regex = re.compile(r'^([-.\w]+)-v(\d.+)$', re.IGNORECASE)
 
 
 def format_syscmd(cmd):
