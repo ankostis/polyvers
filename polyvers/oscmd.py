@@ -6,6 +6,7 @@
 # You may not use this work except in compliance with the Licence.
 # You may obtain a copy of the Licence at: http://ec.europa.eu/idabc/eupl
 #
+
 """Utility to call OS commands through :func:`subprocess.run()` with logging.
 
 The *polyvers* version-configuration tool is generating tags like::
@@ -15,6 +16,7 @@ The *polyvers* version-configuration tool is generating tags like::
 On purpose python code here kept with as few dependencies as possible."""
 
 import logging
+from typing import Dict
 
 import subprocess as sbp
 
@@ -77,3 +79,48 @@ def exec_cmd(cmd,
         res.check_returncode()
 
     return res
+
+
+class _Cli:
+    def __init__(self, popen_kw: Dict, cmd: str):
+        self.popen_kw = popen_kw
+        self.cmdlist = [cmd]
+
+    def __extend_cmdlist(self, args, kw):
+        def kv2arg(k, v):
+            nk = len(k)
+            if isinstance(v, bool):
+                if v:
+                    return '-' + k if len(k) == 1 else '--' + k
+                else:
+                    if nk == 1:
+                        raise ValueError('Cannot negate -%s!' % k)
+                    return '--no-' + k
+            else:
+                return '%s=%s' % (k, v)
+
+        arglist = self.cmdlist
+        arglist.extend(args)
+        arglist.extend(kv2arg(*kv) for kv in kw.items())
+
+    def __call__(self, *args, **kw):
+        self.__extend_cmdlist(args, kw)
+        res = exec_cmd(self.cmdlist, **self.popen_kw)
+        self.rc = res.returncode
+        self.stderr = res.stderr
+        return res.stdout
+
+    def _(self, *args, **kw):
+        self.__extend_cmdlist(args, kw)
+        return self
+
+
+class PopenCmd:
+    def __init__(self, **popen_kw):
+        self._popen_kw = popen_kw
+
+    def __getattr__(self, attr):
+        return _Cli(self._popen_kw, attr)
+
+
+oscmd = PopenCmd(check_stdout=True, check_stderr=True)
