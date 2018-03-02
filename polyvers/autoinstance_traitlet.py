@@ -7,8 +7,9 @@
 
 """AutoInstance traitlet creates an instance from config-params."""
 
-from ._vendor.traitlets.traitlets import Instance
 from ._vendor.traitlets.config.configurable import Configurable
+from ._vendor.traitlets.traitlets import HasTraits
+from ._vendor.traitlets.traitlets import Instance
 
 
 class AutoInstance(Instance):
@@ -16,28 +17,43 @@ class AutoInstance(Instance):
 
     def cast(self, value):
         iclass = self.klass
-        if (issubclass(iclass, Configurable) and isinstance(value, dict)):
-            value = iclass(**value)
-            ## Mark it, to set `parent` when known (on `validate()`).
-            value._auto_instanciated_dict = value
+        if (issubclass(iclass, HasTraits) and isinstance(value, dict)):
+            instance = iclass(**value)
+            if issubclass(iclass, Configurable):
+                ## Store dict-values so when `validate()` provides config
+                #  from `obj.parent`, these values overwrite.
+                instance._default_dict = value
         else:
-            value = iclass(value)
+            instance = iclass(value)
 
-        return value
+        return instance
 
     def validate(self, obj, value):
         iclass = self.klass
+
         if isinstance(value, iclass):
+            default_dict = getattr(value, '_default_dict', None)
+            if default_dict is not None:
+                ## Instance created in `cast()`, above, from a default-dict,
+                #  but could not update config because `obj` did not exist!
+                #
+                assert isinstance(default_dict, dict), default_dict
+                assert isinstance(value, iclass), (value, iclass)
+
+                delattr(value, '_default_dict')
+                default_dict['parent'] = obj
+                default_dict['config'] = obj.config
+
+                vars(value).update(default_dict)
+
             return value
-        elif (issubclass(iclass, Configurable) and isinstance(value, dict)):
-            value = iclass(parent=obj, **value)
-        else:
-            values_dict = getattr(value, '_auto_instanciated_dict', None)
-            if values_dict is not None:
-                delattr(value, '_auto_instanciated_dict')
-                if isinstance(obj, Configurable):
-                    value.parent = obj
-                    value.config = obj.config
-                    vars(value).update(values_dict)
+
+        elif (issubclass(iclass, HasTraits) and isinstance(value, dict)):
+            if issubclass(iclass, Configurable):
+                instance = iclass(parent=obj, **value)
+            else:
+                instance = iclass(**value)
+
+            return instance
 
         return super().validate(obj, value)
