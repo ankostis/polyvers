@@ -11,11 +11,12 @@
 from collections import defaultdict
 import logging
 import os
+from pathlib import Path
 
 import subprocess as sbp
 
 from . import oscmd, polyverslib, cmdlets, interpctxt
-from ._vendor.traitlets.traitlets import Bool, Unicode, CRegExp
+from ._vendor.traitlets.traitlets import Bool, Unicode, CRegExp, Instance
 
 
 log = logging.getLogger(__name__)
@@ -27,6 +28,19 @@ class GitVoidError(cmdlets.CmdException):
 
 
 class Project(cmdlets.Spec):
+    pname = Unicode()
+    basepath = Instance(Path, castable=str)
+
+    vtag_fnmatch_frmt = interpctxt.Template(
+        default_value=polyverslib.vtag_fnmatch_frmt,
+        help="""
+        The default pattern globbing for *vtags* with ``git describe --match <pattern>``.
+
+        .. WARNING::
+            If you change this, remember to invoke :func:`polyversion.polyversion()`
+            with the changed value on `vtag_fnmatch_frmt` kwarg from project's sources.
+    """).tag(config=True)
+
     vtag_regex = CRegExp(
         default_value=polyverslib.vtag_regex,
         help="""
@@ -42,16 +56,6 @@ class Project(cmdlets.Spec):
         .. WARNING::
             If you change this, remember to invoke :func:`polyversion.polyversion()`
             with the changed value on `vtag_regex` kwarg from project's sources.
-    """).tag(config=True)
-
-    vtag_fnmatch_frmt = interpctxt.Template(
-        default_value=polyverslib.vtag_fnmatch_frmt,
-        help="""
-        The default pattern globbing for *vtags* with ``git describe --match <pattern>``.
-
-        .. WARNING::
-            If you change this, remember to invoke :func:`polyversion.polyversion()`
-            with the changed value on `vtag_fnmatch_frmt` kwarg from project's sources.
     """).tag(config=True)
 
     tag = Bool(
@@ -129,14 +133,12 @@ class Project(cmdlets.Spec):
         return {proj: (versions and versions[-1])
                 for proj, versions in vtags.items()}
 
-    def git_describe(self, project):
+    def git_describe(self):
         """
         Gets sub-project's version as derived from ``git describe`` on its *vtag*.
 
-        :param str project:
-            Used as the prefix of vtags when searching them.
         :return:
-            the *vtag* or raise
+            the *vtag* of the current project, or raise
         :raise GitVoidError:
             if sub-project is not *vtagged* or CWD not within a git repo.
         :raise sbp.CalledProcessError:
@@ -155,8 +157,9 @@ class Project(cmdlets.Spec):
            where ``--tags`` is needed to consider also unannotated tags,
            as ``git tag`` does.
         """
+        project = self.pname
         vtag = None
-        tag_pattern = self.vtag_fnmatch_frmt % project  # TODO: from project.
+        tag_pattern = self.vtag_fnmatch_frmt % project
         cmd = 'git describe --tags --match'.split() + [tag_pattern]
         try:
             res = oscmd.exec_cmd(cmd, check_stdout=True, check_stderr=True)
