@@ -85,7 +85,8 @@ def test_config_cmd(cmd, match, illegal):
     #print('\n'.join(lc.items))
 
 
-def test_status_cmd():
+def test_status_cmd(ok_repo):
+    ok_repo.chdir()
     cmd = 'status'
     lc = ListConsumer()
     rc = main(cmd.split(), cmd_consumer=lc)
