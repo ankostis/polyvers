@@ -39,9 +39,10 @@ def assert_in_text(text, require=None, forbid=None):
         A string (or list of strings) that must require at some text's line.
     :param forbid:
         A string (or list of strings) that must NOT require at any text's line.
-    :raise AssertionError:
+    :raise pytest.Failed:
         with all errors detected
     """
+    __tracebackhide__ = True
     if isinstance(text, str):
         text = text.split('\n')
 
@@ -67,7 +68,7 @@ def assert_in_text(text, require=None, forbid=None):
         "%r in line(%i): %s" % (k, v + 1, text[v]) for k, v in illegals.items()) or ''
 
     if err1 or err2:
-        raise AssertionError("Text errors: %s %s" % (err1, err2))
+        pytest.fail("Text errors: %s %s" % (err1, err2))
 
 
 @pytest.fixture()
