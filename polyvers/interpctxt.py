@@ -11,6 +11,7 @@ Enable Unicode-trait to pep3101-interpolate `{key}` patterns from "context" dict
 from collections import ChainMap
 import contextlib
 import os
+from typing import Dict
 
 
 class Now:
@@ -37,12 +38,10 @@ class InterpolationContextManager:
     """
     A stack of 4 dics to be used as interpolation context.
 
-    The 4 stacked dicts are:
-      0. user-info: writes affect permanently this dict only;
-      1. tmp-keys: using :meth:`keys` as context-manager affect this
-         dict only;
-      3. time: ('now', 'utcnow'), always updated on access;
-      3. env-vars, `$`-prefixed.
+    The 3 stacked dicts are:
+      0. user-map: writes affect permanently this dict only;
+      1. time: ('now', 'utcnow'), always updated on access;
+      2. env-vars, `$`-prefixed.
 
     Append more dicts in ``self.ctxt.maps`` list if you wish.
 
@@ -52,9 +51,8 @@ class InterpolationContextManager:
     """
     def __init__(self):
         self.time_map = {}
-        self._temp_map = {}
         self.env_map = {}
-        self.ctxt = ChainMap({}, self._temp_map, self.time_map, self.env_map)
+        self.ctxt = ChainMap({}, self.time_map, self.env_map)
 
         self.update_env()
         self.time_map.update({
@@ -68,10 +66,25 @@ class InterpolationContextManager:
         self.env_map.update({'$' + k: v for k, v in os.environ.items()})
 
     @contextlib.contextmanager
-    def keys(self, **keys):
-        """Temporarily place key-value pairs into context."""
-        self._temp_map.update(keys)
+    def ikeys(self, **kv_pairs) -> Dict:
+        """Temporarily place key-value pairs immediately after user-map (2nd position)."""
+        ctxt = self.ctxt
+        orig_maps = ctxt.maps
+        ctxt.maps = ctxt.maps[:1] + [kv_pairs] + ctxt.maps[1:]
         try:
-            yield self.ctxt
+            yield ctxt
         finally:
-            self._temp_map.clear()
+            ctxt.maps = orig_maps
+
+    @contextlib.contextmanager
+    def imaps(self, *maps: Dict) -> Dict:
+        """Temporarily place maps immediately after user-map (2nd position)."""
+        assert all(isinstance(d, dict) for d in maps), maps
+
+        ctxt = self.ctxt
+        orig_maps = ctxt.maps
+        ctxt.maps = ctxt.maps[:1] + list(maps) + ctxt.maps[1:]
+        try:
+            yield ctxt
+        finally:
+            ctxt.maps = orig_maps

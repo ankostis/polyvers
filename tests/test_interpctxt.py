@@ -28,11 +28,29 @@ def test_InterpolationContextManager():
     assert 'What? {A}'.format(**ctxt) == 'What? 42'
 
 
-def test_InterpolationContextManager_temp_keys():
-    ctxtman = InterpolationContextManager()
-
+def test_InterpolationContextManager_temp_ikeys():
     frmt = "Lucky {b}!"
-    with ctxtman.keys(b=13) as ictxt:
+
+    with pytest.raises(KeyError):
+        frmt.format()
+
+    ctxtman = InterpolationContextManager()
+    with ctxtman.ikeys(b=13) as ictxt:
+        assert frmt.format(**ictxt) == "Lucky 13!"
+        assert frmt.format_map(ictxt) == "Lucky 13!"
+
+    with pytest.raises(KeyError):
+        frmt.format(**ictxt)
+
+
+def test_InterpolationContextManager_temp_imaps():
+    frmt = "Lucky {b}!"
+
+    with pytest.raises(KeyError):
+        frmt.format()
+
+    ctxtman = InterpolationContextManager()
+    with ctxtman.imaps({'b': 13}) as ictxt:
         assert frmt.format(**ictxt) == "Lucky 13!"
         assert frmt.format_map(ictxt) == "Lucky 13!"
 
