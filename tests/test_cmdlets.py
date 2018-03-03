@@ -11,6 +11,7 @@ from os import pathsep as PS
 import os
 from polyvers import cmdlets
 from polyvers._vendor import traitlets as trt
+from polyvers._vendor.traitlets import config as trc
 from polyvers._vendor.traitlets.traitlets import Int
 from polyvers.logconfutils import init_logging
 import tempfile
@@ -36,10 +37,27 @@ def test_Replaceable():
         a = Int()
 
     c = C(a=1)
-    cc = c.replace(a=2)
-
     assert c.a == 1
+
+    cc = c.replace(a=2)
     assert cc.a == 2
+
+
+def test_Replaceable_Configurable():
+    c = trc.Config()
+    c.C.a = 1
+    c.C.b = 1
+
+    class C(trc.Configurable, cmdlets.Replaceable):
+        a = Int(config=1)
+        b = Int(config=1)
+
+    c1 = C(config=c)
+    assert c1.a == c1.b == 1
+
+    c2 = c1.replace(b=2)
+    assert c2.a == 1
+    assert c2.b == 2
 
 
 def test_Strable():
