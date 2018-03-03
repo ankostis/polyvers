@@ -94,7 +94,9 @@ class _Cli:
                     return '-' + k if len(k) == 1 else '--' + k
                 else:
                     if nk == 1:
-                        raise ValueError('Cannot negate -%s!' % k)
+                        raise ValueError(
+                            "Cannot negate single-letter flag '-%s'!"
+                            "\n  cmd: %s!" % (k, ' '.join(self._cmdlist)))
                     return '--no-' + k
             else:
                 frmt = '-%s%s' if nk == 1 else '--%s=%s'

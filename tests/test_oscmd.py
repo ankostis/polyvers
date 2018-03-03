@@ -8,6 +8,8 @@
 
 from polyvers.oscmd import cmd
 
+import pytest
+
 
 def test_cmd(ok_repo):
     ok_repo.chdir()
@@ -23,3 +25,8 @@ def test_cmd(ok_repo):
 
     res = cmd.git.log(n=1)
     assert res.count('\n') >= 4
+
+
+def test_negate_single_letter():
+    with pytest.raises(ValueError, match='cmd: foo'):
+        cmd.foo(h=False)
