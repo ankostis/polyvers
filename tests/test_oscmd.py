@@ -11,12 +11,24 @@ from polyvers.oscmd import cmd
 import pytest
 
 
-def test_cmd(ok_repo):
+def test_cmd_building(ok_repo):
     ok_repo.chdir()
 
-    cmdlist = cmd.python._(c=True)._("print('a')")._cmdlist
-    assert cmdlist == "python -c print('a')".split()
+    c = cmd.foo._(c=True).Bang_bar._("any 'thing'", flag_dang=True, no=False)
+    cmdlist = c._cmdlist
+    assert cmdlist == ['foo', '-c', 'Bang_bar', "any 'thing'", '--flag-dang', '--no-no']
 
+    assert cmd.cmd._(*'abc', J=3, K='3')._cmdlist == 'cmd a b c -J3 -K3'.split()
+
+    assert cmd.cmd._(flag='', f='').top._cmdlist == 'cmd --flag= -f top'.split()
+
+
+def test_negate_single_letter():
+    with pytest.raises(ValueError, match='cmd: foo'):
+        cmd.foo(h=False)
+
+
+def test_cmd_exec(ok_repo):
     res = cmd.date()
     assert isinstance(res, str) and res
 
@@ -25,8 +37,3 @@ def test_cmd(ok_repo):
 
     res = cmd.git.log(n=1)
     assert res.count('\n') >= 4
-
-
-def test_negate_single_letter():
-    with pytest.raises(ValueError, match='cmd: foo'):
-        cmd.foo(h=False)

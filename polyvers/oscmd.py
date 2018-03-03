@@ -87,20 +87,29 @@ class _Cli:
         self._cmdlist = [cmd]
 
     def _extend_cmdlist(self, args, kw):
+        def as_flag(k):
+            return k.replace('_', '-')
+
         def kv2arg(k, v):
             nk = len(k)
+            
+            if nk > 1:
+                k = as_flag(k)
+                
             if isinstance(v, bool) or v is None:
                 if v:
-                    return '-' + k if len(k) == 1 else '--' + k
+                    flag = '-' + k if len(k) == 1 else '--' + k
                 else:
                     if nk == 1:
                         raise ValueError(
                             "Cannot negate single-letter flag '-%s'!"
                             "\n  cmd: %s!" % (k, ' '.join(self._cmdlist)))
-                    return '--no-' + k
-            else:
-                frmt = '-%s%s' if nk == 1 else '--%s=%s'
-                return frmt % (k, v)
+                    flag = '--no-' + k
+                
+                return flag
+            
+            frmt = '-%s%s' if nk == 1 else '--%s=%s'
+            return frmt % (k, v)
 
         arglist = self._cmdlist
         arglist.extend(args)
