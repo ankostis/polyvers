@@ -12,45 +12,6 @@ from collections import ChainMap
 import contextlib
 import os
 
-from ._vendor.traitlets.traitlets import TraitError, Unicode
-
-
-class Template(Unicode):
-    """
-    A Unicode PEP-3101 expanding any '{key}' from *context* dictionaries (``s.format(d)``).
-
-    To disable interpolation, tag trait with ``'interp_enabled'`` as false.
-
-    :ivar str context_attr:
-        The name of the attribute of the defining class holding the context dict.
-        [Default: ''interpolation'']
-    """
-    context_attr = 'interpolations'
-
-    def __init__(self, *args, context_attr=None, **kw):
-        """
-        :param str context_attr:
-            The name of the attribute of the defining class holding the context dict.
-            [Default: ''interpolation'']
-        """
-        if context_attr:
-            self.context_attr = context_attr
-        super().__init__(*args, **kw)
-
-    def validate(self, obj, value):
-        ctxt = getattr(obj, self.context_attr, None)
-        if ctxt and self.metadata.get('interp_enabled', True):
-            try:
-                value = value.format(**ctxt)
-            except KeyError as ex:
-                msg = ("Unknown key %r in template `%s.%s`!"
-                       "\n  Use '{ikeys}' to view all available interpolations."
-                       "\n  Original text: %s"
-                       % (str(ex), type(obj).__name__, self.name, value))
-                raise TraitError(msg)
-
-        return super().validate(obj, value)
-
 
 class Now:
     def __init__(self, is_utc=False):
