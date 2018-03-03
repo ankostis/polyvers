@@ -62,7 +62,7 @@ def rfc2822_tstamp(nowdt=None):
         nowdt = datetime.now()
     nowtuple = nowdt.timetuple()
     nowtimestamp = time.mktime(nowtuple)
-    now = utils.formatdate(nowtimestamp)
+    now = utils.formatdate(nowtimestamp, localtime=True)
 
     return now
 
