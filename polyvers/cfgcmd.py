@@ -17,10 +17,10 @@ from toolz import dicttoolz as dtz
 import functools as fnt
 import os.path as osp
 
-from . import cmdlets, interpctxt
+from . import cmdlets
 from ._vendor import traitlets as trt
-from ._vendor.traitlets.traitlets import Bool, FuzzyEnum, Instance
 from ._vendor.traitlets import config as trc
+from ._vendor.traitlets.traitlets import Bool, FuzzyEnum, Instance, Unicode
 
 
 def prepare_matcher(terms, is_regex):
@@ -126,7 +126,7 @@ def prepare_help_selector(only_class_in_values, verbose):
 class ConfigCmd(cmdlets.Cmd):
     "Commands to manage configurations and other cli infos."
 
-    examples = interpctxt.Template("""
+    examples = Unicode("""
         - Ask help on parameters affecting the source of the configurations::
               {cmd_chain} desc  config_paths  show_config
 
@@ -178,7 +178,7 @@ class WriteCmd(cmdlets.Cmd):
     - It OVERWRITES any pre-existing configuration file(s)!
     """
 
-    examples = interpctxt.Template("""
+    examples = Unicode("""
         - Generate a config-file at your home folder::
               {cmd_chain} ~/my_conf
 
@@ -205,7 +205,7 @@ class InfosCmd(cmdlets.Cmd):
         <APPNAME>_CONFIG_PATHS      : where to read configuration-files.
     """
 
-    examples = interpctxt.Template("""
+    examples = Unicode("""
         - Show parameter help for all classes/params containing 'foo' in their name::
               {cmd_chain} foo
     """)
@@ -308,7 +308,7 @@ class ShowCmd(cmdlets.Cmd):
       to view configured values accurately on runtime.
     """
 
-    examples = interpctxt.Template("""
+    examples = Unicode("""
         - View all "merged" configuration values::
               {cmd_chain}
 
@@ -511,7 +511,7 @@ class DescCmd(cmdlets.Cmd):
       previous ones); use --sort for alphabetical order.
     """
 
-    examples = interpctxt.Template(r"""
+    examples = Unicode(r"""
         - Just List::
               {cmd_chain} --list         # List configurable parameters.
               {cmd_chain} -l --class     # List configurable classes.

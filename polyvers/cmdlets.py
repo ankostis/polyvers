@@ -428,7 +428,7 @@ class Cmd(trc.Application, Spec):
     ## HELP ##
     ##########
 
-    option_description = interpctxt.Template("""
+    option_description = Unicode("""
         Options are convenience aliases to configurable class-params,
         as listed in the "Equivalent to" description-line of the aliases.
         To see all configurable class-params for some <cmd>, use::

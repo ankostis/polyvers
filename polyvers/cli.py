@@ -7,10 +7,10 @@
 #
 """The code of *polyvers* shell-commands."""
 
-from . import APPNAME, __version__, __updated__, cmdlets, interpctxt, vtags, fileutils as fu
+from . import APPNAME, __version__, __updated__, cmdlets, vtags, fileutils as fu
 from ._vendor import traitlets as trt
 from ._vendor.traitlets import config as trc
-from ._vendor.traitlets.traitlets import List, Bool
+from ._vendor.traitlets.traitlets import List, Bool, Unicode
 from .autoinstance_traitlet import AutoInstance
 
 
@@ -29,7 +29,7 @@ class PolyversCmd(cmdlets.Cmd):
       {cmd_chain} <sub-cmd> ...
     """
     version = __version__
-    examples = interpctxt.Template("""
+    examples = Unicode("""
         - Let it guess the configurations for your monorepo::
               {cmd_chain} init
           You may specify different configurations paths with:

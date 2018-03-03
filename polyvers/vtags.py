@@ -15,7 +15,8 @@ from pathlib import Path
 
 import subprocess as sbp
 
-from . import oscmd, polyverslib, cmdlets, interpctxt
+from . import polyverslib, cmdlets
+from . import oscmd
 from ._vendor.traitlets.traitlets import Bool, Unicode, CRegExp, Instance
 
 
@@ -31,7 +32,7 @@ class Project(cmdlets.Spec):
     pname = Unicode()
     basepath = Instance(Path, castable=str)
 
-    vtag_fnmatch_frmt = interpctxt.Template(
+    vtag_fnmatch_frmt = Unicode(
         default_value=polyverslib.vtag_fnmatch_frmt,
         help="""
         The default pattern globbing for *vtags* with ``git describe --match <pattern>``.
@@ -76,7 +77,7 @@ class Project(cmdlets.Spec):
         help="The signing PGP user (email, key-id)."
     )
 
-    message = interpctxt.Template(
+    message = Unicode(
         "chore(ver): bump {{current_version}} → {{new_version}}",
         config=True,
         help="""

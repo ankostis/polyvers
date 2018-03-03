@@ -14,7 +14,7 @@ from pathlib import Path
 import re
 from typing import List, Tuple, Dict, Match, Union, Optional
 
-from . import cmdlets, interpctxt
+from . import cmdlets
 from ._vendor.traitlets.traitlets import (
     Union as UnionTrait, Instance, List as ListTrait, Unicode, Int, CRegExp)
 from .autoinstance_traitlet import AutoInstance
@@ -160,7 +160,7 @@ class GraftSpec(cmdlets.Spec, cmdlets.Strable, cmdlets.Replaceable):
         help="What to search"
     ).tag(config=True)
 
-    subst = interpctxt.Template(
+    subst = Unicode(
         help="""
         What to replace with.
 
