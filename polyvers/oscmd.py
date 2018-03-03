@@ -33,13 +33,13 @@ def format_syscmd(cmd):
 
 def exec_cmd(cmd,
              dry_run=False,
-             check_stdout=None,
-             check_stderr=None,
+             check_stdout=True,
+             check_stderr=True,
              check_returncode=True,
              encoding='utf-8', encoding_errors='surrogateescape',
              **popen_kws):
     """
-    param check_stdout:
+    :param check_stdout:
         None: Popen(stdout=None), printed
         False: Popen(stdout=sbp.DEVNULL), ignored
         True: Popen(stdout=sbp.PIPE), collected & returned
@@ -60,7 +60,7 @@ def exec_cmd(cmd,
         return
 
     ##WARN: python 3.6 `encoding` & `errors` kwds in `Popen`.
-    res = sbp.run(
+    res: sbp.CompletedProcess = sbp.run(
         cmd,
         stdout=stdout_ctype['stream'],
         stderr=call_types[check_stderr]['stream'],
@@ -92,10 +92,10 @@ class _Cli:
 
         def kv2arg(k, v):
             nk = len(k)
-            
+
             if nk > 1:
                 k = as_flag(k)
-                
+
             if isinstance(v, bool) or v is None:
                 if v:
                     flag = '-' + k if len(k) == 1 else '--' + k
@@ -105,9 +105,9 @@ class _Cli:
                             "Cannot negate single-letter flag '-%s'!"
                             "\n  cmd: %s!" % (k, ' '.join(self._cmdlist)))
                     flag = '--no-' + k
-                
+
                 return flag
-            
+
             frmt = '-%s%s' if nk == 1 else '--%s=%s'
             return frmt % (k, v)
 
@@ -134,11 +134,41 @@ class _Cli:
 
 
 class PopenCmd:
-    def __init__(self, **popen_kw):
+    """
+    To run ``git log -n1``::
+
+        out = cmd.git.log(n=1)
+
+    To launch a short python program with ``python -c "print('a')"``::
+
+        out = cmd.python._(c=True)('print(\'a\')')
+    """
+    def __init__(self,
+                 dry_run=False,
+                 check_stdout=True,
+                 check_stderr=True,
+                 check_returncode=True,
+                 **popen_kw):
+        """
+        Set the Popen kw-args to use when the cmd will be executed.
+
+        :param dry_run:
+            log but don't actually exec cmd.
+        :param check_stdout:
+            None: Popen(stdout=None), printed
+            False: Popen(stdout=sbp.DEVNULL), ignored
+            True: Popen(stdout=sbp.PIPE), collected & returned
+        :param check_stderr:
+            same as `check_stdout`
+        :param check_returncode:
+            if true, raise `sbp.CalledProcessError` if return-code not 0.
+        """
+        popen_kw.update(locals())
+        del popen_kw['self'], popen_kw['popen_kw']
         self._popen_kw = popen_kw
 
     def __getattr__(self, attr):
         return _Cli(self._popen_kw, attr)
 
 
-cmd = PopenCmd(check_stdout=True, check_stderr=True)
+cmd = PopenCmd()
