@@ -28,7 +28,16 @@ def test_InterpolationContext():
     assert 'What? {A}'.format(**ctxt) == 'What? 42'
 
 
-def test_InterpolationContext_temp_ikeys():
+def test_interp_ikeys_key():
+    ctxt = InterpolationContext()
+    with ctxt.ikeys({'a': 1, 'bb': 2}):
+        keys = '{ikeys}'.format_map(ctxt)
+
+    keys = [k.strip() for k in keys.split(',')]
+    assert set(keys) == set('utcnow ikeys a bb now'.split())
+
+
+def test_interp_temp_ikeys():
     frmt = "Lucky {b}! {a}."
     exp = "Lucky 13! Cool."
 
