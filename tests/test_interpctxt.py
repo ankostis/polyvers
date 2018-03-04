@@ -9,6 +9,8 @@ from polyvers.interpctxt import Now, InterpolationContext
 
 import pytest
 
+from polyvers._vendor.traitlets import traitlets as trt
+
 
 def test_dates_interpolation():
     now_frmt = '{now:%Y-%m-%d %H:%M}'
@@ -71,7 +73,7 @@ def test_interp_temp_ikeys():
         frmt.format(**ictxt)
 
 
-def test_InterpolationContext_stub_ikeys():
+def test_interp_missing_ikeys():
     frmt = "{missing} key"
 
     with pytest.raises(KeyError):
@@ -96,3 +98,111 @@ def test_InterpolationContext_stub_ikeys():
 
     with pytest.raises(KeyError):
         frmt.format()
+
+
+def test_interp_on_objects():
+    class C:
+        a = 1
+
+    ctxt = InterpolationContext()
+    with ctxt.ikeys(C()):
+        assert '{a}'.format_map(ctxt) == '1'
+
+    c = C()
+    c.b = 2
+    with ctxt.ikeys(c):
+        assert '{a}{b}'.format_map(ctxt) == '12'
+
+    class D(C):
+        d = 4
+
+    d = D()
+    d.c = 3
+    with ctxt.ikeys(d) as ctxt:
+        assert '{a}{c}{d}'.format_map(ctxt) == '134'
+
+        with pytest.raises(KeyError):
+            '{b}'.format_map(ctxt)
+
+
+def test_ikeys_ley_on_objects():
+    class C:
+        aa = 1
+
+    c = C()
+    c.bb = 2
+
+    ctxt = InterpolationContext()
+    with ctxt.ikeys(c):
+        keys = '{ikeys}'.format_map(ctxt)
+
+    keys = [k.strip() for k in keys.split(',')]
+    assert 'aa' in keys and 'bb' in keys
+
+
+def test_interp_on_HasTraits():
+    class C(trt.HasTraits):
+        a = trt.Int(1)
+        b = trt.Int()
+
+        @trt.default('b')
+        def _make_b(self):
+            return 2
+
+    c = C()
+    c.c = 3
+    ctxt = InterpolationContext()
+    with ctxt.ikeys(C()):
+        assert '{a}{b}'.format_map(ctxt) == '12'
+
+    with pytest.raises(KeyError):
+        assert '{c}'.format_map(ctxt)
+
+    class D(C):
+        d = trt.Int(4)
+        e = trt.Int()
+
+    d = D()
+    d.e = 5
+    d.f = 6
+    with ctxt.ikeys(d) as ctxt:
+        assert '{a}{b}{d}{e}'.format_map(ctxt) == '1245'
+
+        with pytest.raises(KeyError):
+            assert '{c}'.format_map(ctxt)
+        with pytest.raises(KeyError):
+            assert '{f}'.format_map(ctxt)
+
+
+def test_ikeys_key_on_HasTraits():
+    class C(trt.HasTraits):
+        aa = trt.Int(1)
+        a = 0
+
+    c = C()
+    c.b = 2
+
+    ctxt = InterpolationContext()
+    with ctxt.ikeys(c):
+        keys = '{ikeys}'.format_map(ctxt)
+
+    keys = [k.strip() for k in keys.split(',')]
+    assert 'aa' in keys
+    badkeys = (set(['a', 'b']) & set(keys))
+    assert not badkeys
+
+    class D(C):
+        d = trt.Int(4)
+        e = trt.Int()
+
+    d = D()
+    d.e = 5
+    d.f = 6
+
+    with ctxt.ikeys(d):
+        keys = '{ikeys}'.format_map(ctxt)
+
+    keys = [k.strip() for k in keys.split(',')]
+    assert 'aa' in keys
+    badkeys = (set(['a', 'b']) & set(keys))
+    assert not badkeys

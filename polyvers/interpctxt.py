@@ -7,11 +7,12 @@
 """
 Enable Unicode-trait to pep3101-interpolate `{key}` patterns from "context" dicts.
 """
-
-from collections import ChainMap
+from collections import ChainMap, abc
 import contextlib
 import os
 from typing import Dict
+
+from ._vendor.traitlets import traitlets as trt
 
 
 class Now:  # TODO: privatize
@@ -43,6 +44,39 @@ class _MissingKeys(dict):
 
 #: Used when interp-context claiming to have all keys.
 _missing_keys = _MissingKeys()
+
+
+class _HasTraitDict(abc.Mapping):
+    def __init__(self, _obj: trt.HasTraits):
+        self._obj: trt.HasTraits = _obj
+
+    def __len__(self):
+        return len(self._obj.traits())
+
+    def __getitem__(self, key):
+        if self._obj.has_trait(key):
+            return getattr(self._obj, key)
+        else:
+            raise KeyError(key)
+
+    def __iter__(self):
+        return iter(self._obj.trait_names())
+
+
+def dictize_object(obj):
+    if isinstance(obj, dict):
+        pass
+    elif isinstance(obj, trt.HasTraits):
+        obj = _HasTraitDict(obj)
+    else:
+        ## Collect object's and MRO classes's items
+        # in a chain-dict.
+        #
+        maps = [vars(obj)]
+        maps.extend(vars(c) for c in type(obj).mro())
+        obj = ChainMap(*maps)
+
+    return obj
 
 
 class InterpolationContext(ChainMap):
@@ -77,6 +111,9 @@ class InterpolationContext(ChainMap):
         """
         Temporarily place more maps immediately after user-map (2nd position).
 
+        :param maps:
+            a list of dictionaries/objects/HasTraits from which to draw
+            items/attributes/trait-values.
         :param stub_keys:
             If true, any missing-key gets returned as ``{key}``.
 
@@ -87,9 +124,7 @@ class InterpolationContext(ChainMap):
         Earlier maps take precedence; `kv_pairs` have the lowest, unless
         `stub_keys` is true, which then becomes the last catch-all map.
         """
-        assert all(isinstance(d, dict) for d in maps), maps
-
-        tmp_maps = list(maps)
+        tmp_maps = [dictize_object(m) for m in maps]
         if kv_pairs:
             tmp_maps.append(kv_pairs)
         if stub_keys:
