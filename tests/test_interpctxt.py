@@ -5,7 +5,7 @@
 # You may not use this work except in compliance with the Licence.
 # You may obtain a copy of the Licence at: http://ec.europa.eu/idabc/eupl
 
-from polyvers.interpctxt import Now, InterpolationContextManager
+from polyvers.interpctxt import Now, InterpolationContext
 
 import pytest
 
@@ -16,8 +16,8 @@ def test_dates_interpolation():
     assert now_frmt.format_map({'now': Now()}) != now_frmt
 
 
-def test_InterpolationContextManager():
-    ctxt = InterpolationContextManager().ctxt
+def test_InterpolationContext():
+    ctxt = InterpolationContext()
 
     s = 'stop the clock at {now}!'
     assert s.format_map(ctxt) != s
@@ -28,14 +28,14 @@ def test_InterpolationContextManager():
     assert 'What? {A}'.format(**ctxt) == 'What? 42'
 
 
-def test_InterpolationContextManager_temp_ikeys():
+def test_InterpolationContext_temp_ikeys():
     frmt = "Lucky {b}!"
 
     with pytest.raises(KeyError):
         frmt.format()
 
-    ctxtman = InterpolationContextManager()
-    with ctxtman.ikeys(b=13) as ictxt:
+    ctxt = InterpolationContext()
+    with ctxt.ikeys(b=13) as ictxt:
         assert frmt.format(**ictxt) == "Lucky 13!"
         assert frmt.format_map(ictxt) == "Lucky 13!"
 
@@ -43,14 +43,14 @@ def test_InterpolationContextManager_temp_ikeys():
         frmt.format(**ictxt)
 
 
-def test_InterpolationContextManager_temp_imaps():
+def test_InterpolationContext_temp_imaps():
     frmt = "Lucky {b}!"
 
     with pytest.raises(KeyError):
         frmt.format()
 
-    ctxtman = InterpolationContextManager()
-    with ctxtman.imaps({'b': 13}) as ictxt:
+    ctxt = InterpolationContext()
+    with ctxt.imaps({'b': 13}) as ictxt:
         assert frmt.format(**ictxt) == "Lucky 13!"
         assert frmt.format_map(ictxt) == "Lucky 13!"
 

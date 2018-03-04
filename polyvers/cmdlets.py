@@ -325,7 +325,7 @@ class Strable:
         return '%s(%s)' % (name, values)
 
 
-class CmdletsInterpolationManager(interpctxt.InterpolationContextManager):
+class CmdletsInterpolation(interpctxt.InterpolationContext):
     """
     Adds `cmdlets_map` into interp-manager for for help & cmd mechanics.
 
@@ -337,11 +337,11 @@ class CmdletsInterpolationManager(interpctxt.InterpolationContextManager):
             'appname': '<APP>',
             'cmd_chain': '<CMD>',
         }
-        self.ctxt.maps.append(self.cmdlets_map)
+        self.maps.append(self.cmdlets_map)
 
 
 #: That's the singleton interp-manager used by all cmdlet configurables.
-cmdlets_interpolation_manager = CmdletsInterpolationManager()
+cmdlets_interpolations = CmdletsInterpolation()
 
 
 class Spec(trc.Configurable):
@@ -361,8 +361,7 @@ class Spec(trc.Configurable):
         config=True,
         help="Do not write files - just pretend.")
 
-    interpman = cmdlets_interpolation_manager
-    interpolations = cmdlets_interpolation_manager.ctxt
+    interpolations = cmdlets_interpolations
 
     @classmethod
     def class_get_help(cls, inst=None):
@@ -749,7 +748,7 @@ class Cmd(trc.Application, Spec):
         return isinstance(self.subapp, trc.Application)  # subapp == trait | subcmd | None
 
     def update_interp_context(self, argv=None):
-        cmdlets_map = self.interpman.cmdlets_map
+        cmdlets_map = self.interpolations.cmdlets_map
         cmdlets_map['cmd_chain'] = cmd_line_chain(self)
         cmdlets_map['appname'] = self.root_app().name
 

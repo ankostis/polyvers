@@ -34,7 +34,7 @@ class Keys:
         return ', '.join(k for k in self.mydict.keys() if not k.startswith('$'))
 
 
-class InterpolationContextManager:
+class InterpolationContext(ChainMap):
     """
     A stack of 4 dics to be used as interpolation context.
 
@@ -43,23 +43,19 @@ class InterpolationContextManager:
       1. time: ('now', 'utcnow'), always updated on access;
       2. env-vars, `$`-prefixed.
 
-    Append more dicts in ``self.ctxt.maps`` list if you wish.
-
-    :ivar dict ctxt:
-        the dictionary with all key-value interpolations
-
+    Append more dicts in ``self.maps`` list if you wish.
     """
     def __init__(self):
-        self.time_map = {}
-        self.env_map = {}
-        self.ctxt = ChainMap({}, self.time_map, self.env_map)
-
-        self.update_env()
-        self.time_map.update({
+        super().__init__()
+        self.time_map = {
             'now': Now(),
             'utcnow': Now(is_utc=True),
-            'ikeys': Keys(self.ctxt),
-        })
+            'ikeys': Keys(self),
+        }
+        self.env_map = {}
+        self.maps.extend([self.time_map, self.env_map])
+
+        self.update_env()
 
     def update_env(self):
         self.env_map.clear()
@@ -68,23 +64,21 @@ class InterpolationContextManager:
     @contextlib.contextmanager
     def ikeys(self, **kv_pairs) -> Dict:
         """Temporarily place key-value pairs immediately after user-map (2nd position)."""
-        ctxt = self.ctxt
-        orig_maps = ctxt.maps
-        ctxt.maps = ctxt.maps[:1] + [kv_pairs] + ctxt.maps[1:]
+        orig_maps = self.maps
+        self.maps = orig_maps[:1] + [kv_pairs] + orig_maps[1:]
         try:
-            yield ctxt
+            yield self
         finally:
-            ctxt.maps = orig_maps
+            self.maps = orig_maps
 
     @contextlib.contextmanager
     def imaps(self, *maps: Dict) -> Dict:
         """Temporarily place maps immediately after user-map (2nd position)."""
         assert all(isinstance(d, dict) for d in maps), maps
 
-        ctxt = self.ctxt
-        orig_maps = ctxt.maps
-        ctxt.maps = ctxt.maps[:1] + list(maps) + ctxt.maps[1:]
+        orig_maps = self.maps
+        self.maps = orig_maps[:1] + list(maps) + orig_maps[1:]
         try:
-            yield ctxt
+            yield self
         finally:
-            ctxt.maps = orig_maps
+            self.maps = orig_maps
