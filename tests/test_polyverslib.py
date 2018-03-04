@@ -23,7 +23,7 @@ proj2 = 'proj-2'
 proj2_ver = '0.2.1'
 
 
-split_vtag_validation_patterns = [
+split_pvtag_validation_patterns = [
     ('proj', None),
     ('proj-1.0.5', None),
     ('proj-1-0.5', None),
@@ -37,25 +37,25 @@ split_vtag_validation_patterns = [
 ]
 
 
-@pytest.mark.parametrize('inp, exp', split_vtag_validation_patterns)
-def test_split_vtag_parsing(inp, exp):
-    vtag_regex = pvlib.vtag_regex
+@pytest.mark.parametrize('inp, exp', split_pvtag_validation_patterns)
+def test_split_pvtag_parsing(inp, exp):
+    pvtag_regex = pvlib.pvtag_regex
     if exp is None:
         with pytest.raises(ValueError):
-            pvlib.split_vtag(inp, vtag_regex)
+            pvlib.split_pvtag(inp, pvtag_regex)
     else:
-        got = pvlib.split_vtag(inp, vtag_regex)
+        got = pvlib.split_pvtag(inp, pvtag_regex)
         assert got == exp
 
 
-@pytest.mark.parametrize('inp, exp', split_vtag_validation_patterns)
+@pytest.mark.parametrize('inp, exp', split_pvtag_validation_patterns)
 def test_fnmatch_format(inp, exp):
-    vtag_fnmatch_frmt = pvlib.vtag_fnmatch_frmt
+    pvtag_fnmatch_frmt = pvlib.pvtag_fnmatch_frmt
     if exp is None:
         pass
     else:
         project = exp[0]
-        frmt = vtag_fnmatch_frmt % project
+        frmt = pvtag_fnmatch_frmt % project
         assert fnmatch.fnmatch(inp, frmt)
 
 

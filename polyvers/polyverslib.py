@@ -9,13 +9,13 @@
 """
 Python-2.7 safe code to discover sub-project versions in Git *polyvers* monorepos.
 
-The *polyvers* version-configuration tool is generating **vtags** like::
+The *polyvers* version-configuration tool is generating **pvtags** like::
 
     proj-foo-v0.1.0
 
 And assuming :func:`polyversion()` is invoked from within a Git repo, it may return
 either ``0.1.0`` or ``0.1.0+2.gcaffe00``, if 2 commits have passed since
-last *vtag*.
+last *pvtag*.
 """
 from __future__ import print_function
 
@@ -28,13 +28,13 @@ import os.path as osp
 import subprocess as sbp
 
 
-#: The default pattern globbing for *vtags* with ``git describe --match <pattern>``.
-vtag_fnmatch_frmt = '%s-v*'
+#: The default pattern globbing for *pvtags* with ``git describe --match <pattern>``.
+pvtag_fnmatch_frmt = '%s-v*'
 
-#: The default regex pattern breaking *vtags* and/or ``git-describe`` output
+#: The default regex pattern breaking *pvtags* and/or ``git-describe`` output
 #: into 3 capturing groups.
 #: See :pep:`0426` for project-name characters and format.
-vtag_regex = re.compile(r"""(?xi)
+pvtag_regex = re.compile(r"""(?xi)
     ^(?P<project>[A-Z0-9]|[A-Z0-9][A-Z0-9._-]*?[A-Z0-9])
     -
     v(?P<version>\d[^-]*)
@@ -92,17 +92,17 @@ def _caller_fpath(nframes_back=2):
         del frame
 
 
-def split_vtag(vtag, vtag_regex):
+def split_pvtag(pvtag, pvtag_regex):
     try:
-        m = vtag_regex.match(vtag)
+        m = pvtag_regex.match(pvtag)
         if not m:
             raise ValueError(
-                "Unparseable *vtag* from `vtag_regex`!")
+                "Unparseable *pvtag* from `pvtag_regex`!")
         mg = m.groupdict()
         return mg['project'], mg['version'], mg['descid']
     except Exception as ex:
-        print("Matching vtag '%s' failed due to: %s" %
-              (vtag, ex), file=sys.stderr)
+        print("Matching pvtag '%s' failed due to: %s" %
+              (pvtag, ex), file=sys.stderr)
         raise
 
 
@@ -113,32 +113,32 @@ def version_from_descid(version, descid):
 
 
 def polyversion(project, default=None, repo_path=None,
-                vtag_fnmatch_frmt=vtag_fnmatch_frmt,
-                vtag_regex=vtag_regex):
+                pvtag_fnmatch_frmt=pvtag_fnmatch_frmt,
+                pvtag_regex=pvtag_regex):
     """
-    Report the *vtag* of the `project` in the git repo hosting the source-file calling this.
+    Report the *pvtag* of the `project` in the git repo hosting the source-file calling this.
 
     :param str project:
-        Used as the prefix of vtags when searching them.
+        Used as the prefix of pvtags when searching them.
     :param str default:
         What *version* to return if git cmd fails.
     :param str repo_path:
         A path inside the git repo hosting the `project` in question; if missing,
         derived from the calling stack.
-    :param str vtag_fnmatch_frmt:
-        The pattern globbing for *vtags* with ``git describe --match <pattern>``.
-        See :data:`vtag_fnmatch_frmt`
-    :param regex vtag_regex:
-        The regex pattern breaking apart *vtags*, with 3 named capturing groups:
+    :param str pvtag_fnmatch_frmt:
+        The pattern globbing for *pvtags* with ``git describe --match <pattern>``.
+        See :data:`pvtag_fnmatch_frmt`
+    :param regex pvtag_regex:
+        The regex pattern breaking apart *pvtags*, with 3 named capturing groups:
         - ``project``,
         - ``version`` (without the 'v'),
         - ``descid`` (optional) anything following the dash('-') after
           the version in ``git-describe`` result.
 
         See :pep:`0426` for project-name characters and format.
-        See :data:`vtag_regex`
+        See :data:`pvtag_regex`
     :return:
-        The version-id derived from the *vtag*, or `default` if
+        The version-id derived from the *pvtag*, or `default` if
         command failed/returned nothing.
 
     .. TIP::
@@ -153,19 +153,19 @@ def polyversion(project, default=None, repo_path=None,
 
     .. NOTE::
        This is a python==2.7 & python<3.6 safe function; there is also the similar
-       function with elaborate error-handling :func:`polyvers.vtags.descrive_project()`
+       function with elaborate error-handling :func:`polyvers.pvtags.descrive_project()`
        used by the tool internally.
     """
     version = None
     if not repo_path:
         repo_path = _caller_fpath()
-    tag_pattern = vtag_fnmatch_frmt % project
+    tag_pattern = pvtag_fnmatch_frmt % project
     try:
         cmd = 'git describe --tags --match %s' % tag_pattern
-        vtag = _my_run(cmd, cwd=repo_path)
-        matched_project, version, descid = split_vtag(vtag, vtag_regex)
+        pvtag = _my_run(cmd, cwd=repo_path)
+        matched_project, version, descid = split_pvtag(pvtag, pvtag_regex)
         if matched_project != project:
-            print("Matched  vtag project '%s' different from expected '%s'!" %
+            print("Matched  pvtag project '%s' different from expected '%s'!" %
                   (matched_project, project), file=sys.stderr)
         if descid:
             version = version_from_descid(version, descid)

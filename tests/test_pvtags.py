@@ -6,7 +6,7 @@
 # You may not use this work except in compliance with the Licence.
 # You may obtain a copy of the Licence at: http://ec.europa.eu/idabc/eupl
 
-from polyvers import vtags
+from polyvers import pvtags
 import sys
 
 import pytest
@@ -22,66 +22,66 @@ proj2_desc = 'proj-2-v0.2.1'
 
 @pytest.fixture()
 def projspec():
-    return vtags.Project()
+    return pvtags.Project()
 
 
-def test_get_all_vtags(projspec, ok_repo, untagged_repo, no_repo):
+def test_get_all_pvtags(projspec, ok_repo, untagged_repo, no_repo):
     ok_repo.chdir()
 
-    v = projspec.find_all_subproject_vtags()
+    v = projspec.find_all_subproject_pvtags()
     assert dict(v) == {
         proj1: ['0.0.0', '0.0.1'],
         proj2: ['0.2.0', '0.2.1'],
     }
     untagged_repo.chdir()
 
-    v = projspec.find_all_subproject_vtags()
+    v = projspec.find_all_subproject_pvtags()
     assert dict(v) == {}
 
     no_repo.chdir()
 
     with pytest.raises(sbp.CalledProcessError):
-        v = projspec.find_all_subproject_vtags()
+        v = projspec.find_all_subproject_pvtags()
 
 
-def test_get_p1_vtags(projspec, ok_repo, untagged_repo, no_repo):
+def test_get_p1_pvtags(projspec, ok_repo, untagged_repo, no_repo):
     ok_repo.chdir()
 
-    v = projspec.find_all_subproject_vtags(proj1)
+    v = projspec.find_all_subproject_pvtags(proj1)
     assert dict(v) == {proj1: ['0.0.0', '0.0.1']}
     untagged_repo.chdir()
 
-    v = projspec.find_all_subproject_vtags(proj1)
+    v = projspec.find_all_subproject_pvtags(proj1)
     assert dict(v) == {}
 
     no_repo.chdir()
 
     with pytest.raises(sbp.CalledProcessError):
-        v = projspec.find_all_subproject_vtags(proj1)
+        v = projspec.find_all_subproject_pvtags(proj1)
 
 
-def test_get_p2_vtags(projspec, ok_repo):
+def test_get_p2_pvtags(projspec, ok_repo):
     ok_repo.chdir()
-    v = projspec.find_all_subproject_vtags(proj2)
+    v = projspec.find_all_subproject_pvtags(proj2)
     assert dict(v) == {proj2: ['0.2.0', '0.2.1']}
 
 
-def test_get_BAD_project_vtag(projspec, ok_repo, untagged_repo, no_repo):
+def test_get_BAD_project_pvtag(projspec, ok_repo, untagged_repo, no_repo):
     ok_repo.chdir()
 
-    v = projspec.find_all_subproject_vtags('foo')
+    v = projspec.find_all_subproject_pvtags('foo')
     assert dict(v) == {}
-    v = projspec.find_all_subproject_vtags('foo', proj1)
+    v = projspec.find_all_subproject_pvtags('foo', proj1)
     assert dict(v) == {proj1: ['0.0.0', '0.0.1']}
 
     untagged_repo.chdir()
 
-    v = projspec.find_all_subproject_vtags('foo', 'bar')
+    v = projspec.find_all_subproject_pvtags('foo', 'bar')
     assert dict(v) == {}
     no_repo.chdir()
 
     with pytest.raises(sbp.CalledProcessError):
-        v = projspec.find_all_subproject_vtags('foo')
+        v = projspec.find_all_subproject_pvtags('foo')
 
 
 def test_get_subproject_versions(projspec, ok_repo, untagged_repo, no_repo):
@@ -128,13 +128,13 @@ def test_git_describe_p1(projspec, ok_repo, untagged_repo, no_repo):
 
     untagged_repo.chdir()
 
-    with pytest.raises(vtags.GitVoidError):
+    with pytest.raises(pvtags.GitVoidError):
         projspec.pname = 'foo'
         v = projspec.git_describe()
 
     no_repo.chdir()
 
-    with pytest.raises(vtags.GitVoidError):
+    with pytest.raises(pvtags.GitVoidError):
         projspec.pname = proj1
         projspec.git_describe()
 
@@ -150,7 +150,7 @@ def test_git_describe_p2(projspec, ok_repo):
 def test_git_describe_BAD(projspec, ok_repo, untagged_repo, no_repo):
     ok_repo.chdir()
 
-    with pytest.raises(vtags.GitVoidError):
+    with pytest.raises(pvtags.GitVoidError):
         projspec.pname = 'foo'
         projspec.git_describe()
 
@@ -179,14 +179,14 @@ def test_last_commit_tstamp_p1(projspec, ok_repo, untagged_repo, no_repo, today)
 
     no_repo.chdir()
 
-    with pytest.raises(vtags.GitVoidError):
+    with pytest.raises(pvtags.GitVoidError):
         projspec.last_commit_tstamp()
 
 
 def test_last_commit_tstamp_BAD_no_commits(projspec, empty_repo):
     empty_repo.chdir()
 
-    with pytest.raises(vtags.GitVoidError):
+    with pytest.raises(pvtags.GitVoidError):
         projspec.last_commit_tstamp()
 
 

@@ -7,7 +7,7 @@ Reference
    polyvers
    polyvers.polyverslib
    polyvers.cli
-   polyvers.vtags
+   polyvers.pvtags
    polyvers.mainpump
    polyvers.logconfutils
    polyvers.cmdlets
@@ -28,9 +28,9 @@ Module: :mod:`polyvers.mainpump`
 .. automodule:: polyvers.mainpump
    :members:
 
-Module: :mod:`polyvers.vtags`
+Module: :mod:`polyvers.pvtags`
 ===============================
-.. automodule:: polyvers.vtags
+.. automodule:: polyvers.pvtags
    :members:
 
 Module: :mod:`polyvers.logconfutils`

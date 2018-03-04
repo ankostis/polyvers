@@ -7,7 +7,7 @@
 #
 """The code of *polyvers* shell-commands."""
 
-from . import APPNAME, __version__, __updated__, cmdlets, vtags, fileutils as fu
+from . import APPNAME, __version__, __updated__, cmdlets, pvtags, fileutils as fu
 from ._vendor import traitlets as trt
 from ._vendor.traitlets import config as trc
 from ._vendor.traitlets.traitlets import List, Bool, Unicode
@@ -52,10 +52,10 @@ class PolyversCmd(cmdlets.Cmd):
             X.YaN.devM          # Developmental release of an alpha release
             X.Y.postN.devM      # Developmental release of a post-release
     """)
-    classes = [vtags.Project]
+    classes = [pvtags.Project]
 
     projects = List(
-        AutoInstance(vtags.Project),
+        AutoInstance(pvtags.Project),
         config=True)
 
     use_leaf_releases = Bool(
@@ -105,7 +105,7 @@ class PolyversCmd(cmdlets.Cmd):
     def _all_app_configurables(self):
         from . import engrave
         return [type(self),
-                vtags.Project,
+                pvtags.Project,
                 InitCmd, StatusCmd, BumpCmd, LogconfCmd,
                 engrave.Engrave, engrave.GraftSpec,
                 ]
@@ -273,11 +273,11 @@ PolyversCmd.flags = {
     ),
     ('t', 'tag'): (
         {'Project': {'tag': True}},
-        vtags.Project.tag.help
+        pvtags.Project.tag.help
     ),
     ('s', 'sign-tags'): (
         {'Project': {'sign_tags': True}},
-        vtags.Project.sign_tags.help
+        pvtags.Project.sign_tags.help
     ),
 }
 

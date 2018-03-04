@@ -153,5 +153,5 @@ def find_git_root() -> Optional[Path]:
         if (f / '.git').is_dir():
             return f
 
-    # raise vtags.GitVoidError(
+    # raise pvtags.GitVoidError(
     #     "Current-dir '%s' is not within a git repository!" % Path.cwd())

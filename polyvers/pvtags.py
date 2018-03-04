@@ -6,7 +6,7 @@
 # You may not use this work except in compliance with the Licence.
 # You may obtain a copy of the Licence at: http://ec.europa.eu/idabc/eupl
 #
-"""Python code to report sub-project "vtags" in Git *polyvers* monorepos."""
+"""Python code to report sub-project "pvtags" in Git *polyvers* monorepos."""
 
 from collections import defaultdict
 import logging
@@ -24,7 +24,7 @@ log = logging.getLogger(__name__)
 
 
 class GitVoidError(cmdlets.CmdException):
-    "Sub-project has not yet been version with a *vtag*. "
+    "Sub-project has not yet been version with a *pvtag*. "
     pass
 
 
@@ -32,20 +32,20 @@ class Project(cmdlets.Spec):
     pname = Unicode()
     basepath = Instance(Path, castable=str)
 
-    vtag_fnmatch_frmt = Unicode(
-        default_value=polyverslib.vtag_fnmatch_frmt,
+    pvtag_fnmatch_frmt = Unicode(
+        default_value=polyverslib.pvtag_fnmatch_frmt,
         help="""
-        The default pattern globbing for *vtags* with ``git describe --match <pattern>``.
+        The default pattern globbing for *pvtags* with ``git describe --match <pattern>``.
 
         .. WARNING::
             If you change this, remember to invoke :func:`polyversion.polyversion()`
-            with the changed value on `vtag_fnmatch_frmt` kwarg from project's sources.
+            with the changed value on `pvtag_fnmatch_frmt` kwarg from project's sources.
     """).tag(config=True)
 
-    vtag_regex = CRegExp(
-        default_value=polyverslib.vtag_regex,
+    pvtag_regex = CRegExp(
+        default_value=polyverslib.pvtag_regex,
         help="""
-        The default regex pattern breaking *vtags* and/or ``git-describe`` output
+        The default regex pattern breaking *pvtags* and/or ``git-describe`` output
         into 3 named capturing groups:
         - ``project``,
         - ``version`` (without the 'v'),
@@ -56,7 +56,7 @@ class Project(cmdlets.Spec):
 
         .. WARNING::
             If you change this, remember to invoke :func:`polyversion.polyversion()`
-            with the changed value on `vtag_regex` kwarg from project's sources.
+            with the changed value on `pvtag_regex` kwarg from project's sources.
     """).tag(config=True)
 
     tag = Bool(
@@ -87,18 +87,18 @@ class Project(cmdlets.Spec):
             {ikeys}
         """)
 
-    def find_all_subproject_vtags(self, *projects):
+    def find_all_subproject_pvtags(self, *projects):
         """
         Return the all ``proj-v0.0.0``-like tags, per project, if any.
 
         :param projects:
-            project-names; fetch all vtags if none given.
+            project-names; fetch all pvtags if none given.
         :return:
-            a {proj: [vtags]}, possibly incomplete for projects without any vtag
+            a {proj: [pvtags]}, possibly incomplete for projects without any pvtag
         :raise subprocess.CalledProcessError:
             if `git` executable not in PATH
         """
-        tag_patterns = [self.vtag_fnmatch_frmt % p
+        tag_patterns = [self.pvtag_fnmatch_frmt % p
                         for p in projects or ('*', )]
         cmd = 'git tag --merged HEAD -l'.split() + tag_patterns
         res = oscmd.exec_cmd(cmd, check_stdout=True, check_stderr=True)
@@ -107,12 +107,12 @@ class Project(cmdlets.Spec):
 
         project_versions = defaultdict(list)
         for t in tags:
-            m = self.vtag_regex.match(t)
+            m = self.pvtag_regex.match(t)
             if m:
                 mg = m.groupdict()
                 if mg['descid']:
                     log.warning(
-                        "Ignoring vtag '%s', it has `git-describe` suffix '%s'!",
+                        "Ignoring pvtag '%s', it has `git-describe` suffix '%s'!",
                         t, mg['descid'])
                 else:
                     project_versions[mg['project']].append(mg['version'])
@@ -121,33 +121,33 @@ class Project(cmdlets.Spec):
 
     def get_subproject_versions(self, *projects):
         """
-        Return the last vtag for any project, if any.
+        Return the last pvtag for any project, if any.
 
         :param projects:
             project-names; return any versions found if none given.
         :return:
-            a {proj: version}, possibly incomplete for projects without any vtag
+            a {proj: version}, possibly incomplete for projects without any pvtag
         :raise subprocess.CalledProcessError:
             if `git` executable not in PATH
         """
-        vtags = self.find_all_subproject_vtags(*projects)
+        pvtags = self.find_all_subproject_pvtags(*projects)
         return {proj: (versions and versions[-1])
-                for proj, versions in vtags.items()}
+                for proj, versions in pvtags.items()}
 
     def git_describe(self):
         """
-        Gets sub-project's version as derived from ``git describe`` on its *vtag*.
+        Gets sub-project's version as derived from ``git describe`` on its *pvtag*.
 
         :return:
-            the *vtag* of the current project, or raise
+            the *pvtag* of the current project, or raise
         :raise GitVoidError:
-            if sub-project is not *vtagged* or CWD not within a git repo.
+            if sub-project is not *pvtagged* or CWD not within a git repo.
         :raise sbp.CalledProcessError:
             for any other error while executing *git*.
 
         .. NOTE::
            There is also the python==2.7 & python<3.6 safe :func:`polyvers.polyversion()``
-           for extracting just the version part from a *vtag*; use this one
+           for extracting just the version part from a *pvtag*; use this one
            from within project sources.
 
         .. INFO::
@@ -159,20 +159,20 @@ class Project(cmdlets.Spec):
            as ``git tag`` does.
         """
         project = self.pname
-        vtag = None
-        tag_pattern = self.vtag_fnmatch_frmt % project
+        pvtag = None
+        tag_pattern = self.pvtag_fnmatch_frmt % project
         cmd = 'git describe --tags --match'.split() + [tag_pattern]
         try:
             res = oscmd.exec_cmd(cmd, check_stdout=True, check_stderr=True)
             out = res.stdout
-            vtag = out and out.strip()
+            pvtag = out and out.strip()
 
-            return vtag
+            return pvtag
         except sbp.CalledProcessError as ex:
             err = ex.stderr
             if "does not have any commits yet" in err or "No names found" in err:
                 raise GitVoidError(
-                    "No *vtag* for sub-project '%s'!" % project) from ex
+                    "No *pvtag* for sub-project '%s'!" % project) from ex
             elif "Not a git repository" in err:
                 raise GitVoidError(err) from ex
             else:
