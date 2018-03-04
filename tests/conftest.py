@@ -68,7 +68,8 @@ def assert_in_text(text, require=None, forbid=None):
         "%r in line(%i): %s" % (k, v + 1, text[v]) for k, v in illegals.items()) or ''
 
     if err1 or err2:
-        pytest.fail("Text errors: %s %s" % (err1, err2))
+        pytest.fail("Text errors: %s %s\n  text: %s" %
+                    (err1, err2, '\n    '.join(text)))
 
 
 @pytest.fixture()
