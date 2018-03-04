@@ -237,8 +237,7 @@ class GraftSpec(cmdlets.Spec, cmdlets.Strable, cmdlets.Replaceable):
             nsubs = len(hits_indices)
             clone = self.replace(hits_indices=hits_indices)
             log.debug(
-                "Replacing %i out of %i matches in file '%s' of pattern '%s'."
-                "\n  %s",
+                "Replacing %i out of %i matches in file '%s' of pattern '%s': %s",
                 nsubs, len(self.hits), fpath, self.regex, hits_indices)
         else:
             nsubs = len(self.hits)
@@ -382,18 +381,18 @@ class Engrave(cmdlets.Spec):
                 self._fwrite(fpath, filespec.ftext)
 
     def _log_action(self, filespecs_map: FilesMap, action: str):
-        file_lines = ''.join(
-            "\n  %s: %r %s" % (fpath, filespec.nhits, action)
-            for fpath, filespec in filespecs_map.items())
-        log.info("%sed files: %s", action.capitalize(), file_lines)
+        file_lines = '\n  '.join('%s: %i %s' % (fpath, filespec.nhits, action)
+                                 for fpath, filespec in filespecs_map.items())
+        ntotal = sum(filespec.nhits for filespec in filespecs_map.values())
+        log.info("%sed %i files: %s", action.capitalize(), ntotal, file_lines)
 
     def scan_all_hits(self,
                       mybase: FLike = '.',
                       other_bases: Union[FLikeList, None] = None) -> FilesMap:
         files: FPaths = self.collect_glob_files(mybase=mybase,
                                                 other_bases=other_bases)
-        log.info("Globbed files in '%s': %s",
-                 Path(mybase).resolve(), ', '.join(str(f) for f in files))
+        log.info("Globbed %i files in '%s': %s",
+                 len(files), Path(mybase).resolve(), ', '.join(str(f) for f in files))
 
         file_specs: FilesMap = self.read_files(files)
 
