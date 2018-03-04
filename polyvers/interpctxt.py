@@ -62,22 +62,19 @@ class InterpolationContext(ChainMap):
         self.env_map.update({'$' + k: v for k, v in os.environ.items()})
 
     @contextlib.contextmanager
-    def ikeys(self, **kv_pairs) -> Dict:
-        """Temporarily place key-value pairs immediately after user-map (2nd position)."""
-        orig_maps = self.maps
-        self.maps = orig_maps[:1] + [kv_pairs] + orig_maps[1:]
-        try:
-            yield self
-        finally:
-            self.maps = orig_maps
+    def ikeys(self, *maps: Dict, **kv_pairs) -> Dict:
+        """
+        Temporarily place more maps immediately after user-map (2nd position).
 
-    @contextlib.contextmanager
-    def imaps(self, *maps: Dict) -> Dict:
-        """Temporarily place maps immediately after user-map (2nd position)."""
+        Earlier maps take precendance; `kv_pairs` have the lowest.
+        """
         assert all(isinstance(d, dict) for d in maps), maps
 
         orig_maps = self.maps
-        self.maps = orig_maps[:1] + list(maps) + orig_maps[1:]
+        tmp_maps = list(maps)
+        if kv_pairs:
+            tmp_maps.append(kv_pairs)
+        self.maps = orig_maps[:1] + tmp_maps + orig_maps[1:]
         try:
             yield self
         finally:

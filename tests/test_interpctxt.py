@@ -29,30 +29,34 @@ def test_InterpolationContext():
 
 
 def test_InterpolationContext_temp_ikeys():
-    frmt = "Lucky {b}!"
+    frmt = "Lucky {b}! {a}."
+    exp = "Lucky 13! Cool."
 
     with pytest.raises(KeyError):
         frmt.format()
 
     ctxt = InterpolationContext()
-    with ctxt.ikeys(b=13) as ictxt:
-        assert frmt.format(**ictxt) == "Lucky 13!"
-        assert frmt.format_map(ictxt) == "Lucky 13!"
+    with ctxt.ikeys(a='Cool', b=13) as ictxt:
+        assert frmt.format(**ictxt) == exp
+        assert frmt.format_map(ictxt) == exp
 
     with pytest.raises(KeyError):
         frmt.format(**ictxt)
 
-
-def test_InterpolationContext_temp_imaps():
-    frmt = "Lucky {b}!"
+    with ctxt.ikeys({'b': 13, 'a': 'Cool'}) as ictxt:
+        assert frmt.format(**ictxt) == exp
+        assert frmt.format_map(ictxt) == exp
 
     with pytest.raises(KeyError):
-        frmt.format()
+        frmt.format(**ictxt)
 
-    ctxt = InterpolationContext()
-    with ctxt.imaps({'b': 13}) as ictxt:
-        assert frmt.format(**ictxt) == "Lucky 13!"
-        assert frmt.format_map(ictxt) == "Lucky 13!"
+    with ctxt.ikeys({'b': 13}, a='Cool') as ictxt:
+        assert frmt.format(**ictxt) == exp
+        assert frmt.format_map(ictxt) == exp
+
+    with ctxt.ikeys({'b': 13}, a='Cool', b='14') as ictxt:
+        assert frmt.format(**ictxt) == exp
+        assert frmt.format_map(ictxt) == exp
 
     with pytest.raises(KeyError):
         frmt.format(**ictxt)
