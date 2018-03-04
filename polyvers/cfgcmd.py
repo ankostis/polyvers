@@ -81,7 +81,7 @@ def prepare_help_selector(only_class_in_values, verbose):
         if verbose:
             def selector(ne, cls):
                 htext = cls.class_get_help()
-                return htext.format(**cls.interpolations)
+                return htext.format_map(cls.interpolations)
         else:
             def selector(ne, cls):
                 from ipython_genutils.text import wrap_paragraphs
@@ -109,7 +109,7 @@ def prepare_help_selector(only_class_in_values, verbose):
                     pass
 
                 htext = '\n'.join(help_lines)
-                return htext.format(**cls.interpolations)
+                return htext.format_map(cls.interpolations)
     else:
         def selector(name, v):
             cls, attr = v
