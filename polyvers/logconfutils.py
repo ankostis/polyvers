@@ -163,7 +163,7 @@ def init_logging(
             #
             level = logging.INFO
         frmt = kwds.pop('format',
-                        "%(asctime)-15s:%(levelname)5.5s:%(name)s:%(message)s")
+                        "%(asctime)-15s|%(levelname)5.5s|%(name)s|%(message)s")
         logging.basicConfig(level=level, format=frmt, **kwds)
         # Because `basicConfig()` ignores root-logger if this re-invoked.
         logging.getLogger().level = level
