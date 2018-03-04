@@ -373,7 +373,12 @@ class Spec(trc.Configurable):
     def class_get_trait_help(cls, trait, inst=None, helptext=None):
         text = trc.Configurable.class_get_trait_help(trait, inst=None, helptext=None)
         obj = inst if inst else cls
-        return text.format_map(obj.interpolations)
+        ## Stub missing keys because some trait-values may contain
+        #  interpolation patterns themselves (to be expanded on runtime),
+        #  so allow them to print.
+        #
+        with obj.interpolations.ikeys(stub_keys=True) as ikeys:
+            return text.format_map(ikeys)
 
 
 class Cmd(trc.Application, Spec):
