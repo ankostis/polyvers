@@ -60,3 +60,30 @@ def test_InterpolationContext_temp_ikeys():
 
     with pytest.raises(KeyError):
         frmt.format(**ictxt)
+
+
+def test_InterpolationContext_stub_ikeys():
+    frmt = "{missing} key"
+
+    with pytest.raises(KeyError):
+        frmt.format()
+
+    ctxt = InterpolationContext()
+
+    with ctxt.ikeys(stub_keys=True) as ictxt:
+        with pytest.raises(KeyError):
+            assert frmt.format(**ictxt) == frmt
+        assert frmt.format_map(ictxt) == frmt
+
+    with ctxt.ikeys(a=1, stub_keys=True) as ictxt:
+        with pytest.raises(KeyError):
+            assert frmt.format(**ictxt) == frmt
+        assert frmt.format_map(ictxt) == frmt
+
+    with ctxt.ikeys({'ff': 12}, stub_keys=True, a=1) as ictxt:
+        with pytest.raises(KeyError):
+            assert frmt.format(**ictxt) == frmt
+        assert frmt.format_map(ictxt) == frmt
+
+    with pytest.raises(KeyError):
+        frmt.format()

@@ -14,7 +14,7 @@ import os
 from typing import Dict
 
 
-class Now:
+class Now:  # TODO: privatize
     def __init__(self, is_utc=False):
         self.is_utc = is_utc
 
@@ -26,12 +26,23 @@ class Now:
         return now.__format__(format_spec)
 
 
-class Keys:
+class Keys:  # TODO: privatize
     def __init__(self, mydict):
         self.mydict = mydict
 
     def __format__(self, format_spec):
         return ', '.join(k for k in self.mydict.keys() if not k.startswith('$'))
+
+
+class _MissingKeys(dict):
+    __slots__ = ()
+
+    def __missing__(self, key):
+        return '{%s}' % key
+
+
+#: Used when interp-context claiming to have all keys.
+_missing_keys = _MissingKeys()
 
 
 class InterpolationContext(ChainMap):
@@ -62,18 +73,29 @@ class InterpolationContext(ChainMap):
         self.env_map.update({'$' + k: v for k, v in os.environ.items()})
 
     @contextlib.contextmanager
-    def ikeys(self, *maps: Dict, **kv_pairs) -> Dict:
+    def ikeys(self, *maps: Dict, stub_keys=False, **kv_pairs) -> Dict:
         """
         Temporarily place more maps immediately after user-map (2nd position).
 
-        Earlier maps take precendance; `kv_pairs` have the lowest.
+        :param stub_keys:
+            If true, any missing-key gets returned as ``{key}``.
+
+            .. NOTE::
+               Use ``str.format_map()`` when `stub_keys` is true; ``format()``
+               will clone existing keys in a static map.
+
+        Earlier maps take precedence; `kv_pairs` have the lowest, unless
+        `stub_keys` is true, which then becomes the last catch-all map.
         """
         assert all(isinstance(d, dict) for d in maps), maps
 
-        orig_maps = self.maps
         tmp_maps = list(maps)
         if kv_pairs:
             tmp_maps.append(kv_pairs)
+        if stub_keys:
+            tmp_maps.append(_missing_keys)
+
+        orig_maps = self.maps
         self.maps = orig_maps[:1] + tmp_maps + orig_maps[1:]
         try:
             yield self
