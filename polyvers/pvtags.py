@@ -382,12 +382,8 @@ def make_project_matching_all_simple_vtags(**project_kw) -> Project:
 
 
 def _fetch_all_tags(cli, tag_patterns: List[str],
-                    all_branches: bool,
                     pnames_msg: str):
     cli.tag
-
-    if all_branches:
-        cli._(merged='HEAD')
 
     with _git_errors_handler(pnames_msg):
         out = cli('--list', *tag_patterns)
@@ -411,7 +407,6 @@ def _parse_git_tag_ref_lines(tag_ref_lines: List[str],
 
 
 def _fetch_annotated_tags(cli, tag_patterns: List[str],
-                          all_branches: bool,
                           pnames_msg: str) -> List[str]:
     """
     Collect only non-annotated tags (those pointing to tag-objects).
@@ -439,7 +434,6 @@ def _replace_pvtags_in_projects(
 
 
 def populate_pvtags_history(*projects: Project,
-                            all_branches=False,
                             include_lightweight=False):
     """
     Updates :attr:`pvtags_history` on given `projects` (if any) in ascending order.
@@ -473,9 +467,9 @@ def populate_pvtags_history(*projects: Project,
     pnames_msg = ', '.join(p.pname for p in projects)
     cli = cmd.git
     if include_lightweight:
-        tags = _fetch_all_tags(cli, tag_patterns, all_branches, pnames_msg)
+        tags = _fetch_all_tags(cli, tag_patterns, pnames_msg)
     else:
-        tags = _fetch_annotated_tags(cli, tag_patterns, all_branches, pnames_msg)
+        tags = _fetch_annotated_tags(cli, tag_patterns, pnames_msg)
 
     for proj in projects:
         proj._pvtags_collected = []
