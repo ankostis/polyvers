@@ -38,6 +38,12 @@ def test_Project_regex_check():
         Project(pvtag_regex="(")
 
 
+def test_Project_version_from_pvtag(caplog):
+    v = foo.version_from_pvtag('foo-v1.0.0-2-gbaba0')
+    assert v == '1.0.0'
+    assert "`git-describe` suffix" in caplog.text
+
+
 def test_new_Project_raises_pvtags_unpopulated():
     with pytest.raises(AssertionError):
         project1.pvtags_history
@@ -51,17 +57,20 @@ def test_populate_pvtags_history_per_project(ok_repo):
 
     pvtags.populate_pvtags_history(project1)
     assert project1.pvtags_history == ['proj1-v0.0.0', 'proj1-v0.0.1']
+    assert project1.pvtag == 'proj1-v0.0.1'
 
     pvtags.populate_pvtags_history(project2)
     assert project2.pvtags_history == []
     pvtags.populate_pvtags_history(project2, include_lightweight=True)
     assert project2.pvtags_history == ['proj-2-V0.2.0', 'proj-2-V0.2.1']
+    assert project2.pvtag == 'proj-2-V0.2.1'
 
     ## Ensure no side-effects.
     assert project1.pvtags_history == ['proj1-v0.0.0', 'proj1-v0.0.1']
 
     pvtags.populate_pvtags_history(foo)
     assert foo.pvtags_history == []
+    assert foo.pvtag is None
 
     ## Ensure no side-effects.
     assert project1.pvtags_history == ['proj1-v0.0.0', 'proj1-v0.0.1']
