@@ -39,7 +39,8 @@ split_pvtag_validation_patterns = [
 
 @pytest.mark.parametrize('inp, exp', split_pvtag_validation_patterns)
 def test_split_pvtag_parsing(inp, exp):
-    pvtag_regex = pvlib.pvtag_regex
+    pvtag_regex = re.compile(pvlib.pvtag_regex.format(
+        pname=r'[A-Z0-9]|[A-Z0-9][A-Z0-9._-]*?[A-Z0-9]'))
     if exp is None:
         with pytest.raises(ValueError):
             pvlib.split_pvtag(inp, pvtag_regex)
@@ -55,7 +56,7 @@ def test_fnmatch_format(inp, exp):
         pass
     else:
         project = exp[0]
-        frmt = pvtag_fnmatch_frmt % project
+        frmt = pvtag_fnmatch_frmt.format(pname=project)
         assert fnmatch.fnmatch(inp, frmt)
 
 
@@ -96,7 +97,15 @@ def test_polyversion_p1(ok_repo, untagged_repo, no_repo):
 
 
 def test_polyversion_p2(ok_repo):
-    v = pvlib.polyversion(proj2, repo_path=ok_repo)
+    v = pvlib.polyversion(proj2, repo_path=ok_repo,
+                          pvtag_fnmatch_frmt='{pname}-V*',
+                          pvtag_regex=r"""(?xi)
+                              ^(?P<project>{pname})
+                              -
+                              V(?P<version>\d[^-]*)
+                              (?:-(?P<descid>\d+-g[a-f\d]+))?$
+                          """,
+                          git_options=['--tags'])
     assert v == proj2_ver
 
 
@@ -172,6 +181,7 @@ def test_polytime_BAD_no_git_cmd(ok_repo, monkeypatch, today):
 ##############
 ##   MAIN   ##
 ##############
+# TODO: Move main from `pvlib` --> `polyvers.pvtgs`
 
 def test_MAIN_polyversions(ok_repo, untagged_repo, no_repo, capsys):
     ok_repo.chdir()
@@ -183,15 +193,11 @@ def test_MAIN_polyversions(ok_repo, untagged_repo, no_repo, capsys):
     pvlib.main(proj1)
     out, err = capsys.readouterr()
     assert out.startswith(proj1_ver) and not err
-    pvlib.main(proj2)
-    out, err = capsys.readouterr()
-    assert out.startswith(proj2_ver)
-    #assert not caplog.text()
 
-    pvlib.main(proj1, proj2, 'foo')
+    pvlib.main(proj1, 'foo')
     out, err = capsys.readouterr()
     assert re.match(
-        r'proj1: 0\.0\.1\+2\.g[\da-f]+\nproj-2: 0\.2\.1\nfoo:', out)
+        r'proj1: 0\.0\.1\+2\.g[\da-f]+\nfoo:', out)
     #assert 'No names found' in caplog.text()
 
     untagged_repo.chdir()

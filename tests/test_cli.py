@@ -53,7 +53,7 @@ def test_all_cmds_help_version(cmd):
 @pytest.mark.parametrize('cmd, match, illegal', [
     ('config infos', [], ['config_paths: null']),
     ('config desc', ['--Cmd.config_paths=', 'StatusCmd'], []),
-    ('config show Project', ['Project(Spec)'], []),
+    ('config show Project', ['Project(Spec'], []),
 ])
 def test_config_cmd(cmd, match, illegal):
     lc = ListConsumer()

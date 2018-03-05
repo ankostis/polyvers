@@ -81,20 +81,21 @@ def exec_cmd(cmd,
     return res
 
 
+def _as_flag(k):
+    return k.replace('_', '-')
+
+
 class _Cli:
     def __init__(self, popen_kw: Dict, cmd: str):
         self._popen_kw = popen_kw
         self._cmdlist = [cmd]
 
     def _extend_cmdlist(self, args, kw):
-        def as_flag(k):
-            return k.replace('_', '-')
-
         def kv2arg(k, v):
             nk = len(k)
 
             if nk > 1:
-                k = as_flag(k)
+                k = _as_flag(k)
 
             if isinstance(v, bool) or v is None:
                 if v:
@@ -118,10 +119,12 @@ class _Cli:
     def __getattr__(self, attr):
         if attr == '__wrapped__':  # PYTEST MAGIC!
             return None
+        if attr:
+            attr = _as_flag(attr)
         self._cmdlist.append(attr)
         return self
 
-    def __call__(self, *args, **kw):
+    def __call__(self, *args, **kw) -> str:
         self._extend_cmdlist(args, kw)
         res = exec_cmd(self._cmdlist, **self._popen_kw)
         self.rc = res.returncode

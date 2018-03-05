@@ -29,17 +29,19 @@ import subprocess as sbp
 
 
 #: The default pattern globbing for *pvtags* with ``git describe --match <pattern>``.
-pvtag_fnmatch_frmt = '%s-v*'
+#: It is given a :pep:`3101` parameter ``{pname}`` to interpolate.
+pvtag_fnmatch_frmt = '{pname}-v*'
 
 #: The default regex pattern breaking *pvtags* and/or ``git-describe`` output
 #: into 3 capturing groups.
+#: It is given a :pep:`3101` parameter ``{pname}`` to interpolate.
 #: See :pep:`0426` for project-name characters and format.
-pvtag_regex = re.compile(r"""(?xi)
-    ^(?P<project>[A-Z0-9]|[A-Z0-9][A-Z0-9._-]*?[A-Z0-9])
+pvtag_regex = r"""(?xi)
+    ^(?P<project>{pname})
     -
     v(?P<version>\d[^-]*)
     (?:-(?P<descid>\d+-g[a-f\d]+))?$
-""")
+"""
 
 
 def clean_cmd_result(res):  # type: (bytes) -> str
@@ -69,7 +71,9 @@ def rfc2822_tstamp(nowdt=None):
 
 def _my_run(cmd, cwd):
     "For commands with small output/stderr."
-    proc = sbp.Popen(cmd.split(), stdout=sbp.PIPE, stderr=sbp.PIPE,
+    if not isinstance(cmd, (list, tuple)):
+        cmd = cmd.split()
+    proc = sbp.Popen(cmd, stdout=sbp.PIPE, stderr=sbp.PIPE,
                      cwd=str(cwd), bufsize=-1)
     res, err = proc.communicate()
 
@@ -107,14 +111,26 @@ def split_pvtag(pvtag, pvtag_regex):
 
 
 def version_from_descid(version, descid):
-    """Combine ``git-describe`` parts in a :pep:`440` version with "local" part."""
+    """
+    Combine ``git-describe`` parts in a :pep:`440` version with "local" part.
+
+    :param: version:
+        anythng after the project and ``'-v`'`` i,
+        e.g it is ``1.7.4.post0``. ``foo-project-v1.7.4.post0-2-g79ceebf8``
+    :param: descid:
+        the part after the *pvtag* and the 1st dash('-'), which must not be empty,
+        e.g it is ``2-g79ceebf8`` for ``foo-project-v1.7.4.post0-2-g79ceebf8``.
+    :return:
+        something like this: ``1.7.4.post0+2.g79ceebf8`` or ``1.7.4.post0``
+    """
+    assert descid, (version, descid)
     local_part = descid.replace('-', '.')
     return '%s+%s' % (version, local_part)
 
 
 def polyversion(project, default=None, repo_path=None,
                 pvtag_fnmatch_frmt=pvtag_fnmatch_frmt,
-                pvtag_regex=pvtag_regex):
+                pvtag_regex=pvtag_regex, git_options=()):
     """
     Report the *pvtag* of the `project` in the git repo hosting the source-file calling this.
 
@@ -127,6 +143,7 @@ def polyversion(project, default=None, repo_path=None,
         derived from the calling stack.
     :param str pvtag_fnmatch_frmt:
         The pattern globbing for *pvtags* with ``git describe --match <pattern>``.
+        It is given a :pep:`3101` parameter ``{pname}`` to interpolate.
         See :data:`pvtag_fnmatch_frmt`
     :param regex pvtag_regex:
         The regex pattern breaking apart *pvtags*, with 3 named capturing groups:
@@ -135,8 +152,12 @@ def polyversion(project, default=None, repo_path=None,
         - ``descid`` (optional) anything following the dash('-') after
           the version in ``git-describe`` result.
 
+        It is given a :pep:`3101` parameter ``{pname}`` to interpolate.
+
         See :pep:`0426` for project-name characters and format.
         See :data:`pvtag_regex`
+    :param git_options:
+        List of options(str) passed to ``git describe`` command.
     :return:
         The version-id derived from the *pvtag*, or `default` if
         command failed/returned nothing.
@@ -159,9 +180,13 @@ def polyversion(project, default=None, repo_path=None,
     version = None
     if not repo_path:
         repo_path = _caller_fpath()
-    tag_pattern = pvtag_fnmatch_frmt % project
+    tag_pattern = pvtag_fnmatch_frmt.format(pname=project)
+    pvtag_regex = re.compile(pvtag_regex.format(pname=project))
     try:
-        cmd = 'git describe --tags --match %s' % tag_pattern
+        cmd = 'git describe'.split()
+        cmd.extend(git_options)
+        cmd.append('--match')
+        cmd.append(tag_pattern)
         pvtag = _my_run(cmd, cwd=repo_path)
         matched_project, version, descid = split_pvtag(pvtag, pvtag_regex)
         if matched_project != project:
@@ -191,6 +216,7 @@ def polytime(no_raise=False, repo_path=None):
     :return:
         the commit-date if in git repo, or now; :rfc:`2822` formatted
     """
+    # TODO: Move main from `pvlib` --> `polyvers.pvtgs`
     cdate = None
     if not repo_path:
         repo_path = _caller_fpath()

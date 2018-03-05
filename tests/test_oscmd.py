@@ -14,9 +14,9 @@ import pytest
 def test_cmd_building(ok_repo):
     ok_repo.chdir()
 
-    c = cmd.foo._(c=True).Bang_bar._("any 'thing'", flag_dang=True, no=False)
+    c = cmd.foo._(c=True).Bang_bar._("any_thing'", flag_dang=True, no=False)
     cmdlist = c._cmdlist
-    assert cmdlist == ['foo', '-c', 'Bang_bar', "any 'thing'", '--flag-dang', '--no-no']
+    assert cmdlist == ['foo', '-c', 'Bang-bar', "any_thing'", '--flag-dang', '--no-no']
 
     assert cmd.cmd._(*'abc', J=3, K='3')._cmdlist == 'cmd a b c -J3 -K3'.split()
 

@@ -86,6 +86,24 @@ def today():
     return rfc2822_tstamp()[:5]  # till Day-of-week
 
 
+@pytest.fixture()
+def mutable_repo(tmpdir_factory):
+    repo_dir = tmpdir_factory.mktemp('repo')
+    repo_dir.chdir()
+    cmds = """
+    git init
+    git config user.email "test@example.com"
+    git config user.name "Testing Bot"
+    git commit --allow-empty  --no-edit -m some_msg
+    """
+    for c in cmds.split('\n'):
+        c = c and c.strip()
+        if c:
+            sbp.check_call(c.split())
+
+    return repo_dir
+
+
 @pytest.fixture(scope="session")
 def ok_repo(tmpdir_factory):
     repo_dir = tmpdir_factory.mktemp('repo')
@@ -95,13 +113,13 @@ def ok_repo(tmpdir_factory):
     git config user.email "test@example.com"
     git config user.name "Testing Bot"
     git commit --allow-empty  --no-edit -m some_msg
-    git tag proj1-v0.0.0
+    git tag proj1-v0.0.0 -m annotated
     git commit --allow-empty  --no-edit -m some_msg
-    git tag  proj1-v0.0.1
-    git tag  proj-2-v0.2.0
+    git tag  proj1-v0.0.1 -m annotated
+    git tag  proj-2-V0.2.0
     git commit --allow-empty  --no-edit -m some_msg
     git commit --allow-empty  --no-edit -m some_msg
-    git tag proj-2-v0.2.1
+    git tag proj-2-V0.2.1
     """
     for c in cmds.split('\n'):
         c = c and c.strip()
