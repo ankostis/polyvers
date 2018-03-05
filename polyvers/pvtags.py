@@ -196,19 +196,6 @@ class Project(cmdlets.Spec, cmdlets.Replaceable):
             raise AssertionError("Call first `populate_pvtags_history()` on %s!")
         return self._pvtags_collected
 
-    @property
-    def pvtag(self) -> Optional[str]:
-        """
-        Return the last *pvtag* for the project, if any, or `None`.
-
-        :raise AssertionError:
-           If called before :func:`populate_pvtags_history()` has been applied
-           on this :class:`Project`.
-        """
-        pvtags = self.pvtags_history
-        if pvtags:
-            return pvtags[-1]
-
     def version_from_pvtag(self, pvtag: str) -> Optional[str]:
         """Extract the version from a *pvtag*."""
         m = self._pvtag_regex_resolved.match(pvtag)
@@ -220,23 +207,6 @@ class Project(cmdlets.Spec, cmdlets.Replaceable):
                     pvtag, mg['descid'])
 
             return mg['version']
-
-    @property
-    def pvtag_version(self) -> Optional[str]:
-        """
-        Return the *version* from the last *pvtag* of this project, if any.
-
-        .. NOTE::
-           Use :meth:`git_describe()` to report project-versions with more
-           accuracy.
-
-        :raise AssertionError:
-           If called before :func:`populate_pvtags_history()` has been applied
-           on this :class:`Project`.
-        """
-        pvtag = self.pvtag
-        if pvtag:
-            return self.version_from_pvtag(pvtag)
 
     def git_describe(self, *git_args: str,
                      include_lightweight=False,
