@@ -20,16 +20,29 @@ pname2 = 'proj-2'
 p2_pvtag = 'proj-2-V0.2.1'
 
 search_all = pvtags.make_project_matching_all_pvtags()
-project1 = Project(pname=pname1)
-project2 = Project(pname=pname2,
-                   pvtag_frmt='{pname}-V{version}',
-                   pvtag_regex=r"""(?xi)
-                        ^(?P<project>{pname})
-                        -
-                        V(?P<version>\d[^-]*)
-                        (?:-(?P<descid>\d+-g[a-f\d]+))?$
-                    """)
-foo = Project(pname='foo')
+
+
+@pytest.fixture
+def project1():
+    return Project(pname=pname1)
+
+
+@pytest.fixture
+def project2():
+    return Project(
+        pname=pname2,
+        pvtag_frmt='{pname}-V{version}',
+        pvtag_regex=r"""(?xi)
+            ^(?P<project>{pname})
+            -
+            V(?P<version>\d[^-]*)
+            (?:-(?P<descid>\d+-g[a-f\d]+))?$
+        """)
+
+
+@pytest.fixture
+def foo():
+    return Project(pname='foo')
 
 
 def test_Project_regex_check():
@@ -38,18 +51,18 @@ def test_Project_regex_check():
         Project(pvtag_regex="(")
 
 
-def test_Project_version_from_pvtag(caplog):
+def test_Project_version_from_pvtag(foo, caplog):
     v = foo.version_from_pvtag('foo-v1.0.0-2-gbaba0')
     assert v == '1.0.0'
     assert "`git-describe` suffix" in caplog.text
 
 
-def test_new_Project_raises_pvtags_unpopulated():
+def test_new_Project_raises_pvtags_unpopulated(project1):
     with pytest.raises(AssertionError):
         project1.pvtags_history
 
 
-def test_populate_pvtags_history_per_project(ok_repo):
+def test_populate_pvtags_history_per_project(ok_repo, project1, project2, foo):
     ok_repo.chdir()
 
     with pytest.raises(AssertionError):
@@ -80,7 +93,7 @@ def test_populate_pvtags_history_per_project(ok_repo):
     assert project2.pvtags_history == ['proj-2-V0.2.0', 'proj-2-V0.2.1']
 
 
-def test_populate_pvtags_history_multi_projects(ok_repo):
+def test_populate_pvtags_history_multi_projects(ok_repo, project1, project2, foo):
     ok_repo.chdir()
 
     pvtags.populate_pvtags_history(project1, project2, foo,
@@ -90,7 +103,7 @@ def test_populate_pvtags_history_multi_projects(ok_repo):
     assert foo.pvtags_history == []
 
 
-def test_fetch_pvtags_history_no_tags(untagged_repo, empty_repo):
+def test_fetch_pvtags_history_no_tags(untagged_repo, empty_repo, foo):
     untagged_repo.chdir()
 
     pvtags.populate_pvtags_history(foo)
@@ -102,7 +115,7 @@ def test_fetch_pvtags_history_no_tags(untagged_repo, empty_repo):
     assert foo.pvtags_history == []
 
 
-def test_fetch_pvtags_history_BAD(no_repo):
+def test_fetch_pvtags_history_BAD(no_repo, foo):
     no_repo.chdir()
 
     with pytest.raises(pvtags.NoGitRepoError):
@@ -111,49 +124,32 @@ def test_fetch_pvtags_history_BAD(no_repo):
 
 @pytest.mark.skipif(sys.version_info < (3, ),
                     reason="FileNotFoundError not in PY27, OSError only.")
-def test_fetch_pvtags_history_git_not_in_path(monkeypatch):
+def test_fetch_pvtags_history_git_not_in_path(foo, monkeypatch):
     monkeypatch.setenv('PATH', '')
 
     with pytest.raises(FileNotFoundError):
         pvtags.populate_pvtags_history(foo)
 
 
-# def test_get_subproject_versions(ok_repo, untagged_repo, no_repo):
-#     ok_repo.chdir()
-#
-#     v = pvtags.fetch_pvtags_history()
-#     assert v == {
-#         pname1: '0.0.1',
-#         pname2: '0.2.1',
-#     }
-#     untagged_repo.chdir()
-#
-#     v = pvtags.fetch_pvtags_history()
-#     assert v == {}
-#
-#     no_repo.chdir()
-#
-#     with pytest.raises(sbp.CalledProcessError):
-#         v = pvtags.fetch_pvtags_history()
-#
-#     with pytest.raises(sbp.CalledProcessError):
-#         v = pvtags.fetch_pvtags_history(foo)
-#
-#     with pytest.raises(sbp.CalledProcessError):
-#         v = pvtags.fetch_pvtags_history(foo, Project(pname='bar'))
-#
-#
-# def test_get_BAD_projects_versions(ok_repo):
-#     ok_repo.chdir()
-#     v = pvtags.fetch_pvtags_history(foo)
-#     assert dict(v) == {}
+def test_project_matching_all_pvtags(ok_repo, project1):
+    ok_repo.chdir()
+
+    all_pvtags = pvtags.make_project_matching_all_pvtags()
+    pvtags.populate_pvtags_history(all_pvtags)
+    assert all_pvtags.pname == '*'
+    assert all_pvtags.pvtags_history == ['proj1-v0.0.0', 'proj1-v0.0.1']
+
+    all_vtags = pvtags.make_project_matching_all_simple_vtags()
+    assert all_vtags.pname == '*'
+    pvtags.populate_pvtags_history(all_vtags)
+    assert all_vtags.pvtags_history == []
 
 
 ##############
 ## DESCRIBE ##
 ##############
 
-def test_git_describe_ok(ok_repo):
+def test_git_describe_ok(ok_repo, project1, project2):
     ok_repo.chdir()
 
     v = project1.git_describe()
@@ -169,7 +165,7 @@ def test_git_describe_ok(ok_repo):
     assert v == 'tags/' + p2_pvtag
 
 
-def test_git_describe_bad(ok_repo, no_repo):
+def test_git_describe_bad(ok_repo, no_repo, foo):
     ok_repo.chdir()
 
     with pytest.raises(pvtags.GitVoidError):
@@ -183,7 +179,7 @@ def test_git_describe_bad(ok_repo, no_repo):
 
 @pytest.mark.skipif(sys.version_info < (3, ),
                     reason="FileNotFoundError not in PY27, OSError only.")
-def test_git_describe_git_not_in_path(monkeypatch):
+def test_git_describe_git_not_in_path(foo, monkeypatch):
     monkeypatch.setenv('PATH', '')
 
     with pytest.raises(FileNotFoundError):
@@ -194,7 +190,7 @@ def test_git_describe_git_not_in_path(monkeypatch):
 ## UPDATED ##
 #############
 
-def test_last_commit_tstamp_ok(ok_repo, today):
+def test_last_commit_tstamp_ok(ok_repo, today, project1, project2, foo):
     ok_repo.chdir()
 
     d = project1.last_commit_tstamp()
@@ -204,14 +200,14 @@ def test_last_commit_tstamp_ok(ok_repo, today):
     assert all(d.startswith(dates[0]) for d in dates)
 
 
-def test_last_commit_tstamp_untagged(untagged_repo, today):
+def test_last_commit_tstamp_untagged(untagged_repo, today, foo):
     untagged_repo.chdir()
 
     d = foo.last_commit_tstamp()
     assert d.startswith(today)
 
 
-def test_last_commit_tstamp_BAD(empty_repo, no_repo):
+def test_last_commit_tstamp_BAD(empty_repo, no_repo, foo):
     empty_repo.chdir()
 
     with pytest.raises(pvtags.GitVoidError):
@@ -225,7 +221,7 @@ def test_last_commit_tstamp_BAD(empty_repo, no_repo):
 
 @pytest.mark.skipif(sys.version_info < (3, ),
                     reason="FileNotFoundError not in PY27, OSError only.")
-def test_last_commit_tstamp_BAD_no_git_cmd(monkeypatch):
+def test_last_commit_tstamp_BAD_no_git_cmd(foo, monkeypatch):
     monkeypatch.setenv('PATH', '')
 
     with pytest.raises(FileNotFoundError):
