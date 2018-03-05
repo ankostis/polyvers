@@ -7,6 +7,7 @@
 # You may obtain a copy of the Licence at: http://ec.europa.eu/idabc/eupl
 
 from polyvers import pvtags
+from polyvers._vendor.traitlets import TraitError
 from polyvers.pvtags import Project
 import sys
 
@@ -29,6 +30,12 @@ project2 = Project(pname=pname2,
                         (?:-(?P<descid>\d+-g[a-f\d]+))?$
                     """)
 foo = Project(pname='foo')
+
+
+def test_Project_regex_check():
+    with pytest.raises(TraitError,
+                       match=r'missing \), unterminated subpattern'):
+        Project(pvtag_regex="(")
 
 
 def test_new_Project_raises_pvtags_unpopulated():

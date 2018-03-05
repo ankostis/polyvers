@@ -130,7 +130,7 @@ class Project(cmdlets.Spec, cmdlets.Replaceable):
         try:
             re.compile(value.format(pname='pname'))
         except Exception as ex:
-            self.error(None, value, ex)
+            proposal.trait.error(None, value, ex)
         return value
 
     tag = Bool(
