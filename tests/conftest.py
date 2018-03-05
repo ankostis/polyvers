@@ -86,24 +86,6 @@ def today():
     return rfc2822_tstamp()[:5]  # till Day-of-week
 
 
-@pytest.fixture()
-def mutable_repo(tmpdir_factory):
-    repo_dir = tmpdir_factory.mktemp('repo')
-    repo_dir.chdir()
-    cmds = """
-    git init
-    git config user.email "test@example.com"
-    git config user.name "Testing Bot"
-    git commit --allow-empty  --no-edit -m some_msg
-    """
-    for c in cmds.split('\n'):
-        c = c and c.strip()
-        if c:
-            sbp.check_call(c.split())
-
-    return repo_dir
-
-
 @pytest.fixture(scope="session")
 def ok_repo(tmpdir_factory):
     repo_dir = tmpdir_factory.mktemp('repo')
@@ -167,3 +149,28 @@ def empty_repo(tmpdir_factory):
 @pytest.fixture(scope="session")
 def no_repo(tmpdir_factory):
     return tmpdir_factory.mktemp('norepo')
+
+
+@pytest.fixture()
+def mutable_repo(ok_repo, tmpdir):
+    mutable_repo_basename = 'mutable_repo'
+    ivars = {'orig_dir': ok_repo.basename,
+             'clone_dir': mutable_repo_basename}
+
+    parent_dir = (ok_repo / '..')
+    parent_dir.chdir()
+    c = 'git clone %(orig_dir)s %(clone_dir)s' % ivars
+    sbp.check_call(c.split())
+
+    repo_dir = (parent_dir / mutable_repo_basename)
+    repo_dir.chdir()
+    cmds = """
+    git config user.email "test@example.com"
+    git config user.name "Testing Bot"
+    """ % ivars
+    for c in cmds.split('\n'):
+        c = c and c.strip()
+        if c:
+            sbp.check_call(c.split())
+
+    return repo_dir

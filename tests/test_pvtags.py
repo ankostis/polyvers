@@ -8,6 +8,7 @@
 
 from polyvers import pvtags
 from polyvers._vendor.traitlets import TraitError
+from polyvers.oscmd import cmd
 from polyvers.pvtags import Project
 import sys
 
@@ -137,6 +138,28 @@ def test_project_matching_all_pvtags(ok_repo, project1):
     assert all_vtags.pname == '*'
     pvtags.populate_pvtags_history(all_vtags)
     assert all_vtags.pvtags_history == []
+
+
+def test_simple_project(mutable_repo, project2):
+    mutable_repo.chdir()
+
+    cmd.git.tag('v123')
+    cmd.git.tag('v12.0', m='hh')
+    all_vtags = pvtags.make_project_matching_all_simple_vtags()
+    pvtags.populate_pvtags_history(all_vtags)
+    assert all_vtags.pvtags_history == ['v12.0']
+
+    pvtags.populate_pvtags_history(all_vtags, include_lightweight=True)
+    assert all_vtags.pvtags_history == ['v12.0', 'v123']
+
+    ## Check both pvtag & vtag formats.
+
+    all_pvtags = pvtags.make_project_matching_all_pvtags()
+    pvtags.populate_pvtags_history(project2, all_pvtags, all_vtags,
+                                   include_lightweight=True)
+    assert all_vtags.pvtags_history == ['v12.0', 'v123']
+    assert all_pvtags.pvtags_history == ['proj1-v0.0.0', 'proj1-v0.0.1']
+    assert project2.pvtags_history == ['proj-2-V0.2.0', 'proj-2-V0.2.1']
 
 
 ##############
