@@ -6,6 +6,7 @@
 # You may not use this work except in compliance with the Licence.
 # You may obtain a copy of the Licence at: http://ec.europa.eu/idabc/eupl
 #
+from collections import OrderedDict, defaultdict
 from polyvers import cli, cmdlets
 from polyvers.__main__ import main
 from polyvers.mainpump import ListConsumer
@@ -13,6 +14,19 @@ from polyvers.mainpump import ListConsumer
 import pytest
 
 from .conftest import assert_in_text
+
+
+@pytest.mark.parametrize('inp, exp', [
+    (None, None),
+    ({}, ''),
+    ([], ''),
+    (OrderedDict(a=1), "a: 1"),
+    (defaultdict(list, a='1'), "a: '1'"),
+
+])
+def test_yaml_dump(inp, exp):
+    got = cli.ydumps(inp)
+    assert got == exp
 
 
 all_cmds = [c

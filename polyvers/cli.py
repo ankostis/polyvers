@@ -7,11 +7,44 @@
 #
 """The code of *polyvers* shell-commands."""
 
+from collections import OrderedDict, defaultdict
+import io
+import logging
+
 from . import APPNAME, __version__, __updated__, cmdlets, pvtags, fileutils as fu
 from ._vendor import traitlets as trt
 from ._vendor.traitlets import config as trc
 from ._vendor.traitlets.traitlets import List, Bool, Unicode
 from .autoinstance_traitlet import AutoInstance
+
+
+log = logging.getLogger(__name__)
+
+#: YAML dumper used to serialize command's outputs.
+_Y = None
+
+
+def ydumps(obj):
+    "Dump any false objects as empty string, None as nothing, or as YAML. "
+    global _Y
+
+    if not _Y:
+        from ruamel import yaml
+        from ruamel.yaml.representer import RoundTripRepresenter
+
+        for d in [OrderedDict, defaultdict]:
+            RoundTripRepresenter.add_representer(
+                d, RoundTripRepresenter.represent_dict)
+        _Y = yaml.YAML()
+
+    if obj is None:
+        return
+    if not obj:
+        return ''
+
+    sio = io.StringIO()
+    _Y.dump(obj, sio)
+    return sio.getvalue().strip()
 
 
 ####################
