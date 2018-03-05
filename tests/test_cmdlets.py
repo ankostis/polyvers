@@ -10,13 +10,15 @@ import logging
 from os import pathsep as PS
 import os
 from polyvers import cmdlets
-from polyvers._vendor import traitlets as trt
 from polyvers._vendor.traitlets import config as trc
+from polyvers._vendor.traitlets import traitlets as trt
 from polyvers._vendor.traitlets.traitlets import Int
+from polyvers.cli import ydumps
 from polyvers.logconfutils import init_logging
 import tempfile
 
 import pytest
+from ruamel.yaml.comments import CommentedMap
 
 import os.path as osp
 from py.path import local as P  # @UnresolvedImport
@@ -342,3 +344,75 @@ def test_yaml_config(tmpdir):
     c.config_paths = [conf_fpath]
     c.initialize(argv=[])
     assert c.verbose is True
+
+
+def test_Configurable_simple_yaml_generation(tmpdir):
+    class C(trc.Configurable):
+        "Class help"
+        a = trt.Int(1, config=True, help="Trait help test")
+        b = trt.Int(1, config=True, help="2nd trait help test")
+
+    cfg = CommentedMap()
+    C.class_config_yaml(cfg)
+
+    ## EXPECTED
+    """
+        # ############################################################################
+        # C(Configurable) configuration
+        # ############################################################################
+        # Class help
+        #
+
+        # Trait help test
+        # Default: 1
+          a: 1
+
+        # 2nd trait help test
+          b: 1
+    """
+    cfg_str = ydumps(cfg)
+    #print(cfg_str)
+    msgs = ['# Class help', '# Trait help test', '# 2nd trait help test',
+            'a: 1', 'b: 1']
+    assert all(m in cfg_str for m in msgs)
+
+
+def test_Application_yaml_generation(tmpdir):
+    class C(trc.Configurable):
+        "Class help"
+        a = trt.Int(1, config=True, help="Trait help test")
+        b = trt.Int(1, config=True, help="2nd trait help test")
+
+    class MyApp(trc.Application):
+        classes = [C]
+
+    cfg = MyApp().generate_config_file_yaml()
+
+    cfg_str = ydumps(cfg)
+    print(cfg_str)
+
+    ## EXPECTED
+    """
+        Application:
+        # ############################################################################
+        # Application(SingletonConfigurable) configuration
+        # ############################################################################
+        # This is an application.
+        #
+
+        # The date format used by logging formatters for %(asctime)s
+        # Default: '%Y-%m-%d %H:%M:%S'
+          log_datefmt: '%Y-%m-%d %H:%M:%S'
+        ...
+        C:
+        # ############################################################################
+        # C(Configurable) configuration
+        # ############################################################################
+        # Class help
+        ...
+    """
+    cfg_str = ydumps(cfg)
+    #print(cfg_str)
+    msgs = ['# Application(SingletonConfigurable) configuration',
+            '# C(Configurable) configuration']
+    assert all(m in cfg_str for m in msgs)
