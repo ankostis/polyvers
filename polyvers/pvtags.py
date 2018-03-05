@@ -175,18 +175,6 @@ class Project(cmdlets.Spec, cmdlets.Replaceable):
             pvtag_regex = re.compile(self.pvtag_regex.format_map(ictxt))
         return pvtag_regex
 
-    def version_from_pvtag(self, pvtag: str) -> Optional[str]:
-        """Extract the version from a *pvtag*."""
-        m = self._pvtag_regex_resolved.match(pvtag)
-        if m:
-            mg = m.groupdict()
-            if mg['descid']:
-                log.warning(
-                    "Ignoring pvtag '%s', it has `git-describe` suffix '%s'!",
-                    pvtag, mg['descid'])
-
-            return mg['version']
-
     _pvtags_collected = ListTrait(
         Unicode(), allow_null=True, default_value=None,
         help="Populated internally by `populate_pvtags_history()`.")
@@ -215,6 +203,35 @@ class Project(cmdlets.Spec, cmdlets.Replaceable):
         pvtags = self.pvtags_history
         if pvtags:
             return pvtags[-1]
+
+    def version_from_pvtag(self, pvtag: str) -> Optional[str]:
+        """Extract the version from a *pvtag*."""
+        m = self._pvtag_regex_resolved.match(pvtag)
+        if m:
+            mg = m.groupdict()
+            if mg['descid']:
+                log.warning(
+                    "Ignoring pvtag '%s', it has `git-describe` suffix '%s'!",
+                    pvtag, mg['descid'])
+
+            return mg['version']
+
+    @property
+    def pvtag_version(self) -> Optional[str]:
+        """
+        Return the *version* from the last *pvtag* of this project, if any.
+
+        .. NOTE::
+           Use :meth:`git_describe()` to report project-versions with more
+           accuracy.
+
+        :raise AssertionError:
+           If called before :func:`populate_pvtags_history()` has been applied
+           on this :class:`Project`.
+        """
+        pvtag = self.pvtag
+        if pvtag:
+            return self.version_from_pvtag(pvtag)
 
     def git_describe(self, *git_args: str,
                      include_lightweight=False,

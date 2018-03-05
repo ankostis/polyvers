@@ -58,12 +58,14 @@ def test_populate_pvtags_history_per_project(ok_repo):
     pvtags.populate_pvtags_history(project1)
     assert project1.pvtags_history == ['proj1-v0.0.0', 'proj1-v0.0.1']
     assert project1.pvtag == 'proj1-v0.0.1'
+    assert project1.pvtag_version == '0.0.1'
 
     pvtags.populate_pvtags_history(project2)
     assert project2.pvtags_history == []
     pvtags.populate_pvtags_history(project2, include_lightweight=True)
     assert project2.pvtags_history == ['proj-2-V0.2.0', 'proj-2-V0.2.1']
     assert project2.pvtag == 'proj-2-V0.2.1'
+    assert project2.pvtag_version == '0.2.1'
 
     ## Ensure no side-effects.
     assert project1.pvtags_history == ['proj1-v0.0.0', 'proj1-v0.0.1']
@@ -71,6 +73,7 @@ def test_populate_pvtags_history_per_project(ok_repo):
     pvtags.populate_pvtags_history(foo)
     assert foo.pvtags_history == []
     assert foo.pvtag is None
+    assert foo.pvtag_version is None
 
     ## Ensure no side-effects.
     assert project1.pvtags_history == ['proj1-v0.0.0', 'proj1-v0.0.1']
