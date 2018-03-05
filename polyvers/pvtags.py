@@ -13,6 +13,7 @@ For simple projects hosted at the root of git repos, see :data:`simple_project`
 :class:`Project` instance.
 """
 
+import contextlib
 import logging
 import os
 from pathlib import Path
@@ -41,7 +42,11 @@ class NoGitRepoError(cmdlets.CmdException):
     pass
 
 
-def _handle_git_errors(ex: sbp.CalledProcessError, pname):
+@contextlib.contextmanager
+def _git_errors_handler(pname):
+    try:
+        yield
+    except sbp.CalledProcessError as ex:
         err = ex.stderr
         if any(msg in err
                for msg in [
@@ -252,20 +257,16 @@ class Project(cmdlets.Spec, cmdlets.Replaceable):
            as ``git tag`` does.
         """
         pname = self.pname
-        pvtag = None
         tag_pattern = self._pvtag_fnmatch_frmt_resolved
-        try:
-            cli = cmd.git.describe
-            if include_lightweight:
-                cli._(tags=True)
 
+        cli = cmd.git.describe
+        if include_lightweight:
+            cli._(tags=True)
+
+        with _git_errors_handler(pname):
             out = cli._(*git_args, **git_flags)(match=tag_pattern)
-        except sbp.CalledProcessError as ex:
-            _handle_git_errors(ex, pname)
-        else:
-            pvtag = out and out.strip()
 
-            return pvtag
+        return out and out.strip()
 
     def last_commit_tstamp(self):
         """
@@ -287,15 +288,10 @@ class Project(cmdlets.Spec, cmdlets.Replaceable):
            where ``--tags`` is needed to consider also unannotated tags,
            as ``git tag`` does.
         """
-        cdate = None
-        try:
+        with _git_errors_handler(self.pname):
             out = cmd.git.log(n=1, format='format:%cD')  # TODO: traitize log-date format
-        except sbp.CalledProcessError as ex:
-            _handle_git_errors(ex, pname=self.pname)
-        else:
-            cdate = out and out.strip()
 
-            return cdate
+        return out and out.strip()
 
 
 def make_project_matching_all_pvtags(**project_kw) -> Project:
@@ -371,14 +367,10 @@ def _fetch_all_tags(cli, tag_patterns: List[str],
     if all_branches:
         cli._(merged='HEAD')
 
-    try:
+    with _git_errors_handler(pnames_msg):
         out = cli('--list', *tag_patterns)
-    except sbp.CalledProcessError as ex:
-        _handle_git_errors(ex, pname=pnames_msg)
-    else:
-        tags = out and out.strip().split('\n') or ()
 
-        return tags
+    return out and out.strip().split('\n') or ()
 
 
 def _parse_git_tag_ref_lines(tag_ref_lines: List[str],
@@ -405,13 +397,11 @@ def _fetch_annotated_tags(cli, tag_patterns: List[str],
     From https://stackoverflow.com/a/21032332/548792
     """
     cli.for_each_ref._('refs/tags/', format='%(objecttype) %(refname:short)')
-    try:
+    with _git_errors_handler(pnames_msg):
         out = cli(*tag_patterns)
-    except sbp.CalledProcessError as ex:
-        _handle_git_errors(ex, pname=pnames_msg)
-    else:
-        tag_ref_lines = out and out.strip().split('\n')
-        tags = _parse_git_tag_ref_lines(tag_ref_lines)
+
+    tag_ref_lines = out and out.strip().split('\n')
+    tags = _parse_git_tag_ref_lines(tag_ref_lines)
 
     return tags or []
 
