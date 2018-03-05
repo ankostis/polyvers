@@ -51,7 +51,8 @@ script:
 
   - |
     if [[ $TRAVIS_PYTHON_VERSION == '3.6' ]]; then
-        mypy -m polyvers.engrave
+        mypy -m polyvers.engrave \
+             -m polyvers.pvtags
     fi
 
 after_success:
