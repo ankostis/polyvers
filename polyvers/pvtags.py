@@ -314,14 +314,8 @@ def make_project_matching_simple_vtags(pname: str, basepath: Path = None,
     :param basepath:
         if not given, git-root assumed.
     """
-    if basepath is None:
-        from . import fileutils as fu
-
-        basepath = fu.find_git_root()
-
     simple_project = Project(
         pname=pname,
-        basepath=basepath,
         pvtag_frmt='v{version}',
         pvtag_regex=r"""(?xi)
             ^(?P<project>)
