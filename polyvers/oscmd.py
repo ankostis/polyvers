@@ -135,6 +135,9 @@ class _Cli:
         self._extend_cmdlist(args, kw)
         return self
 
+    def __str__(self):
+        return 'Cli(%s)' % ' '.join(self._cmdlist)
+
 
 class PopenCmd:
     """

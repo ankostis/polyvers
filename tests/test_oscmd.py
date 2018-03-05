@@ -23,6 +23,10 @@ def test_cmd_building(ok_repo):
     assert cmd.cmd._(flag='', f='').top._cmdlist == 'cmd --flag= -f top'.split()
 
 
+def test_to_str():
+    assert str(cmd.cmd._(flag='', f='').top) == 'Cli(cmd --flag= -f top)'
+
+
 def test_negate_single_letter():
     with pytest.raises(ValueError, match='cmd: foo'):
         cmd.foo(h=False)
