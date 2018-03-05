@@ -9,8 +9,13 @@
 """
 Make/inspect sub-project "pvtags" and respective commits in Git monorepos.
 
-For simple projects hosted at the root of git repos, see :data:`simple_project`
-:class:`Project` instance.
+There are 3 important methods/functions calling Git:
+- :method:`Project.git_describe()` that fetches the same version-id
+  that :func:`polyversion.polyversion()` would return, but with more options.
+- :method:`Project.last_commit_tstamp()`, same as above.
+- :func:`populate_pvtags_history()` that populates *pvtags* on the given
+  project instances; certain pvtag-related Project methods would fail if
+  this function has not been applies on a project instance.
 """
 
 import contextlib
@@ -194,7 +199,7 @@ class Project(cmdlets.Spec, cmdlets.Replaceable):
     @property
     def pvtag(self) -> Optional[str]:
         """
-        Return the last *pvtag* for the project, if any.
+        Return the last *pvtag* for the project, if any, or `None`.
 
         :raise AssertionError:
            If called before :func:`populate_pvtags_history()` has been applied
