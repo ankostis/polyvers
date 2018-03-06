@@ -152,18 +152,18 @@ def no_repo(tmpdir_factory):
 
 
 @pytest.fixture()
-def mutable_repo(ok_repo, tmpdir):
-    mutable_repo_basename = 'mutable_repo'
-    ivars = {'orig_dir': ok_repo.basename,
-             'clone_dir': mutable_repo_basename}
-
+def mutable_repo(ok_repo, tmpdir_factory):
     parent_dir = (ok_repo / '..')
+    mutable_repo = tmpdir_factory.mktemp('mutable_repo')
+    mutable_repo = P(mutable_repo.relto(parent_dir))
+    ivars = {'orig_dir': ok_repo.basename,
+             'clone_dir': mutable_repo}
+
     parent_dir.chdir()
     c = 'git clone %(orig_dir)s %(clone_dir)s' % ivars
     sbp.check_call(c.split())
 
-    repo_dir = (parent_dir / mutable_repo_basename)
-    repo_dir.chdir()
+    mutable_repo.chdir()
     cmds = """
     git config user.email "test@example.com"
     git config user.name "Testing Bot"
@@ -173,4 +173,4 @@ def mutable_repo(ok_repo, tmpdir):
         if c:
             sbp.check_call(c.split())
 
-    return repo_dir
+    return mutable_repo
