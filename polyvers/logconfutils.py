@@ -101,25 +101,57 @@ def _setup_color_logs(frmt):
         rlog.addHandler(color_handler)
 
 
-def verbosity_from_argv(args):
+def _count_multiflag_in_argv(args, short, long, eliminate=False):
+    """
+    Match flags in `argvs` list, in short/long form, and optionally remove them.
+
+    :param eliminate:
+        If true, returned flags will have those matching, removed.
+    :return:
+        the 2-tuple (num-of-matches, new-args) where `new-args` possibly
+        have flags missing.
+    """
     import re
 
-    verbosity = 0
-    for a in args:
-        if a == '--verbose':
-            verbosity += 1
-        if re.match('^-[a-z]+', a, re.I):
-            verbosity += a.count('v')
+    long = '--%s' % long
+    nmatches = 0
+    new_args = []
+    for flag in args:
+        if flag == long:
+            nmatches += 1
+            if eliminate:
+                continue
 
-    return verbosity
+        elif re.match('^-[a-z]+', flag, re.I):
+            nmatches += flag.count(short)
+            if eliminate:
+                flag = flag.replace(short, '')
+                if flag == '-':
+                    continue
+
+        new_args.append(flag)
+
+    return nmatches, new_args
 
 
-def log_level_from_argv(args):
-    verbosity = verbosity_from_argv(args)
-    levels = [logging.WARNING, logging.INFO, logging.DEBUG]
-    level = levels[min(len(levels) - 1, verbosity)]
+def log_level_from_argv(args,
+                        start_level_index: int,
+                        eliminate_verbose=False,
+                        eliminate_quiet=False):
+    """
+    param start_level_index:
+        index in defined log-levels where 0 is DEBUG.
+    """
+    nverbose, new_args = _count_multiflag_in_argv(args, 'v', 'verbose',
+                                                  eliminate_verbose)
+    nquiet, new_args = _count_multiflag_in_argv(new_args, 'q', 'quiet',
+                                                eliminate_quiet)
+    start_level_index = start_level_index - nverbose + nquiet
+    levels = list(sorted(logging._levelToName))
+    level = max(0, min(len(levels) - 1, start_level_index))
+    level = levels[level]
 
-    return level
+    return level, new_args
 
 
 def init_logging(

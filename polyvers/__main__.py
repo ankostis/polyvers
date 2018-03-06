@@ -36,7 +36,10 @@ def main(argv=None, cmd_consumer=None, **app_init_kwds):
     ## At these early stages, any log cmd-line option
     #  enable DEBUG logging ; later will be set by `baseapp` traits.
     from . import logconfutils as mlu
-    log_level = mlu.log_level_from_argv(argv)
+    log_level, argv = mlu.log_level_from_argv(
+        argv,
+        start_level_index=3,  # either WARNING or NOTICE (if patched)
+        eliminate_quiet=True)
 
     import polyvers as mypack
 
