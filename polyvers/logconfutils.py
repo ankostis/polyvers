@@ -21,12 +21,16 @@ default_logging_level = logging.INFO
 
 
 def patch_new_level_in_logging(level, name):
+    if hasattr(logging, name):
+        logging.getLogger().warning(
+            "Duplicate attempt to add logging level %s(%s)!", name, level)
+        return
+
     if not (isinstance(level, int) and isinstance(name, str)):
         raise ValueError("(level: %s, name: %s) must be (int, str), but was: "
                          "(%s, %s)" % (level, name, type(level), type(name)))
+    logging.addLevelName(level, name)
     setattr(logging, name, level)
-    logging._levelToName[level] = name
-    logging._nameToLevel[name] = level
 
     def log_method(self, msg, *args, **kwargs):
         if self.isEnabledFor(level):
