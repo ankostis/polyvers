@@ -8,6 +8,9 @@
 
 ## TODO: Move to `polyversion` subproject.
 from polyvers.polyverslib import polyversion, polytime
+#from . import logconfutils as lcu
+
+
 __all__ = ['polyversion', 'polytime']
 
 APPNAME = 'polyvers'
@@ -27,3 +30,8 @@ __music__ = {
     "mix by Elsa Hewitt":
     "https://www.mixcloud.com/elsarosemaryx/eh-autumn-mixtape-003/",
 }
+
+
+# TODO: enable NOTICE level
+# lcu.patch_new_level_in_logging(25, 'NOTICE')
+# lcu.default_logging_level = 'NOTICE'

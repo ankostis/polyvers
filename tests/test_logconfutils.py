@@ -6,9 +6,18 @@
 # You may not use this work except in compliance with the Licence.
 # You may obtain a copy of the Licence at: http://ec.europa.eu/idabc/eupl
 
-import pytest
 import logging
-from polyvers import logconfutils as lu
+from polyvers import logconfutils as lcu
+
+import pytest
+
+
+def test_notice_level(caplog):
+    lcu.patch_new_level_in_logging(25, 'NOTICE')
+    lcu.init_logging(level='NOTICE')
+
+    logging.getLogger().notice("It's there!")
+    assert "It's there!" in caplog.text
 
 
 @pytest.mark.parametrize('inp, exp', [
@@ -22,5 +31,5 @@ from polyvers import logconfutils as lu
     ('a -vv -v --verbose', logging.DEBUG),
 ])
 def test_log_level_from_argv(inp, exp):
-    level = lu.log_level_from_argv(inp.split())
+    level = lcu.log_level_from_argv(inp.split())
     assert level == exp

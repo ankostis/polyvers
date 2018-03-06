@@ -17,6 +17,24 @@ import os.path as osp
 from ruamel import yaml  # @UnresolvedImport
 
 
+default_logging_level = logging.INFO
+
+
+def patch_new_level_in_logging(level, name):
+    if not (isinstance(level, int) and isinstance(name, str)):
+        raise ValueError("(level: %s, name: %s) must be (int, str), but was: "
+                         "(%s, %s)" % (level, name, type(level), type(name)))
+    setattr(logging, name, level)
+    logging._levelToName[level] = name
+    logging._nameToLevel[name] = level
+
+    def log_method(self, msg, *args, **kwargs):
+        if self.isEnabledFor(level):
+            self._log(level, msg, args, **kwargs)
+
+    setattr(logging.Logger, name.lower(), log_method)
+
+
 def _classify_fpaths(fpaths):
     """
     Split filelist in 3: (confs|'None'), (yaml|yamls) or and missing anc check
@@ -105,7 +123,7 @@ def log_level_from_argv(args):
 
 
 def init_logging(
-        level=None,
+        level=default_logging_level,
         logconf_files=None,
         color=None,
         logger=None,
@@ -131,7 +149,6 @@ def init_logging(
         Passed directly to :func:`logging.basicConfig()` (e.g. `filename`);
         used only id default HOME ``logconf.yaml`` file is NOT read.
     """
-    default_level = logging.INFO
     logconf_src = None
     missing_logconfs = None
     self_level = logging.DEBUG if level is None else logging.INFO
@@ -156,7 +173,7 @@ def init_logging(
 
     else:  # No logconf applied
         logconf_src = 'explicit(level=%s, default_level=%s, kw=%s)' % (
-            level, default_level, kwds)
+            level, default_logging_level, kwds)
 
         if level is None:
             ## Apply default Logging-config.
