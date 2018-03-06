@@ -152,7 +152,7 @@ def init_logging(
     if logconf_src:  # Some logconf applied
         if level is not None:
             # Respect given level, overriding Logconf-file on root-logger
-            logging.getLogger().level = level
+            logging.getLogger().setLevel(level)
 
     else:  # No logconf applied
         logconf_src = 'explicit(level=%s, default_level=%s, kw=%s)' % (
@@ -166,7 +166,7 @@ def init_logging(
                         "%(asctime)-15s|%(levelname)5.5s|%(name)s|%(message)s")
         logging.basicConfig(level=level, format=frmt, **kwds)
         # Because `basicConfig()` ignores root-logger if this re-invoked.
-        logging.getLogger().level = level
+        logging.getLogger().setLevel(level)
 
         if color is None:
             color = sys.stderr.isatty()
