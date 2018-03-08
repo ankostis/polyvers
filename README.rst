@@ -50,21 +50,26 @@ hosted in a *Git* `monorepos`_, independently.
 When bumping the version of sub-project(s), *polyvers* does the following:
 
 - help you decide the next version of sub-projects, selectively and independently;
-- add x2 tagged commits:
+- add x2 tagged commits for each project bumped:
 
-  - one in-trunk *"Version" commit*, and another
-  - `out-of-trunk (leaf) "Release" commit`_ ;
+  - one in-trunk *"Version" commit tags (pvtags)* like ``foo-proj-v0.1.0``,
+    and another `out-of-trunk (leaf) "Release" commit`_ like ``foo-proj-r0.1.0``;
 
-- engrave the new versions in the source code of all *dependent* sub-projects,
-  but only in the "leaf" version-commit;
+- engrave the new versions in the source code of bumped-project(s) and
+  all *dependent* sub-projects, but this happening only in the "leaf"
+  version-commit;
 - build packages out of the later (optionally);
 - enforce (customizable) validation rules and run (extensible) hooks.
 
-Additional utilities include:
+Additional capabilities and utilities:
 
 - **polyverslib** library code to extract sub-project's version from past tags
   (provided a a separate subproject here);
-- pip-install all subprojects in develop mode (``pip install -e <project>``).
+
+- (``pip install -e <project>``) all subprojects in "develop mode".
+
+- It is still possible to use plain **version tags (vtags)** like ``v0.1.0``,
+  assuming you have a single project (called hereinafter a *monoproject*)
 
 .. _opening-end:
 
@@ -261,13 +266,13 @@ supports the quasi-superset, but more versatile, `PEP-440 version ids
 
 Monorepos
 ---------
-When your project succeeds, problems like these are known only too well:
+When your single project succeeds, problems like these are known only too well:
 
-  Changes in **web-server** depend on **core** features that cannot go public
-  because the "official" **wire-protocol** is freezed.
+  Changes in **web-server** part depend on **core** features that cannot
+  go public because the "official" **wire-protocol** is freezed.
 
-  While downstream projects using **core** as a library complain about its bloated
-  transitive dependencies (why *flask* library is needed??).
+  While downstream projects using **core** as a library complain about
+  its bloated transitive dependencies (asking why *flask* library is needed??).
 
 So the time to "split the project has come.  But from `lerna <https://lernajs.io/>`_:
 
@@ -326,8 +331,8 @@ Other Features
 
 Drawbacks & Workarounds
 -----------------------
-- To ``pip``-install python projects is a bit `more complicated
-  <https://pip.pypa.io/en/stable/reference/pip_install/#vcs-support>`_ use::
+- To ``pip``-install python projects from remote URLs is a bit `more complicated
+  <https://pip.pypa.io/en/stable/reference/pip_install/#vcs-support>`_::
 
       pip install -e git+https://repo_url/#egg=pkg&subdirectory=pkg_dir
 
