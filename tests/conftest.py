@@ -154,10 +154,9 @@ def no_repo(tmpdir_factory):
 @pytest.fixture()
 def mutable_repo(ok_repo, tmpdir_factory):
     parent_dir = (ok_repo / '..')
-    mutable_repo = tmpdir_factory.mktemp('mutable_repo')
-    mutable_repo = P(mutable_repo.relto(parent_dir))
+    mutable_repo = P(tmpdir_factory.mktemp('mutable_repo'))
     ivars = {'orig_dir': ok_repo.basename,
-             'clone_dir': mutable_repo}
+             'clone_dir': mutable_repo.relto(parent_dir)}
 
     parent_dir.chdir()
     c = 'git clone %(orig_dir)s %(clone_dir)s' % ivars
