@@ -5,7 +5,7 @@
 # You may not use this work except in compliance with the Licence.
 # You may obtain a copy of the Licence at: http://ec.europa.eu/idabc/eupl
 
-from polyvers.interpctxt import Now, InterpolationContext
+from polyvers.interpctxt import Now, InterpolationContext, _HasTraitObjectDict, dictize_object
 
 import pytest
 
@@ -140,7 +140,7 @@ def test_interp_on_objects():
             '{b}'.format_map(ctxt)
 
 
-def test_ikeys_ley_on_objects():
+def test_ikeys_key_on_objects():
     class C:
         aa = 1
 
@@ -153,6 +153,14 @@ def test_ikeys_ley_on_objects():
 
     keys = [k.strip() for k in keys.split(',')]
     assert 'aa' in keys and 'bb' in keys
+
+
+def test_dictize_object_on_HasTraitObjectDict():
+    class C(trt.HasTraits):
+        a = trt.Int(1)
+
+    od = _HasTraitObjectDict(C())
+    assert dictize_object(od) is od
 
 
 def test_interp_on_HasTraits():

@@ -64,7 +64,7 @@ class _HasTraitObjectDict(abc.Mapping):
 
 
 def dictize_object(obj):
-    if isinstance(obj, dict):
+    if isinstance(obj, (dict, abc.Mapping)):
         pass
     elif isinstance(obj, trt.HasTraits):
         obj = _HasTraitObjectDict(obj)
