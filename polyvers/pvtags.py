@@ -19,6 +19,7 @@ There are 3 important methods/functions calling Git:
 """
 
 import contextlib
+import glob
 import logging
 import os
 from pathlib import Path
@@ -27,7 +28,7 @@ from typing import List, Dict, Optional
 
 import subprocess as sbp
 
-from . import polyverslib, cmdlets
+from . import polyverslib, cmdlets, interpctxt
 from ._vendor.traitlets import traitlets as trt
 from ._vendor.traitlets.traitlets import Bool, Unicode, Instance, \
     List as ListTrait  # @UnresolvedImport
@@ -68,6 +69,22 @@ def _git_errors_handler(pname):
             raise
 
 
+class _EscapedObjectDict(interpctxt._HasTraitObjectDict):
+    def __init__(self, _obj: trt.HasTraits, escape_func) -> None:
+        super().__init__(_obj)
+        self._escape_func = escape_func
+
+    def __getitem__(self, key):
+        if self._obj.has_trait(key):
+            v = getattr(self._obj, key)
+            if isinstance(v, str):
+                v = self._escape_func(v)
+
+            return v
+        else:
+            raise KeyError(key)
+
+
 class Project(cmdlets.Spec, cmdlets.Replaceable):
     pname = Unicode()
     basepath = Instance(Path, default_value=None, allow_none=True, castable=str)
@@ -97,7 +114,8 @@ class Project(cmdlets.Spec, cmdlets.Replaceable):
             {pname}   <-- this Project.pname
             {version} <-- '*'
         """
-        with self.interpolations.ikeys(self, version='*') as ictxt:
+        with self.interpolations.ikeys(_EscapedObjectDict(self, glob.escape),
+                                       version='*') as ictxt:
             pvtag_fnmatch_frmt = self.pvtag_frmt.format_map(ictxt)
         return pvtag_fnmatch_frmt
 
@@ -162,7 +180,8 @@ class Project(cmdlets.Spec, cmdlets.Replaceable):
     @property
     def _pvtag_regex_resolved(self):
         "Interpolate and compile as regex."
-        with self.interpolations.ikeys(self) as ictxt:
+        with self.interpolations.ikeys(
+                _EscapedObjectDict(self, re.escape)) as ictxt:
             pvtag_regex = re.compile(self.pvtag_regex.format_map(ictxt))
         return pvtag_regex
 
@@ -281,6 +300,7 @@ def make_project_matching_all_pvtags(**project_kw) -> Project:
     """
     return Project(
         pname='*',
+        pvtag_frmt='*-v*',
         pvtag_regex=r"""(?xi)
             ^(?P<project>[A-Z0-9]|[A-Z0-9][A-Z0-9._-]*?[A-Z0-9])
             -
@@ -290,8 +310,7 @@ def make_project_matching_all_pvtags(**project_kw) -> Project:
         **project_kw)
 
 
-def make_project_matching_simple_vtags(pname: str, basepath: Path = None,
-                                       **project_kw) -> Project:
+def make_project_matching_simple_vtags(**project_kw) -> Project:
     """
     Make a :class:`Project` for a single project hosted at git repos root (not "monorepos").
 
@@ -301,7 +320,6 @@ def make_project_matching_simple_vtags(pname: str, basepath: Path = None,
         if not given, git-root assumed.
     """
     simple_project = Project(
-        pname=pname,
         pvtag_frmt='v{version}',
         pvtag_regex=r"""(?xi)
             ^(?P<project>)
