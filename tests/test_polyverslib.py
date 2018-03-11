@@ -51,12 +51,11 @@ def test_split_pvtag_parsing(inp, exp):
 
 @pytest.mark.parametrize('inp, exp', split_pvtag_validation_patterns)
 def test_fnmatch_format(inp, exp):
-    pvtag_fnmatch_frmt = pvlib.pvtag_fnmatch_frmt
     if exp is None:
         pass
     else:
         project = exp[0]
-        frmt = pvtag_fnmatch_frmt.format(pname=project)
+        frmt = pvlib._pvtag_fnmatch_frmt(pvlib.pvtag_frmt, project)
         assert fnmatch.fnmatch(inp, frmt)
 
 
@@ -98,7 +97,7 @@ def test_polyversion_p1(ok_repo, untagged_repo, no_repo):
 
 def test_polyversion_p2(ok_repo):
     v = pvlib.polyversion(proj2, repo_path=ok_repo,
-                          pvtag_fnmatch_frmt='{pname}-V*',
+                          pvtag_frmt='{pname}-V{version}',
                           pvtag_regex=r"""(?xi)
                               ^(?P<project>{pname})
                               -

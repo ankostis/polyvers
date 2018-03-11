@@ -28,9 +28,10 @@ import os.path as osp
 import subprocess as sbp
 
 
-#: The default pattern globbing for *pvtags* with ``git describe --match <pattern>``.
-#: It is given a :pep:`3101` parameter ``{pname}`` to interpolate.
-pvtag_fnmatch_frmt = '{pname}-v*'
+#: The default pattern for *pvtags* receiving 2 :pep:`3101` parameters
+#: ``{pname}`` and ``{version} = '*'`` to interpolate.  It is used to generate
+#: the match patterns for ``git describe --match <pattern>`` command.
+pvtag_frmt = '{pname}-v{version}'
 
 #: The default regex pattern breaking *pvtags* and/or ``git-describe`` output
 #: into 3 capturing groups.
@@ -128,8 +129,12 @@ def version_from_descid(version, descid):
     return '%s+%s' % (version, local_part)
 
 
+def _pvtag_fnmatch_frmt(pvtag_frmt, pname):
+    return pvtag_frmt.format(pname=pname, version='*')
+
+
 def polyversion(project, default=None, repo_path=None,
-                pvtag_fnmatch_frmt=pvtag_fnmatch_frmt,
+                pvtag_frmt=pvtag_frmt,
                 pvtag_regex=pvtag_regex, git_options=()):
     """
     Report the *pvtag* of the `project` in the git repo hosting the source-file calling this.
@@ -141,10 +146,11 @@ def polyversion(project, default=None, repo_path=None,
     :param str repo_path:
         A path inside the git repo hosting the `project` in question; if missing,
         derived from the calling stack.
-    :param str pvtag_fnmatch_frmt:
-        The pattern globbing for *pvtags* with ``git describe --match <pattern>``.
-        It is given a :pep:`3101` parameter ``{pname}`` to interpolate.
-        See :data:`pvtag_fnmatch_frmt`
+    :param str pvtag_frmt:
+        The pattern for *pvtags* receiving 2 :pep:`3101` parameters
+        ``{pname}`` and ``{version} = '*'`` to interpolate.  It is used to generate
+        the match patterns for ``git describe --match <pattern>`` command.
+        See :data:`pvtag_frmt`
     :param regex pvtag_regex:
         The regex pattern breaking apart *pvtags*, with 3 named capturing groups:
         - ``project``,
@@ -180,7 +186,7 @@ def polyversion(project, default=None, repo_path=None,
     version = None
     if not repo_path:
         repo_path = _caller_fpath()
-    tag_pattern = pvtag_fnmatch_frmt.format(pname=project)
+    tag_pattern = _pvtag_fnmatch_frmt(pvtag_frmt, project)
     pvtag_regex = re.compile(pvtag_regex.format(pname=project))
     try:
         cmd = 'git describe'.split()

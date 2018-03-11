@@ -73,7 +73,7 @@ class Project(cmdlets.Spec, cmdlets.Replaceable):
     basepath = Instance(Path, default_value=None, allow_none=True, castable=str)
 
     pvtag_frmt = Unicode(
-        default_value='{pname}-v{version}',
+        default_value=polyverslib.pvtag_frmt,
         help="""
         The pattern to generate new *pvtags*.
 
@@ -82,31 +82,24 @@ class Project(cmdlets.Spec, cmdlets.Replaceable):
         all available keys.
 
         .. WARNING::
-           If you change this, it affects default value of :attr:`pvtag_fnmatch_frmt`
-           so ensure the :func:`polyversion.polyversion()` gets invoked
-           from project's sources with the same value in `pvtag_fnmatch_frmt`
-           kw-arg.
+           If you change this, ensure the :func:`polyversion.polyversion()`
+           gets invoked from project's sources with the same value
+           in `pvtag_frmt` kw-arg.
     """).tag(config=True)
 
-    pvtag_fnmatch_frmt = Unicode(
-        help="""
+    @property
+    def pvtag_fnmatch_frmt(self):
+        """
         The glob-pattern finding *pvtags* with ``git describe --match <pattern>`` cmd.
 
         By default, it is interpolated with two :pep:`3101` parameters::
 
             {pname}   <-- this Project.pname
             {version} <-- '*'
-
-        .. WARNING::
-           If you change this, ensure the :func:`polyversion.polyversion()`
-           gets invoked from project's sources with the same value
-           in `pvtag_fnmatch_frmt` kw-arg.
-    """).tag(config=True)
-
-    @trt.default('pvtag_fnmatch_frmt')
-    def _vtag_fnmatch_from_print_frmt(self):
-        with self.interpolations.ikeys(pname=self.pname, version='*') as ictxt:
-            return self.pvtag_frmt.format_map(ictxt)
+        """
+        with self.interpolations.ikeys(self, version='*') as ictxt:
+            pvtag_fnmatch_frmt = self.pvtag_frmt.format_map(ictxt)
+        return pvtag_fnmatch_frmt
 
     pvtag_regex = Unicode(
         default_value=polyverslib.pvtag_regex,
@@ -165,13 +158,6 @@ class Project(cmdlets.Spec, cmdlets.Replaceable):
             Available interpolations (apart from env-vars prefixed with '$'):
             {ikeys}
         """)
-
-    @property
-    def _pvtag_fnmatch_frmt_resolved(self):
-        "Interpolate it."
-        with self.interpolations.ikeys(self) as ictxt:
-            pvtag_fnmatch_frmt = self.pvtag_fnmatch_frmt.format_map(ictxt)
-        return pvtag_fnmatch_frmt
 
     @property
     def _pvtag_regex_resolved(self):
@@ -249,7 +235,7 @@ class Project(cmdlets.Spec, cmdlets.Replaceable):
            as ``git tag`` does.
         """
         pname = self.pname
-        tag_pattern = self._pvtag_fnmatch_frmt_resolved
+        tag_pattern = self.pvtag_fnmatch_frmt
 
         cli = cmd.git.describe
         if include_lightweight:
