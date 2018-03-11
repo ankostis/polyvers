@@ -22,7 +22,7 @@ def test_notice_level(caplog):
     assert "It's there!" in caplog.text
 
 
-@pytest.mark.parametrize('inp, exp_level, exp_argv', [
+argv_data = [
     ('-v', 1, []),
     ('--verbose --verbose', 2, []),
     ('-verbose', 1, '-erbose'),  # still has one 'v'!
@@ -38,8 +38,12 @@ def test_notice_level(caplog):
 
     ('-vvq', 1, []),
     ('-vvqk -v --quiet', 1, '-k'),
-])
-def test_count_multiflag_in_argv(inp, exp_level, exp_argv):
+    ('-vvvvvq', 4, []),
+]
+
+
+@pytest.mark.parametrize('inp, exp_verbose, exp_argv', argv_data)
+def test_count_multiflag_in_argv(inp, exp_verbose, exp_argv):
     inp = inp.split()
     if isinstance(exp_argv, str):
         exp_argv = exp_argv.split()
@@ -47,36 +51,36 @@ def test_count_multiflag_in_argv(inp, exp_level, exp_argv):
     verbosity, new_argv = lcu._count_multiflag_in_argv(inp, 'v', 'verbose')
     quitness, new_argv = lcu._count_multiflag_in_argv(new_argv, 'q', 'quiet')
     new_level = verbosity - quitness
-    assert new_level == exp_level
+    assert new_level == exp_verbose
     assert new_argv == inp
 
     verbosity, new_argv = lcu._count_multiflag_in_argv(inp, 'v', 'verbose', True)
     quitness, new_argv = lcu._count_multiflag_in_argv(new_argv, 'q', 'quiet', True)
-    assert new_level == exp_level
+    new_level = verbosity - quitness
+    assert new_level == exp_verbose
     assert new_argv == exp_argv
 
 
 def test_log_level_from_argv_start_level():
-    level, _ = lcu.log_level_from_argv((), start_level_index=3)
-    assert level == 25  # With NOTICE level patched in.
+    start_level = 30
+    level, _ = lcu.log_level_from_argv((), start_level=start_level)
+    assert level == start_level
+
+    with pytest.raises(ValueError, match=r"Expecting an \*integer\*"):
+        lcu.log_level_from_argv((), start_level=3.14)
+
+    with pytest.raises(ValueError, match=r"Expecting an \*existing\*"):
+        lcu.log_level_from_argv((), start_level=-500)
 
 
-@pytest.mark.parametrize('inp, exp', [
-    ('-v', logging.INFO),
-    ('--verbose --verbose', logging.DEBUG),
-    ('-verbose', logging.INFO),  # still has one 'v'!
-    ('-aa -v -b -v a -- -g', logging.DEBUG),
-    ('-vv', logging.DEBUG),
-    ('-vvv', logging.NOTSET),
-    ('a -vjvkv', logging.NOTSET),
-    ('a -vv -v --verbose', logging.NOTSET),
-
-    ('-vvq', logging.INFO),
-    ('-vvq -v --quiet', logging.INFO),
-    ('-vvvvvq', logging.NOTSET),
-])
-def test_log_level_from_argv(inp, exp):
+@pytest.mark.parametrize('inp, exp_verbose, _', argv_data)
+def test_log_level_from_argv(inp, exp_verbose, _):
     lcu.init_logging(level=logging.INFO)
 
-    level, _ = lcu.log_level_from_argv(inp.split(), start_level_index=3)
-    assert level == exp
+    start_level = 30
+    level, _ = lcu.log_level_from_argv(inp.split(), start_level=start_level)
+
+    levels = list(sorted(logging._levelToName))
+    start_level_index = levels.index(start_level)
+    exp_level_index = max(0, min(len(levels) - 1, start_level_index - exp_verbose))
+    assert level == levels[exp_level_index]

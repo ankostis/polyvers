@@ -139,21 +139,31 @@ def _count_multiflag_in_argv(args, short, long, eliminate=False):
 
 
 def log_level_from_argv(args,
-                        start_level_index: int,
+                        start_level: int,
                         eliminate_verbose=False,
                         eliminate_quiet=False):
     """
-    param start_level_index:
-        index in defined log-levels where 0 is DEBUG.
+    :param start_level_index:
+        some existing level
     """
+    if not isinstance(start_level, int):
+        raise ValueError(
+            "Expecting an *integer* for logging level, got '%s'!" % start_level)
+    levels = list(sorted(logging._levelToName))
+    if start_level not in levels:
+        raise ValueError(
+            "Expecting an *existing* logging level out (%s), got '%s'!" %
+            (', '.join(logging._nameToLevel), start_level))
+    start_level_index = levels.index(start_level)
+
     nverbose, new_args = _count_multiflag_in_argv(args, 'v', 'verbose',
                                                   eliminate_verbose)
     nquiet, new_args = _count_multiflag_in_argv(new_args, 'q', 'quiet',
                                                 eliminate_quiet)
-    start_level_index = start_level_index - nverbose + nquiet
-    levels = list(sorted(logging._levelToName))
-    level = max(0, min(len(levels) - 1, start_level_index))
-    level = levels[level]
+
+    level_index = start_level_index - nverbose + nquiet
+    level_index = max(0, min(len(levels) - 1, level_index))
+    level = levels[level_index]
 
     return level, new_args
 
