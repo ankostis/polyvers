@@ -113,7 +113,7 @@ class InterpolationContext(ChainMap):
 
         :param maps:
             a list of dictionaries/objects/HasTraits from which to draw
-            items/attributes/trait-values.
+            items/attributes/trait-values, all in decreasing priority.
         :param stub_keys:
             If true, any missing-key gets returned as ``{key}``.
 
@@ -121,17 +121,16 @@ class InterpolationContext(ChainMap):
                Use ``str.format_map()`` when `stub_keys` is true; ``format()``
                will clone existing keys in a static map.
 
-        Earlier maps take precedence; `kv_pairs` have the lowest, unless
-        `stub_keys` is true, which then becomes the last catch-all map.
+        Later maps take precedence over earlier ones; `kv_pairs` have the highest,
+        `stub_keys` the lowest (if true).
         """
-        tmp_maps = [dictize_object(m) for m in maps]
+        tmp_maps = [_missing_keys] if stub_keys else []
+        tmp_maps.extend(dictize_object(m) for m in maps)
         if kv_pairs:
             tmp_maps.append(kv_pairs)
-        if stub_keys:
-            tmp_maps.append(_missing_keys)
 
         orig_maps = self.maps
-        self.maps = orig_maps[:1] + tmp_maps + orig_maps[1:]
+        self.maps = orig_maps[:1] + tmp_maps[::-1] + orig_maps[1:]
         try:
             yield self
         finally:

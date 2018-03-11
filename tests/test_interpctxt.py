@@ -39,6 +39,21 @@ def test_interp_ikeys_key():
     assert set(keys) == set('utcnow ikeys a bb now'.split())
 
 
+@pytest.mark.parametrize('maps, kw, exp', [
+    ([{'a': 1}, {'a': 2}], {}, '2'),
+    ([{'a': 1}, {'a': 2}], {'a': 3}, '3'),
+])
+def test_interp_temp_order(maps, kw, exp):
+    ctxt = InterpolationContext()
+
+    with ctxt.ikeys(*maps, **kw):
+        assert '{a}'.format_map(ctxt) == exp
+
+    with ctxt.ikeys(*maps, **kw, stub_keys=True):
+        assert '{a}'.format_map(ctxt) == exp
+        assert '{b}'.format_map(ctxt) == '{b}'
+
+
 def test_interp_temp_ikeys():
     frmt = "Lucky {b}! {a}."
     exp = "Lucky 13! Cool."
@@ -65,7 +80,7 @@ def test_interp_temp_ikeys():
         assert frmt.format(**ictxt) == exp
         assert frmt.format_map(ictxt) == exp
 
-    with ctxt.ikeys({'b': 13}, a='Cool', b='14') as ictxt:
+    with ctxt.ikeys({'b': 14}, a='Cool', b='13') as ictxt:
         assert frmt.format(**ictxt) == exp
         assert frmt.format_map(ictxt) == exp
 
