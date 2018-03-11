@@ -198,7 +198,7 @@ class Project(cmdlets.Spec, cmdlets.Replaceable):
         return pvtag_regex
 
     _pvtags_collected = ListTrait(
-        Unicode(), allow_null=True, default_value=None,
+        Unicode(), allow_none=True, default_value=None,
         help="Populated internally by `populate_pvtags_history()`.")
 
     @property

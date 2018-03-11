@@ -189,7 +189,7 @@ class GraftSpec(cmdlets.Spec, cmdlets.Strable, cmdlets.Replaceable):
     ).tag(config=True)
 
     hits = ListTrait(Instance(MatchClass))
-    hits_indices = ListTrait(Int(), allow_null=True, default_value=None)
+    hits_indices = ListTrait(Int(), allow_none=True, default_value=None)
 
     def collect_graft_hits(self, ftext: str) -> Union['GraftSpec']:
         """
