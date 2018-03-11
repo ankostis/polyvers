@@ -45,6 +45,22 @@ pvtag_regex = r"""(?xi)
 """
 
 
+#: The default pattern for *vtags* receiving 2 :pep:`3101` parameters
+#: ``{pname}`` and ``{version} = '*'`` to interpolate.  It is used to generate
+#: the match patterns for ``git describe --match <pattern>`` command.
+vtag_frmt = 'v{version}'
+
+#: The default regex pattern breaking *pvtags* and/or ``git-describe`` output
+#: into 3 capturing groups.
+#: It is given a :pep:`3101` parameter ``{pname}`` to interpolate.
+#: See :pep:`0426` for project-name characters and format.
+vtag_regex = r"""(?xi)
+    ^(?P<project>)
+    v(?P<version>\d[^-]*)
+    (?:-(?P<descid>\d+-g[a-f\d]+))?$
+"""
+
+
 def clean_cmd_result(res):  # type: (bytes) -> str
     """
     :return:
@@ -129,13 +145,14 @@ def version_from_descid(version, descid):
     return '%s+%s' % (version, local_part)
 
 
-def _pvtag_fnmatch_frmt(pvtag_frmt, pname):
-    return pvtag_frmt.format(pname=pname, version='*')
+def _pvtag_fnmatch_frmt(tag_frmt, pname):
+    return tag_frmt.format(pname=pname, version='*')
 
 
 def polyversion(project, default=None, repo_path=None,
-                pvtag_frmt=pvtag_frmt,
-                pvtag_regex=pvtag_regex, git_options=()):
+                monoproject=None,
+                tag_frmt=None, tag_regex=None,
+                git_options=()):
     """
     Report the *pvtag* of the `project` in the git repo hosting the source-file calling this.
 
@@ -146,22 +163,31 @@ def polyversion(project, default=None, repo_path=None,
     :param str repo_path:
         A path inside the git repo hosting the `project` in question; if missing,
         derived from the calling stack.
-    :param str pvtag_frmt:
-        The pattern for *pvtags* receiving 2 :pep:`3101` parameters
-        ``{pname}`` and ``{version} = '*'`` to interpolate.  It is used to generate
-        the match patterns for ``git describe --match <pattern>`` command.
-        See :data:`pvtag_frmt`
-    :param regex pvtag_regex:
+    :param bool monoproject:
+        Choose versioning scheme:
+
+        - false: (default) use *pvtags* :data:`pvtag_frmt` & :data:`pvtag_regex`.
+        - true: use plain *vtags* :data:`vtag_frmt` & :data:`vtag_regex`.
+        - The `tag_frmt` and `tag_regex` args take precendance, if given.
+    :param str tag_frmt:
+        The :pep:`3101` pattern for creating *pvtags* (or *vtags).
+
+        - It receives 2 parameters to interpolate: ``{pname}, {version} = '*'``.
+        - It is used also to generate the match patterns for ``git describe --match <pattern>``
+          command.
+        - It overrides `monoproject` arg.
+        - See :data:`pvtag_frmt` & :data:`vtag_frmt`
+    :param regex tag_regex:
         The regex pattern breaking apart *pvtags*, with 3 named capturing groups:
         - ``project``,
         - ``version`` (without the 'v'),
         - ``descid`` (optional) anything following the dash('-') after
           the version in ``git-describe`` result.
 
-        It is given a :pep:`3101` parameter ``{pname}`` to interpolate.
-
-        See :pep:`0426` for project-name characters and format.
-        See :data:`pvtag_regex`
+        - It is given a :pep:`3101` parameter ``{pname}`` to interpolate.
+        - It overrides `monoproject` arg.
+        - See :pep:`0426` for project-name characters and format.
+        - See :data:`pvtag_regex` & :data:`vtag_regex`
     :param git_options:
         List of options(str) passed to ``git describe`` command.
     :return:
@@ -184,17 +210,23 @@ def polyversion(project, default=None, repo_path=None,
        used by the tool internally.
     """
     version = None
+
+    if tag_frmt is None:
+        tag_frmt = vtag_frmt if monoproject else pvtag_frmt
+    if tag_regex is None:
+        tag_regex = vtag_regex if monoproject else pvtag_regex
     if not repo_path:
         repo_path = _caller_fpath()
-    tag_pattern = _pvtag_fnmatch_frmt(pvtag_frmt, project)
-    pvtag_regex = re.compile(pvtag_regex.format(pname=project))
+
+    tag_pattern = _pvtag_fnmatch_frmt(tag_frmt, project)
+    tag_regex = re.compile(tag_regex.format(pname=project))
     try:
         cmd = 'git describe'.split()
         cmd.extend(git_options)
         cmd.append('--match')
         cmd.append(tag_pattern)
         pvtag = _my_run(cmd, cwd=repo_path)
-        matched_project, version, descid = split_pvtag(pvtag, pvtag_regex)
+        matched_project, version, descid = split_pvtag(pvtag, tag_regex)
         if matched_project != project:
             print("Matched  pvtag project '%s' different from expected '%s'!" %
                   (matched_project, project), file=sys.stderr)

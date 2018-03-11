@@ -112,6 +112,29 @@ def ok_repo(tmpdir_factory):
 
 
 @pytest.fixture(scope="session")
+def vtags_repo(tmpdir_factory):
+    repo_dir = tmpdir_factory.mktemp('repo')
+    repo_dir.chdir()
+    cmds = """
+    git init
+    git config user.email "test@example.com"
+    git config user.name "Testing Bot"
+    git commit --allow-empty  --no-edit -m some_msg
+    git tag v0.0.0 -m annotated
+    git commit --allow-empty  --no-edit -m some_msg
+    git commit --allow-empty  --no-edit -m some_msg
+    git tag  v0.0.1 -m annotated
+    git commit --allow-empty  --no-edit -m some_msg
+    """
+    for c in cmds.split('\n'):
+        c = c and c.strip()
+        if c:
+            sbp.check_call(c.split())
+
+    return repo_dir
+
+
+@pytest.fixture(scope="session")
 def untagged_repo(tmpdir_factory):
     repo_dir = tmpdir_factory.mktemp('untagged')
     repo_dir.chdir()

@@ -97,8 +97,8 @@ def test_polyversion_p1(ok_repo, untagged_repo, no_repo):
 
 def test_polyversion_p2(ok_repo):
     v = pvlib.polyversion(proj2, repo_path=ok_repo,
-                          pvtag_frmt='{pname}-V{version}',
-                          pvtag_regex=r"""(?xi)
+                          tag_frmt='{pname}-V{version}',
+                          tag_regex=r"""(?xi)
                               ^(?P<project>{pname})
                               -
                               V(?P<version>\d[^-]*)
@@ -106,6 +106,27 @@ def test_polyversion_p2(ok_repo):
                           """,
                           git_options=['--tags'])
     assert v == proj2_ver
+
+
+def test_polyversion_vtags(vtags_repo):
+    ## OK REPO
+
+    v = pvlib.polyversion(proj1, repo_path=vtags_repo, monoproject=True)
+    assert v.startswith(proj1_ver)
+    v = pvlib.polyversion(proj1, default='<unused>', repo_path=vtags_repo, monoproject=True)
+    assert v.startswith(proj1_ver)
+
+    ## BAD PROJECT STILL WORKSREPO
+
+    v = pvlib.polyversion('foo', repo_path=vtags_repo, monoproject=True)
+    assert v.startswith(proj1_ver)
+
+    ## bool flag overriden
+
+    v = pvlib.polyversion('fobar', repo_path=vtags_repo, monoproject=False,
+                          tag_frmt=pvlib.vtag_frmt,
+                          tag_regex=pvlib.vtag_regex)
+    assert v.startswith(proj1_ver)
 
 
 def test_polyversion_BAD_project(ok_repo):

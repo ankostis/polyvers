@@ -28,7 +28,7 @@ from typing import List, Dict, Optional
 
 import subprocess as sbp
 
-from . import cmdlets, interpctxt
+from . import polyverslib as pvlib, cmdlets, interpctxt
 from ._vendor.traitlets import traitlets as trt
 from ._vendor.traitlets.traitlets import Bool, Unicode, Instance, \
     List as ListTrait  # @UnresolvedImport
@@ -311,13 +311,8 @@ def make_pvtag_project(**project_kw) -> Project:
     - Used as a template for :attr:`PolyversCmd.default_project`.
     """
     return Project(
-        pvtag_frmt='{pname}-v{version}',
-        pvtag_regex=r"""(?xi)
-            ^(?P<project>{pname})
-            -
-            v(?P<version>\d[^-]*)
-            (?:-(?P<descid>\d+-g[a-f\d]+))?$
-        """,
+        pvtag_frmt=pvlib.pvtag_frmt,
+        pvtag_regex=pvlib.pvtag_regex,
         **project_kw)
 
 
@@ -349,12 +344,8 @@ def make_vtag_project(**project_kw) -> Project:
     - Used as a template for :attr:`PolyversCmd.default_project`.
     """
     simple_project = Project(
-        pvtag_frmt='v{version}',
-        pvtag_regex=r"""(?xi)
-            ^(?P<project>)
-            v(?P<version>\d[^-]*)
-            (?:-(?P<descid>\d+-g[a-f\d]+))?$
-        """,
+        pvtag_frmt=pvlib.vtag_frmt,
+        pvtag_regex=pvlib.vtag_regex,
         **project_kw)
 
     return simple_project
