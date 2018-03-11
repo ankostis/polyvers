@@ -140,10 +140,13 @@ class PolyversCmd(cmdlets.Cmd):
 
         return subcmds
 
-    def _my_text_interpolations(self):
-        d = super()._my_text_interpolations()
-        d.update({'appname': APPNAME})
-        return d
+    def collect_app_infos(self):
+        """Provide extra infos to `config infos` subcommand."""
+        return {
+            'version': __version__,
+            'updated': __updated__,
+            ## TODO: add more app-infos.
+        }
 
     @trt.default('all_app_configurables')
     def _all_app_configurables(self):
@@ -169,16 +172,6 @@ class PolyversCmd(cmdlets.Cmd):
 
         return paths
 
-    def collect_app_infos(self):
-        """Provide extra infos to `config infos` subcommand."""
-        return {
-            'version': __version__,
-            'updated': __updated__,
-            ## TODO: add more app-infos.
-        }
-
-
-class VersionSubcmd(PolyversCmd):
     def check_project_configs_exist(self, scream=True):
         """
         Checks if any loaded config-file is a subdir of Git repo.
@@ -209,7 +202,7 @@ class VersionSubcmd(PolyversCmd):
         return False
 
 
-class InitCmd(VersionSubcmd):
+class InitCmd(PolyversCmd):
     """Generate configurations based on directory contents."""
 
     def run(self, *args):
@@ -228,7 +221,7 @@ class InitCmd(VersionSubcmd):
         yield "Init would be created...."
 
 
-class StatusCmd(VersionSubcmd):
+class StatusCmd(PolyversCmd):
     """
     List the versions of project(s).
 
@@ -239,7 +232,7 @@ class StatusCmd(VersionSubcmd):
         self.check_project_configs_exist()
 
 
-class BumpCmd(VersionSubcmd):
+class BumpCmd(PolyversCmd):
     """
     Increase the version of project(s) by the given offset.
 
