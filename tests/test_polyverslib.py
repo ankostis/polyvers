@@ -99,7 +99,7 @@ def test_polyversion_p2(ok_repo):
     v = pvlib.polyversion(proj2, repo_path=ok_repo,
                           tag_frmt='{pname}-V{version}',
                           tag_regex=r"""(?xi)
-                              ^(?P<project>{pname})
+                              ^(?P<pname>{pname})
                               -
                               V(?P<version>\d[^-]*)
                               (?:-(?P<descid>\d+-g[a-f\d]+))?$

@@ -38,7 +38,7 @@ pvtag_frmt = '{pname}-v{version}'
 #: It is given a :pep:`3101` parameter ``{pname}`` to interpolate.
 #: See :pep:`0426` for project-name characters and format.
 pvtag_regex = r"""(?xi)
-    ^(?P<project>{pname})
+    ^(?P<pname>{pname})
     -
     v(?P<version>\d[^-]*)
     (?:-(?P<descid>\d+-g[a-f\d]+))?$
@@ -55,7 +55,7 @@ vtag_frmt = 'v{version}'
 #: It is given a :pep:`3101` parameter ``{pname}`` to interpolate.
 #: See :pep:`0426` for project-name characters and format.
 vtag_regex = r"""(?xi)
-    ^(?P<project>)
+    ^(?P<pname>)
     v(?P<version>\d[^-]*)
     (?:-(?P<descid>\d+-g[a-f\d]+))?$
 """
@@ -120,7 +120,7 @@ def split_pvtag(pvtag, pvtag_regex):
             raise ValueError(
                 "Unparseable *pvtag* from `pvtag_regex`!")
         mg = m.groupdict()
-        return mg['project'], mg['version'], mg['descid']
+        return mg['pname'], mg['version'], mg['descid']
     except Exception as ex:
         print("Matching pvtag '%s' failed due to: %s" %
               (pvtag, ex), file=sys.stderr)
@@ -179,7 +179,7 @@ def polyversion(project, default=None, repo_path=None,
         - See :data:`pvtag_frmt` & :data:`vtag_frmt`
     :param regex tag_regex:
         The regex pattern breaking apart *pvtags*, with 3 named capturing groups:
-        - ``project``,
+        - ``pname``,
         - ``version`` (without the 'v'),
         - ``descid`` (optional) anything following the dash('-') after
           the version in ``git-describe`` result.
@@ -206,7 +206,7 @@ def polyversion(project, default=None, repo_path=None,
 
     .. NOTE::
        This is a python==2.7 & python<3.6 safe function; there is also the similar
-       function with elaborate error-handling :func:`polyvers.pvtags.descrive_project()`
+       function with elaborate error-handling :func:`polyvers.pvtags.descrivbe_project()`
        used by the tool internally.
     """
     version = None
@@ -249,7 +249,7 @@ def polytime(no_raise=False, repo_path=None):
     :param str no_raise:
         If true, never fail and return current-time
     :param str repo_path:
-        A path inside the git repo hosting the `project` in question; if missing,
+        A path inside the git repo hosting the project in question; if missing,
         derived from the calling stack.
     :return:
         the commit-date if in git repo, or now; :rfc:`2822` formatted

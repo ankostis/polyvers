@@ -129,7 +129,7 @@ class Project(cmdlets.Spec, cmdlets.Replaceable):
         help="""
         The regex pattern breaking *pvtags* and/or ``git-describe`` output
         into 3 named capturing groups:
-        - ``project``,
+        - ``pname``,
         - ``version`` (without the 'v'),
         - ``descid`` (optional) anything following the dash('-') after
           the version in ``git-describe`` result.
@@ -328,7 +328,7 @@ def make_match_all_pvtags_project(**project_kw) -> Project:
         pname='*',
         pvtag_frmt='*-v*',
         pvtag_regex=r"""(?xi)
-            ^(?P<project>[A-Z0-9]|[A-Z0-9][A-Z0-9._-]*?[A-Z0-9])
+            ^(?P<pname>[A-Z0-9]|[A-Z0-9][A-Z0-9._-]*?[A-Z0-9])
             -
             v(?P<version>\d[^-]*)
             (?:-(?P<descid>\d+-g[a-f\d]+))?$
