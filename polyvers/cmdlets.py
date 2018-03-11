@@ -405,12 +405,6 @@ class Cmd(trc.Application, Spec):
 
         return cmd
 
-    def root_app(self):
-        "Utility to travel up the cmd-chain."
-        while self.parent:
-            self = self.parent
-        return self
-
     @trt.default('log')
     def _log_default(self):
         "Mimic log-hierarchies for Configurable; their loggers are not hierarchical. "
@@ -559,7 +553,7 @@ class Cmd(trc.Application, Spec):
 
     @trt.default('config_basename')
     def _config_basename(self):
-        return '.' + self.root_app().name
+        return '.' + self.root().name
 
     def _collect_static_fpaths(self):
         """Return fully-normalized paths, with ext."""
@@ -755,7 +749,7 @@ class Cmd(trc.Application, Spec):
     def update_interp_context(self, argv=None):
         cmdlets_map = self.interpolations.cmdlets_map
         cmdlets_map['cmd_chain'] = cmd_line_chain(self)
-        cmdlets_map['appname'] = self.root_app().name
+        cmdlets_map['appname'] = self.root().name
 
     #@trc.catch_config_error NOT needed, invoking super()!
     def initialize(self, argv=None):
@@ -828,6 +822,21 @@ class Cmd(trc.Application, Spec):
         }
         raise CmdException(msg)
 
+
+def _travel_parents(self):
+    "Utility to travel up the cmd-chain."
+    while self.parent:
+        self = self.parent
+    return self
+
+
+trc.Configurable.root = _travel_parents
+
+
+##################
+## YAML CONFIGS ##
+## patch traits ##
+##################
 
 def class_config_yaml(cls, outer_cfg, classes=None):
     """Get the config section for this class.

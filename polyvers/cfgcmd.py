@@ -220,7 +220,7 @@ class InfosCmd(cmdlets.Cmd):
     def initialize(self, argv=None):
         """Override to read configs from root-app."""
         super().initialize(argv)
-        root = self.root_app()
+        root = self.root()
         cfg = root.read_config_files()
         cfg.merge(root.cli_config)
 
@@ -256,7 +256,7 @@ class InfosCmd(cmdlets.Cmd):
 
         app_name = self.name
         app_path = inspect.getfile(type(self))
-        root = self.root_app()
+        root = self.root()
 
         # TODO: paths not valid YAML!  ...and renable TC.
         yield "APP:"
@@ -379,7 +379,7 @@ class ShowCmd(cmdlets.Cmd):
     def initialize(self, argv=None):
         """Override to read configs from root-app and not merge them."""
         super().initialize(argv)
-        root = self.root_app()
+        root = self.root()
         cfg = root.read_config_files()
         root._loaded_config = cfg
 
@@ -488,7 +488,7 @@ class ShowCmd(cmdlets.Cmd):
         else:
             raise AssertionError('Impossible enum: %s' % source)
 
-        root = self.root_app()
+        root = self.root()
         config = root._loaded_config
 
         yield from func(config, args)
@@ -617,4 +617,4 @@ config_subcmds = (
 
 
 def all_configurables(cmd):
-    return [ConfigCmd] + list(config_subcmds) + cmd.root_app().all_app_configurables
+    return [ConfigCmd] + list(config_subcmds) + cmd.root().all_app_configurables
