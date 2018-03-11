@@ -28,7 +28,7 @@ from typing import List, Dict, Optional
 
 import subprocess as sbp
 
-from . import polyverslib, cmdlets, interpctxt
+from . import cmdlets, interpctxt
 from ._vendor.traitlets import traitlets as trt
 from ._vendor.traitlets.traitlets import Bool, Unicode, Instance, \
     List as ListTrait  # @UnresolvedImport
@@ -90,7 +90,6 @@ class Project(cmdlets.Spec, cmdlets.Replaceable):
     basepath = Instance(Path, default_value=None, allow_none=True, castable=str)
 
     pvtag_frmt = Unicode(
-        default_value=polyverslib.pvtag_frmt,
         help="""
         The pattern to generate new *pvtags*.
 
@@ -103,6 +102,13 @@ class Project(cmdlets.Spec, cmdlets.Replaceable):
            gets invoked from project's sources with the same value
            in `pvtag_frmt` kw-arg.
     """).tag(config=True)
+
+    @trt.default('pvtag_frmt')
+    def _pvtag_frmt_from_root(self):
+        default_project = getattr(self.root(), 'default_project', None)
+        if default_project:
+            return default_project.pvtag_frmt
+        return ''
 
     @property
     def pvtag_fnmatch_frmt(self):
@@ -120,7 +126,6 @@ class Project(cmdlets.Spec, cmdlets.Replaceable):
         return pvtag_fnmatch_frmt
 
     pvtag_regex = Unicode(
-        default_value=polyverslib.pvtag_regex,
         help="""
         The regex pattern breaking *pvtags* and/or ``git-describe`` output
         into 3 named capturing groups:
@@ -141,13 +146,20 @@ class Project(cmdlets.Spec, cmdlets.Replaceable):
     """).tag(config=True)
 
     @trt.validate('pvtag_regex')
-    def _is_valid_regex(self, proposal):
+    def _is_valid_pvtag_regex(self, proposal):
         value = proposal.value
         try:
             re.compile(value.format(pname='pname'))
         except Exception as ex:
             proposal.trait.error(None, value, ex)
         return value
+
+    @trt.default('pvtag_regex')
+    def _pvtag_regex_from_root(self):
+        default_project = getattr(self.root(), 'default_project', None)
+        if default_project:
+            return default_project.pvtag_regex
+        return ''
 
     tag = Bool(
         config=True,
@@ -291,13 +303,32 @@ class Project(cmdlets.Spec, cmdlets.Replaceable):
         return out and out.strip()
 
 
-def make_project_matching_all_pvtags(**project_kw) -> Project:
+def make_pvtag_project(**project_kw) -> Project:
+    """
+    Make a :class:`Project` for a subprojects hosted at git monorepos.
+
+    - Project versioned with *pvtags* like ``foo-project-v0.1.0``.
+    - Used as a template for :attr:`PolyversCmd.default_project`.
+    """
+    return Project(
+        pvtag_frmt='{pname}-v{version}',
+        pvtag_regex=r"""(?xi)
+            ^(?P<project>{pname})
+            -
+            v(?P<version>\d[^-]*)
+            (?:-(?P<descid>\d+-g[a-f\d]+))?$
+        """,
+        **project_kw)
+
+
+def make_match_all_pvtags_project(**project_kw) -> Project:
     """
     Make a :class:`Project` capturing any *pvtag*.
 
     Useful as a "catch-all" last project in :func:`populate_pvtags_history()`,
     to capture *pvtags* not captured by any other project.
     """
+    # Note: `pname` ignored by patterns, used only for labeling.
     return Project(
         pname='*',
         pvtag_frmt='*-v*',
@@ -310,14 +341,12 @@ def make_project_matching_all_pvtags(**project_kw) -> Project:
         **project_kw)
 
 
-def make_project_matching_simple_vtags(**project_kw) -> Project:
+def make_vtag_project(**project_kw) -> Project:
     """
     Make a :class:`Project` for a single project hosted at git repos root (not "monorepos").
 
-    Project versioned with tags simple *vtags* (not *pvtags*) like ``v0.1.0``.
-
-    :param basepath:
-        if not given, git-root assumed.
+    - Project versioned with tags simple *vtags* (not *pvtags*) like ``v0.1.0``.
+    - Used as a template for :attr:`PolyversCmd.default_project`.
     """
     simple_project = Project(
         pvtag_frmt='v{version}',
@@ -331,22 +360,16 @@ def make_project_matching_simple_vtags(**project_kw) -> Project:
     return simple_project
 
 
-def make_project_matching_all_simple_vtags(**project_kw) -> Project:
+def make_match_all_vtags_project(**project_kw) -> Project:
     """
     Make a :class:`Project` capturing any simple *vtag* (e.g. ``v0.1.0``).
 
     Useful as a "catch-all" last project in :func:`populate_pvtags_history()`,
     to capture *vtags* not captured by any other project.
     """
-    return Project(
-        pname='*',
-        pvtag_frmt='v{version}',
-        pvtag_regex=r"""(?xi)
-            ^(?P<project>)
-            v(?P<version>\d[^-]*)
-            (?:-(?P<descid>\d+-g[a-f\d]+))?$
-        """,
-        **project_kw)
+    # Note: `pname` ignored by patterns, used only for labeling.
+    return make_vtag_project(pname='*',
+                             **project_kw)
 
 
 def _fetch_all_tags(cli, tag_patterns: List[str],

@@ -87,6 +87,17 @@ class PolyversCmd(cmdlets.Cmd):
     """)
     classes = [pvtags.Project]
 
+    #: Interrogated by all Project instances by searching up their parent chain.
+    default_project = AutoInstance(
+        pvtags.Project,
+        allow_none=True,
+        config=True,
+        help="""
+        Set version-schema (monorepo/monoproject) by enforcing defaults for all Project instances.
+
+        Installed by configuration, or auto-detected when no configs loaded.
+        """)
+
     projects = List(
         AutoInstance(pvtags.Project),
         config=True)

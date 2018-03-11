@@ -151,18 +151,21 @@ def no_repo(tmpdir_factory):
     return tmpdir_factory.mktemp('norepo')
 
 
-@pytest.fixture()
-def mutable_repo(ok_repo, tmpdir_factory):
-    parent_dir = (ok_repo / '..')
-    mutable_repo = P(tmpdir_factory.mktemp('mutable_repo'))
-    ivars = {'orig_dir': ok_repo.basename,
-             'clone_dir': mutable_repo.relto(parent_dir)}
+###################
+## MUTABLE REPOS ##
+###################
+
+def clone_repo(orig_repo, clone_path):
+    "Note: `clone_path` must be a sibling of `orig_repo`!"
+    parent_dir = (orig_repo / '..')
+    ivars = {'orig_dir': orig_repo.basename,
+             'clone_dir': clone_path.relto(parent_dir)}
 
     parent_dir.chdir()
     c = 'git clone %(orig_dir)s %(clone_dir)s' % ivars
     sbp.check_call(c.split())
 
-    mutable_repo.chdir()
+    clone_path.chdir()
     cmds = """
     git config user.email "test@example.com"
     git config user.name "Testing Bot"
@@ -172,4 +175,10 @@ def mutable_repo(ok_repo, tmpdir_factory):
         if c:
             sbp.check_call(c.split())
 
-    return mutable_repo
+    return clone_path
+
+
+@pytest.fixture()
+def monorepo(ok_repo, tmpdir_factory):
+    mutable_repo = tmpdir_factory.mktemp('pvtags_repo')
+    return clone_repo(ok_repo, mutable_repo)
