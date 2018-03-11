@@ -46,7 +46,7 @@ class _MissingKeys(dict):
 _missing_keys = _MissingKeys()
 
 
-class _HasTraitDict(abc.Mapping):
+class _HasTraitObjectDict(abc.Mapping):
     def __init__(self, _obj: trt.HasTraits):
         self._obj: trt.HasTraits = _obj
 
@@ -67,7 +67,7 @@ def dictize_object(obj):
     if isinstance(obj, dict):
         pass
     elif isinstance(obj, trt.HasTraits):
-        obj = _HasTraitDict(obj)
+        obj = _HasTraitObjectDict(obj)
     else:
         ## Collect object's and MRO classes's items
         # in a chain-dict.
