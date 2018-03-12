@@ -28,6 +28,8 @@ argv_data = [
     ('-verbose', 1, '-erbose'),  # still has one 'v'!
     ('-aa -v -b -v a -- -g', 2, '-aa -b a -- -g'),
     ('-vv', 2, []),
+    ('-vq', 0, []),
+    ('-vvqq', 0, []),
     ('-vvv -g', 3, '-g'),
     ('a -vjvkv', 3, 'a -jk'),
     ('a -vv -v --verbose', 4, 'a'),
@@ -36,7 +38,6 @@ argv_data = [
     ('-klq', -1, '-kl'),
     ('-klq --quiet', -2, '-kl'),
 
-    ('-vvq', 1, []),
     ('-vvqk -v --quiet', 1, '-k'),
     ('-vvvvvq', 4, []),
 ]
@@ -68,19 +69,36 @@ def test_log_level_from_argv_start_level():
 
     with pytest.raises(ValueError, match=r"Expecting an \*integer\*"):
         lcu.log_level_from_argv((), start_level=3.14)
-
-    with pytest.raises(ValueError, match=r"Expecting an \*existing\*"):
-        lcu.log_level_from_argv((), start_level=-500)
+    with pytest.raises(ValueError, match=r"Expecting an \*integer\*"):
+        lcu.log_level_from_argv((), start_level='INFO')
 
 
 @pytest.mark.parametrize('inp, exp_verbose, _', argv_data)
 def test_log_level_from_argv(inp, exp_verbose, _):
     lcu.init_logging(level=logging.INFO)
+    max_level = list(sorted(logging._levelToName))[-1]
 
-    start_level = 30
-    level, _ = lcu.log_level_from_argv(inp.split(), start_level=start_level)
+    def check(start_level):
+        level, _ = lcu.log_level_from_argv(inp.split(), start_level=start_level)
 
-    levels = list(sorted(logging._levelToName))
-    start_level_index = levels.index(start_level)
-    exp_level_index = max(0, min(len(levels) - 1, start_level_index - exp_verbose))
-    assert level == levels[exp_level_index]
+        assert 0 <= level <= list(sorted(logging._levelToName))[-1]
+        if exp_verbose == 0:
+            assert level == start_level or \
+                start_level < 0 == level or \
+                start_level > max_level == level
+        elif exp_verbose > 0:
+            assert level < start_level or start_level <= 0 == level
+        elif exp_verbose < 0:
+            assert level > start_level or start_level >= max_level == level
+        else:
+            pytest.fail()
+
+    check(start_level=30)
+    check(start_level=25)
+    check(start_level=23)
+
+    check(start_level=0)
+    check(start_level=max_level)
+
+    check(start_level=-15)
+    check(start_level=2 * max_level)

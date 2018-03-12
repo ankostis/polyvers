@@ -38,7 +38,7 @@ def main(argv=None, cmd_consumer=None, **app_init_kwds):
     from . import logconfutils as mlu
     log_level, argv = mlu.log_level_from_argv(
         argv,
-        start_level=30,  # TODO: start-level from 25 when NOTICE patched.
+        start_level=25,  # 20=INFO, 25=NOTICE (when patched), 30=WARNING
         eliminate_quiet=True)
 
     import polyvers as mypack

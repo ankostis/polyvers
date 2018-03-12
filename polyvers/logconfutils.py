@@ -20,23 +20,31 @@ from ruamel import yaml  # @UnresolvedImport
 default_logging_level = logging.INFO
 
 
-def patch_new_level_in_logging(level, name):
+def patch_new_level_in_logging(level, name,
+                               color_spec=('green', None, True)):
     if hasattr(logging, name):
         logging.getLogger().warning(
             "Duplicate attempt to add logging level %s(%s)!", name, level)
         return
 
-    if not (isinstance(level, int) and isinstance(name, str)):
-        raise ValueError("(level: %s, name: %s) must be (int, str), but was: "
+    if not (isinstance(level, int)):
+        raise ValueError("(level: %s, name: %s) must be int, but was: "
                          "(%s, %s)" % (level, name, type(level), type(name)))
     logging.addLevelName(level, name)
     setattr(logging, name, level)
 
-    def log_method(self, msg, *args, **kwargs):
+    def new_log_method(self, msg, *args, **kwargs):
         if self.isEnabledFor(level):
             self._log(level, msg, args, **kwargs)
 
-    setattr(logging.Logger, name.lower(), log_method)
+    setattr(logging.Logger, name.lower(), new_log_method)
+
+    from rainbow_logging_handler import RainbowLoggingHandler
+
+    rlog = logging.getLogger()
+    for lh in rlog.handlers:
+        if isinstance(lh, RainbowLoggingHandler):
+            lh._column_color['%(message)s'][level] = color_spec
 
 
 def _classify_fpaths(fpaths):
@@ -141,7 +149,8 @@ def _count_multiflag_in_argv(args, short, long, eliminate=False):
 def log_level_from_argv(args,
                         start_level: int,
                         eliminate_verbose=False,
-                        eliminate_quiet=False):
+                        eliminate_quiet=False,
+                        verbosity_step=10):
     """
     :param start_level_index:
         some existing level
@@ -150,20 +159,14 @@ def log_level_from_argv(args,
         raise ValueError(
             "Expecting an *integer* for logging level, got '%s'!" % start_level)
     levels = list(sorted(logging._levelToName))
-    if start_level not in levels:
-        raise ValueError(
-            "Expecting an *existing* logging level out (%s), got '%s'!" %
-            (', '.join(logging._nameToLevel), start_level))
-    start_level_index = levels.index(start_level)
 
     nverbose, new_args = _count_multiflag_in_argv(args, 'v', 'verbose',
                                                   eliminate_verbose)
     nquiet, new_args = _count_multiflag_in_argv(new_args, 'q', 'quiet',
                                                 eliminate_quiet)
 
-    level_index = start_level_index - nverbose + nquiet
-    level_index = max(0, min(len(levels) - 1, level_index))
-    level = levels[level_index]
+    level = start_level + verbosity_step * (nquiet - nverbose)
+    level = max(0, min(levels[-1], level))
 
     return level, new_args
 
