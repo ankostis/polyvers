@@ -317,10 +317,18 @@ def test_help_smoketest():
     c.print_help()
 
 
-def test_all_cmds_help_version():
+def test_all_cmds_help_version(capsys):
     c = cmdlets.Cmd
     with pytest.raises(SystemExit):
         c.make_cmd(argv=['help'])
+
+    ## Check cmdlet interpolations work.
+    #
+    out, err = capsys.readouterr()
+    assert not err
+    assert '{cmd_chain}' not in out
+    assert '{appname}' not in out
+
     with pytest.raises(SystemExit):
         c.make_cmd(argv=['--help'])
     with pytest.raises(SystemExit):

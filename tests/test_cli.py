@@ -53,9 +53,17 @@ def test_all_cmds_help_smoketest(cmd):
 
 
 @pytest.mark.parametrize('cmd', all_cmds)
-def test_all_cmds_help_version(cmd):
+def test_all_cmds_help_version(cmd, capsys):
     with pytest.raises(SystemExit):
         cmd.make_cmd(argv=['help'])
+
+    ## Check cmdlet interpolations work.
+    #
+    out, err = capsys.readouterr()
+    assert not err
+    assert '{cmd_chain}' not in out
+    assert '{appname}' not in out
+
     with pytest.raises(SystemExit):
         cmd.make_cmd(argv=['--help'])
     with pytest.raises(SystemExit):
