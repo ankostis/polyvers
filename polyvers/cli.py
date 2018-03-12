@@ -9,7 +9,7 @@
 
 from collections import OrderedDict, defaultdict
 from pathlib import Path
-from typing import Dict
+from typing import Dict, Tuple
 import io
 import logging
 
@@ -183,9 +183,19 @@ class PolyversCmd(cmdlets.Cmd):
             self,
             ## Needed bc it is subcmd that load configs, not root-app.
             cfgfiles_registry: cmdlets.CfgFilesRegistry,
-            scream=True) -> bool:
+            skip_conf_scream=False) -> Tuple[bool, bool, bool]:
         """
-        Checks if any loaded config-file is a subdir of Git repo.
+        Checks if basic config-properties are given (from config-file or cmd-line flags)
+
+        and optionally warn if config-file is missing from Git repo.
+
+        :return:
+            a 2-tuple ``(has_conf_file, has_template_project, has_subprojects)``:
+
+            - has_conf_file: true when a per-repo config-file exists
+            - has_template_project: true when :attr:`PolyversCmd.default_project` defined
+              e.g. from cmd-line flag --monorepo or from config-file.
+            - has_subprojects: true when :attr:`PolyversCmd.projects` defined.
 
         :raise CmdException:
             if cwd not inside a git repo
@@ -195,22 +205,27 @@ class PolyversCmd(cmdlets.Cmd):
             raise cmdlets.CmdException(
                 "Current-dir '%s' is not inside a git-repo!" % Path().resolve())
 
+        app = self.root()
+        has_template_project = app.default_project is not None
+        has_subprojects = bool(app.projects)
+
+        has_conf_file = False
         for p in cfgfiles_registry.collected_paths:
             try:
                 if Path(p).relative_to(git_root):
-                    return True
+                    has_conf_file = True
             except ValueError as _:
                 pass
 
         ## TODO: Check if template-project & projects exist!
 
-        if scream:
+        if not (skip_conf_scream or has_conf_file):
             self.log.warning(
                 "No '%s' config-file(s) found!\n"
                 "  Invoke `polyvers init` to create it and stop this warning.",
                 git_root / self.config_basename)
 
-        return False
+        return (has_conf_file, has_template_project, has_subprojects)
 
     _git_root: Path = None
 
@@ -302,7 +317,11 @@ class InitCmd(cmdlets.Cmd):
                 "Cmd %r takes no arguments, received %d: %r!"
                 % (self.name, len(args), args))
 
-        if not self.force and self.check_project_configs_exist(scream=False):
+        res = self.check_project_configs_exist(self._cfgfiles_registry,
+                                               skip_conf_scream=True)
+        has_conf_file, _, __ = res
+
+        if not self.force and has_conf_file:
             raise cmdlets.CmdException(
                 "Polyvers already initialized!"
                 "\n  Use --force if you must, and also check those files:"
@@ -322,32 +341,36 @@ class StatusCmd(cmdlets.Cmd):
     def run(self, *args):
         git_root = fu.find_git_root()
         rootapp = self.root()
-        config_exists = rootapp.check_project_configs_exist(self._cfgfiles_registry)
-        if not config_exists:
+
+        res = rootapp.check_project_configs_exist(self._cfgfiles_registry)
+        _, has_template_project, has_subprojects = res
+
+        if not has_template_project:
+            guessed_project = rootapp.autodiscover_tags()
+            rootapp.default_project = guessed_project.replace(parent=self)
+            log.notice("Auto-discovered versioning scheme: %s", guessed_project.pname)
+
+        if has_subprojects:
+            projects = rootapp.projects
+        else:
             proj_paths: Dict[str, Path] = rootapp.autodiscover_project_basepaths()
             if not proj_paths:
                 raise cmdlets.CmdException(
                     "Cannot auto-discover (sub-)project path(s)!"
-                    "\n  Please use `ìnit`cmd to specify sub-projects explicitly.")
+                    "\n  Please use `ìnit` cmd to specify sub-projects explicitly.")
+
+            ## TODO: report mismatch of project-names/vtags.
+            ## TODO: extract method to classify pre-populated histories.
 
             log.notice(
                 "Auto-discovered %i sub-project(s) in git-root '%s': \n%s",
                 len(proj_paths), git_root.resolve(),
                 ydumps({k: str(v) for k, v in proj_paths.items()}))
 
-            guessed_project = rootapp.autodiscover_tags()
-            ## TODO: report mismatch of project-names/vtags.
-            rootapp.default_project = guessed_project.replace(parent=self)
-            log.notice("Auto-discovered versioning scheme: %s", guessed_project.pname)
-
-            ## TODO: extract method to classify pre-populated histories.
             projects = [pvtags.Project(parent=self, pname=name, basepath=basepath)
                         for name, basepath in proj_paths.items()]
 
             rootapp.projects = projects
-
-        else:
-            projects = rootapp.projects
 
         try:
             yield ydumps({'versions': {p.pname: p.git_describe()}
@@ -358,7 +381,7 @@ class StatusCmd(cmdlets.Cmd):
             ## TODO: extract method to classify pre-populated histories.
             pvtags.populate_pvtags_history(*projects)
             ## TODO: YAMLable Project (apart from Strable) with metadata Print/header
-            tags = {'tags': {p.pname: {'basepath': p.basepath,
+            tags = {'tags': {p.pname: {'basepath': str(p.basepath),
                                        'history': p.pvtags_history}}
                     for p in projects}
             yield ydumps(tags)
@@ -450,11 +473,11 @@ PolyversCmd.flags = {
     ),
 
     'monorepo': (
-        {'PolyverCmd': {'default_project': pvtags.make_pvtag_project()}},
+        {'PolyversCmd': {'default_project': pvtags.make_pvtag_project()}},
         "Use *pvtags* for versioning sub-projects in this git monorepo."
     ),
     'monoproject': (
-        {'PolyverCmd': {'default_project': pvtags.make_vtag_project()}},
+        {'PolyversCmd': {'default_project': pvtags.make_vtag_project()}},
         "Use plain *vtags* for versioning a single project in this git repo."
     ),
 }

@@ -227,30 +227,17 @@ def clone_repo(orig_repo, clone_path):
 
 @pytest.fixture()
 def monorepo(ok_repo, tmpdir_factory):
-    mutable_repo = tmpdir_factory.mktemp('pvtags_repo')
+    mutable_repo = tmpdir_factory.mktemp('monorepo')
     return clone_repo(ok_repo, mutable_repo)
 
 
 @pytest.fixture()
-def python_monoproject(untagged_repo, tmpdir_factory):
-    mutable_repo = tmpdir_factory.mktemp('uni_repo')
-    clone_repo(untagged_repo, mutable_repo)
-
-    (mutable_repo / 'setup.py').write_text(
-        """setup(name='simple')""", 'utf-8')
-
-    return mutable_repo
+def mutable_repo(untagged_repo, tmpdir_factory):
+    mutable_repo = tmpdir_factory.mktemp('mutable_repo')
+    return clone_repo(untagged_repo, mutable_repo)
 
 
-@pytest.fixture()
-def python_monorepo(untagged_repo, tmpdir_factory):
-    mutable_repo = tmpdir_factory.mktemp('uni_repo')
-    clone_repo(untagged_repo, mutable_repo)
-
-    (mutable_repo / 'setup.py').write_text(
-        """setup(name='base')""", 'utf-8')
-
-    (mutable_repo / 'foo_project' / 'setup.py').write_text(
-        """setup(name='foo')""", 'utf-8', ensure=True)
-
-    return mutable_repo
+def make_setup_py(setup_dir, pname):
+    (setup_dir / 'setup.py').write_text(
+        """setup(name='%s')""" % pname,
+        encoding='utf-8', ensure=True)

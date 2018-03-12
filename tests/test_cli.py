@@ -14,7 +14,7 @@ from polyvers.oscmd import cmd
 
 import pytest
 
-from .conftest import assert_in_text, clearlog
+from .conftest import assert_in_text, clearlog, make_setup_py
 
 
 @pytest.mark.parametrize('inp, exp', [
@@ -86,23 +86,74 @@ def test_config_cmd(cmd, match, illegal):
     #print('\n'.join(lc.items))
 
 
-def test_status_cmd_vtags(python_monoproject, caplog, capsys):
-    python_monoproject.chdir()
+def test_status_cmd_vtags(mutable_repo, caplog, capsys):
+    mutable_repo.chdir()
 
+    ##############
+    ## No flag/setup.py
+    #  Both auto-discoveries fail
+    #
     rc = main('status -v'.split())
     assert rc != 0
     assert_in_text(
         caplog.text,
         require=[
-            "No '.polyvers' config-file(s) found!",
-            "Auto-discovered 1 sub-project(s)",
-            "Cannot auto-discover versioning scheme,"
+            r"No '.polyvers' config-file\(s\) found",
+            r"Cannot auto-discover versioning scheme,"
         ], forbid=[
-            "Cannot auto-discover (sub-)project",
-        ])
+            r"Auto-discovered versioning scheme",
+            r"Auto-discovered \d+ sub-project\(s\)",
+            r"Cannot auto-discover \(sub-\)project",
+        ],
+        is_regex=True)
     out, err = capsys.readouterr()
     assert not err and not out
 
+    ##############
+    ## --monorepo
+    #
+    clearlog(caplog)
+
+    rc = main('status --monoproject -v'.split())
+    assert rc != 0
+    assert_in_text(
+        caplog.text,
+        require=[
+            r"No '.polyvers' config-file\(s\) found",
+            r"Cannot auto-discover \(sub-\)project",
+        ], forbid=[
+            r"Auto-discovered versioning scheme",
+            r"Auto-discovered \d+ sub-project\(s\)",
+            r"Cannot auto-discover versioning scheme,"
+        ],
+        is_regex=True)
+    out, err = capsys.readouterr()
+    assert not err and not out
+
+    ##############
+    ## setup.py + --monorepo
+    #
+    clearlog(caplog)
+    make_setup_py(mutable_repo, 'simple')
+
+    rc = main('status --monoproject -v'.split())
+    assert rc == 0
+    assert_in_text(
+        caplog.text,
+        require=[
+            "No '.polyvers' config-file(s) found",
+            "Auto-discovered 1 sub-project(s)",
+        ], forbid=[
+            "Cannot auto-discover (sub-)project",
+            "Cannot auto-discover versioning scheme,"
+        ])
+    out, err = capsys.readouterr()
+    assert not err
+    assert 'tags:\n  simple:\n    basepath: .\n    history: []\n' in out
+
+    ##############
+    ## TAG REPO
+    #
     clearlog(caplog)
 
     cmd.git.tag('v0.1.0', m='annotate!')
@@ -111,7 +162,7 @@ def test_status_cmd_vtags(python_monoproject, caplog, capsys):
     assert_in_text(
         caplog.text,
         require=[
-            "No '.polyvers' config-file(s) found!",
+            "No '.polyvers' config-file(s) found",
             "Auto-discovered 1 sub-project(s)",
             "Auto-discovered versioning scheme",
         ], forbid=[
@@ -122,24 +173,75 @@ def test_status_cmd_vtags(python_monoproject, caplog, capsys):
     assert not err and 'versions:\n  simple: v0.1.0\n' in out
 
 
-def test_status_cmd_pvtags(python_monorepo, caplog, capsys):
-    python_monorepo.chdir()
+def test_status_cmd_pvtags(mutable_repo, caplog, capsys):
+    mutable_repo.chdir()
 
+    ##############
+    ## No flag/setup.py
+    #  Both auto-discoveries fail
+    #
     rc = main('status -v'.split())
     assert rc != 0
     assert_in_text(
         caplog.text,
         require=[
-            "No '.polyvers' config-file(s) found!",
+            r"No '.polyvers' config-file\(s\) found",
+            r"Cannot auto-discover versioning scheme,"
+        ], forbid=[
+            r"Auto-discovered versioning scheme",
+            r"Auto-discovered \d+ sub-project\(s\)",
+            r"Cannot auto-discover \(sub-\)project",
+        ],
+        is_regex=True)
+    out, err = capsys.readouterr()
+    assert not err and not out
+
+    ##############
+    ## --monorepo
+    #
+    clearlog(caplog)
+
+    rc = main('status --monorepo -v'.split())
+    assert rc != 0
+    assert_in_text(
+        caplog.text,
+        require=[
+            r"No '.polyvers' config-file\(s\) found",
+            r"Cannot auto-discover \(sub-\)project",
+        ], forbid=[
+            r"Auto-discovered versioning scheme",
+            r"Auto-discovered \d+ sub-project\(s\)",
+            r"Cannot auto-discover versioning scheme,"
+        ],
+        is_regex=True)
+    out, err = capsys.readouterr()
+    assert not err and not out
+
+    ##############
+    ## setup.py + --monorepo
+    #
+    clearlog(caplog)
+    make_setup_py(mutable_repo, 'base')
+    make_setup_py(mutable_repo / 'foo_project', 'foo')
+
+    rc = main('status --monorepo -v'.split())
+    assert rc == 0
+    assert_in_text(
+        caplog.text,
+        require=[
+            "No '.polyvers' config-file(s) found",
             "Auto-discovered 2 sub-project(s)",
-            "Cannot auto-discover versioning scheme",
         ], forbid=[
             "Cannot auto-discover (sub-)project",
+            "Cannot auto-discover versioning scheme,"
         ])
     out, err = capsys.readouterr()
     assert not err
-    assert not out
+    assert 'tags:\n  foo:\n    basepath: foo_project\n    history: []\n' in out
 
+    ##############
+    ## TAG REPO
+    #
     clearlog(caplog)
 
     cmd.git.tag('base-v0.1.0', m='annotate!')
@@ -148,7 +250,7 @@ def test_status_cmd_pvtags(python_monorepo, caplog, capsys):
     assert_in_text(
         caplog.text,
         require=[
-            "No '.polyvers' config-file(s) found!",
+            "No '.polyvers' config-file(s) found",
             "Auto-discovered 2 sub-project(s)",
             "Auto-discovered versioning scheme",
         ], forbid=[
@@ -157,5 +259,4 @@ def test_status_cmd_pvtags(python_monorepo, caplog, capsys):
         ])
     out, err = capsys.readouterr()
     assert not err
-    ## TODO: report mismatch of project-names/vtags.
     assert 'versions:\n  foo: base-v0.1.0\n' in out
