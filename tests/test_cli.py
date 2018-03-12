@@ -14,7 +14,7 @@ from polyvers.oscmd import cmd
 
 import pytest
 
-from .conftest import assert_in_text
+from .conftest import assert_in_text, clearlog
 
 
 @pytest.mark.parametrize('inp, exp', [
@@ -103,9 +103,7 @@ def test_status_cmd_vtags(python_monoproject, caplog, capsys):
     out, err = capsys.readouterr()
     assert not err and not out
 
-    caplog.clear()
-    ## Workaround https://github.com/pytest-dev/pytest/issues/3297
-    caplog.handler.stream.truncate(0)
+    clearlog(caplog)
 
     cmd.git.tag('v0.1.0', m='annotate!')
     rc = main('status -v'.split())
@@ -142,9 +140,7 @@ def test_status_cmd_pvtags(python_monorepo, caplog, capsys):
     assert not err
     assert not out
 
-    caplog.clear()
-    ## Workaround https://github.com/pytest-dev/pytest/issues/3297
-    caplog.handler.stream.truncate(0)
+    clearlog(caplog)
 
     cmd.git.tag('base-v0.1.0', m='annotate!')
     rc = main('status -v'.split())
