@@ -12,7 +12,6 @@ from pathlib import Path
 from typing import Dict
 import io
 import logging
-
 from . import APPNAME, __version__, __updated__, cmdlets, \
     pvtags, engrave, fileutils as fu
 from . import logconfutils as lcu
@@ -29,15 +28,16 @@ lcu.default_logging_level = NOTICE
 
 log = logging.getLogger(__name__)
 
-#: YAML dumper used to serialize command's outputs.
-_Y = None
-
 
 ####################
 ## Config sources ##
 ####################
 CONFIG_VAR_NAME = '%s_CONFIG_PATHS' % APPNAME.upper()
 #######################
+
+
+#: YAML dumper used to serialize command's outputs.
+_Y = None
 
 
 def ydumps(obj):
@@ -370,7 +370,13 @@ class PolyversCmd(cmdlets.Cmd):
                              for name, basepath in proj_paths.items()]
 
 
-class InitCmd(PolyversCmd):
+class _SubCmd(PolyversCmd):
+    def __init__(self, *args, **kw):
+        self.subcommands = {}
+        super().__init__(*args, **kw)
+
+
+class InitCmd(_SubCmd):
     """Generate configurations based on directory contents."""
 
     def run(self, *args):
@@ -398,7 +404,7 @@ _history_help = """
 """
 
 
-class StatusCmd(PolyversCmd):
+class StatusCmd(_SubCmd):
     """
     List the versions of project(s).
 
@@ -431,13 +437,13 @@ class StatusCmd(PolyversCmd):
                    for p in projects}
         return history
 
-    def run(self, *args):
+    def run(self, *pnames):
         self.bootstrapp()
         projects = self.projects
 
-        if args:
+        if pnames:
             projects = [p for p in projects
-                        if p.pname in args]
+                        if p.pname in pnames]
 
         res = self._fetch_versions(projects)
 
@@ -447,7 +453,7 @@ class StatusCmd(PolyversCmd):
         return ydumps(res)
 
 
-class BumpCmd(PolyversCmd):
+class BumpCmd(_SubCmd):
     """
     Increase the version of project(s) by the given offset.
 
@@ -465,7 +471,7 @@ class BumpCmd(PolyversCmd):
         self.check_project_configs_exist(self._cfgfiles_registry)
 
 
-class LogconfCmd(PolyversCmd):
+class LogconfCmd(_SubCmd):
     """Write a logging-configuration file that can filter logs selectively."""
     def run(self, *args):
         pass
