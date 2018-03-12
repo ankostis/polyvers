@@ -227,7 +227,9 @@ def polyversion(project, default=None, repo_path=None,
         cmd.append(tag_pattern)
         pvtag = _my_run(cmd, cwd=repo_path)
         matched_project, version, descid = split_pvtag(pvtag, tag_regex)
-        if matched_project != project:
+        if matched_project and matched_project != project:
+            #import traceback as tb
+            #tb.print_stack()
             print("Matched  pvtag project '%s' different from expected '%s'!" %
                   (matched_project, project), file=sys.stderr)
         if descid:
