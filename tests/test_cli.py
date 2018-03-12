@@ -14,6 +14,8 @@ from polyvers.oscmd import cmd
 
 import pytest
 
+import textwrap as tw
+
 from .conftest import assert_in_text, clearlog, make_setup_py
 
 
@@ -149,7 +151,11 @@ def test_status_cmd_vtags(mutable_repo, caplog, capsys):
         ])
     out, err = capsys.readouterr()
     assert not err
-    assert 'tags:\n  simple:\n    basepath: .\n    history: []\n' in out
+    assert 'simple:\n  version:\n' == out
+
+    rc = main('status --monoproject --history'.split())
+    out, err = capsys.readouterr()
+    assert 'simple:\n  version:\n  history: []\n  basepath: .\n' == out
 
     ##############
     ## TAG REPO
@@ -170,7 +176,20 @@ def test_status_cmd_vtags(mutable_repo, caplog, capsys):
             "Cannot auto-discover versioning scheme,"
         ])
     out, err = capsys.readouterr()
-    assert not err and 'versions:\n  simple: v0.1.0\n' in out
+    assert not err
+    assert 'simple:\n  version: v0.1.0\n' == out
+
+    rc = main('status --history'.split())
+    out, err = capsys.readouterr()
+    exp = tw.dedent("""\
+        simple:
+          version: v0.1.0
+          history:
+          - v0.1.0
+          basepath: .
+    """)
+
+    assert exp == out
 
 
 def test_status_cmd_pvtags(mutable_repo, caplog, capsys):
@@ -237,7 +256,12 @@ def test_status_cmd_pvtags(mutable_repo, caplog, capsys):
         ])
     out, err = capsys.readouterr()
     assert not err
-    assert 'tags:\n  foo:\n    basepath: foo_project\n    history: []\n' in out
+    assert 'base:\n  version:\nfoo:\n  version:\n' == out
+
+    rc = main('status --monorepo --history'.split())
+    out, err = capsys.readouterr()
+    assert ('base:\n  version:\n  history: []\n  basepath: .\nfoo:\n  '
+            'version:\n  history: []\n  basepath: foo_project\n') == out
 
     ##############
     ## TAG REPO
@@ -259,4 +283,20 @@ def test_status_cmd_pvtags(mutable_repo, caplog, capsys):
         ])
     out, err = capsys.readouterr()
     assert not err
-    assert 'versions:\n  foo: base-v0.1.0\n' in out
+    exp = "base:\n  version: base-v0.1.0\nfoo:\n  version: base-v0.1.0\n"
+    assert exp == out
+
+    rc = main('status --history'.split())
+    out, err = capsys.readouterr()
+    exp = tw.dedent("""\
+    base:
+      version: base-v0.1.0
+      history:
+      - base-v0.1.0
+      basepath: .
+    foo:
+      version: base-v0.1.0
+      history: []
+      basepath: foo_project
+    """)
+    assert exp == out

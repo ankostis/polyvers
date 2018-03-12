@@ -7,12 +7,11 @@
 #
 """The code of *polyvers* shell-commands."""
 
-from collections import OrderedDict, defaultdict
+from collections import OrderedDict, defaultdict, Mapping
 from pathlib import Path
-from typing import Dict, Tuple
+from typing import Dict
 import io
 import logging
-
 from . import APPNAME, __version__, __updated__, cmdlets, \
     pvtags, engrave, fileutils as fu
 from . import logconfutils as lcu
@@ -31,6 +30,13 @@ log = logging.getLogger(__name__)
 
 #: YAML dumper used to serialize command's outputs.
 _Y = None
+
+
+####################
+## Config sources ##
+####################
+CONFIG_VAR_NAME = '%s_CONFIG_PATHS' % APPNAME
+#######################
 
 
 def ydumps(obj):
@@ -56,11 +62,22 @@ def ydumps(obj):
     return sio.getvalue().strip()
 
 
-####################
-## Config sources ##
-####################
-CONFIG_VAR_NAME = '%s_CONFIG_PATHS' % APPNAME
-#######################
+def merge_dict(dct, merge_dct):
+    """ Recursive dict merge. Inspired by :meth:``dict.update()``, instead of
+    updating only top-level keys, dict_merge recurses down into dicts nested
+    to an arbitrary depth, updating keys. The ``merge_dct`` is merged into
+    ``dct``.
+    :param dct: dict onto which the merge is executed
+    :param merge_dct: dct merged into dct
+    :return: None
+
+    Adapted from: https://gist.github.com/angstwad/bf22d1822c38a92ec0a9
+    """
+    for k in merge_dct.keys():
+        if (k in dct and isinstance(dct[k], dict) and isinstance(merge_dct[k], Mapping)):
+            merge_dict(dct[k], merge_dct[k])
+        else:
+            dct[k] = merge_dct[k]
 
 
 class PolyversCmd(cmdlets.Cmd):
@@ -184,20 +201,14 @@ class PolyversCmd(cmdlets.Cmd):
             self,
             ## Needed bc it is subcmd that load configs, not root-app.
             cfgfiles_registry: cmdlets.CfgFilesRegistry,
-            skip_conf_scream=False) -> Tuple[bool, bool, bool]:
+            skip_conf_scream=False) -> bool:
         """
-        Checks if basic config-properties are given (from config-file or cmd-line flags)
+        Check if config-file exists and has been loaded.
 
         and optionally warn if config-file is missing from Git repo.
 
         :return:
-            a 2-tuple ``(has_conf_file, has_template_project, has_subprojects)``:
-
-            - has_conf_file: true when a per-repo config-file exists
-            - has_template_project: true when :attr:`PolyversCmd.default_project` defined
-              e.g. from cmd-line flag --monorepo or from config-file.
-            - has_subprojects: true when :attr:`PolyversCmd.projects` defined.
-
+            true when a per-repo config-file exists and has been loaded
         :raise CmdException:
             if cwd not inside a git repo
         """
@@ -206,16 +217,13 @@ class PolyversCmd(cmdlets.Cmd):
             raise cmdlets.CmdException(
                 "Current-dir '%s' is not inside a git-repo!" % Path().resolve())
 
-        app = self.root()  # type: ignore
-        has_template_project = app.default_project is not None
-        has_subprojects = bool(app.projects)
-
         has_conf_file = False
         for p in cfgfiles_registry.collected_paths:
             try:
                 if Path(p).relative_to(git_root):
                     has_conf_file = True
             except ValueError as _:
+                ## Ignored, probably program defaults.
                 pass
 
         ## TODO: Check if template-project & projects exist!
@@ -226,7 +234,7 @@ class PolyversCmd(cmdlets.Cmd):
                 "  Invoke `polyvers init` to create it and stop this warning.",
                 git_root / self.config_basename)
 
-        return (has_conf_file, has_template_project, has_subprojects)
+        return has_conf_file
 
     _git_root: Path = None
 
@@ -329,17 +337,21 @@ class _SubCmd(cmdlets.Cmd):
         git_root = fu.find_git_root()
         rootapp = self.root()
 
-        res = rootapp.check_project_configs_exist(self._cfgfiles_registry)
-        _, has_template_project, has_subprojects = res
+        ## Just for logging config missing...
+        rootapp.check_project_configs_exist(self._cfgfiles_registry)
+
+        default_project = rootapp.default_project
+        has_template_project = (default_project is not None and
+                                default_project.pvtag_frmt and
+                                default_project.pvtag_regex)
 
         if not has_template_project:
             guessed_project = rootapp.autodiscover_tags()
             rootapp.default_project = guessed_project.replace(parent=self)
             log.info("Auto-discovered versioning scheme: %s", guessed_project.pname)
 
-        if has_subprojects:
-            projects = rootapp.projects
-        else:
+        has_subprojects = bool(rootapp.projects)
+        if not has_subprojects:
             proj_paths: Dict[str, Path] = rootapp.autodiscover_project_basepaths()
             if not proj_paths:
                 raise cmdlets.CmdException(
@@ -354,10 +366,10 @@ class _SubCmd(cmdlets.Cmd):
                 len(proj_paths), git_root.resolve(),
                 ydumps({k: str(v) for k, v in proj_paths.items()}))
 
-            projects = [pvtags.Project(parent=self, pname=name, basepath=basepath)
-                        for name, basepath in proj_paths.items()]
-
-            rootapp.projects = projects
+            rootapp.projects = [pvtags.Project(parent=self,
+                                               pname=name,
+                                               basepath=basepath)
+                                for name, basepath in proj_paths.items()]
 
         return rootapp
 
@@ -385,6 +397,11 @@ class InitCmd(_SubCmd):
         yield "Init would be created...."
 
 
+_history_help = """
+    When true, fetch also all version-tags, otherwise just project version-id(s).
+"""
+
+
 class StatusCmd(_SubCmd):
     """
     List the versions of project(s).
@@ -392,24 +409,46 @@ class StatusCmd(_SubCmd):
     SYNTAX:
         {cmd_chain} [OPTIONS] [<project>]...
     """
+    history = Bool(
+        config=True,
+        help=_history_help)
+
+    flags = {'history': ({'StatusCmd': {'history': True}}, _history_help)}
+
+    def _fetch_versions(self, projects):
+        def git_describe(proj):
+            try:
+                return proj.git_describe()
+            except pvtags.GitVoidError as _:
+                return None
+
+        versions = {p.pname: {'version': git_describe(p)}
+                    for p in projects}
+        return versions
+
+    def _fetch_history(self, projects):
+        ## TODO: extract method to classify pre-populated histories.
+        pvtags.populate_pvtags_history(*projects)
+        ## TODO: YAMLable Project (apart from Strable) with metadata Print/header
+        history = {p.pname: {'history': p.pvtags_history,
+                             'basepath': str(p.basepath)}
+                   for p in projects}
+        return history
+
     def run(self, *args):
         rootapp = self.rootstrapp()
         projects = rootapp.projects
-        try:
-            yield ydumps({'versions': {p.pname: p.git_describe()}
-                          for p in projects})
-        except pvtags.GitVoidError as ex:
-            log.warning("Failed fetching versions for projects '%s' due to: %s "
-                        "\n  Inspecting any *pvtags* instead.",
-                        ', '.join(p.pname for p in projects), ex)
 
-            ## TODO: extract method to classify pre-populated histories.
-            pvtags.populate_pvtags_history(*projects)
-            ## TODO: YAMLable Project (apart from Strable) with metadata Print/header
-            tags = {'tags': {p.pname: {'basepath': str(p.basepath),
-                                       'history': p.pvtags_history}}
-                    for p in projects}
-            yield ydumps(tags)
+        if args:
+            projects = [p for p in projects
+                        if p.pname in args]
+
+        res = self._fetch_versions(projects)
+
+        if self.history:
+            merge_dict(res, self._fetch_history(projects))
+
+        return ydumps(res)
 
 
 class BumpCmd(_SubCmd):
