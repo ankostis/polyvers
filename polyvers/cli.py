@@ -179,7 +179,11 @@ class PolyversCmd(cmdlets.Cmd):
 
         return paths
 
-    def check_project_configs_exist(self, scream=True) -> bool:
+    def check_project_configs_exist(
+            self,
+            ## Needed bc it is subcmd that load configs, not root-app.
+            cfgfiles_registry: cmdlets.CfgFilesRegistry,
+            scream=True) -> bool:
         """
         Checks if any loaded config-file is a subdir of Git repo.
 
@@ -191,7 +195,7 @@ class PolyversCmd(cmdlets.Cmd):
             raise cmdlets.CmdException(
                 "Current-dir '%s' is not inside a git-repo!" % Path().resolve())
 
-        for p in self._cfgfiles_registry.collected_paths:
+        for p in cfgfiles_registry.collected_paths:
             try:
                 if Path(p).relative_to(git_root):
                     return True
@@ -289,7 +293,7 @@ class PolyversCmd(cmdlets.Cmd):
                         'vtags': vtag_proj.pvtags_history}))
 
 
-class InitCmd(PolyversCmd):
+class InitCmd(cmdlets.Cmd):
     """Generate configurations based on directory contents."""
 
     def run(self, *args):
@@ -308,7 +312,7 @@ class InitCmd(PolyversCmd):
         yield "Init would be created...."
 
 
-class StatusCmd(PolyversCmd):
+class StatusCmd(cmdlets.Cmd):
     """
     List the versions of project(s).
 
@@ -317,9 +321,10 @@ class StatusCmd(PolyversCmd):
     """
     def run(self, *args):
         git_root = fu.find_git_root()
-        config_exists = self.check_project_configs_exist()
+        rootapp = self.root()
+        config_exists = rootapp.check_project_configs_exist(self._cfgfiles_registry)
         if not config_exists:
-            proj_paths: Dict[str, Path] = self.autodiscover_project_basepaths()
+            proj_paths: Dict[str, Path] = rootapp.autodiscover_project_basepaths()
             if not proj_paths:
                 raise cmdlets.CmdException(
                     "Cannot auto-discover (sub-)project path(s)!"
@@ -330,19 +335,19 @@ class StatusCmd(PolyversCmd):
                 len(proj_paths), git_root.resolve(),
                 ydumps({k: str(v) for k, v in proj_paths.items()}))
 
-            guessed_project = self.autodiscover_tags()
+            guessed_project = rootapp.autodiscover_tags()
             ## TODO: report mismatch of project-names/vtags.
-            self.root().default_project = guessed_project.replace(parent=self)
+            rootapp.default_project = guessed_project.replace(parent=self)
             log.notice("Auto-discovered versioning scheme: %s", guessed_project.pname)
 
             ## TODO: extract method to classify pre-populated histories.
             projects = [pvtags.Project(parent=self, pname=name, basepath=basepath)
                         for name, basepath in proj_paths.items()]
 
-            self.projects = projects
+            rootapp.projects = projects
 
         else:
-            projects = self.projects
+            projects = rootapp.projects
 
         try:
             yield ydumps({'versions': {p.pname: p.git_describe()}
@@ -359,7 +364,7 @@ class StatusCmd(PolyversCmd):
             yield ydumps(tags)
 
 
-class BumpCmd(PolyversCmd):
+class BumpCmd(cmdlets.Cmd):
     """
     Increase the version of project(s) by the given offset.
 
@@ -374,10 +379,10 @@ class BumpCmd(PolyversCmd):
     - Don't add a 'v' prefix!
     """
     def run(self, *args):
-        self.check_project_configs_exist()
+        self.check_project_configs_exist(self._cfgfiles_registry)
 
 
-class LogconfCmd(PolyversCmd):
+class LogconfCmd(cmdlets.Cmd):
     """Write a logging-configuration file that can filter logs selectively."""
     def run(self, *args):
         pass
