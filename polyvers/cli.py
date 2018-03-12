@@ -309,37 +309,23 @@ class PolyversCmd(cmdlets.Cmd):
                         'vtags': vtag_proj.pvtags_history}))
 
 
-class InitCmd(cmdlets.Cmd):
-    """Generate configurations based on directory contents."""
+class _SubCmd(cmdlets.Cmd):
+    def rootstrapp(self):
+        """
+        Bootstrap valid configs in root-app.
 
-    def run(self, *args):
-        if len(args) > 0:
-            raise cmdlets.CmdException(
-                "Cmd %r takes no arguments, received %d: %r!"
-                % (self.name, len(args), args))
+        .. Note::
+           Were forced to define this method in a separate class from `PolyversCmd`
+           to be able to access subcmd/rootapp traits appropriately.
 
-        res = self.check_project_configs_exist(self._cfgfiles_registry,
-                                               skip_conf_scream=True)
-        has_conf_file, _, __ = res
+           That separation is needed due to :meth:`Application.flatten_flags()`
+           (called on ``app.initialize()) that can only set flags
+           at the most specific ``mro()`` (the subcmd class).
+           So it would be impossible for ``--monorepo`` to set the template-project
+           at root-app (:attr:`PolyversCmd.default_project`), unless ad-hoc
+           copying employed from each subcmd.
 
-        if not self.force and has_conf_file:
-            raise cmdlets.CmdException(
-                "Polyvers already initialized!"
-                "\n  Use --force if you must, and also check those files:"
-                "\n    %s" %
-                '\n    '.join(self._cfgfiles_registry.collected_paths))
-
-        yield "Init would be created...."
-
-
-class StatusCmd(cmdlets.Cmd):
-    """
-    List the versions of project(s).
-
-    SYNTAX:
-        {cmd_chain} [OPTIONS] [<project>]...
-    """
-    def run(self, *args):
+        """
         git_root = fu.find_git_root()
         rootapp = self.root()
 
@@ -373,6 +359,42 @@ class StatusCmd(cmdlets.Cmd):
 
             rootapp.projects = projects
 
+        return rootapp
+
+
+class InitCmd(_SubCmd):
+    """Generate configurations based on directory contents."""
+
+    def run(self, *args):
+        if len(args) > 0:
+            raise cmdlets.CmdException(
+                "Cmd %r takes no arguments, received %d: %r!"
+                % (self.name, len(args), args))
+
+        res = self.check_project_configs_exist(self._cfgfiles_registry,
+                                               skip_conf_scream=True)
+        has_conf_file, _, __ = res
+
+        if not self.force and has_conf_file:
+            raise cmdlets.CmdException(
+                "Polyvers already initialized!"
+                "\n  Use --force if you must, and also check those files:"
+                "\n    %s" %
+                '\n    '.join(self._cfgfiles_registry.collected_paths))
+
+        yield "Init would be created...."
+
+
+class StatusCmd(_SubCmd):
+    """
+    List the versions of project(s).
+
+    SYNTAX:
+        {cmd_chain} [OPTIONS] [<project>]...
+    """
+    def run(self, *args):
+        rootapp = self.rootstrapp()
+        projects = rootapp.projects
         try:
             yield ydumps({'versions': {p.pname: p.git_describe()}
                           for p in projects})
@@ -390,7 +412,7 @@ class StatusCmd(cmdlets.Cmd):
             yield ydumps(tags)
 
 
-class BumpCmd(cmdlets.Cmd):
+class BumpCmd(_SubCmd):
     """
     Increase the version of project(s) by the given offset.
 
@@ -408,7 +430,7 @@ class BumpCmd(cmdlets.Cmd):
         self.check_project_configs_exist(self._cfgfiles_registry)
 
 
-class LogconfCmd(cmdlets.Cmd):
+class LogconfCmd(_SubCmd):
     """Write a logging-configuration file that can filter logs selectively."""
     def run(self, *args):
         pass
