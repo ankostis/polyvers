@@ -6,22 +6,22 @@
 # You may not use this work except in compliance with the Licence.
 # You may obtain a copy of the Licence at: http://ec.europa.eu/idabc/eupl
 
-import logging
 from os import pathsep as PS
-import os
 from polyvers import cmdlets
 from polyvers._vendor.traitlets import config as trc
 from polyvers._vendor.traitlets import traitlets as trt
 from polyvers._vendor.traitlets.traitlets import Int
 from polyvers.cli import ydumps
 from polyvers.logconfutils import init_logging
+import logging
+import os
 import tempfile
 
-import pytest
 from ruamel.yaml.comments import CommentedMap
+import pytest
 
-import os.path as osp
 from py.path import local as P  # @UnresolvedImport
+import os.path as osp
 import textwrap as tw
 
 from .conftest import touchpaths
@@ -354,7 +354,7 @@ def test_yaml_config(tmpdir):
     assert c.verbose is True
 
 
-def test_Configurable_simple_yaml_generation(tmpdir):
+def test_Configurable_simple_yaml_generation():
     class C(trc.Configurable):
         "Class help"
         a = trt.Int(1, config=True, help="Trait help test")
@@ -385,7 +385,7 @@ def test_Configurable_simple_yaml_generation(tmpdir):
     assert all(m in cfg_str for m in msgs)
 
 
-def test_Application_yaml_generation(tmpdir):
+def test_Application_yaml_generation():
     class C(trc.Configurable):
         "Class help"
         a = trt.Int(1, config=True, help="Trait help test")
@@ -424,3 +424,29 @@ def test_Application_yaml_generation(tmpdir):
     msgs = ['# Application(SingletonConfigurable) configuration',
             '# C(Configurable) configuration']
     assert all(m in cfg_str for m in msgs)
+
+
+def test_Cmd_subcmd_configures_parents(tmpdir):
+    tdir = tmpdir.mkdir('yamlconfig')
+    tdir.chdir()
+
+    conf_fpath = tdir / '.config.yaml'
+    conf_fpath.write_text(
+        "RootCmd:\n  b:\n    2\nSubCmd:\n  s:\n    -1",
+        'utf-8')
+
+    class SubCmd(cmdlets.Cmd):
+        s = trt.Int(config=True)
+
+    class RootCmd(cmdlets.Cmd):
+        subcommands = {'sub': (SubCmd, "help string")}
+        a = trt.Int(config=True)
+        b = trt.Int(config=True)
+
+    r = RootCmd(config=trc.Config({'Cmd': {'config_paths': ['.config']}}),
+                raise_config_file_errors=True)
+    r.initialize('sub --RootCmd.a=1'.split())
+
+    assert SubCmd.instance().s == -1
+    assert r.a == 1
+    assert r.b == 2

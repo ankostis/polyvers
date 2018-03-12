@@ -45,10 +45,10 @@ Of course you can mix'n match.
 """
 
 from collections import OrderedDict
+from os import PathLike
 import contextlib
 import io
 import logging
-from os import PathLike
 import os
 import re
 
@@ -106,8 +106,8 @@ def chain_cmds(app_classes, argv=None, **root_kwds):
         A list of cmd-classes: ``[root, sub1, sub2, app]``
         Note: you have to "know" the correct nesting-order of the commands ;-)
     :param argv:
-        cmdline args passed to the root (1st) cmd only.
-        Make sure they do not contain any sub-cmds.
+        cmdline args are passed to all cmds; make sure they do not contain
+        any sub-cmds, or chain will be broken.
         Like :meth:`initialize()`, if undefined, replaced with ``sys.argv[1:]``.
     :return:
         The root(1st) cmd to invoke :meth:`Aplication.start()`
@@ -512,6 +512,7 @@ class Cmd(trc.Application, Spec):
             #
             if parent.classes:
                 self.classes.extend(parent.classes)
+                self.classes = list(set(self.classes))
 
     config_paths = PathList(
         help="""
@@ -538,7 +539,7 @@ class Cmd(trc.Application, Spec):
         #  NOTE: Patch default-value on `Cmd` so all subcmds load same configs.
     ).tag(config=True)
 
-    _cfgfiles_registry = None
+    _cfgfiles_registry: CfgFilesRegistry = None
 
     @property
     def loaded_config_files(self):
@@ -770,10 +771,15 @@ class Cmd(trc.Application, Spec):
             #  Also avoid contaminations with user if generating-config.
             return
 
-        static_config = self.read_config_files()
-        static_config.merge(self.cli_config)
+        config = self.read_config_files()
+        config.merge(self.cli_config)
 
-        self.update_config(static_config)
+        ## Ensure cmd-chain configured, or else
+        #  root-app would have been configed only from cmd-line args.
+        #
+        while self:
+            self.update_config(config)
+            self = self.parent
 
     def start(self):
         """Dispatches into sub-cmds (if any), and then delegates to :meth:`run().
