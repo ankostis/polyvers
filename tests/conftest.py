@@ -29,7 +29,19 @@ def touchpaths(tdir, paths_txt):
             (tdir / f).ensure(dir=f.endswith('/'))
 
 
-def assert_in_text(text, require=None, forbid=None):
+def _re_match(subtext, text):
+    import re
+
+    try:
+        subtext = re.compile(subtext)
+    except Exception as ex:
+        raise ValueError("Bad regex '%s' due to: %s" %
+                         (subtext, ex))  # from None  # TODO: when pvlib split
+    else:
+        return subtext.search(text)
+
+
+def assert_in_text(text, require=None, forbid=None, is_regex=False):
     """
     Checks strings are (not) contained in text.
 
@@ -43,6 +55,12 @@ def assert_in_text(text, require=None, forbid=None):
         with all errors detected
     """
     __tracebackhide__ = True
+
+    if is_regex:
+        match_func = _re_match
+    else:
+        match_func = lambda subtext, text: subtext in text
+
     if isinstance(text, str):
         text = text.split('\n')
 
@@ -55,16 +73,16 @@ def assert_in_text(text, require=None, forbid=None):
     illegals = {}
     for i, l in enumerate(text):
         for mterm in require:
-            if mterm not in matches and mterm in l:
+            if mterm not in matches and match_func(mterm, l):
                 matches.add(mterm)
 
         for iterm in forbid:
-            if iterm and iterm in l:
+            if iterm and match_func(iterm, l):
                 illegals[iterm] = i
 
     missed = set(require) - matches
-    err1 = missed and "MISSES: %s" % ', '.join(missed) or ''
-    err2 = illegals and "ILLEGALS: \n  %s" % '\n  '.join(
+    err1 = missed and "\n  - MISSES: \n    - %s" % '\n    - '.join(missed) or ''
+    err2 = illegals and "\n  - ILLEGALS: \n    - %s" % '\n    - '.join(
         "%r in line(%i): %s" % (k, v + 1, text[v]) for k, v in illegals.items()) or ''
 
     if err1 or err2:
