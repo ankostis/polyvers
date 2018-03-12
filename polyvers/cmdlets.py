@@ -763,14 +763,12 @@ class Cmd(trc.Application, Spec):
         and update any :attr:`config_paths`, then it reads all file-configs, and
         then re-apply cmd-line configs as overrides (trick copied from `jupyter-core`).
         """
+        self.update_interp_context()
         super().initialize(argv)
         if self._is_dispatching():
             ## Only the final child reads file-configs.
             #  Also avoid contaminations with user if generating-config.
             return
-
-        self._dump_config()
-        self.update_interp_context()
 
         static_config = self.read_config_files()
         static_config.merge(self.cli_config)
