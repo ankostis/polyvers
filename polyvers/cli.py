@@ -221,7 +221,7 @@ class PolyversCmd(cmdlets.Cmd):
         ## TODO: Check if template-project & projects exist!
 
         if not (skip_conf_scream or has_conf_file):
-            self.log.warning(
+            self.log.info(
                 "No '%s' config-file(s) found!\n"
                 "  Invoke `polyvers init` to create it and stop this warning.",
                 git_root / self.config_basename)
@@ -349,7 +349,7 @@ class StatusCmd(cmdlets.Cmd):
         if not has_template_project:
             guessed_project = rootapp.autodiscover_tags()
             rootapp.default_project = guessed_project.replace(parent=self)
-            log.notice("Auto-discovered versioning scheme: %s", guessed_project.pname)
+            log.info("Auto-discovered versioning scheme: %s", guessed_project.pname)
 
         if has_subprojects:
             projects = rootapp.projects
@@ -363,7 +363,7 @@ class StatusCmd(cmdlets.Cmd):
             ## TODO: report mismatch of project-names/vtags.
             ## TODO: extract method to classify pre-populated histories.
 
-            log.notice(
+            log.info(
                 "Auto-discovered %i sub-project(s) in git-root '%s': \n%s",
                 len(proj_paths), git_root.resolve(),
                 ydumps({k: str(v) for k, v in proj_paths.items()}))
@@ -377,7 +377,9 @@ class StatusCmd(cmdlets.Cmd):
             yield ydumps({'versions': {p.pname: p.git_describe()}
                           for p in projects})
         except pvtags.GitVoidError as ex:
-            log.warning('%s \n  Inspecting any *pvtags* instead.', ex)
+            log.warning("Failed fetching versions for projects '%s' due to: %s "
+                        "\n  Inspecting any *pvtags* instead.",
+                        ', '.join(p.pname for p in projects), ex)
 
             ## TODO: extract method to classify pre-populated histories.
             pvtags.populate_pvtags_history(*projects)

@@ -15,8 +15,8 @@ The *polyvers* version-configuration tool is generating tags like::
 
 On purpose python code here kept with as few dependencies as possible."""
 
-import logging
 from typing import Dict
+import logging
 
 import subprocess as sbp
 
@@ -69,8 +69,10 @@ def exec_cmd(cmd,
         **popen_kws
     )
     if res.returncode:
-        log.warning('%s %r failed with %s!\n  stdout: %s\n  stderr: %s',
-                    cmd_label, cmd_str, res.returncode, res.stdout, res.stderr)
+        log.log(
+            logging.DEBUG if check_returncode else logging.WARNING,
+            '%s %r failed with %s!\n  stdout: %s\n  stderr: %s',
+            cmd_label, cmd_str, res.returncode, res.stdout, res.stderr)
     elif check_stdout or check_stderr:
         log.debug('%s %r ok: \n  stdout: %s\n  stderr: %s',
                   cmd_label, cmd_str, res.stdout, res.stderr)
