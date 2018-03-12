@@ -344,6 +344,16 @@ class CmdletsInterpolation(interpctxt.InterpolationContext):
 cmdlets_interpolations = CmdletsInterpolation()
 
 
+def _travel_parents(self):
+    "Utility to travel up the cmd-chain."
+    while self.parent:
+        self = self.parent
+    return self
+
+
+trc.Configurable.root = _travel_parents
+
+
 class Spec(trc.Configurable):
     verbose = Bool(
         config=True,
@@ -825,16 +835,6 @@ class Cmd(trc.Application, Spec):
                 'epilogue': '\n'.join(self.emit_help_epilogue()),
         }
         raise CmdException(msg)
-
-
-def _travel_parents(self):
-    "Utility to travel up the cmd-chain."
-    while self.parent:
-        self = self.parent
-    return self
-
-
-trc.Configurable.root = _travel_parents
 
 
 ##################

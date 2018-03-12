@@ -23,8 +23,9 @@ from .autoinstance_traitlet import AutoInstance
 
 
 # TODO: after pvlib split, move NOTICE level into package.
-lcu.patch_new_level_in_logging(25, 'NOTICE')
-lcu.default_logging_level = 'NOTICE'
+NOTICE = 25
+lcu.patch_new_level_in_logging(NOTICE, 'NOTICE')
+lcu.default_logging_level = NOTICE
 
 log = logging.getLogger(__name__)
 
@@ -205,7 +206,7 @@ class PolyversCmd(cmdlets.Cmd):
             raise cmdlets.CmdException(
                 "Current-dir '%s' is not inside a git-repo!" % Path().resolve())
 
-        app = self.root()
+        app = self.root()  # type: ignore
         has_template_project = app.default_project is not None
         has_subprojects = bool(app.projects)
 
@@ -417,7 +418,7 @@ trc.Application.raise_config_file_errors.tag(config=True)
 trc.Application.raise_config_file_errors.help = \
     'Whether failing to load config files should prevent startup.'
 
-PolyversCmd.flags = {
+PolyversCmd.flags = {  # type: ignore
     ## Copied from Application
     #
     'show-config': ({
@@ -482,7 +483,7 @@ PolyversCmd.flags = {
     ),
 }
 
-PolyversCmd.aliases = {
+PolyversCmd.aliases = {  # type: ignore
     ('m', 'message'): 'Project.message',
     ('u', 'sign-user'): 'Project.sign_user',
 }
