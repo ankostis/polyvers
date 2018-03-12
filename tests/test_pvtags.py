@@ -179,11 +179,11 @@ def test_project_matching_all_pvtags(ok_repo, project1):
 
     all_pvtags = pvtags.make_match_all_pvtags_project()
     pvtags.populate_pvtags_history(all_pvtags)
-    assert all_pvtags.pname == '*'
+    assert all_pvtags.pname == '<PVTAG>'
     assert all_pvtags.pvtags_history == ['proj1-v0.0.0', 'proj1-v0.0.1']
 
     all_vtags = pvtags.make_match_all_vtags_project()
-    assert all_vtags.pname == '*'
+    assert all_vtags.pname == '<VTAG>'
     pvtags.populate_pvtags_history(all_vtags)
     assert all_vtags.pvtags_history == []
 

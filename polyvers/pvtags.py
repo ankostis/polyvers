@@ -24,7 +24,7 @@ import logging
 import os
 from pathlib import Path
 import re
-from typing import List, Dict, Optional
+from typing import List, Dict, Tuple, Optional
 
 import subprocess as sbp
 
@@ -325,7 +325,7 @@ def make_match_all_pvtags_project(**project_kw) -> Project:
     """
     # Note: `pname` ignored by patterns, used only for labeling.
     return Project(
-        pname='*',
+        pname='<PVTAG>',
         pvtag_frmt='*-v*',
         pvtag_regex=r"""(?xi)
             ^(?P<pname>[A-Z0-9]|[A-Z0-9][A-Z0-9._-]*?[A-Z0-9])
@@ -359,7 +359,7 @@ def make_match_all_vtags_project(**project_kw) -> Project:
     to capture *vtags* not captured by any other project.
     """
     # Note: `pname` ignored by patterns, used only for labeling.
-    return make_vtag_project(pname='*',
+    return make_vtag_project(pname='<VTAG>',
                              **project_kw)
 
 
@@ -465,3 +465,18 @@ def populate_pvtags_history(*projects: Project,
             if version:
                 proj._pvtags_collected.append(pvtag)
                 break
+
+
+def collect_standard_versioning_tags() -> Tuple[Project, Project]:
+    """
+    Utility to collect both *pvtags* and *vtags* from git repo.
+
+    :return:
+        a 2-tuple(pvtag-project, vtag-project) all populated with any
+        versioning tags
+    """
+    catch_all_projects = (make_match_all_pvtags_project(),
+                          make_match_all_vtags_project())
+    populate_pvtags_history(*catch_all_projects)
+
+    return catch_all_projects

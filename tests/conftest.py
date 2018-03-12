@@ -205,3 +205,28 @@ def clone_repo(orig_repo, clone_path):
 def monorepo(ok_repo, tmpdir_factory):
     mutable_repo = tmpdir_factory.mktemp('pvtags_repo')
     return clone_repo(ok_repo, mutable_repo)
+
+
+@pytest.fixture()
+def python_monoproject(untagged_repo, tmpdir_factory):
+    mutable_repo = tmpdir_factory.mktemp('uni_repo')
+    clone_repo(untagged_repo, mutable_repo)
+
+    (mutable_repo / 'setup.py').write_text(
+        """setup(name='simple')""", 'utf-8')
+
+    return mutable_repo
+
+
+@pytest.fixture()
+def python_monorepo(untagged_repo, tmpdir_factory):
+    mutable_repo = tmpdir_factory.mktemp('uni_repo')
+    clone_repo(untagged_repo, mutable_repo)
+
+    (mutable_repo / 'setup.py').write_text(
+        """setup(name='base')""", 'utf-8')
+
+    (mutable_repo / 'foo_project' / 'setup.py').write_text(
+        """setup(name='foo')""", 'utf-8', ensure=True)
+
+    return mutable_repo

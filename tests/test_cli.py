@@ -10,6 +10,7 @@ from collections import OrderedDict, defaultdict
 from polyvers import cli, cmdlets
 from polyvers.__main__ import main
 from polyvers.mainpump import ListConsumer
+from polyvers.oscmd import cmd
 
 import pytest
 
@@ -85,10 +86,80 @@ def test_config_cmd(cmd, match, illegal):
     #print('\n'.join(lc.items))
 
 
-def test_status_cmd(ok_repo):
-    ok_repo.chdir()
-    cmd = 'status'
-    lc = ListConsumer()
-    rc = main(cmd.split(), cmd_consumer=lc)
+def test_status_cmd_vtags(python_monoproject, caplog, capsys):
+    python_monoproject.chdir()
+
+    rc = main('status -v'.split())
+    assert rc != 0
+    assert_in_text(
+        caplog.text,
+        require=[
+            "No '.polyvers' config-file(s) found!",
+            "Auto-discovered 1 sub-project(s)",
+            "Cannot auto-discover versioning scheme,"
+        ], forbid=[
+            "Cannot auto-discover (sub-)project",
+        ])
+    out, err = capsys.readouterr()
+    assert not err and not out
+
+    caplog.clear()
+    ## Workaround https://github.com/pytest-dev/pytest/issues/3297
+    caplog.handler.stream.truncate(0)
+
+    cmd.git.tag('v0.1.0', m='annotate!')
+    rc = main('status -v'.split())
     assert rc == 0
-    #print('\n'.join(lc.items))
+    assert_in_text(
+        caplog.text,
+        require=[
+            "No '.polyvers' config-file(s) found!",
+            "Auto-discovered 1 sub-project(s)",
+            "Auto-discovered versioning scheme",
+        ], forbid=[
+            "Cannot auto-discover (sub-)project",
+            "Cannot auto-discover versioning scheme,"
+        ])
+    out, err = capsys.readouterr()
+    assert not err and 'versions:\n  simple: v0.1.0\n' in out
+
+
+def test_status_cmd_pvtags(python_monorepo, caplog, capsys):
+    python_monorepo.chdir()
+
+    rc = main('status -v'.split())
+    assert rc != 0
+    assert_in_text(
+        caplog.text,
+        require=[
+            "No '.polyvers' config-file(s) found!",
+            "Auto-discovered 2 sub-project(s)",
+            "Cannot auto-discover versioning scheme",
+        ], forbid=[
+            "Cannot auto-discover (sub-)project",
+        ])
+    out, err = capsys.readouterr()
+    assert not err
+    assert not out
+
+    caplog.clear()
+    ## Workaround https://github.com/pytest-dev/pytest/issues/3297
+    caplog.handler.stream.truncate(0)
+
+    cmd.git.tag('base-v0.1.0', m='annotate!')
+    rc = main('status -v'.split())
+    assert rc == 0
+    assert_in_text(
+        caplog.text,
+        require=[
+            "No '.polyvers' config-file(s) found!",
+            "Auto-discovered 2 sub-project(s)",
+            "Auto-discovered versioning scheme",
+        ], forbid=[
+            "Cannot auto-discover (sub-)project",
+            "Cannot auto-discover versioning scheme,"
+        ])
+    out, err = capsys.readouterr()
+    assert not err
+    ## TODO: report mismatch of project-names/vtags.
+    assert 'versions:\n  foo: base-v0.1.0\n' in out
