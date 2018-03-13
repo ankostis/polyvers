@@ -376,7 +376,7 @@ class InitCmd(_SubCmd):
             yield "TODO: create new config-file in '%s'." % cfgpath
 
 
-_history_help = """
+_status_all_help = """
     When true, fetch also all version-tags, otherwise just project version-id(s).
 """
 
@@ -388,11 +388,11 @@ class StatusCmd(_SubCmd):
     SYNTAX:
         {cmd_chain} [OPTIONS] [<project>]...
     """
-    history = Bool(
+    all = Bool(  # noqa: A003
         config=True,
-        help=_history_help)
+        help=_status_all_help)
 
-    flags = {'history': ({'StatusCmd': {'history': True}}, _history_help)}
+    flags = {'all': ({'StatusCmd': {'all': True}}, _status_all_help)}
 
     def _fetch_versions(self, projects):
         def git_describe(proj):
@@ -405,14 +405,14 @@ class StatusCmd(_SubCmd):
                     for p in projects}
         return versions
 
-    def _fetch_history(self, projects):
+    def _fetch_all(self, projects):
         ## TODO: extract method to classify pre-populated histories.
         pvtags.populate_pvtags_history(*projects)
         ## TODO: YAMLable Project (apart from Strable) with metadata Print/header
-        history = {p.pname: {'history': p.pvtags_history,
-                             'basepath': str(p.basepath)}
-                   for p in projects}
-        return history
+        pinfos = {p.pname: {'history': p.pvtags_history,
+                            'basepath': str(p.basepath)}
+                  for p in projects}
+        return pinfos
 
     def run(self, *pnames):
         self.bootstrapp()
@@ -424,8 +424,8 @@ class StatusCmd(_SubCmd):
 
         res = self._fetch_versions(projects)
 
-        if self.history:
-            merge_dict(res, self._fetch_history(projects))
+        if self.all:
+            merge_dict(res, self._fetch_all(projects))
 
         return ydumps(res)
 

@@ -151,7 +151,7 @@ def test_status_cmd_vtags(mutable_repo, caplog, capsys):
     assert not err
     assert 'simple:\n  version:\n' == out
 
-    rc = main('status --monoproject --history'.split())
+    rc = main('status --monoproject --all'.split())
     out, err = capsys.readouterr()
     assert 'simple:\n  version:\n  history: []\n  basepath: .\n' == out
 
@@ -176,7 +176,7 @@ def test_status_cmd_vtags(mutable_repo, caplog, capsys):
     assert not err
     assert 'simple:\n  version: v0.1.0\n' == out
 
-    rc = main('status --history'.split())
+    rc = main('status --all'.split())
     out, err = capsys.readouterr()
     exp = tw.dedent("""\
         simple:
@@ -252,7 +252,7 @@ def test_status_cmd_pvtags(mutable_repo, caplog, capsys):
     assert not err
     assert 'base:\n  version:\nfoo:\n  version:\n' == out
 
-    rc = main('status --monorepo --history'.split())
+    rc = main('status --monorepo --all'.split())
     out, err = capsys.readouterr()
     assert ('base:\n  version:\n  history: []\n  basepath: .\nfoo:\n  '
             'version:\n  history: []\n  basepath: foo_project\n') == out
@@ -279,7 +279,7 @@ def test_status_cmd_pvtags(mutable_repo, caplog, capsys):
     exp = "base:\n  version: base-v0.1.0\nfoo:\n  version: base-v0.1.0\n"
     assert exp == out
 
-    rc = main('status --history'.split())
+    rc = main('status --all'.split())
     out, err = capsys.readouterr()
     exp = tw.dedent("""\
     base:
