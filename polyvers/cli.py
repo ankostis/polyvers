@@ -427,7 +427,8 @@ class StatusCmd(_SubCmd):
         if self.all:
             merge_dict(res, self._fetch_all(projects))
 
-        return ydumps(res)
+        if res:
+            return ydumps(res)
 
 
 class BumpCmd(_SubCmd):
