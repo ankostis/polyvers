@@ -214,10 +214,6 @@ class PolyversCmd(cmdlets.Cmd):
             if cwd not inside a git repo
         """
         git_root = self.git_root
-        if not git_root:
-            raise cmdlets.CmdException(
-                "Current-dir '%s' is not inside a git-repo!" % Path().resolve())
-
         has_conf_file = False
         for p in cfgfiles_registry.collected_paths:
             try:
@@ -243,6 +239,12 @@ class PolyversCmd(cmdlets.Cmd):
     def git_root(self) -> Path:
         if self._git_root is None:
             self._git_root = fu.find_git_root()
+
+            if not self._git_root:
+                raise pvtags.NoGitRepoError(
+                    "Current-dir '%s' is not inside a git-repo!" %
+                    Path().resolve())
+
         return self._git_root
 
     projects_scan = AutoInstance(
@@ -312,7 +314,7 @@ class PolyversCmd(cmdlets.Cmd):
         else:
             raise cmdlets.CmdException(
                 "Cannot auto-discover versioning scheme, "
-                "confusing or no versioning-tags:\n%s"
+                "missing or contradictive versioning-tags:\n%s"
                 "\n\n  Try --monorepo/--monoproject flags." %
                 ydumps({'pvtags': pvtag_proj.pvtags_history,
                         'vtags': vtag_proj.pvtags_history}))
@@ -320,6 +322,9 @@ class PolyversCmd(cmdlets.Cmd):
     def bootstrapp(self) -> None:
         """
         Bootstrap valid configs in root-app.
+
+        :raise CmdException:
+            if cwd not inside a git repo
 
         .. Note::
            Were forced to define this method in a separate class from `PolyversCmd`
