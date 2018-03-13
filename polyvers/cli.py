@@ -198,41 +198,6 @@ class PolyversCmd(cmdlets.Cmd):
 
         return paths
 
-    def check_project_configs_exist(
-            self,
-            ## Needed bc it is subcmd that load configs, not root-app.
-            cfgfiles_registry: cmdlets.CfgFilesRegistry,
-            skip_conf_scream=False) -> bool:
-        """
-        Check if config-file exists and has been loaded.
-
-        and optionally warn if config-file is missing from Git repo.
-
-        :return:
-            true when a per-repo config-file exists and has been loaded
-        :raise CmdException:
-            if cwd not inside a git repo
-        """
-        git_root = self.git_root
-        has_conf_file = False
-        for p in cfgfiles_registry.collected_paths:
-            try:
-                if Path(p).relative_to(git_root):
-                    has_conf_file = True
-            except ValueError as _:
-                ## Ignored, probably program defaults.
-                pass
-
-        ## TODO: Check if template-project & projects exist!
-
-        if not (skip_conf_scream or has_conf_file):
-            self.log.info(
-                "No '%s' config-file(s) found!\n"
-                "  Invoke `polyvers init` to create it and stop this warning.",
-                git_root / self.config_basename)
-
-        return has_conf_file
-
     _git_root: Path = None
 
     @property
@@ -340,9 +305,6 @@ class PolyversCmd(cmdlets.Cmd):
         """
         git_root = self.git_root
 
-        ## Just for logging config missing...
-        self.check_project_configs_exist(self._cfgfiles_registry)
-
         default_project = self.default_project
         has_template_project = (default_project is not None and
                                 default_project.pvtag_frmt and
@@ -384,24 +346,34 @@ class _SubCmd(PolyversCmd):
 class InitCmd(_SubCmd):
     """Generate configurations based on directory contents."""
 
+    def _find_config_file_path(self, rootapp) -> Path:
+        """
+        Log if no config-file has been loaded.
+        """
+        git_root = rootapp.git_root
+
+        for p in self._cfgfiles_registry.collected_paths:
+            p = Path(p)
+            try:
+                if p.relative_to(git_root):
+                    return p
+            except ValueError as _:
+                ## Ignored, probably program defaults.
+                pass
+
     def run(self, *args):
         if len(args) > 0:
             raise cmdlets.CmdException(
                 "Cmd %r takes no arguments, received %d: %r!"
                 % (self.name, len(args), args))
 
-        res = self.check_project_configs_exist(self._cfgfiles_registry,
-                                               skip_conf_scream=True)
-        has_conf_file, _, __ = res
-
-        if not self.force and has_conf_file:
-            raise cmdlets.CmdException(
-                "Polyvers already initialized!"
-                "\n  Use --force if you must, and also check those files:"
-                "\n    %s" %
-                '\n    '.join(self._cfgfiles_registry.collected_paths))
-
-        yield "Init would be created...."
+        rootapp = self.rootstrapp(skip_conf_scream=True)
+        cfgpath = self._find_config_file_path(rootapp)
+        if cfgpath:
+            yield "TODO: update config-file '%s'...." % cfgpath
+        else:
+            cfgpath = Path(rootapp.git_root) / ('%s.yaml' % rootapp.config_basename)
+            yield "TODO: create new config-file in '%s'." % cfgpath
 
 
 _history_help = """

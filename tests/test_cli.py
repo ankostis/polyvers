@@ -101,7 +101,6 @@ def test_status_cmd_vtags(mutable_repo, caplog, capsys):
     assert_in_text(
         caplog.text,
         require=[
-            r"No '.polyvers' config-file\(s\) found",
             r"Cannot auto-discover versioning scheme,"
         ], forbid=[
             r"Auto-discovered versioning scheme",
@@ -122,7 +121,6 @@ def test_status_cmd_vtags(mutable_repo, caplog, capsys):
     assert_in_text(
         caplog.text,
         require=[
-            r"No '.polyvers' config-file\(s\) found",
             r"Cannot auto-discover \(sub-\)project",
         ], forbid=[
             r"Auto-discovered versioning scheme",
@@ -144,7 +142,6 @@ def test_status_cmd_vtags(mutable_repo, caplog, capsys):
     assert_in_text(
         caplog.text,
         require=[
-            "No '.polyvers' config-file(s) found",
             "Auto-discovered 1 sub-project(s)",
         ], forbid=[
             "Cannot auto-discover (sub-)project",
@@ -169,7 +166,6 @@ def test_status_cmd_vtags(mutable_repo, caplog, capsys):
     assert_in_text(
         caplog.text,
         require=[
-            "No '.polyvers' config-file(s) found",
             "Auto-discovered 1 sub-project(s)",
             "Auto-discovered versioning scheme",
         ], forbid=[
@@ -205,7 +201,6 @@ def test_status_cmd_pvtags(mutable_repo, caplog, capsys):
     assert_in_text(
         caplog.text,
         require=[
-            r"No '.polyvers' config-file\(s\) found",
             r"Cannot auto-discover versioning scheme,"
         ], forbid=[
             r"Auto-discovered versioning scheme",
@@ -226,7 +221,6 @@ def test_status_cmd_pvtags(mutable_repo, caplog, capsys):
     assert_in_text(
         caplog.text,
         require=[
-            r"No '.polyvers' config-file\(s\) found",
             r"Cannot auto-discover \(sub-\)project",
         ], forbid=[
             r"Auto-discovered versioning scheme",
@@ -249,7 +243,6 @@ def test_status_cmd_pvtags(mutable_repo, caplog, capsys):
     assert_in_text(
         caplog.text,
         require=[
-            "No '.polyvers' config-file(s) found",
             "Auto-discovered 2 sub-project(s)",
         ], forbid=[
             "Cannot auto-discover (sub-)project",
@@ -275,7 +268,6 @@ def test_status_cmd_pvtags(mutable_repo, caplog, capsys):
     assert_in_text(
         caplog.text,
         require=[
-            "No '.polyvers' config-file(s) found",
             "Auto-discovered 2 sub-project(s)",
             "Auto-discovered versioning scheme",
         ], forbid=[
