@@ -78,7 +78,7 @@ def git_restore_point(restore=False):
         if true, force restore at exit, otherwise, restore only on errors
     """
     ok = False
-    original_point = cmd.git.rev_parse.HEAD()[:12]
+    original_point = cmd.git.rev_parse.HEAD()
     try:
         yield
         ok = not restore
@@ -293,7 +293,7 @@ class Project(cmdlets.Spec, cmdlets.Replaceable):
         with _git_errors_handler(pname):
             out = cli._(*git_args, **git_flags)(match=tag_pattern)
 
-        version = out and out.strip()
+        version = out
         ## `git describe --all` fetches 'tags/` prefix.
         version = version.lstrip('tags/')
 
@@ -327,7 +327,7 @@ class Project(cmdlets.Spec, cmdlets.Replaceable):
         with _git_errors_handler(self.pname):
             out = cmd.git.log(n=1, format='format:%cD')  # TODO: traitize log-date format
 
-        return out and out.strip()
+        return out
 
 
 def make_pvtag_project(**project_kw) -> Project:
@@ -397,7 +397,7 @@ def _fetch_all_tags(cli, tag_patterns: List[str],
     with _git_errors_handler(pnames_msg):
         out = cli('--list', *tag_patterns)
 
-    return out and out.strip().split('\n') or ()
+    return out and out.split('\n') or ()
 
 
 def _parse_git_tag_ref_lines(tag_ref_lines: List[str],
@@ -415,7 +415,7 @@ def _parse_git_tag_ref_lines(tag_ref_lines: List[str],
     return tags
 
 
-def _fetch_annotated_tags(cli, tag_patterns: List[str],
+def _fetch_annotated_tags(cli, tag_patterns: Sequence[str],
                           pnames_msg: str) -> List[str]:
     """
     Collect only non-annotated tags (those pointing to tag-objects).
@@ -426,10 +426,13 @@ def _fetch_annotated_tags(cli, tag_patterns: List[str],
     with _git_errors_handler(pnames_msg):
         out = cli(*tag_patterns)
 
-    tag_ref_lines = out and out.strip().split('\n')
+    if not out:
+        return []
+
+    tag_ref_lines = out.split('\n')
     tags = _parse_git_tag_ref_lines(tag_ref_lines)
 
-    return tags or []
+    return tags
 
 
 def _replace_pvtags_in_projects(

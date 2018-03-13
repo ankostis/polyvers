@@ -132,9 +132,13 @@ class _Cli:
         res = exec_cmd(self._cmdlist, **self._popen_kw)
         self.rc = res.returncode
         self.stderr = res.stderr
-        return res.stdout
+        self.stdout = res.stdout  # keep unstripped stdout
+
+        if self._popen_kw['check_stdout']:
+            return res.stdout and res.stdout.strip()
 
     def _(self, *args, **kw):
+        "Avoid immediate execution and continue building cmd-line."
         self._extend_cmdlist(args, kw)
         return self
 
@@ -145,6 +149,8 @@ class _Cli:
 
 class PopenCmd:
     """
+    A function --> cmd-line builder for executing (mostly) git commands.
+
     To run ``git log -n1``::
 
         out = cmd.git.log(n=1)
@@ -152,6 +158,10 @@ class PopenCmd:
     To launch a short python program with ``python -c "print('a')"``::
 
         out = cmd.python._(c=True)('print(\'a\')')
+
+    .. Note::
+       It's mostly for Git bc flags are produced like that:
+           -f <value> --flag=<value>
     """
     def __init__(self,
                  dry_run=False,
