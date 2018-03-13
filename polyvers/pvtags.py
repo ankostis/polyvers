@@ -275,7 +275,16 @@ class Project(cmdlets.Spec, cmdlets.Replaceable):
         with _git_errors_handler(pname):
             out = cli._(*git_args, **git_flags)(match=tag_pattern)
 
-        return out and out.strip()
+        version = out and out.strip()
+        ## `git describe --all` fetches 'tags/` prefix.
+        version = version.lstrip('tags/')
+
+        if not self.version_from_pvtag(version):
+            raise trt.TraitError(
+                "Project-version '%s' fetched by '%s' unparsable by regex: %s"
+                % (version, tag_pattern, self._pvtag_regex_resolved.pattern))
+
+        return version
 
     def last_commit_tstamp(self):
         """

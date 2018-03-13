@@ -227,7 +227,7 @@ def test_git_describe_ok(ok_repo, project1, project2):
     v = project2.git_describe(include_lightweight=True)
     assert v == p2_pvtag
     v = project2.git_describe(all=True)
-    assert v == 'tags/' + p2_pvtag
+    assert v == p2_pvtag
 
 
 def test_git_describe_bad(ok_repo, no_repo, foo):
@@ -240,6 +240,19 @@ def test_git_describe_bad(ok_repo, no_repo, foo):
 
     with pytest.raises(pvtags.NoGitRepoError):
         foo.git_describe()
+
+
+def test_git_describe_mismatch_version(ok_repo, project1):
+    ok_repo.chdir()
+
+    project1.pvtag_regex = """
+        ^(?P<pname>BADNAME)
+        -
+        v(?P<version>\d[^-]*)
+        (?:-(?P<descid>\d+-g[a-f\d]+))?$
+    """
+    with pytest.raises(trt.TraitError):
+        project1.git_describe()
 
 
 @pytest.mark.skipif(sys.version_info < (3, ),
