@@ -93,7 +93,7 @@ class _Cli:
         self._cmdlist = [cmd]
 
     def _extend_cmdlist(self, args, kw):
-        def kv2arg(k, v):
+        def kv2args(k, v):
             nk = len(k)
 
             if nk > 1:
@@ -109,14 +109,15 @@ class _Cli:
                             "\n  cmd: %s!" % (k, ' '.join(self._cmdlist)))
                     flag = '--no-' + k
 
-                return flag
+                return (flag, )
 
-            frmt = '-%s%s' if nk == 1 else '--%s=%s'
-            return frmt % (k, v)
+            return ('-%s' % k, str(v)) if nk == 1 else ('--%s=%s' % (k, v), )
 
         arglist = self._cmdlist
         arglist.extend(args)
-        arglist.extend(kv2arg(*kv) for kv in kw.items())
+        arglist.extend(arg
+                       for kv in kw.items()
+                       for arg in kv2args(*kv))
 
     def __getattr__(self, attr):
         if attr == '__wrapped__':  # PYTEST MAGIC!
@@ -138,7 +139,8 @@ class _Cli:
         return self
 
     def __str__(self):
-        return 'Cli(%s)' % ' '.join(self._cmdlist)
+        return 'Cli(%s)' % ' '.join("''" if a == '' else a
+                                    for a in self._cmdlist)
 
 
 class PopenCmd:

@@ -18,13 +18,14 @@ def test_cmd_building(ok_repo):
     cmdlist = c._cmdlist
     assert cmdlist == ['foo', '-c', 'Bang-bar', "any_thing'", '--flag-dang', '--no-no']
 
-    assert cmd.cmd._(*'abc', J=3, K='3')._cmdlist == 'cmd a b c -J3 -K3'.split()
+    assert cmd.cmd._(*'abc', J=3, K='3')._cmdlist == 'cmd a b c -J 3 -K 3'.split()
 
-    assert cmd.cmd._(flag='', f='').top._cmdlist == 'cmd --flag= -f top'.split()
+    assert cmd.cmd._(null='', f='').top._cmdlist == [
+        'cmd', '--null=', '-f', '', 'top']
 
 
 def test_to_str():
-    assert str(cmd.cmd._(flag='', f='').top) == 'Cli(cmd --flag= -f top)'
+    assert str(cmd.cmd._(flag=True, null='', f='').top) == "Cli(cmd --flag --null= -f '' top)"
 
 
 def test_negate_single_letter():
