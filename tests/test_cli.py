@@ -81,6 +81,7 @@ def test_all_cmds_help_version(cmd, capsys):
     ('config show Project', ['Project(Spec'], []),
 ])
 def test_config_cmd(cmd, match, illegal):
+    ## VERY IMPORTANT TCs FOR ConfigCmd!!!
     lc = ListConsumer()
     rc = main(cmd.split(), cmd_consumer=lc)
     assert rc == 0

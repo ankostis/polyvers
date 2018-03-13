@@ -12,6 +12,7 @@ from pathlib import Path
 from typing import Dict
 import io
 import logging
+
 from . import APPNAME, __version__, __updated__, cmdlets, \
     pvtags, engrave, fileutils as fu
 from . import logconfutils as lcu
@@ -35,7 +36,7 @@ _Y = None
 ####################
 ## Config sources ##
 ####################
-CONFIG_VAR_NAME = '%s_CONFIG_PATHS' % APPNAME
+CONFIG_VAR_NAME = '%s_CONFIG_PATHS' % APPNAME.upper()
 #######################
 
 
@@ -316,9 +317,7 @@ class PolyversCmd(cmdlets.Cmd):
                 ydumps({'pvtags': pvtag_proj.pvtags_history,
                         'vtags': vtag_proj.pvtags_history}))
 
-
-class _SubCmd(cmdlets.Cmd):
-    def rootstrapp(self):
+    def bootstrapp(self) -> None:
         """
         Bootstrap valid configs in root-app.
 
@@ -334,25 +333,24 @@ class _SubCmd(cmdlets.Cmd):
            copying employed from each subcmd.
 
         """
-        git_root = fu.find_git_root()
-        rootapp = self.root()
+        git_root = self.git_root
 
         ## Just for logging config missing...
-        rootapp.check_project_configs_exist(self._cfgfiles_registry)
+        self.check_project_configs_exist(self._cfgfiles_registry)
 
-        default_project = rootapp.default_project
+        default_project = self.default_project
         has_template_project = (default_project is not None and
                                 default_project.pvtag_frmt and
                                 default_project.pvtag_regex)
 
         if not has_template_project:
-            guessed_project = rootapp.autodiscover_tags()
-            rootapp.default_project = guessed_project.replace(parent=self)
+            guessed_project = self.autodiscover_tags()
+            self.default_project = guessed_project.replace(parent=self)
             log.info("Auto-discovered versioning scheme: %s", guessed_project.pname)
 
-        has_subprojects = bool(rootapp.projects)
+        has_subprojects = bool(self.projects)
         if not has_subprojects:
-            proj_paths: Dict[str, Path] = rootapp.autodiscover_project_basepaths()
+            proj_paths: Dict[str, Path] = self.autodiscover_project_basepaths()
             if not proj_paths:
                 raise cmdlets.CmdException(
                     "Cannot auto-discover (sub-)project path(s)!"
@@ -366,15 +364,13 @@ class _SubCmd(cmdlets.Cmd):
                 len(proj_paths), git_root.resolve(),
                 ydumps({k: str(v) for k, v in proj_paths.items()}))
 
-            rootapp.projects = [pvtags.Project(parent=self,
-                                               pname=name,
-                                               basepath=basepath)
-                                for name, basepath in proj_paths.items()]
-
-        return rootapp
+            self.projects = [pvtags.Project(parent=self,
+                                            pname=name,
+                                            basepath=basepath)
+                             for name, basepath in proj_paths.items()]
 
 
-class InitCmd(_SubCmd):
+class InitCmd(PolyversCmd):
     """Generate configurations based on directory contents."""
 
     def run(self, *args):
@@ -402,7 +398,7 @@ _history_help = """
 """
 
 
-class StatusCmd(_SubCmd):
+class StatusCmd(PolyversCmd):
     """
     List the versions of project(s).
 
@@ -436,8 +432,8 @@ class StatusCmd(_SubCmd):
         return history
 
     def run(self, *args):
-        rootapp = self.rootstrapp()
-        projects = rootapp.projects
+        self.bootstrapp()
+        projects = self.projects
 
         if args:
             projects = [p for p in projects
@@ -451,7 +447,7 @@ class StatusCmd(_SubCmd):
         return ydumps(res)
 
 
-class BumpCmd(_SubCmd):
+class BumpCmd(PolyversCmd):
     """
     Increase the version of project(s) by the given offset.
 
@@ -469,7 +465,7 @@ class BumpCmd(_SubCmd):
         self.check_project_configs_exist(self._cfgfiles_registry)
 
 
-class LogconfCmd(_SubCmd):
+class LogconfCmd(PolyversCmd):
     """Write a logging-configuration file that can filter logs selectively."""
     def run(self, *args):
         pass

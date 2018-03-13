@@ -344,14 +344,47 @@ class CmdletsInterpolation(interpctxt.InterpolationContext):
 cmdlets_interpolations = CmdletsInterpolation()
 
 
-def _travel_parents(self):
-    "Utility to travel up the cmd-chain."
+def _travel_parents(self) -> trc.Configurable:
+    """
+    Utility to travel up parent-chain.
+
+    :return:
+        the top parent (or self if no parents)
+    """
     while self.parent:
         self = self.parent
     return self
 
 
-trc.Configurable.root = _travel_parents
+trc.Configurable.root_object = _travel_parents
+
+
+def _travel_parents_untill_active_cmd(self, scream=False) -> trc.Application:
+    """
+    Utility to travel up parent-chain until the active subcmd is met.
+
+    :return:
+        the active subcmd, or None if not `scream`
+    :raise AssertionError:
+        if `scream` and no active subcmd found
+    """
+    def test_app(app):
+        return getattr(app, 'subapp', False) is None
+
+    while self.parent:
+        if test_app(self):
+            return self
+        self = self.parent
+
+    if test_app(self):
+        return self
+
+    if scream:
+        raise AssertionError('ROOTED!')
+
+
+#: NOT USED!!
+trc.Configurable.active_subcmd = _travel_parents_untill_active_cmd
 
 
 class Spec(trc.Configurable):
@@ -565,7 +598,7 @@ class Cmd(trc.Application, Spec):
 
     @trt.default('config_basename')
     def _config_basename(self):
-        return '.' + self.root().name
+        return '.' + self.root_object().name
 
     def _collect_static_fpaths(self):
         """Return fully-normalized paths, with ext."""
@@ -761,7 +794,7 @@ class Cmd(trc.Application, Spec):
     def update_interp_context(self, argv=None):
         cmdlets_map = self.interpolations.cmdlets_map
         cmdlets_map['cmd_chain'] = cmd_line_chain(self)
-        cmdlets_map['appname'] = self.root().name
+        cmdlets_map['appname'] = self.root_object().name
 
     #@trc.catch_config_error NOT needed, invoking super()!
     def initialize(self, argv=None):

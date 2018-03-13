@@ -8,9 +8,9 @@
 """Commands to inspect configurations and other cli infos."""
 
 from collections import OrderedDict
+from typing import Text, List
 import os
 import sys
-from typing import Text, List  # @UnusedImport
 
 from toolz import dicttoolz as dtz
 
@@ -123,7 +123,30 @@ def prepare_help_selector(only_class_in_values, verbose):
     return selector
 
 
-class ConfigCmd(cmdlets.Cmd):
+class _ConfigBase(cmdlets.Cmd):
+
+    @trt.observe('parent')
+    def _rebase_hierarchy(self, change):
+        """
+        Monkeypatch inheritance, so configurations reported as from main-app.
+        """
+        parent = change.new
+        if parent:
+            rootapp = parent.root_object()
+            assert rootapp is not self, self  # trait-setup error
+
+            root_class = type(rootapp)
+
+            ## Conditions below were hard to come up with,
+            #  to ensure no base-cycles and consistency.
+            #
+            if (issubclass(root_class, cmdlets.Cmd) and
+                    not issubclass(root_class, _ConfigBase) and
+                    root_class not in type(self).mro()):
+                _ConfigBase.__bases__ = (root_class, ) + _ConfigBase.__bases__
+
+
+class ConfigCmd(_ConfigBase):
     "Commands to manage configurations and other cli infos."
 
     examples = Unicode("""
@@ -158,7 +181,12 @@ class ConfigCmd(cmdlets.Cmd):
     }
 
     def _inherit_parent_cmd(self, change):
-        "Break cmdlet inheritance of main-cmd's flags, aliases and classes. "
+        """
+        Break cmdlet inheritance of main-cmd's flags, aliases and classes.
+
+        .. TIP::
+            This method has been decorated with :meth:`trt.observe` in cmdlets.
+        """
         pass
 
     def __init__(self, **kwds):
@@ -167,7 +195,7 @@ class ConfigCmd(cmdlets.Cmd):
                 **kwds)
 
 
-class WriteCmd(cmdlets.Cmd):
+class WriteCmd(_ConfigBase):
     """
     Store config defaults into specified path(s); The 1st in `config_paths` assumed if not given.
 
@@ -195,7 +223,7 @@ class WriteCmd(cmdlets.Cmd):
             self.write_default_config(fpath, self.force)
 
 
-class InfosCmd(cmdlets.Cmd):
+class InfosCmd(_ConfigBase):
     """
     List paths and other intallation infos.
 
@@ -215,16 +243,6 @@ class InfosCmd(cmdlets.Cmd):
         default_value={},
         help="Extra infos to put at the top of the output of this command"
     )
-
-    #@trc.catch_config_error NOT needed, invoking super()!
-    def initialize(self, argv=None):
-        """Override to read configs from root-app."""
-        super().initialize(argv)
-        root = self.root()
-        cfg = root.read_config_files()
-        cfg.merge(root.cli_config)
-
-        root.update_config(cfg)
 
     def _collect_env_vars(self, classes):
         classes = (cls
@@ -256,11 +274,10 @@ class InfosCmd(cmdlets.Cmd):
 
         app_name = self.name
         app_path = inspect.getfile(type(self))
-        root = self.root()
 
         # TODO: paths not valid YAML!  ...and renable TC.
         yield "APP:"
-        app_infos_func = getattr(root, 'collect_app_infos', None)
+        app_infos_func = getattr(self, 'collect_app_infos', None)
         if app_infos_func:
             for kv in app_infos_func().items():
                 yield "  %s: %s" % kv
@@ -272,10 +289,10 @@ class InfosCmd(cmdlets.Cmd):
             yield '  %s: %s' % (k, v)
 
         yield "CONFIG:"
-        config_paths = l2_yaml_list_sep.join([''] + root.config_paths)
+        config_paths = l2_yaml_list_sep.join([''] + self.config_paths)
         yield "  config_paths: %s" % (config_paths or 'null')
 
-        loaded_cfgs = root.loaded_config_files
+        loaded_cfgs = self.loaded_config_files
         if loaded_cfgs:
             yield "  LOADED_CONFIGS:"
             yield from (format_tuple(p, f) for p, f in loaded_cfgs)
@@ -290,7 +307,7 @@ class InfosCmd(cmdlets.Cmd):
             yield "  %s: %r" % (vname, os.environ.get(vname))
 
 
-class ShowCmd(cmdlets.Cmd):
+class ShowCmd(_ConfigBase):
     """
     Print configurations (defaults | files | merged) before any validations.
 
@@ -375,13 +392,12 @@ class ShowCmd(cmdlets.Cmd):
         }
         super().__init__(**kwds)
 
-    #@trc.catch_config_error NOT needed, invoking super()!
+    @trc.catch_config_error
     def initialize(self, argv=None):
-        """Override to read configs from root-app and not merge them."""
+        """Override to store file-configs separately (before merge)."""
         super().initialize(argv)
-        root = self.root()
-        cfg = root.read_config_files()
-        root._loaded_config = cfg
+        cfg = self.read_config_files()
+        self._loaded_config = cfg
 
     def _yield_file_configs(self, config, classes=None):
         assert not classes, (classes, "should be empty")
@@ -488,13 +504,12 @@ class ShowCmd(cmdlets.Cmd):
         else:
             raise AssertionError('Impossible enum: %s' % source)
 
-        root = self.root()
-        config = root._loaded_config
+        config = self._loaded_config
 
         yield from func(config, args)
 
 
-class DescCmd(cmdlets.Cmd):
+class DescCmd(_ConfigBase):
     """
     List and print help for configurable classes and parameters.
 
@@ -617,4 +632,4 @@ config_subcmds = (
 
 
 def all_configurables(cmd):
-    return [ConfigCmd] + list(config_subcmds) + cmd.root().all_app_configurables
+    return [ConfigCmd] + list(config_subcmds) + cmd.all_app_configurables
