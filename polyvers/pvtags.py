@@ -456,6 +456,10 @@ def populate_pvtags_history(*projects: Project,
     for proj in projects:
         proj._pvtags_collected = []
 
+    assign_tags_to_projects(tags, projects)
+
+
+def assign_tags_to_projects(tags, projects):
     for pvtag in tags:
         ## Attempt all projects to parse tags.
         # and assign it to the 1st one to manage it.
