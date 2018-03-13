@@ -375,20 +375,21 @@ class Spec(trc.Configurable):
 
     @classmethod
     def class_get_help(cls, inst=None):
-        text = trc.Configurable.class_get_help(inst)
+        text = super().class_get_help(inst)
         obj = inst if inst else cls
-        return text.format_map(obj.interpolations)
+        with obj.interpolations.ikeys(stub_keys=True) as ctxt:
+            return text.format_map(ctxt)
 
     @classmethod
     def class_get_trait_help(cls, trait, inst=None, helptext=None):
-        text = trc.Configurable.class_get_trait_help(trait, inst=None, helptext=None)
+        text = super().class_get_trait_help(trait, inst=None, helptext=None)
         obj = inst if inst else cls
         ## Stub missing keys because some trait-values may contain
         #  interpolation patterns themselves (to be expanded on runtime),
         #  so allow them to print.
         #
-        with obj.interpolations.ikeys(stub_keys=True) as ikeys:
-            return text.format_map(ikeys)
+        with obj.interpolations.ikeys(stub_keys=True) as ctxt:
+            return text.format_map(ctxt)
 
 
 class Cmd(trc.Application, Spec):
