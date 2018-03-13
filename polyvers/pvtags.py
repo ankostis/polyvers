@@ -105,9 +105,9 @@ class Project(cmdlets.Spec, cmdlets.Replaceable):
 
     @trt.default('pvtag_frmt')
     def _pvtag_frmt_from_root(self):
-        default_project = getattr(self.active_subcmd(), 'default_project', None)
-        if default_project and default_project is not self:
-            return default_project.pvtag_frmt
+        template_project = getattr(self.active_subcmd(), 'template_project', None)
+        if template_project and template_project is not self:
+            return template_project.pvtag_frmt
         return ''
 
     @property
@@ -156,9 +156,9 @@ class Project(cmdlets.Spec, cmdlets.Replaceable):
 
     @trt.default('pvtag_regex')
     def _pvtag_regex_from_root(self):
-        default_project = getattr(self.active_subcmd(), 'default_project', None)
-        if default_project and default_project is not self:
-            return default_project.pvtag_regex
+        template_project = getattr(self.active_subcmd(), 'template_project', None)
+        if template_project and template_project is not self:
+            return template_project.pvtag_regex
         return ''
 
     tag = Bool(
@@ -308,7 +308,7 @@ def make_pvtag_project(**project_kw) -> Project:
     Make a :class:`Project` for a subprojects hosted at git monorepos.
 
     - Project versioned with *pvtags* like ``foo-project-v0.1.0``.
-    - Used as a template for :attr:`PolyversCmd.default_project`.
+    - Used as a template for :attr:`PolyversCmd.template_project`.
     """
     return Project(
         pvtag_frmt=pvlib.pvtag_frmt,
@@ -341,7 +341,7 @@ def make_vtag_project(**project_kw) -> Project:
     Make a :class:`Project` for a single project hosted at git repos root (not "monorepos").
 
     - Project versioned with tags simple *vtags* (not *pvtags*) like ``v0.1.0``.
-    - Used as a template for :attr:`PolyversCmd.default_project`.
+    - Used as a template for :attr:`PolyversCmd.template_project`.
     """
     simple_project = Project(
         pvtag_frmt=pvlib.vtag_frmt,

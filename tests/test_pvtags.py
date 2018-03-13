@@ -28,7 +28,7 @@ search_all = pvtags.make_match_all_pvtags_project()
 @pytest.fixture
 def proot():
     class C(trc.Application):
-        default_project = pvtags.make_pvtag_project()
+        template_project = pvtags.make_pvtag_project()
 
     return C()
 
@@ -81,7 +81,7 @@ def test_Project_defaults(proot):
     assert proj.pvtag_fnmatch_frmt == ''
 
     proj = Project(parent=proot)
-    pproj = proot.default_project
+    pproj = proot.template_project
 
     assert proj.pvtag_frmt == pproj.pvtag_frmt
     assert proj.pvtag_regex == pproj.pvtag_regex

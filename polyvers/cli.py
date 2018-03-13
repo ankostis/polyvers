@@ -115,7 +115,7 @@ class PolyversCmd(cmdlets.Cmd):
     classes = [pvtags.Project]
 
     #: Interrogated by all Project instances by searching up their parent chain.
-    default_project = AutoInstance(
+    template_project = AutoInstance(
         pvtags.Project,
         allow_none=True,
         config=True,
@@ -252,7 +252,7 @@ class PolyversCmd(cmdlets.Cmd):
           a configuration file.
         """)
 
-    def autodiscover_project_basepaths(self) -> Dict[str, Path]:
+    def _autodiscover_project_basepaths(self) -> Dict[str, Path]:
         """
         Invoked when no config exists (or asked to updated it) to guess projects.
 
@@ -268,9 +268,9 @@ class PolyversCmd(cmdlets.Cmd):
 
         return projects
 
-    def autodiscover_tags(self):
+    def _autodiscover_template_project(self):
         """
-        Guess whether *pvtags* or *vtags* apply.
+        Guess whether *pvtags* or *vtags* versioning schema applies.
         """
         pvtag_proj, vtag_proj = pvtags.collect_standard_versioning_tags()
 
@@ -299,25 +299,25 @@ class PolyversCmd(cmdlets.Cmd):
            (called on ``app.initialize()) that can only set flags
            at the most specific ``mro()`` (the subcmd class).
            So it would be impossible for ``--monorepo`` to set the template-project
-           at root-app (:attr:`PolyversCmd.default_project`), unless ad-hoc
+           at root-app (:attr:`PolyversCmd.template_project`), unless ad-hoc
            copying employed from each subcmd.
 
         """
         git_root = self.git_root
 
-        default_project = self.default_project
-        has_template_project = (default_project is not None and
-                                default_project.pvtag_frmt and
-                                default_project.pvtag_regex)
+        template_project = self.template_project
+        has_template_project = (template_project is not None and
+                                template_project.pvtag_frmt and
+                                template_project.pvtag_regex)
 
         if not has_template_project:
-            guessed_project = self.autodiscover_tags()
-            self.default_project = guessed_project.replace(parent=self)
-            log.info("Auto-discovered versioning scheme: %s", guessed_project.pname)
+            template_project = self._autodiscover_template_project()
+            self.template_project = template_project.replace(parent=self)
+            log.info("Auto-discovered versioning scheme: %s", template_project.pname)
 
         has_subprojects = bool(self.projects)
         if not has_subprojects:
-            proj_paths: Dict[str, Path] = self.autodiscover_project_basepaths()
+            proj_paths: Dict[str, Path] = self._autodiscover_project_basepaths()
             if not proj_paths:
                 raise cmdlets.CmdException(
                     "Cannot auto-discover (sub-)project path(s)!"
@@ -514,11 +514,11 @@ PolyversCmd.flags = {  # type: ignore
     ),
 
     'monorepo': (
-        {'PolyversCmd': {'default_project': pvtags.make_pvtag_project()}},
+        {'PolyversCmd': {'template_project': pvtags.make_pvtag_project()}},
         "Use *pvtags* for versioning sub-projects in this git monorepo."
     ),
     'monoproject': (
-        {'PolyversCmd': {'default_project': pvtags.make_vtag_project()}},
+        {'PolyversCmd': {'template_project': pvtags.make_vtag_project()}},
         "Use plain *vtags* for versioning a single project in this git repo."
     ),
 }
