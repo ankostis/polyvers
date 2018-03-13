@@ -68,7 +68,10 @@ def main(argv=None, cmd_consumer=None, **app_init_kwds):
     except (cmdlets.CmdException, TraitError) as ex:
         log.debug('App exited due to: %r', ex, exc_info=1)
         ## Suppress stack-trace for "expected" errors but exit-code(1).
-        return mlu.exit_with_pride(str(ex), logger=log)
+        msg = str(ex)
+        if type(ex) is not cmdlets.CmdException:
+            msg = '%s: %s' % (type(ex).__name__, ex)
+        return mlu.exit_with_pride(msg, logger=log)
     except Exception as ex:
         ## Log in DEBUG not to see exception x2, but log it anyway,
         #  in case log has been redirected to a file.
