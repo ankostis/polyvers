@@ -124,6 +124,13 @@ def prepare_help_selector(only_class_in_values, verbose):
 
 
 class _ConfigBase(cmdlets.Cmd):
+    @trt.default('subcommands')
+    def _no_subcommands(self):
+        """Note that nothing else works than trait-defaults
+
+        not class-property, neither set on constructor, nor on parent set.
+        """
+        return {}
 
     @trt.observe('parent')
     def _rebase_hierarchy(self, change):
@@ -143,7 +150,7 @@ class _ConfigBase(cmdlets.Cmd):
             if (issubclass(root_class, cmdlets.Cmd) and
                     not issubclass(root_class, _ConfigBase) and
                     root_class not in type(self).mro()):
-                _ConfigBase.__bases__ = (root_class, ) + _ConfigBase.__bases__
+                _ConfigBase.__bases__ = (root_class, cmdlets.Cmd)
 
 
 class ConfigCmd(_ConfigBase):
