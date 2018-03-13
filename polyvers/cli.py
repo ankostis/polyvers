@@ -289,7 +289,7 @@ class PolyversCmd(cmdlets.Cmd):
                 ydumps({'pvtags': pvtag_proj.pvtags_history,
                         'vtags': vtag_proj.pvtags_history}))
 
-    def bootstrapp(self) -> None:
+    def bootstrapp_projects(self) -> None:
         """
         Bootstrap valid configs in root-app.
 
@@ -334,8 +334,11 @@ class PolyversCmd(cmdlets.Cmd):
                 ydumps({k: str(v) for k, v in proj_paths.items()}))
 
             self.projects = [template_project.replace(pname=name,
-                                                      basepath=basepath)
+                                                      basepath=basepath,
+                                                      _pvtags_collected=None)
                              for name, basepath in proj_paths.items()]
+
+        return self.projects
 
 
 class _SubCmd(PolyversCmd):
@@ -368,7 +371,7 @@ class InitCmd(_SubCmd):
                 "Cmd %r takes no arguments, received %d: %r!"
                 % (self.name, len(args), args))
 
-        self.bootstrapp()
+        self.bootstrapp_projects()
         cfgpath = self._find_config_file_path(self)
         if cfgpath:
             yield "TODO: update config-file '%s'...." % cfgpath
@@ -416,8 +419,7 @@ class StatusCmd(_SubCmd):
         return pinfos
 
     def run(self, *pnames):
-        self.bootstrapp()
-        projects = self.projects
+        projects = self.bootstrapp_projects()
 
         if pnames:
             projects = [p for p in projects
