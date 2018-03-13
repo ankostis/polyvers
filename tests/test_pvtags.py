@@ -304,3 +304,28 @@ def test_last_commit_tstamp_BAD_no_git_cmd(foo, monkeypatch):
 
     with pytest.raises(FileNotFoundError):
         foo.last_commit_tstamp()
+
+
+def test_git_restore_point(mutable_repo):
+    mutable_repo.chdir()
+
+    ## no rollback without errors
+    #
+    with pvtags.git_restore_point():
+        cmd.git.commit(m='some msg', allow_empty=True)
+        exp_point = cmd.git.rev_parse.HEAD()
+    assert cmd.git.rev_parse.HEAD() == exp_point
+
+    ## rollback
+    #
+    with pytest.raises(ValueError, match='Opa!'):
+        with pvtags.git_restore_point():
+            cmd.git.commit(m='some msg', allow_empty=True)
+            raise ValueError('Opa!')
+    assert cmd.git.rev_parse.HEAD() == exp_point
+
+    ## rollback forced
+    #
+    with pvtags.git_restore_point(True):
+        cmd.git.commit(m='some msg', allow_empty=True)
+    assert cmd.git.rev_parse.HEAD() == exp_point

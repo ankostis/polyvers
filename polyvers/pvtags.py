@@ -69,6 +69,24 @@ def _git_errors_handler(pname):
             raise
 
 
+@contextlib.contextmanager
+def git_restore_point(restore=False):
+    """
+    Restored checked out branch to previous state in case of errors (or if forced).
+
+    :param restore:
+        if true, force restore at exit, otherwise, restore only on errors
+    """
+    ok = False
+    original_point = cmd.git.rev_parse.HEAD()[:12]
+    try:
+        yield
+        ok = not restore
+    finally:
+        if not ok:
+            cmd.git.reset._(hard=True)(original_point)
+
+
 class _EscapedObjectDict(interpctxt._HasTraitObjectDict):
     def __init__(self, _obj: trt.HasTraits, escape_func) -> None:
         super().__init__(_obj)
