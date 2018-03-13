@@ -27,7 +27,7 @@ search_all = pvtags.make_match_all_pvtags_project()
 
 @pytest.fixture
 def proot():
-    class C(trc.Configurable):
+    class C(trc.Application):
         default_project = pvtags.make_pvtag_project()
 
     return C()

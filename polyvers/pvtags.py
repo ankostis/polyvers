@@ -105,7 +105,7 @@ class Project(cmdlets.Spec, cmdlets.Replaceable):
 
     @trt.default('pvtag_frmt')
     def _pvtag_frmt_from_root(self):
-        default_project = getattr(self.root(), 'default_project', None)
+        default_project = getattr(self.root(True), 'default_project', None)
         if default_project and default_project is not self:
             return default_project.pvtag_frmt
         return ''
@@ -156,7 +156,7 @@ class Project(cmdlets.Spec, cmdlets.Replaceable):
 
     @trt.default('pvtag_regex')
     def _pvtag_regex_from_root(self):
-        default_project = getattr(self.root(), 'default_project', None)
+        default_project = getattr(self.root(True), 'default_project', None)
         if default_project and default_project is not self:
             return default_project.pvtag_regex
         return ''

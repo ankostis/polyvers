@@ -344,7 +344,19 @@ class CmdletsInterpolation(interpctxt.InterpolationContext):
 cmdlets_interpolations = CmdletsInterpolation()
 
 
-def _travel_parents(self):
+def _travel_parents(self, ok=False):
+    "Utility to travel up the cmd-chain."
+    while self.parent:
+        if getattr(self, 'subapp', False) is None:
+            return self
+        self = self.parent
+    if getattr(self, 'subapp', False) is None:
+        return self
+
+    if not ok:
+        raise ValueError('ROOTED!')
+
+def _travel_parents2(self):
     "Utility to travel up the cmd-chain."
     while self.parent:
         self = self.parent
@@ -352,6 +364,7 @@ def _travel_parents(self):
 
 
 trc.Configurable.root = _travel_parents
+trc.Configurable.root2 = _travel_parents2
 
 
 class Spec(trc.Configurable):
@@ -565,7 +578,7 @@ class Cmd(trc.Application, Spec):
 
     @trt.default('config_basename')
     def _config_basename(self):
-        return '.' + self.root().name
+        return '.' + self.root2().name
 
     def _collect_static_fpaths(self):
         """Return fully-normalized paths, with ext."""
@@ -761,7 +774,7 @@ class Cmd(trc.Application, Spec):
     def update_interp_context(self, argv=None):
         cmdlets_map = self.interpolations.cmdlets_map
         cmdlets_map['cmd_chain'] = cmd_line_chain(self)
-        cmdlets_map['appname'] = self.root().name
+        cmdlets_map['appname'] = self.root2().name
 
     #@trc.catch_config_error NOT needed, invoking super()!
     def initialize(self, argv=None):

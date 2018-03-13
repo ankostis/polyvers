@@ -220,11 +220,10 @@ class InfosCmd(cmdlets.Cmd):
     def initialize(self, argv=None):
         """Override to read configs from root-app."""
         super().initialize(argv)
-        root = self.root()
-        cfg = root.read_config_files()
-        cfg.merge(root.cli_config)
+        cfg = self.read_config_files()
+        cfg.merge(self.cli_config)
 
-        root.update_config(cfg)
+        self.update_config(cfg)
 
     def _collect_env_vars(self, classes):
         classes = (cls
@@ -256,11 +255,10 @@ class InfosCmd(cmdlets.Cmd):
 
         app_name = self.name
         app_path = inspect.getfile(type(self))
-        root = self.root()
 
         # TODO: paths not valid YAML!  ...and renable TC.
         yield "APP:"
-        app_infos_func = getattr(root, 'collect_app_infos', None)
+        app_infos_func = getattr(self, 'collect_app_infos', None)
         if app_infos_func:
             for kv in app_infos_func().items():
                 yield "  %s: %s" % kv
@@ -272,10 +270,10 @@ class InfosCmd(cmdlets.Cmd):
             yield '  %s: %s' % (k, v)
 
         yield "CONFIG:"
-        config_paths = l2_yaml_list_sep.join([''] + root.config_paths)
+        config_paths = l2_yaml_list_sep.join([''] + self.config_paths)
         yield "  config_paths: %s" % (config_paths or 'null')
 
-        loaded_cfgs = root.loaded_config_files
+        loaded_cfgs = self.loaded_config_files
         if loaded_cfgs:
             yield "  LOADED_CONFIGS:"
             yield from (format_tuple(p, f) for p, f in loaded_cfgs)
@@ -379,9 +377,8 @@ class ShowCmd(cmdlets.Cmd):
     def initialize(self, argv=None):
         """Override to read configs from root-app and not merge them."""
         super().initialize(argv)
-        root = self.root()
-        cfg = root.read_config_files()
-        root._loaded_config = cfg
+        cfg = self.read_config_files()
+        self._loaded_config = cfg
 
     def _yield_file_configs(self, config, classes=None):
         assert not classes, (classes, "should be empty")
@@ -488,8 +485,7 @@ class ShowCmd(cmdlets.Cmd):
         else:
             raise AssertionError('Impossible enum: %s' % source)
 
-        root = self.root()
-        config = root._loaded_config
+        config = self._loaded_config
 
         yield from func(config, args)
 
