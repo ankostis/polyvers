@@ -368,12 +368,12 @@ class InitCmd(_SubCmd):
                 "Cmd %r takes no arguments, received %d: %r!"
                 % (self.name, len(args), args))
 
-        rootapp = self.rootstrapp(skip_conf_scream=True)
-        cfgpath = self._find_config_file_path(rootapp)
+        self.bootstrapp()
+        cfgpath = self._find_config_file_path(self)
         if cfgpath:
             yield "TODO: update config-file '%s'...." % cfgpath
         else:
-            cfgpath = Path(rootapp.git_root) / ('%s.yaml' % rootapp.config_basename)
+            cfgpath = Path(self.git_root) / ('%s.yaml' % self.config_basename)
             yield "TODO: create new config-file in '%s'." % cfgpath
 
 
