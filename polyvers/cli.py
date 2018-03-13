@@ -271,11 +271,16 @@ class PolyversCmd(cmdlets.Cmd):
     def _autodiscover_template_project(self):
         """
         Guess whether *pvtags* or *vtags* versioning schema applies.
+
+        :return:
+            one of :func:`pvtags.make_vtag_project`, :func:`pvtags.make_pvtag_project`
         """
         pvtag_proj, vtag_proj = pvtags.collect_standard_versioning_tags()
 
         if bool(pvtag_proj.pvtags_history) ^ bool(vtag_proj.pvtags_history):
-            return pvtag_proj.pvtags_history and pvtag_proj or vtag_proj
+            return (pvtags.make_pvtag_project()
+                    if pvtag_proj.pvtags_history else
+                    pvtags.make_vtag_project())
         else:
             raise cmdlets.CmdException(
                 "Cannot auto-discover versioning scheme, "
@@ -328,9 +333,8 @@ class PolyversCmd(cmdlets.Cmd):
                 len(proj_paths), git_root.resolve(),
                 ydumps({k: str(v) for k, v in proj_paths.items()}))
 
-            self.projects = [pvtags.Project(parent=self,
-                                            pname=name,
-                                            basepath=basepath)
+            self.projects = [template_project.replace(pname=name,
+                                                      basepath=basepath)
                              for name, basepath in proj_paths.items()]
 
 

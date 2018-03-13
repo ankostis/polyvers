@@ -293,7 +293,7 @@ def test_status_cmd_pvtags(mutable_repo, caplog, capsys):
         ])
     out, err = capsys.readouterr()
     assert not err
-    exp = "base:\n  version: base-v0.1.0\nfoo:\n  version: base-v0.1.0\n"
+    exp = "base:\n  version: base-v0.1.0\nfoo:\n  version:\n"
     assert exp == out
 
     rc = main('status --all'.split())
@@ -306,7 +306,7 @@ def test_status_cmd_pvtags(mutable_repo, caplog, capsys):
       - base-v0.1.0
       basepath: .
     foo:
-      version: base-v0.1.0
+      version:
       history: []
       basepath: foo_project
     """)
@@ -327,13 +327,13 @@ def test_status_cmd_pvtags(mutable_repo, caplog, capsys):
     out, err = capsys.readouterr()
     assert not out
 
-    # rc = main('status --all foo BAD'.split())
-    # assert rc == 0
-    # exp = tw.dedent("""\
-    # foo:
-    #   version: base-v0.1.0
-    #   history: []
-    #   basepath: foo_project
-    # """)
-    # out, err = capsys.readouterr()
-    # assert exp == out
+    rc = main('status --all foo BAD'.split())
+    assert rc == 0
+    exp = tw.dedent("""\
+    foo:
+      version:
+      history: []
+      basepath: foo_project
+    """)
+    out, err = capsys.readouterr()
+    assert exp == out
