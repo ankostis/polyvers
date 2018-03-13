@@ -19,7 +19,7 @@ There are 3 important methods/functions calling Git:
 """
 
 from pathlib import Path
-from typing import List, Dict, Tuple, Optional
+from typing import List, Dict, Tuple, Sequence, Optional
 import contextlib
 import glob
 import logging
@@ -456,6 +456,10 @@ def populate_pvtags_history(*projects: Project,
     for proj in projects:
         proj._pvtags_collected = []
 
+    assign_tags_to_projects(tags, projects)
+
+
+def assign_tags_to_projects(tags: Sequence[str], projects: Sequence[Project]):
     for pvtag in tags:
         ## Attempt all projects to parse tags.
         # and assign it to the 1st one to manage it.

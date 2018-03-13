@@ -323,9 +323,6 @@ class PolyversCmd(cmdlets.Cmd):
                     "Cannot auto-discover (sub-)project path(s)!"
                     "\n  Please use `ìnit` cmd to specify sub-projects explicitly.")
 
-            ## TODO: report mismatch of project-names/vtags.
-            ## TODO: extract method to classify pre-populated histories.
-
             log.info(
                 "Auto-discovered %i sub-project(s) in git-root '%s': \n%s",
                 len(proj_paths), git_root.resolve(),
