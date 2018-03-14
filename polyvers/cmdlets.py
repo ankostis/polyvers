@@ -405,18 +405,22 @@ trc.Configurable.active_subcmd = _travel_parents_untill_active_cmd
 
 class Spec(trc.Configurable):
     verbose = Bool(
+        allow_null=True,
         config=True,
         help="Repeated use increase logging-level from WARNING-->INFO-->DEBUG.")
 
     debug = Bool(
+        allow_null=True,
         config=True,
         help="Change certain actions, to discover possible problems.")
 
     force = Bool(
+        allow_null=True,
         config=True,
         help="Force things to perform their duties without complaints.")
 
     dry_run = Bool(
+        allow_null=True,
         config=True,
         help="Do not write files - just pretend.")
 
