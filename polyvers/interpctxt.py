@@ -126,14 +126,16 @@ class InterpolationContext(ChainMap):
         Later maps take precedence over earlier ones; `kv_pairs` have the highest,
         `stub_keys` the lowest (if true).
         """
-        tmp_maps = [_missing_keys] if stub_keys else []
-        tmp_maps.extend(dictize_object(m) for m in maps
-                        if m)
+        tmp_maps = [dictize_object(m) for m in maps
+                    if m]
         if kv_pairs:
             tmp_maps.append(kv_pairs)
 
         orig_maps = self.maps
-        self.maps = orig_maps[:1] + tmp_maps[::-1] + orig_maps[1:]
+        maps = orig_maps[:1] + tmp_maps[::-1] + orig_maps[1:]
+        if stub_keys:
+            maps.append(_missing_keys)
+        self.maps = maps
         try:
             yield self
         finally:

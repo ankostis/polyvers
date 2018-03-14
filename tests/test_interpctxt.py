@@ -44,13 +44,16 @@ def test_interp_ikeys_key():
 ])
 def test_interp_temp_order(maps, kw, exp):
     ctxt = InterpolationContext()
+    ctxt.maps.append({'c': 3})
 
     with ctxt.ikeys(*maps, **kw):
         assert '{a}'.format_map(ctxt) == exp
+        assert '{c}'.format_map(ctxt) == '3'
 
     with ctxt.ikeys(*maps, **kw, stub_keys=True):
         assert '{a}'.format_map(ctxt) == exp
         assert '{b}'.format_map(ctxt) == '{b}'
+        assert '{c}'.format_map(ctxt) == '3'
 
 
 def test_interp_temp_ikeys():
