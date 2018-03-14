@@ -12,6 +12,9 @@ from pathlib import Path
 from typing import Dict
 import io
 import logging
+from boltons.setutils import IndexedSet as iset
+
+import subprocess as sbp
 
 from . import APPNAME, __version__, __updated__, cmdlets, pvtags, engrave, \
     polyverslib as pvlib, fileutils as fu
@@ -93,25 +96,14 @@ class PolyversCmd(cmdlets.Cmd):
     examples = Unicode("""
         - Let it guess the configurations for your monorepo::
               {cmd_chain} init
-          You may specify different configurations paths with:
-              {cmd_chain} --config-paths /foo/bar/:~/.%(appname)s.yaml:.
+          You may specify different configurations paths with::
+              {cmd_chain} --config-paths /foo/bar/:~/{config_basename}.yaml:.
 
         - Use then the main sub-commands::
+              {cmd_chain} init    # (optional) use it once, or to update configs.
               {cmd_chain} status
-              {cmd_chain} setver 0.0.0.dev0 -c '1st commit, untagged'
+              {cmd_chain} bump 0.0.1.dev0 -c '1st commit, untagged'
               {cmd_chain} bump -t 'Mostly model changes, tagged'
-
-        PEP-440 Version Samples:
-        - Pre-releases: when working on new features:
-            X.YbN               # Beta release
-            X.YrcN  or  X.YcN   # Release Candidate
-            X.Y                 # Final release
-        - Post-release:
-            X.YaN.postM         # Post-release of an alpha release
-            X.YrcN.postM        # Post-release of a release candidate
-        - Dev-release:
-            X.YaN.devM          # Developmental release of an alpha release
-            X.Y.postN.devM      # Developmental release of a post-release
     """)
     classes = [pvtags.Project]
 
@@ -119,11 +111,11 @@ class PolyversCmd(cmdlets.Cmd):
         AutoInstance(pvtags.Project),
         config=True)
 
-    use_leaf_releases = Bool(
-        True,
+    no_release_tag = Bool(
+        False,
         config=True,
         help="""
-            Version-ids statically engraved in-trunk when false, otherwise in "leaf" commits.
+            Version-ids statically engraved in-trunk when true, otherwise in "leaf" commits.
 
             - Limit branches considered as "in-trunk" using `in_trunk_branches` param.
             - Select the name of the Leaf branch with `leaf_branch` param.
@@ -416,17 +408,93 @@ class BumpCmd(_SubCmd):
     Increase the version of project(s) by the given offset.
 
     SYNTAX:
-        {cmd_chain} [OPTIONS] [<version-offset>] [<project>]...
+        {cmd_chain} [OPTIONS] [<version>] [<project>]...
         {cmd_chain} [OPTIONS] --part <offset> [<project>]...
 
-    - If no <version-offset> specified, increase the last part (e.g 0.0.dev0-->dev1).
-    - If no project(s) specified, increase the versions for all projects.
-    - Denied if version for some projects is backward-in-time or has jumped parts;
+    - A version specifier, either ABSOLUTE, or RELATIVE to current version:
+      - ABSOLUTE PEP-440 version samples:
+        - Pre-releases: when working on new features:
+            X.YbN               # Beta release
+            X.YrcN  or  X.YcN   # Release Candidate
+            X.Y                 # Final release
+        - Post-release:
+            X.YaN.postM         # Post-release of an alpha release
+            X.YrcN.postM        # Post-release of a release candidate
+        - Dev-release:
+            X.YaN.devM          # Developmental release of an alpha release
+            X.Y.postN.devM      # Developmental release of a post-release
+      - RELATIVE samples:
+        - +0.1          # For instance:
+                        #   1.2.3    --> 1.3.0
+        - ^2            # Increases the last non-zero part of current version:
+                        #   1.2.3    --> 1.2.5
+                        #   0.1.0b0  --> 0.1.0b2
+    - If no <version> specified, '^1' assumed.
+    - If no project(s) specified, increase the versions on all projects.
+    - Denied if version for some projects is backward-in-time (or has jumped parts?);
       use --force if you might.
-    - Don't add a 'v' prefix!
+    - The 'v' prefix is not needed!
     """
-    def run(self, *args):
-        self.check_project_configs_exist(self._cfgfiles_registry)
+    classes = [pvtags.Project, engrave.Engrave, engrave.GraftSpec]
+
+    default_version_bump = Unicode(
+        '^1',
+        config=True,
+        help="Which relative version to imply if not given in the cmd-line."
+    )
+
+    ## TODO: validate Project.default_version_bump to be relative
+
+    def run(self, *version_and_pnames):
+        from .oscmd import cmd
+
+        ## From https://stackoverflow.com/a/2659808/548792
+        try:
+            cmd.git.diff_index._(quiet=True).HEAD('--')
+        except sbp.CalledProcessError as ex:
+            ok = ex.returncode == 1  # A good command returns 1 if there are changes.
+            level = logging.DEBUG if ok else logging.WARNING
+            log.log(level, "Git dirty-check cmd(%r) returned %i due to: %s",
+                    ' '.join(ex.cmd), ex.returncode, ex.stderr,
+                    exc_info=self.verbose)
+            if ok:
+                raise pvtags.GitError("Aborting bump, dirty working directory.")
+            raise
+
+        projects = self.bootstrapp_projects()
+        all_pnames = iset(p for p in projects)
+
+        if version_and_pnames:
+            version, *pnames = version_and_pnames
+            if pnames:
+                projects = iset(p for p in projects
+                            if p.pname in pnames)
+        else:
+            version = self.default_version_bump
+            pnames = all_pnames
+
+        unknown_projects = (pnames - all_pnames)
+        if unknown_projects:
+            raise cmdlets.CmdException(
+                "Unknown projects: %s\n  Choose from existing ones: %s",
+                ', '.join(unknown_projects), ', '.join(all_pnames))
+
+        ##  TODO: Scan current version & maybe convert relative versions
+        ## TODO: Stop bump if version fails pep440 validation.
+
+        log.info('Bumping %r --> %r for projects: %s', 'old-v', version,
+                 ', '.join(proj.pname for proj in projects))
+
+        with pvtags.git_restore_point(restore=self.dry_run):
+            for proj in projects:
+                proj.tag_version_commit(version, is_release=False)
+
+            for proj in projects:
+                proj.engrave_version(version)
+
+            if not self.no_release_tag:
+                for proj in projects:
+                    proj.tag_version_commit(version, is_release=True)
 
 
 class LogconfCmd(_SubCmd):
