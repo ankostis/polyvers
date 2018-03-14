@@ -111,18 +111,12 @@ class Project(cmdlets.Spec, cmdlets.Replaceable):
 
     tag_vprefixes = TupleTrait(
         Unicode(), Unicode(),
+        default_value=pvlib.tag_vprefixes,
         config=True,
         help="""
         A 2-tuple containing the ``{vprefix}`` interpolation values,
         one for *version-tags* and one for *release-tags*, respectively.
     """)
-
-    @trt.default('tag_vprefixes')
-    def _tag_vprefixes_from_template(self):
-        template_project = getattr(self.active_subcmd(), 'template_project', None)
-        if template_project and template_project is not self:
-            return template_project.tag_vprefixes
-        return ('', '')
 
     pvtag_frmt = Unicode(
         help="""
@@ -193,13 +187,6 @@ class Project(cmdlets.Spec, cmdlets.Replaceable):
         except Exception as ex:
             proposal.trait.error(None, value, ex)
         return value
-
-    @trt.default('pvtag_regex')
-    def _pvtag_regex_from_root(self):
-        template_project = getattr(self.active_subcmd(), 'template_project', None)
-        if template_project and template_project is not self:
-            return template_project.pvtag_regex
-        return ''
 
     tag = Bool(
         config=True,
@@ -366,7 +353,6 @@ def make_pvtag_project(pname: str = '<monorepo-project>',
     Make a :class:`Project` for a subprojects hosted at git monorepos.
 
     - Project versioned with *pvtags* like ``foo-project-v0.1.0``.
-    - Used as a template for :attr:`PolyversCmd.template_project`.
     """
     return Project(
         pname=pname,
@@ -403,7 +389,6 @@ def make_vtag_project(pname: str = '<mono-project>',
     Make a :class:`Project` for a single project hosted at git repos root (not "monorepos").
 
     - Project versioned with tags simple *vtags* (not *pvtags*) like ``v0.1.0``.
-    - Used as a template for :attr:`PolyversCmd.template_project`.
     """
     simple_project = Project(
         pname=pname,
@@ -541,7 +526,7 @@ def assign_tags_to_projects(tags: Sequence[str], projects: Sequence[Project]):
                 break
 
 
-def collect_standard_versioning_tags() -> Tuple[Project, Project]:
+def collect_standard_versioning_tags(**project_kw) -> Tuple[Project, Project]:
     """
     Utility to collect both *pvtags* and *vtags* from git repo.
 
@@ -549,8 +534,8 @@ def collect_standard_versioning_tags() -> Tuple[Project, Project]:
         a 2-tuple(pvtag-project, vtag-project) all populated with any
         versioning tags
     """
-    catch_all_projects = (make_match_all_pvtags_project(),
-                          make_match_all_vtags_project())
+    catch_all_projects = (make_match_all_pvtags_project(**project_kw),
+                          make_match_all_vtags_project(**project_kw))
     populate_pvtags_history(*catch_all_projects)
 
     return catch_all_projects

@@ -6,7 +6,7 @@
 # You may not use this work except in compliance with the Licence.
 # You may obtain a copy of the Licence at: http://ec.europa.eu/idabc/eupl
 
-from polyvers import pvtags
+from polyvers import pvtags, polyverslib as pvlib
 from polyvers._vendor import traitlets as trt
 from polyvers._vendor.traitlets import config as trc
 from polyvers.oscmd import cmd
@@ -26,16 +26,20 @@ search_all = pvtags.make_match_all_pvtags_project()
 
 
 @pytest.fixture
-def proot():
-    class C(trc.Application):
-        template_project = pvtags.make_pvtag_project()
+def monorepocfg():
+    template_project = pvtags.make_pvtag_project()
+    cfg = trc.Config({
+        'Project': {
+            'pvtag_frmt': template_project.pvtag_frmt,
+            'pvtag_regex': template_project.pvtag_regex,
+        }})
 
-    return C()
+    return cfg
 
 
 @pytest.fixture
-def project1(proot):
-    return Project(parent=proot, pname=pname1)
+def project1(monorepocfg):
+    return Project(config=monorepocfg, pname=pname1)
 
 
 @pytest.fixture
@@ -52,8 +56,8 @@ def project2():
 
 
 @pytest.fixture
-def foo(proot):
-    return Project(parent=proot, pname='foo')
+def foo(monorepocfg):
+    return Project(config=monorepocfg, pname='foo')
 
 
 def test_Project_regex_check():
@@ -73,18 +77,17 @@ def test_new_Project_raises_pvtags_unpopulated(project1):
         project1.pvtags_history
 
 
-def test_Project_defaults(proot):
+def test_Project_defaults(monorepocfg):
     proj = Project()
 
     assert proj.pvtag_frmt == ''
     assert proj.pvtag_regex == ''
     assert proj.tag_fnmatch() == ''
 
-    proj = Project(parent=proot)
-    pproj = proot.template_project
+    proj = Project(config=monorepocfg)
 
-    assert proj.pvtag_frmt == pproj.pvtag_frmt
-    assert proj.pvtag_regex == pproj.pvtag_regex
+    assert proj.pvtag_frmt == pvlib.pvtag_frmt
+    assert proj.pvtag_regex == pvlib.pvtag_regex
     assert proj.tag_fnmatch() == '-v*'
 
 

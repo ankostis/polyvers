@@ -12,8 +12,9 @@ from pathlib import Path
 from typing import Dict
 import io
 import logging
-from . import APPNAME, __version__, __updated__, cmdlets, \
-    pvtags, engrave, fileutils as fu
+
+from . import APPNAME, __version__, __updated__, cmdlets, pvtags, engrave, \
+    polyverslib as pvlib, fileutils as fu
 from . import logconfutils as lcu
 from ._vendor import traitlets as trt
 from ._vendor.traitlets import config as trc
@@ -113,17 +114,6 @@ class PolyversCmd(cmdlets.Cmd):
             X.Y.postN.devM      # Developmental release of a post-release
     """)
     classes = [pvtags.Project]
-
-    #: Interrogated by all Project instances by searching up their parent chain.
-    template_project = AutoInstance(
-        pvtags.Project,
-        allow_none=True,
-        config=True,
-        help="""
-        Set version-schema (monorepo/mono-project) by enforcing defaults for all Project instances.
-
-        Installed by configuration, or auto-discover when no configs loaded.
-        """)
 
     projects = List(
         AutoInstance(pvtags.Project),
@@ -268,19 +258,19 @@ class PolyversCmd(cmdlets.Cmd):
 
         return projects
 
-    def _autodiscover_template_project(self):
+    def _autodiscover_project(self):
         """
-        Guess whether *pvtags* or *vtags* versioning schema applies.
+        Guess whether *monorepo* or *mono-project* versioning schema applies.
 
         :return:
             one of :func:`pvtags.make_vtag_project`, :func:`pvtags.make_pvtag_project`
         """
-        pvtag_proj, vtag_proj = pvtags.collect_standard_versioning_tags()
+        pvtag_proj, vtag_proj = pvtags.collect_standard_versioning_tags(parent=self)
 
         if bool(pvtag_proj.pvtags_history) ^ bool(vtag_proj.pvtags_history):
-            return (pvtags.make_pvtag_project()
+            return (pvtags.make_pvtag_project(parent=self)
                     if pvtag_proj.pvtags_history else
-                    pvtags.make_vtag_project())
+                    pvtags.make_vtag_project(parent=self))
         else:
             raise cmdlets.CmdException(
                 "Cannot auto-discover versioning scheme, "
@@ -291,34 +281,20 @@ class PolyversCmd(cmdlets.Cmd):
 
     def bootstrapp_projects(self) -> None:
         """
-        Bootstrap valid configs in root-app.
+        Ensure valid configuration exist for monorepo/mono-project(s).
 
         :raise CmdException:
             if cwd not inside a git repo
-
-        .. Note::
-           Were forced to define this method in a separate class from `PolyversCmd`
-           to be able to access subcmd/rootapp traits appropriately.
-
-           That separation is needed due to :meth:`Application.flatten_flags()`
-           (called on ``app.initialize()) that can only set flags
-           at the most specific ``mro()`` (the subcmd class).
-           So it would be impossible for ``--monorepo`` to set the template-project
-           at root-app (:attr:`PolyversCmd.template_project`), unless ad-hoc
-           copying employed from each subcmd.
-
         """
         git_root = self.git_root
 
-        template_project = self.template_project
-        has_template_project = (template_project is not None and
-                                template_project.tag_vprefixes and
+        template_project = pvtags.Project(parent=self)
+        has_template_project = (template_project.tag_vprefixes and
                                 template_project.pvtag_frmt and
                                 template_project.pvtag_regex)
 
         if not has_template_project:
-            template_project = self._autodiscover_template_project()
-            self.template_project = template_project.replace(parent=self)
+            template_project = self._autodiscover_project()
             log.info("Auto-discovered versioning scheme: %s", template_project.pname)
 
         has_subprojects = bool(self.projects)
@@ -521,11 +497,17 @@ PolyversCmd.flags = {  # type: ignore
     ),
 
     'monorepo': (
-        {'PolyversCmd': {'template_project': pvtags.make_pvtag_project()}},
+        {'Project': {
+            'pvtag_frmt': pvlib.pvtag_frmt,
+            'pvtag_regex': pvlib.pvtag_regex,
+        }},
         "Use *pvtags* for versioning sub-projects in this git monorepo."
     ),
     'mono-project': (
-        {'PolyversCmd': {'template_project': pvtags.make_vtag_project()}},
+        {'Project': {
+            'pvtag_frmt': pvlib.vtag_frmt,
+            'pvtag_regex': pvlib.vtag_regex,
+        }},
         "Use plain *vtags* for versioning a single project in this git repo."
     ),
 }
