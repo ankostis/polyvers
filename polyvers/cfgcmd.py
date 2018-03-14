@@ -177,16 +177,14 @@ class ConfigCmd(_ConfigBase):
             {'Spec': {'verbose': True}},
             cmdlets.Spec.verbose.help
         ),
-        ('f', 'force'): (
-            {'Spec': {'force': True}},
-            cmdlets.Spec.force.help
-        ),
         ('n', 'dry-run'): (
             {'Spec': {'force': True}},
             cmdlets.Spec.dry_run.help
         ),
         **cmdlets.Cmd.flags  # @UndefinedVariable
     }
+
+    aliases = {('f', 'force'): 'Spec.force'}
 
     def _inherit_parent_cmd(self, change):
         """

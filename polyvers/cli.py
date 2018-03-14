@@ -461,10 +461,6 @@ PolyversCmd.flags = {  # type: ignore
         {'Spec': {'verbose': True}},
         cmdlets.Spec.verbose.help
     ),
-    ('f', 'force'): (
-        {'Spec': {'force': True}},
-        cmdlets.Spec.force.help
-    ),
     ('n', 'dry-run'): (
         {'Spec': {'dry_run': True}},
         cmdlets.Spec.dry_run.help
@@ -515,4 +511,5 @@ PolyversCmd.flags = {  # type: ignore
 PolyversCmd.aliases = {  # type: ignore
     ('m', 'message'): 'Project.message',
     ('u', 'sign-user'): 'Project.sign_user',
+    ('f', 'force'): 'Spec.force',
 }
