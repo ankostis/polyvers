@@ -6,8 +6,8 @@
 # You may not use this work except in compliance with the Licence.
 # You may obtain a copy of the Licence at: http://ec.europa.eu/idabc/eupl
 
-import fnmatch
 from polyvers import polyverslib as pvlib
+import fnmatch
 import re
 import sys
 
@@ -111,19 +111,19 @@ def test_polyversion_p2(ok_repo):
 def test_polyversion_vtags(vtags_repo):
     ## OK REPO
 
-    v = pvlib.polyversion(proj1, repo_path=vtags_repo, monoproject=True)
+    v = pvlib.polyversion(proj1, repo_path=vtags_repo, mono_project=True)
     assert v.startswith(proj1_ver)
-    v = pvlib.polyversion(proj1, default='<unused>', repo_path=vtags_repo, monoproject=True)
+    v = pvlib.polyversion(proj1, default='<unused>', repo_path=vtags_repo, mono_project=True)
     assert v.startswith(proj1_ver)
 
     ## BAD PROJECT STILL WORKSREPO
 
-    v = pvlib.polyversion('foo', repo_path=vtags_repo, monoproject=True)
+    v = pvlib.polyversion('foo', repo_path=vtags_repo, mono_project=True)
     assert v.startswith(proj1_ver)
 
     ## bool flag overriden
 
-    v = pvlib.polyversion('fobar', repo_path=vtags_repo, monoproject=False,
+    v = pvlib.polyversion('fobar', repo_path=vtags_repo, mono_project=False,
                           tag_frmt=pvlib.vtag_frmt,
                           tag_regex=pvlib.vtag_regex)
     assert v.startswith(proj1_ver)

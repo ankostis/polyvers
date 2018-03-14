@@ -120,7 +120,7 @@ class PolyversCmd(cmdlets.Cmd):
         allow_none=True,
         config=True,
         help="""
-        Set version-schema (monorepo/monoproject) by enforcing defaults for all Project instances.
+        Set version-schema (monorepo/mono-project) by enforcing defaults for all Project instances.
 
         Installed by configuration, or auto-discover when no configs loaded.
         """)
@@ -285,7 +285,7 @@ class PolyversCmd(cmdlets.Cmd):
             raise cmdlets.CmdException(
                 "Cannot auto-discover versioning scheme, "
                 "missing or contradictive versioning-tags:\n%s"
-                "\n\n  Try --monorepo/--monoproject flags." %
+                "\n\n  Try --monorepo/--mono-project flags." %
                 ydumps({'pvtags': pvtag_proj.pvtags_history,
                         'vtags': vtag_proj.pvtags_history}))
 
@@ -523,7 +523,7 @@ PolyversCmd.flags = {  # type: ignore
         {'PolyversCmd': {'template_project': pvtags.make_pvtag_project()}},
         "Use *pvtags* for versioning sub-projects in this git monorepo."
     ),
-    'monoproject': (
+    'mono-project': (
         {'PolyversCmd': {'template_project': pvtags.make_vtag_project()}},
         "Use plain *vtags* for versioning a single project in this git repo."
     ),

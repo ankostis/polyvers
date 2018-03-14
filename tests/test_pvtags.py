@@ -85,7 +85,7 @@ def test_Project_defaults(proot):
 
     assert proj.pvtag_frmt == pproj.pvtag_frmt
     assert proj.pvtag_regex == pproj.pvtag_regex
-    assert proj.pvtag_fnmatch_frmt == pproj.pvtag_fnmatch_frmt
+    assert proj.pvtag_fnmatch_frmt == '-v*'
 
 
 def test_pvtag_Project_interpolations():

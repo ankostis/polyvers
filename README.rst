@@ -69,7 +69,7 @@ Additional capabilities and utilities:
 - (``pip install -e <project>``) all subprojects in "develop mode".
 
 - It is still possible to use plain **version tags (vtags)** like ``v0.1.0``,
-  assuming you have a single project (called hereinafter a *monoproject*)
+  assuming you have a single project (called hereinafter a *mono-project*)
 
 .. _opening-end:
 

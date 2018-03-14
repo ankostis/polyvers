@@ -103,6 +103,7 @@ class _EscapedObjectDict(interpctxt._HasTraitObjectDict):
             raise KeyError(key)
 
 
+## TODO: Make Project printable.
 class Project(cmdlets.Spec, cmdlets.Replaceable):
     pname = Unicode()
     basepath = Instance(Path, default_value=None, allow_none=True, castable=str)
@@ -330,7 +331,8 @@ class Project(cmdlets.Spec, cmdlets.Replaceable):
         return out
 
 
-def make_pvtag_project(**project_kw) -> Project:
+def make_pvtag_project(pname: str = '<monorepo-project>',
+                       **project_kw) -> Project:
     """
     Make a :class:`Project` for a subprojects hosted at git monorepos.
 
@@ -338,6 +340,7 @@ def make_pvtag_project(**project_kw) -> Project:
     - Used as a template for :attr:`PolyversCmd.template_project`.
     """
     return Project(
+        pname=pname,
         pvtag_frmt=pvlib.pvtag_frmt,
         pvtag_regex=pvlib.pvtag_regex,
         **project_kw)
@@ -363,7 +366,8 @@ def make_match_all_pvtags_project(**project_kw) -> Project:
         **project_kw)
 
 
-def make_vtag_project(**project_kw) -> Project:
+def make_vtag_project(pname: str = '<mono-project>',
+                      **project_kw) -> Project:
     """
     Make a :class:`Project` for a single project hosted at git repos root (not "monorepos").
 
@@ -371,6 +375,7 @@ def make_vtag_project(**project_kw) -> Project:
     - Used as a template for :attr:`PolyversCmd.template_project`.
     """
     simple_project = Project(
+        pname=pname,
         pvtag_frmt=pvlib.vtag_frmt,
         pvtag_regex=pvlib.vtag_regex,
         **project_kw)

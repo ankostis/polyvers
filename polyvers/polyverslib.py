@@ -150,7 +150,7 @@ def _pvtag_fnmatch_frmt(tag_frmt, pname):
 
 
 def polyversion(project, default=None, repo_path=None,
-                monoproject=None,
+                mono_project=None,
                 tag_frmt=None, tag_regex=None,
                 git_options=()):
     """
@@ -163,7 +163,7 @@ def polyversion(project, default=None, repo_path=None,
     :param str repo_path:
         A path inside the git repo hosting the `project` in question; if missing,
         derived from the calling stack.
-    :param bool monoproject:
+    :param bool mono_project:
         Choose versioning scheme:
 
         - false: (default) use *pvtags* :data:`pvtag_frmt` & :data:`pvtag_regex`.
@@ -175,7 +175,7 @@ def polyversion(project, default=None, repo_path=None,
         - It receives 2 parameters to interpolate: ``{pname}, {version} = '*'``.
         - It is used also to generate the match patterns for ``git describe --match <pattern>``
           command.
-        - It overrides `monoproject` arg.
+        - It overrides `mono_project` arg.
         - See :data:`pvtag_frmt` & :data:`vtag_frmt`
     :param regex tag_regex:
         The regex pattern breaking apart *pvtags*, with 3 named capturing groups:
@@ -185,7 +185,7 @@ def polyversion(project, default=None, repo_path=None,
           the version in ``git-describe`` result.
 
         - It is given a :pep:`3101` parameter ``{pname}`` to interpolate.
-        - It overrides `monoproject` arg.
+        - It overrides `mono_project` arg.
         - See :pep:`0426` for project-name characters and format.
         - See :data:`pvtag_regex` & :data:`vtag_regex`
     :param git_options:
@@ -212,9 +212,9 @@ def polyversion(project, default=None, repo_path=None,
     version = None
 
     if tag_frmt is None:
-        tag_frmt = vtag_frmt if monoproject else pvtag_frmt
+        tag_frmt = vtag_frmt if mono_project else pvtag_frmt
     if tag_regex is None:
-        tag_regex = vtag_regex if monoproject else pvtag_regex
+        tag_regex = vtag_regex if mono_project else pvtag_regex
     if not repo_path:
         repo_path = _caller_fpath()
 

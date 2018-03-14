@@ -116,7 +116,7 @@ def test_status_cmd_vtags(mutable_repo, caplog, capsys):
     #
     clearlog(caplog)
 
-    rc = main('status --monoproject -v'.split())
+    rc = main('status --mono-project -v'.split())
     assert rc != 0
     assert_in_text(
         caplog.text,
@@ -137,7 +137,7 @@ def test_status_cmd_vtags(mutable_repo, caplog, capsys):
     clearlog(caplog)
     make_setup_py(mutable_repo, 'simple')
 
-    rc = main('status --monoproject -v'.split())
+    rc = main('status --mono-project -v'.split())
     assert rc == 0
     assert_in_text(
         caplog.text,
@@ -151,7 +151,7 @@ def test_status_cmd_vtags(mutable_repo, caplog, capsys):
     assert not err
     assert 'simple:\n  version:\n' == out
 
-    rc = main('status --monoproject --all'.split())
+    rc = main('status --mono-project --all'.split())
     assert rc == 0
     out, err = capsys.readouterr()
     assert 'simple:\n  version:\n  history: []\n  basepath: .\n' == out
