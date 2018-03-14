@@ -72,8 +72,9 @@ def dictize_object(obj):
         ## Collect object's and MRO classes's items
         # in a chain-dict.
         #
+        cls = obj if isinstance(obj, type) else type(obj)
         maps = [vars(obj)]
-        maps.extend(vars(c) for c in type(obj).mro())
+        maps.extend(vars(c) for c in cls.mro())
         obj = ChainMap(*maps)
 
     return obj

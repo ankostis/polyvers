@@ -141,6 +141,12 @@ def test_interp_on_objects():
         with pytest.raises(KeyError):
             '{b}'.format_map(ctxt)
 
+    with ctxt.ikeys(C, d) as ctxt:
+        assert '{a}{c}{d}'.format_map(ctxt) == '134'
+
+        with pytest.raises(KeyError):
+            '{b}'.format_map(ctxt)
+
 
 def test_ikeys_key_on_objects():
     class C:
