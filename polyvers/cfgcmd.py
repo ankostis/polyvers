@@ -84,18 +84,12 @@ def prepare_help_selector(only_class_in_values, verbose):
                 return htext.format_map(cls.interpolations)
         else:
             def selector(ne, cls):
-                from ipython_genutils.text import wrap_paragraphs
-
                 help_lines = []
                 base_classes = ', '.join(p.__name__ for p in cls.__bases__)
                 help_lines.append(u'%s(%s)' % (cls.__name__, base_classes))
                 help_lines.append(len(help_lines[0]) * u'-')
 
-                cls_desc = getattr(cls, 'description', None)
-                if not isinstance(cls_desc, str):
-                    cls_desc = cls.__doc__
-                if cls_desc:
-                    help_lines.extend(wrap_paragraphs(cls_desc))
+                help_lines.extend(cmdlets.class_help_description_lines(cls))
                 help_lines.append('')
 
                 try:

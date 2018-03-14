@@ -82,9 +82,25 @@ def first_line(doc):
             return l.strip()
 
 
+_no_app_help_message = "<Help for '%s' is missing>"
+
+
+def class_help_description_lines(app_class):
+    """
+    "Note: Reverse doc/description order bc classes
+    do not have dynamic default :meth:`_desc`, below.
+    """
+    desc = getattr(app_class, '__doc__', None)
+    if not desc:
+        desc_trait = app_class.class_traits().get('description')
+        if desc_trait:
+            desc = desc_trait.default_value
+    desc = (isinstance(desc, str) and desc or _no_app_help_message % app_class)
+    return trc.wrap_paragraphs(desc + '\n')
+
+
 def cmd_class_short_help(app_class):
-    desc = app_class.description
-    return first_line(isinstance(desc, str) and desc or app_class.__doc__)
+    return class_help_description_lines(app_class)[0]
 
 
 def build_sub_cmds(*subapp_classes):
@@ -464,7 +480,8 @@ class Cmd(trc.Application, Spec):
     @trt.default('description')
     def _desc(self):
         """Without it, need to set `description` attr on every class."""
-        return type(self).__doc__
+        cls = type(self)
+        return cls.__doc__ or ''
 
     ##########
     ## HELP ##
@@ -481,7 +498,7 @@ class Cmd(trc.Application, Spec):
 
     def emit_description(self):
         ## Overridden for interpolating app-name.
-        txt = self.description or self.__doc__
+        txt = self.description or self.__doc__ or _no_app_help_message % type(self)
         with self.interpolations.ikeys(self, stub_keys=True) as ctxt:
             txt = txt.format_map(ctxt)
         for p in trc.wrap_paragraphs('%s: %s' % (cmd_line_chain(self), txt)):

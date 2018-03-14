@@ -78,6 +78,7 @@ def test_all_cmds_help_version(cmd, capsys):
 @pytest.mark.parametrize('cmd, match, illegal', [
     ('config infos', [], ['config_paths: null']),
     ('config desc', ['--Cmd.config_paths=', 'StatusCmd'], []),
+    ('config desc bump -c', ['Increase the version of project', 'BumpCmd'], []),
     ('config show Project', ['Project(Spec'], []),
 ])
 def test_config_cmd(cmd, match, illegal):
