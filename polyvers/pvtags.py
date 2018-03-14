@@ -39,12 +39,17 @@ from .oscmd import cmd
 log = logging.getLogger(__name__)
 
 
-class GitVoidError(cmdlets.CmdException):
+class GitError(cmdlets.CmdException):
+    "A (maybe benign) git-related error"
+    pass
+
+
+class GitVoidError(GitError):
     "Sub-project has not yet been version with a *pvtag*. "
     pass
 
 
-class NoGitRepoError(cmdlets.CmdException):
+class NoGitRepoError(GitError):
     "Command needs a git repo in CWD. "
     pass
 
