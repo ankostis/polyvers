@@ -78,37 +78,37 @@ def test_Project_defaults(proot):
 
     assert proj.pvtag_frmt == ''
     assert proj.pvtag_regex == ''
-    assert proj.pvtag_fnmatch_frmt == ''
+    assert proj.tag_fnmatch() == ''
 
     proj = Project(parent=proot)
     pproj = proot.template_project
 
     assert proj.pvtag_frmt == pproj.pvtag_frmt
     assert proj.pvtag_regex == pproj.pvtag_regex
-    assert proj.pvtag_fnmatch_frmt == '-v*'
+    assert proj.tag_fnmatch() == '-v*'
 
 
 def test_pvtag_Project_interpolations():
     proj = pvtags.make_pvtag_project(pname='foo', version='1.2.3')
 
-    assert 'foo' in proj.pvtag_fnmatch_frmt
-    assert proj.pvtag_fnmatch_frmt.endswith('v*')
-    assert 'foo' in proj._pvtag_regex_resolved.pattern
-    assert not re.search(r'1.2.3', proj._pvtag_regex_resolved.pattern)
+    assert 'foo' in proj.tag_fnmatch()
+    assert proj.tag_fnmatch().endswith('v*')
+    assert 'foo' in proj.tag_regex().pattern
+    assert not re.search(r'1.2.3', proj.tag_regex().pattern)
 
     proj = pvtags.make_pvtag_project(pname='f*o')
 
-    assert 'f[*]o' in proj.pvtag_fnmatch_frmt
-    assert r'f\*o' in proj._pvtag_regex_resolved.pattern
+    assert 'f[*]o' in proj.tag_fnmatch()
+    assert r'f\*o' in proj.tag_regex().pattern
 
 
 def test_vtag_Project_interpolations():
     proj = pvtags.make_vtag_project(version='1.2.3(-:')
 
-    assert 'foo' not in proj.pvtag_fnmatch_frmt
-    assert proj.pvtag_fnmatch_frmt.endswith('v*')
-    assert 'foo' not in proj._pvtag_regex_resolved.pattern
-    assert not re.search(r'1.2.3', proj._pvtag_regex_resolved.pattern)
+    assert 'foo' not in proj.tag_fnmatch()
+    assert proj.tag_fnmatch().endswith('v*')
+    assert 'foo' not in proj.tag_regex().pattern
+    assert not re.search(r'1.2.3', proj.tag_regex().pattern)
 
 
 def test_populate_pvtags_history_per_project(ok_repo, project1, project2, foo):

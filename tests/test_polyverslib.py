@@ -39,7 +39,8 @@ split_pvtag_validation_patterns = [
 
 @pytest.mark.parametrize('inp, exp', split_pvtag_validation_patterns)
 def test_split_pvtag_parsing(inp, exp):
-    pvtag_regex = re.compile(pvlib.pvtag_regex.format(
+    pvtag_regex = re.compile(pvlib._interp_regex(
+        pvlib.pvtag_regex,
         pname=r'[A-Z0-9]|[A-Z0-9][A-Z0-9._-]*?[A-Z0-9]'))
     if exp is None:
         with pytest.raises(ValueError):
@@ -55,7 +56,7 @@ def test_fnmatch_format(inp, exp):
         pass
     else:
         project = exp[0]
-        frmt = pvlib._pvtag_fnmatch_frmt(pvlib.pvtag_frmt, project)
+        frmt = pvlib._interp_fnmatch(pvlib.pvtag_frmt, project)
         assert fnmatch.fnmatch(inp, frmt)
 
 

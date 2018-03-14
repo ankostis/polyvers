@@ -30,8 +30,9 @@ import subprocess as sbp
 
 from . import polyverslib as pvlib, cmdlets, interpctxt
 from ._vendor.traitlets import traitlets as trt
-from ._vendor.traitlets.traitlets import Bool, Unicode, Instance, \
-    List as ListTrait  # @UnresolvedImport
+from ._vendor.traitlets.traitlets import (
+    Bool, Unicode, Instance,
+    List as ListTrait, Tuple as TupleTrait)  # @UnresolvedImport
 from .oscmd import cmd
 
 
@@ -108,6 +109,21 @@ class Project(cmdlets.Spec, cmdlets.Replaceable):
     pname = Unicode()
     basepath = Instance(Path, default_value=None, allow_none=True, castable=str)
 
+    tag_vprefixes = TupleTrait(
+        Unicode(), Unicode(),
+        config=True,
+        help="""
+        A 2-tuple containing the ``{vprefix}`` interpolation values,
+        one for *version-tags* and one for *release-tags*, respectively.
+    """)
+
+    @trt.default('tag_vprefixes')
+    def _tag_vprefixes_from_template(self):
+        template_project = getattr(self.active_subcmd(), 'template_project', None)
+        if template_project and template_project is not self:
+            return template_project.tag_vprefixes
+        return ('', '')
+
     pvtag_frmt = Unicode(
         help="""
         The pattern to generate new *pvtags*.
@@ -123,16 +139,18 @@ class Project(cmdlets.Spec, cmdlets.Replaceable):
     """).tag(config=True)
 
     @trt.default('pvtag_frmt')
-    def _pvtag_frmt_from_root(self):
+    def _tag_frmt_from_template(self):
         template_project = getattr(self.active_subcmd(), 'template_project', None)
         if template_project and template_project is not self:
             return template_project.pvtag_frmt
         return ''
 
-    @property
-    def pvtag_fnmatch_frmt(self):
+    def tag_fnmatch(self, is_release=False):
         """
         The glob-pattern finding *pvtags* with ``git describe --match <pattern>`` cmd.
+
+        :param is_release:
+            `False` for version-tags, `True` for release-tags
 
         By default, it is interpolated with two :pep:`3101` parameters::
 
@@ -140,9 +158,11 @@ class Project(cmdlets.Spec, cmdlets.Replaceable):
             {version} <-- '*'
         """
         with self.interpolations.ikeys(_EscapedObjectDict(self, glob.escape),
-                                       version='*') as ictxt:
-            pvtag_fnmatch_frmt = self.pvtag_frmt.format_map(ictxt)
-        return pvtag_fnmatch_frmt
+                                       version='*',
+                                       vprefix=self.tag_vprefixes[int(is_release)]
+                                       ) as ictxt:
+            tag_fnmatch_frmt = self.pvtag_frmt.format_map(ictxt)
+        return tag_fnmatch_frmt
 
     pvtag_regex = Unicode(
         help="""
@@ -168,7 +188,8 @@ class Project(cmdlets.Spec, cmdlets.Replaceable):
     def _is_valid_pvtag_regex(self, proposal):
         value = proposal.value
         try:
-            re.compile(value.format(pname='pname'))
+            for vprefix in self.tag_vprefixes:
+                re.compile(value.format(pname='<pname>', vprefix=vprefix))
         except Exception as ex:
             proposal.trait.error(None, value, ex)
         return value
@@ -208,11 +229,16 @@ class Project(cmdlets.Spec, cmdlets.Replaceable):
             {ikeys}
         """)
 
-    @property
-    def _pvtag_regex_resolved(self):
-        "Interpolate and compile as regex."
-        with self.interpolations.ikeys(
-                _EscapedObjectDict(self, re.escape)) as ictxt:
+    def tag_regex(self, is_release=False):
+        """
+        Interpolate and compile as regex.
+
+        :param is_release:
+            `False` for version-tags, `True` for release-tags
+        """
+        with self.interpolations.ikeys(_EscapedObjectDict(self, re.escape),
+                                       vprefix=self.tag_vprefixes[int(is_release)]
+                                       ) as ictxt:
             pvtag_regex = re.compile(self.pvtag_regex.format_map(ictxt))
         return pvtag_regex
 
@@ -234,7 +260,7 @@ class Project(cmdlets.Spec, cmdlets.Replaceable):
 
     def version_from_pvtag(self, pvtag: str) -> Optional[str]:
         """Extract the version from a *pvtag*."""
-        m = self._pvtag_regex_resolved.match(pvtag)
+        m = self.tag_regex().match(pvtag)
         if m:
             mg = m.groupdict()
             if mg['descid']:
@@ -246,6 +272,7 @@ class Project(cmdlets.Spec, cmdlets.Replaceable):
 
     def git_describe(self, *git_args: str,
                      include_lightweight=False,
+                     is_release=False,
                      **git_flags: str):
         """
         Gets sub-project's version as derived from ``git describe`` on its *pvtag*.
@@ -253,6 +280,8 @@ class Project(cmdlets.Spec, cmdlets.Replaceable):
         :param include_lightweight:
             Consider also non-annotated tags when derriving description;
             equivalent to ``git describe --tags`` flag.
+        :param is_release:
+            `False` for version-tags, `True` for release-tags
         :param git_args:
             CLI options passed to ``git describe`` command.
             See :class:`.oscmd.PopenCmd` on how to specify cli options
@@ -285,7 +314,7 @@ class Project(cmdlets.Spec, cmdlets.Replaceable):
            as ``git tag`` does.
         """
         pname = self.pname
-        tag_pattern = self.pvtag_fnmatch_frmt
+        tag_pattern = self.tag_fnmatch(is_release)
 
         cli = cmd.git.describe
         if include_lightweight:
@@ -301,7 +330,7 @@ class Project(cmdlets.Spec, cmdlets.Replaceable):
         if not self.version_from_pvtag(version):
             raise trt.TraitError(
                 "Project-version '%s' fetched by '%s' unparsable by regex: %s"
-                % (version, tag_pattern, self._pvtag_regex_resolved.pattern))
+                % (version, tag_pattern, self.tag_regex().pattern))
 
         return version
 
@@ -341,6 +370,7 @@ def make_pvtag_project(pname: str = '<monorepo-project>',
     """
     return Project(
         pname=pname,
+        tag_vprefixes=pvlib.tag_vprefixes,
         pvtag_frmt=pvlib.pvtag_frmt,
         pvtag_regex=pvlib.pvtag_regex,
         **project_kw)
@@ -356,6 +386,7 @@ def make_match_all_pvtags_project(**project_kw) -> Project:
     # Note: `pname` ignored by patterns, used only for labeling.
     return Project(
         pname='<PVTAG>',
+        tag_vprefixes=pvlib.tag_vprefixes,
         pvtag_frmt='*-v*',
         pvtag_regex=r"""(?xi)
             ^(?P<pname>[A-Z0-9]|[A-Z0-9][A-Z0-9._-]*?[A-Z0-9])
@@ -376,6 +407,7 @@ def make_vtag_project(pname: str = '<mono-project>',
     """
     simple_project = Project(
         pname=pname,
+        tag_vprefixes=pvlib.tag_vprefixes,
         pvtag_frmt=pvlib.vtag_frmt,
         pvtag_regex=pvlib.vtag_regex,
         **project_kw)
@@ -451,7 +483,8 @@ def _replace_pvtags_in_projects(
 
 
 def populate_pvtags_history(*projects: Project,
-                            include_lightweight=False):
+                            include_lightweight=False,
+                            is_release=False):
     """
     Updates :attr:`pvtags_history` on given `projects` (if any) in ascending order.
 
@@ -460,6 +493,8 @@ def populate_pvtags_history(*projects: Project,
     :param include_lightweight:
         fetch also non annotated tags; note that by default, ``git-describe``
         does consider lightweight tags unless ``--tags`` given.
+    :param is_release:
+        `False` for version-tags, `True` for release-tags
     :raise sbp.CalledProcessError:
         if `git` executable not in PATH
 
@@ -479,7 +514,7 @@ def populate_pvtags_history(*projects: Project,
     tag_patterns = []
     for proj in projects:
         with proj.interpolations.ikeys(pname=proj.pname):
-            tag_patterns.append(proj.pvtag_fnmatch_frmt)
+            tag_patterns.append(proj.tag_fnmatch(is_release))
 
     pnames_msg = ', '.join(p.pname for p in projects)
     cli = cmd.git

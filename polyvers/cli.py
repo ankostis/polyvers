@@ -312,6 +312,7 @@ class PolyversCmd(cmdlets.Cmd):
 
         template_project = self.template_project
         has_template_project = (template_project is not None and
+                                template_project.tag_vprefixes and
                                 template_project.pvtag_frmt and
                                 template_project.pvtag_regex)
 
