@@ -99,7 +99,9 @@ class _Cli:
             if nk > 1:
                 k = _as_flag(k)
 
-            if isinstance(v, bool) or v is None:
+            if v is None:
+                return ()
+            if isinstance(v, bool):
                 if v:
                     flag = '-' + k if len(k) == 1 else '--' + k
                 else:

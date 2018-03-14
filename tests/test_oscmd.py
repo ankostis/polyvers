@@ -20,7 +20,7 @@ def test_Cli_building(ok_repo):
 
     assert _Cli({}, 'cmd')._(*'abc', J=3, K='3')._cmdlist == 'cmd a b c -J 3 -K 3'.split()
 
-    assert cmd.cmd._(null='', f='').top._cmdlist == [
+    assert cmd.cmd._(null='', f='', none=None).top._cmdlist == [
         'cmd', '--null=', '-f', '', 'top']
 
 
