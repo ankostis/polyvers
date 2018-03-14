@@ -410,7 +410,7 @@ class Spec(trc.Configurable):
     def class_get_help(cls, inst=None):
         text = super().class_get_help(inst)
         obj = inst if inst else cls
-        with obj.interpolations.ikeys(stub_keys=True) as ctxt:
+        with obj.interpolations.ikeys(obj, stub_keys=True) as ctxt:
             return text.format_map(ctxt)
 
     @classmethod
@@ -421,7 +421,7 @@ class Spec(trc.Configurable):
         #  interpolation patterns themselves (to be expanded on runtime),
         #  so allow them to print.
         #
-        with obj.interpolations.ikeys(stub_keys=True) as ctxt:
+        with obj.interpolations.ikeys(obj, stub_keys=True) as ctxt:
             return text.format_map(ctxt)
 
 
@@ -482,7 +482,8 @@ class Cmd(trc.Application, Spec):
     def emit_description(self):
         ## Overridden for interpolating app-name.
         txt = self.description or self.__doc__
-        txt = txt.format_map(self.interpolations)
+        with self.interpolations.ikeys(self, stub_keys=True) as ctxt:
+            txt = txt.format_map(ctxt)
         for p in trc.wrap_paragraphs('%s: %s' % (cmd_line_chain(self), txt)):
             yield p
             yield ''
@@ -494,7 +495,8 @@ class Cmd(trc.Application, Spec):
         header = 'Options'
         yield header
         yield '=' * len(header)
-        opt_desc = self.option_description.format_map(self.interpolations)
+        with self.interpolations.ikeys(self, stub_keys=True) as ctxt:
+            opt_desc = self.option_description.format_map(ctxt)
         for p in trc.wrap_paragraphs(opt_desc):
             yield p
             yield ''
@@ -508,7 +510,8 @@ class Cmd(trc.Application, Spec):
     def emit_examples(self):
         ## Overridden for interpolating app-name.
         if self.examples:
-            txt = self.examples.format_map(self.interpolations)
+            with self.interpolations.ikeys(self, stub_keys=True) as ctxt:
+                txt = self.examples.format_map(ctxt)
             txt = txt.strip()
             yield "Examples"
             yield "--------"
@@ -531,7 +534,8 @@ class Cmd(trc.Application, Spec):
             - To inspect configuration values:
                   {appname} config show <class-or-param-1>...
             """)
-            yield epilogue.format_map(self.interpolations)
+            with self.interpolations.ikeys(self, stub_keys=True) as ctxt:
+                yield epilogue.format_map(ctxt)
 
     ############
     ## CONFIG ##
