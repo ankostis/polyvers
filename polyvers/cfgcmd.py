@@ -20,7 +20,7 @@ import os.path as osp
 from . import cmdlets
 from ._vendor import traitlets as trt
 from ._vendor.traitlets import config as trc
-from ._vendor.traitlets.traitlets import Bool, FuzzyEnum, Instance, Unicode
+from ._vendor.traitlets.traitlets import Dict, Bool, FuzzyEnum, Instance, Unicode
 
 
 def prepare_matcher(terms, is_regex):
@@ -124,13 +124,12 @@ def prepare_help_selector(only_class_in_values, verbose):
 
 
 class _ConfigBase(cmdlets.Cmd):
-    @trt.default('subcommands')
-    def _no_subcommands(self):
-        """Note that nothing else works than trait-defaults
 
-        not class-property, neither set on constructor, nor on parent set.
-        """
-        return {}
+    #: Inheritance patching, below, side-effects subcommands from root-app.
+    #: NOTE that (almost) nothing else works than trait-defaults,
+    #: not class-property, neither set on constructor, nor on parent set.
+    #: (trait-default would also work)
+    subcommands = Dict({})
 
     @trt.observe('parent')
     def _rebase_hierarchy(self, change):
