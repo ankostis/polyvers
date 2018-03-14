@@ -414,7 +414,8 @@ class Spec(trc.Configurable):
         config=True,
         help="Change certain actions, to discover possible problems.")
 
-    force = Bool(
+    force = Union(
+        (Bool(), Unicode()),
         allow_null=True,
         config=True,
         help="Force things to perform their duties without complaints.")
