@@ -9,10 +9,10 @@
 """Search and replace version-ids in files."""
 
 from collections import OrderedDict as odict
-import logging
 from pathlib import Path
-import re
 from typing import List, Tuple, Dict, Match, Union, Optional
+import logging
+import re
 
 from . import cmdlets
 from ._vendor.traitlets.traitlets import (
@@ -299,7 +299,7 @@ class FileSpec(cmdlets.Spec, cmdlets.Strable, cmdlets.Replaceable):
 FilesMap = Dict[Path, FileSpec]
 
 
-class Engrave(cmdlets.Spec):
+class Engrave(cmdlets.Spec, cmdlets.Replaceable):
     """File-patterns to search and replace with version-id patterns."""
 
     globs = ListTrait(

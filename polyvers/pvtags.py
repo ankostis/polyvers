@@ -19,7 +19,8 @@ There are 3 important methods/functions calling Git:
 """
 
 from pathlib import Path
-from typing import List, Dict, Tuple, Sequence, Optional
+from polyvers import engrave
+from typing import List, Dict, Tuple, Sequence, Optional, Mapping
 import contextlib
 import glob
 import logging
@@ -33,6 +34,7 @@ from ._vendor.traitlets import traitlets as trt
 from ._vendor.traitlets.traitlets import (
     Bool, Unicode, Instance,
     List as ListTrait, Tuple as TupleTrait)  # @UnresolvedImport
+from .autoinstance_traitlet import AutoInstance
 from .oscmd import cmd
 
 
@@ -137,12 +139,13 @@ class Project(cmdlets.Spec, cmdlets.Replaceable):
            in `pvtag_frmt` kw-arg.
     """).tag(config=True)
 
-    @trt.default('pvtag_frmt')
-    def _tag_frmt_from_template(self):
-        template_project = getattr(self.active_subcmd(), 'template_project', None)
-        if template_project and template_project is not self:
-            return template_project.pvtag_frmt
-        return ''
+    def _format_vtag(self, version, is_release=False):
+        with self.interpolations.ikeys(self,
+                                       version=version,
+                                       vprefix=self.tag_vprefixes[int(is_release)]
+                                       ) as ictxt:
+            tag = self.pvtag_frmt.format_map(ictxt)
+        return tag
 
     def tag_fnmatch(self, is_release=False):
         """
@@ -202,17 +205,25 @@ class Project(cmdlets.Spec, cmdlets.Replaceable):
 
         """)
     sign_tags = Bool(
+        allow_null=True,
         config=True,
         help="Enable PGP-signing of tags (see also `sign_user`)."
     )
 
+    sign_commmits = Bool(
+        allow_null=True,
+        config=True,
+        help="Enable PGP-signing of commits (see also `sign_user`)."
+    )
+
     sign_user = Unicode(
+        allow_null=True,
         config=True,
         help="The signing PGP user (email, key-id)."
     )
 
     message = Unicode(
-        "chore(ver): bump {{current_version}} → {{new_version}}",
+        "chore(ver): bump {current_version} → {version}",
         config=True,
         help="""
             The message for commits and per-project tags.
@@ -350,6 +361,83 @@ class Project(cmdlets.Spec, cmdlets.Replaceable):
             out = cmd.git.log(n=1, format='format:%cD')  # TODO: traitize log-date format
 
         return out
+
+    def tag_version_commit(self, new_version: str, is_release=False):
+        """
+        Make a tag on current commit denoting a version-bump.
+
+        :param version:
+            the new version, in final form
+        :param is_release:
+            `False` for version-tags, `True` for release-tags
+        """
+        tag_name = self._format_vtag(new_version, is_release)
+        cmd.git.tag(tag_name,
+                    message=self.message,
+                    force=self.force or None,
+                    sign=self.sign_tags or None,
+                    local_self=self.sign_user or None,
+                    )
+
+    engraves = ListTrait(
+        AutoInstance(engrave.Engrave),
+        default_value=[{
+            'globs': ['**/setup.py', '**/__init__.py'],
+            'grafts': [
+                {
+                    'regex': r'''(?x)
+                            \bversion
+                            (\ *=\ *)
+                            (.+)$
+                        ''',
+                    'subst': r"version\1'{version}'"
+                }
+            ],
+        }],
+        config=True,
+        help="""
+        """)
+
+    def _engraves_interpolated(self, version: str) -> List[engrave.Engrave]:
+        ## Clone them all
+        # (but not grafts contained yet).
+        engraves = [eng.replace() for eng in self.engraves]
+
+        for eng in engraves:
+            with self.interpolations.ikeys(_EscapedObjectDict(self, glob.escape),
+                                           vprefix=self.tag_vprefixes[0],
+                                           version=version,
+                                           ) as ictxt:
+                eng.globs = [glob.format_map(ictxt) for glob in eng.globs]
+
+            with self.interpolations.ikeys(_EscapedObjectDict(self, re.escape),
+                                           vprefix=self.tag_vprefixes[0],
+                                           version=version,
+                                           ) as ictxt:
+                ## Clone graft & interpolate their regex.
+                eng.grafts = [graft.replace(regex=graft.regex.pattern.format_map(ictxt))
+                              for graft in eng.grafts]
+
+            with self.interpolations.ikeys(self,
+                                           vprefix=self.tag_vprefixes[0],
+                                           version=version,
+                                           ) as ictxt:
+                for graft in eng.grafts:
+                    graft.subst = graft.subst.format_map(ictxt)
+
+        return engraves
+
+    def engrave_version(self, version: str):
+        for eng in self._engraves_interpolated(version):
+            eng.engrave_all()
+
+        out = cmd.git.commit(message=self.message,
+                             all=True,
+                             sign=self.sign_commmits or None,
+                             dry_run=self.dry_run or None,
+                             )
+        if self.dry_run:
+            log.info('PRETEND commit: %s' % out)
 
 
 def make_pvtag_project(pname: str = '<monorepo-project>',
