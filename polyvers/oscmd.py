@@ -31,6 +31,15 @@ def format_syscmd(cmd):
     return cmd
 
 
+class _CmdName:
+    "To `workaround `:classLFileNotFoundError` not explaing it's a command missing."
+    def __init__(self, path):
+        self.path = path
+
+    def __repr__(self):
+        return "'%s' (command)" % self.path
+
+
 def exec_cmd(cmd,
              dry_run=False,
              check_stdout=True,
@@ -59,15 +68,24 @@ def exec_cmd(cmd,
     if dry_run:
         return
 
-    ##WARN: python 3.6 `encoding` & `errors` kwds in `Popen`.
-    res: sbp.CompletedProcess = sbp.run(
-        cmd,
-        stdout=stdout_ctype['stream'],
-        stderr=call_types[check_stderr]['stream'],
-        encoding=encoding,
-        errors=encoding_errors,
-        **popen_kws
-    )
+    try:
+        ##WARN: python 3.6 `encoding` & `errors` kwds in `Popen`.
+        res: sbp.CompletedProcess = sbp.run(
+            cmd,
+            stdout=stdout_ctype['stream'],
+            stderr=call_types[check_stderr]['stream'],
+            encoding=encoding,
+            errors=encoding_errors,
+            **popen_kws
+        )
+    except FileNotFoundError as ex:
+        ## On windows, no path provided!
+        #
+        if not ex.filename:
+            ex.filename = _CmdName(cmd[0])
+
+        raise
+
     if res.returncode:
         log.log(
             logging.DEBUG if check_returncode else logging.WARNING,
@@ -161,7 +179,10 @@ class PopenCmd:
 
         out = cmd.python._(c=True)('print(\'a\')')
 
-    .. Note::
+    :raise sbp.CalledProcessError:
+        if check_returncode=true and exit code is non-zero.
+
+    if self.returncode:    .. Note::
        It's mostly for Git bc flags are produced like that:
            -f <value> --flag=<value>
     """
