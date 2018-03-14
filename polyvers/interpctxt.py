@@ -8,9 +8,9 @@
 Enable Unicode-trait to pep3101-interpolate `{key}` patterns from "context" dicts.
 """
 from collections import ChainMap, abc
+from typing import Dict
 import contextlib
 import os
-from typing import Dict
 
 from ._vendor.traitlets import traitlets as trt
 
@@ -114,6 +114,7 @@ class InterpolationContext(ChainMap):
         :param maps:
             a list of dictionaries/objects/HasTraits from which to draw
             items/attributes/trait-values, all in decreasing priority.
+            Nulls ignored.
         :param stub_keys:
             If true, any missing-key gets returned as ``{key}``.
 
@@ -125,7 +126,8 @@ class InterpolationContext(ChainMap):
         `stub_keys` the lowest (if true).
         """
         tmp_maps = [_missing_keys] if stub_keys else []
-        tmp_maps.extend(dictize_object(m) for m in maps)
+        tmp_maps.extend(dictize_object(m) for m in maps
+                        if m)
         if kv_pairs:
             tmp_maps.append(kv_pairs)
 

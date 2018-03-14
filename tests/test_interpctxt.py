@@ -5,11 +5,10 @@
 # You may not use this work except in compliance with the Licence.
 # You may obtain a copy of the Licence at: http://ec.europa.eu/idabc/eupl
 
+from polyvers._vendor.traitlets import traitlets as trt
 from polyvers.interpctxt import Now, InterpolationContext, _HasTraitObjectDict, dictize_object
 
 import pytest
-
-from polyvers._vendor.traitlets import traitlets as trt
 
 
 def test_dates_interpolation():
@@ -63,13 +62,16 @@ def test_interp_temp_ikeys():
 
     ctxt = InterpolationContext()
     with ctxt.ikeys(a='Cool', b=13) as ictxt:
-        assert frmt.format(**ictxt) == exp
         assert frmt.format_map(ictxt) == exp
 
     with pytest.raises(KeyError):
         frmt.format(**ictxt)
 
     with ctxt.ikeys({'b': 13, 'a': 'Cool'}) as ictxt:
+        assert frmt.format(**ictxt) == exp
+        assert frmt.format_map(ictxt) == exp
+
+    with ctxt.ikeys(None, {'b': 13, 'a': 'Cool'}, None, {}) as ictxt:
         assert frmt.format(**ictxt) == exp
         assert frmt.format_map(ictxt) == exp
 
