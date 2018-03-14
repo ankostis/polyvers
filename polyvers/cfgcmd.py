@@ -81,7 +81,11 @@ def prepare_help_selector(only_class_in_values, verbose):
         if verbose:
             def selector(ne, cls):
                 htext = cls.class_get_help()
-                return htext.format_map(cls.interpolations)
+                if hasattr(cls, 'interpolations'):
+                    with cls.interpolations.ikeys(cls, stub_keys=True) as ctxt:
+                        htxt = htext.format_map(ctxt)
+
+                return htxt
         else:
             def selector(ne, cls):
                 help_lines = []
@@ -103,7 +107,11 @@ def prepare_help_selector(only_class_in_values, verbose):
                     pass
 
                 htext = '\n'.join(help_lines)
-                return htext.format_map(cls.interpolations)
+                if hasattr(cls, 'interpolations'):
+                    with cls.interpolations.ikeys(cls, stub_keys=True) as ctxt:
+                        htext = htext.format_map(ctxt)
+
+                return htext
     else:
         def selector(name, v):
             cls, attr = v
