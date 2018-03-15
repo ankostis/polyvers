@@ -14,6 +14,18 @@ import subprocess as sbp
 import textwrap as tw
 
 
+def dict_eq(d1, d2):
+    """
+    Compare dictionaries regardless of their classes.
+
+    .. Note::
+        Adapted from https://stackoverflow.com/a/4527978/548792
+        with ``set()-->sorted()`` so it works with non-hashable (mutable) values.
+        But will fail with non-orderable key/values.
+    """
+    return d1 is d2 is None or sorted(d1.items()) == sorted(d2.items())
+
+
 def touchpaths(tdir, paths_txt):
     """
     :param tdir:

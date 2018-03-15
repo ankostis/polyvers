@@ -41,8 +41,7 @@ CONFIG_VAR_NAME = '%s_CONFIG_PATHS' % APPNAME.upper()
 _Y = None
 
 
-def ydumps(obj):
-    "Dump any false objects as empty string, None as nothing, or as YAML. "
+def _get_yamel():
     global _Y
 
     if not _Y:
@@ -54,14 +53,29 @@ def ydumps(obj):
                 d, RoundTripRepresenter.represent_dict)
         _Y = yaml.YAML()
 
+    return _Y
+
+
+def ydumps(obj):
+    "Dump any false objects as empty string, None as nothing, or as YAML. "
+
     if obj is None:
         return
     if not obj:
         return ''
 
     sio = io.StringIO()
-    _Y.dump(obj, sio)
+    _get_yamel().dump(obj, sio)
     return sio.getvalue().strip()
+
+
+def yloads(text):
+    "Dump any false objects as empty string, None as nothing, or as YAML. "
+
+    if not text:
+        return
+
+    return _get_yamel().load(text)
 
 
 def merge_dict(dct, merge_dct):
