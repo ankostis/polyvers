@@ -249,7 +249,7 @@ class PolyversCmd(cmdlets.Cmd):
         :return:
             a mapping of {pnames: basepaths}
         """
-        file_hits = self.projects_scan.scan_all_hits(mybase=self.git_root)
+        file_hits = self.projects_scan.scan_hits(mybase=self.git_root)
 
         projects: Dict[str, Path] = {
             fspec.grafts[0].hits[0].groupdict()['pname']: fpath.parent

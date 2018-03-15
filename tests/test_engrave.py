@@ -212,7 +212,7 @@ def test_engrave(fileset, f1_graft, f2_graft):
     cfg.Engrave.grafts = [f1_graft, f2_graft]
 
     e = engrave.Engrave(config=cfg)
-    subs_map = e.engrave_all()
+    subs_map = e.scan_and_engrave()
     nhits = sum(fspec.nhits for fspec in subs_map.values())
     nsubs = sum(fspec.nsubs for fspec in subs_map.values())
     assert nhits == nsubs == 4
@@ -231,11 +231,11 @@ def test_engrave_subs_None(fileset, f1_graft, f2_graft):
 
     e = engrave.Engrave(config=cfg)
 
-    hits_map = e.scan_all_hits()
+    hits_map = e.scan_hits()
     nhits = sum(fspec.nhits for fspec in hits_map.values())
     assert nhits == 4
 
-    subs_map = e.engrave_all()
+    subs_map = e.scan_and_engrave()
     nhits2 = sum(fspec.nhits for fspec in subs_map.values())
     nsubs = sum(fspec.nsubs for fspec in subs_map.values())
     assert nhits2 == 4

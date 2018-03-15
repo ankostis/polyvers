@@ -374,7 +374,7 @@ class Engrave(cmdlets.Spec, cmdlets.Replaceable):
 
         return hits
 
-    def substitute_all_hits(self, hits: FilesMap) -> FilesMap:
+    def substitute_hits(self, hits: FilesMap) -> FilesMap:
         substs: FilesMap = odict()
         for fpath, filespec in hits.items():
             ## TODO: try-catch regex substitution.
@@ -396,9 +396,10 @@ class Engrave(cmdlets.Spec, cmdlets.Replaceable):
         ntotal = sum(filespec.nhits for filespec in filespecs_map.values())
         log.info("%sed %i files: %s", action.capitalize(), ntotal, file_lines)
 
-    def scan_all_hits(self,
-                      mybase: FLike = '.',
-                      other_bases: Union[FLikeList, None] = None) -> FilesMap:
+    def scan_hits(self,
+                  mybase: FLike = '.',
+                  other_bases: Union[FLikeList, None] = None
+                  ) -> FilesMap:
         files: FPaths = self.collect_glob_files(mybase=mybase,
                                                 other_bases=other_bases)
         log.info("Globbed %i files in '%s': %s",
@@ -411,12 +412,14 @@ class Engrave(cmdlets.Spec, cmdlets.Replaceable):
 
         return file_hits
 
-    def engrave_all(self) -> FilesMap:
-        hits: FilesMap = self.scan_all_hits()
-
-        substs: FilesMap = self.substitute_all_hits(hits)
+    def engrave_hits(self, hits: FilesMap) -> FilesMap:
+        substs: FilesMap = self.substitute_hits(hits)
         self._log_action(substs, 'graft')
 
         self.write_engraves(substs)
 
         return substs
+
+    def scan_and_engrave(self) -> FilesMap:
+        hits = self.scan_hits()
+        return self.engrave_hits(hits)
