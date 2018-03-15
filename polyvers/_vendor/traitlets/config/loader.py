@@ -918,8 +918,8 @@ class KVArgParseConfigLoader(ArgParseConfigLoader):
                 if key in self.aliases:
                     alias_flags[self.aliases[key]] = value
                     continue
-                keys = ('-'+key, '--'+key) if len(key) is 1 else ('--'+key, )
-                paa(*keys, action=_FlagAction, flag=value)
+                key = ('-' if len(key) is 1 else '--') + key
+                paa(key, action=_FlagAction, flag=value)
 
         for keys, traitname in aliases.items():
             if not isinstance(keys, tuple):
@@ -943,8 +943,8 @@ class KVArgParseConfigLoader(ArgParseConfigLoader):
                     argparse_kwds['action'] = _FlagAction
                     argparse_kwds['flag'] = alias_flags[traitname]
                     argparse_kwds['alias'] = traitname
-                keys = ('-'+key, '--'+key) if len(key) is 1 else ('--'+key, )
-                paa(*keys, **argparse_kwds)
+                key = ('-' if len(key) is 1 else '--') + key
+                paa(key, **argparse_kwds)
 
     def _convert_to_config(self):
         """self.parsed_data->self.config, parse unrecognized extra args via KVLoader."""
