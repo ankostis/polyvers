@@ -6,13 +6,13 @@
 # You may not use this work except in compliance with the Licence.
 # You may obtain a copy of the Licence at: http://ec.europa.eu/idabc/eupl
 #
-import logging
 from pathlib import Path
 from polyvers import engrave
 from polyvers._vendor.traitlets.config import Config
 from polyvers.engrave import GraftSpec, _slices_to_ids
 from polyvers.logconfutils import init_logging
 from polyvers.slice_traitlet import _parse_slice
+import logging
 import re
 
 import pytest
@@ -64,25 +64,35 @@ stays the same
 a = b
 stays the same
 """
-f1_graft = {'regex': r'(?m)^(\w+) *= *(\w+)',
-            'subst': r'A\1A = B\2B'}
 f11 = """
 stays the same
 AaA = BbB
 stays the same
 """
 
+
+@pytest.fixture
+def f1_graft():
+    return {'regex': r'(?m)^(\w+) *= *(\w+)',
+            'subst': r'A\1A = B\2B'}
+
+
 f2 = """
 CHANGE
 THESE
 leave
 """
-f2_graft = {'regex': r'(?m)^CHANGE\s+THESE$',
-            'subst': 'changed them'}
 f22 = """
 changed them
 leave
 """
+
+
+@pytest.fixture
+def f2_graft():
+    return {'regex': r'(?m)^CHANGE\s+THESE$',
+            'subst': 'changed them'}
+
 
 f3 = """
 Lorem ipsum dolor sit amet,
@@ -196,13 +206,50 @@ def test_MatchSpec_slicing(slices, listlen, exp):
     assert len(hits_indices) == len(hits)
 
 
-def test_engrave(fileset):
+def test_engrave(fileset, f1_graft, f2_graft):
     cfg = Config()
     cfg.Engrave.globs = ['/a/f*', 'b/f1', '/b/f2', 'b/?3']
     cfg.Engrave.grafts = [f1_graft, f2_graft]
 
     e = engrave.Engrave(config=cfg)
-    e.engrave_all()
+    subs_map = e.engrave_all()
+    nhits = sum(fspec.nhits for fspec in subs_map.values())
+    nsubs = sum(fspec.nsubs for fspec in subs_map.values())
+    assert nhits == nsubs == 4
+
+    for fpath, text in ok_files.items():
+        ftxt = (fileset / fpath).read_text('utf-8')
+        assert ftxt == tw.dedent(text)
+
+
+def test_engrave_subs_None(fileset, f1_graft, f2_graft):
+    f1_graft['subst'] = None
+
+    cfg = Config()
+    cfg.Engrave.globs = ['/a/f*', 'b/f1', '/b/f2', 'b/?3']
+    cfg.Engrave.grafts = [f1_graft, f2_graft]
+
+    e = engrave.Engrave(config=cfg)
+
+    hits_map = e.scan_all_hits()
+    nhits = sum(fspec.nhits for fspec in hits_map.values())
+    assert nhits == 4
+
+    subs_map = e.engrave_all()
+    nhits2 = sum(fspec.nhits for fspec in subs_map.values())
+    nsubs = sum(fspec.nsubs for fspec in subs_map.values())
+    assert nhits2 == 4
+    assert nsubs == 2
+
+    ok_files = {
+        'a/f1': f1,
+        'a/f2': f22,
+        'a/f3': f3,
+
+        'b/f1': f1,
+        'b/f2': f22,
+        'b/f3': f3,
+    }
 
     for fpath, text in ok_files.items():
         ftxt = (fileset / fpath).read_text('utf-8')

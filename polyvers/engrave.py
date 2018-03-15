@@ -9,10 +9,10 @@
 """Search and replace version-ids in files."""
 
 from collections import OrderedDict as odict
-import logging
 from pathlib import Path
-import re
 from typing import List, Tuple, Dict, Match, Union, Optional
+import logging
+import re
 
 from . import cmdlets
 from ._vendor.traitlets.traitlets import (
@@ -161,8 +161,9 @@ class GraftSpec(cmdlets.Spec, cmdlets.Strable, cmdlets.Replaceable):
     ).tag(config=True)
 
     subst = Unicode(
+        allow_none=True, default_value='',
         help="""
-        What to replace with.
+        What to replace with; if `None`, no substitution happens.
 
         Inside them, supported extensions are:
         - captured groups with '\\1 or '\g<foo>' expressions
@@ -190,15 +191,15 @@ class GraftSpec(cmdlets.Spec, cmdlets.Strable, cmdlets.Replaceable):
 
     hits = ListTrait(Instance(MatchClass))
     hits_indices = ListTrait(Int(), allow_none=True, default_value=None)
+    nsubs = Int(allow_none=True)
 
-    def collect_graft_hits(self, ftext: str) -> Union['GraftSpec']:
+    def collect_graft_hits(self, ftext: str) -> 'GraftSpec':
         """
         :return:
-            a clone with updated `hits`, or None if nothing matched
+            a clone with updated `hits`
         """
         hits: List[Match] = list(self.regex.finditer(ftext))
-        if hits:
-            return self.replace(hits=hits)
+        return self.replace(hits=hits)
 
     def _get_hits_indices(self) -> Optional[List[int]]:
         """
@@ -222,7 +223,7 @@ class GraftSpec(cmdlets.Spec, cmdlets.Strable, cmdlets.Replaceable):
         else:
             return [hits[i] for i in hits_indices]
 
-    def substitute_graft_hits(self, fpath: Path, ftext: str) -> Optional[Tuple[str, 'GraftSpec']]:
+    def substitute_graft_hits(self, fpath: Path, ftext: str) -> Tuple[str, 'GraftSpec']:
         """
         :return:
             A 2-TUPLE ``(<substituted-ftext>, <updated-graft-spec>)``, where
@@ -230,26 +231,34 @@ class GraftSpec(cmdlets.Spec, cmdlets.Strable, cmdlets.Replaceable):
             `hits_indices` (if one used), or the same if no idices used,
             or None if no hits remained. after hits-slices filtering
         """
+        if not self.hits:
+            return (ftext, self)
+
         orig_ftext = ftext
 
         hits_indices = self._get_hits_indices()
         if hits_indices:
-            nsubs = len(hits_indices)
             clone = self.replace(hits_indices=hits_indices)
             log.debug(
                 "Replacing %i out of %i matches in file '%s' of pattern '%s': %s",
-                nsubs, len(self.hits), fpath, self.regex, hits_indices)
-        else:
-            nsubs = len(self.hits)
-            clone = self
+                len(hits_indices), len(self.hits), fpath, self.regex, hits_indices)
+        elif self.hits:
+            clone = self.replace()
 
+        ## NOTE: Bad programming style to update state (hits_indices)
+        #  and then rely on that inside the same method.
+
+        nsubs = 0
         for m in clone.valid_hits():
-            ftext = ftext[:m.start()] + m.expand(clone.subst) + ftext[m.end():]
+            if clone.subst is not None:
+                ftext = ftext[:m.start()] + m.expand(clone.subst) + ftext[m.end():]
+                nsubs += 1
+        clone.nsubs = nsubs
 
-        if nsubs:
-            return (ftext, clone)
-        else:
+        if not nsubs:
             assert ftext == orig_ftext, (ftext, orig_ftext)
+
+        return (ftext, clone)
 
 
 class FileSpec(cmdlets.Spec, cmdlets.Strable, cmdlets.Replaceable):
@@ -257,20 +266,18 @@ class FileSpec(cmdlets.Spec, cmdlets.Strable, cmdlets.Replaceable):
     ftext = Unicode()
     grafts = ListTrait(Instance(GraftSpec))
 
-    def collect_file_hits(self) -> Optional['FileSpec']:
+    def collect_file_hits(self) -> 'FileSpec':
         """
         :return:
-            a clone with `grafts` updated, or none if nothing matched
+            a clone with `grafts` updated
         """
         new_grafts: List[GraftSpec] = []
         ftext = self.ftext
         for vg in self.grafts:
             nvgraft = vg.collect_graft_hits(ftext)
-            if nvgraft:
-                new_grafts.append(nvgraft)
+            new_grafts.append(nvgraft)
 
-        if new_grafts:
-            return self.replace(grafts=new_grafts)
+        return self.replace(grafts=new_grafts)
 
     def substitute_file_hits(self) -> Optional['FileSpec']:
         """
@@ -295,11 +302,15 @@ class FileSpec(cmdlets.Spec, cmdlets.Strable, cmdlets.Replaceable):
     def nhits(self):
         return sum(len(vg.valid_hits()) for vg in self.grafts)
 
+    @property
+    def nsubs(self):
+        return sum(vg.nsubs for vg in self.grafts)
+
 
 FilesMap = Dict[Path, FileSpec]
 
 
-class Engrave(cmdlets.Spec):
+class Engrave(cmdlets.Spec, cmdlets.Replaceable):
     """File-patterns to search and replace with version-id patterns."""
 
     globs = ListTrait(
@@ -359,8 +370,7 @@ class Engrave(cmdlets.Spec):
         for fpath, filespec in file_specs.items():
             ## TODO: try-catch regex matching.
             nfilespec = filespec.collect_file_hits()
-            if nfilespec:
-                hits[fpath] = nfilespec
+            hits[fpath] = nfilespec
 
         return hits
 
@@ -401,10 +411,12 @@ class Engrave(cmdlets.Spec):
 
         return file_hits
 
-    def engrave_all(self):
-        file_hits: FilesMap = self.scan_all_hits()
+    def engrave_all(self) -> FilesMap:
+        hits: FilesMap = self.scan_all_hits()
 
-        substs: FilesMap = self.substitute_all_hits(file_hits)
+        substs: FilesMap = self.substitute_all_hits(hits)
         self._log_action(substs, 'graft')
 
         self.write_engraves(substs)
+
+        return substs
