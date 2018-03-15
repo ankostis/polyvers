@@ -14,7 +14,7 @@ from typing import List, Tuple, Sequence, Dict, Match, Union, Optional
 import logging
 import re
 
-from . import cmdlets
+from . import cmdlets, fileutils as fu
 from ._vendor.traitlets.traitlets import (
     Union as UnionTrait, Instance, List as ListTrait, Unicode, Int, CRegExp)
 from .autoinstance_traitlet import AutoInstance
@@ -108,14 +108,9 @@ def _glob_filter_out_other_bases(files: FPaths,
     assert all(isinstance(f, Path) for f in files)
     assert all(isinstance(f, Path) for f in other_bases)
 
-    nfiles = []
-    for f in files:
-        try:
-            for obase in other_bases:
-                f.relative_to(obase)
-        except ValueError:
-            ## If not in other-base, `relative_to()` screams!
-            nfiles.append(f)
+    nfiles = [f for f in files
+              if not any(fu._is_base_or_same(obase, f) in (None, True)
+                         for obase in other_bases)]
 
     return nfiles
 

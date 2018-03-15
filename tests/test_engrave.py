@@ -12,6 +12,7 @@ from polyvers._vendor.traitlets.config import Config
 from polyvers.engrave import GraftSpec, _slices_to_ids
 from polyvers.logconfutils import init_logging
 from polyvers.slice_traitlet import _parse_slice
+from tests import conftest
 import logging
 import re
 
@@ -59,77 +60,15 @@ def test_prepare_glob_pairs():
     ]
 
 
-f1 = """
-stays the same
-a = b
-stays the same
-"""
-f11 = """
-stays the same
-AaA = BbB
-stays the same
-"""
-
-
 @pytest.fixture
-def f1_graft():
-    return {'regex': r'(?m)^(\w+) *= *(\w+)',
-            'subst': r'A\1A = B\2B'}
+def fileset_mutable(tmpdir_factory, fileset, orig_files):
+    tmpdir = tmpdir_factory.mktemp('engraveset_mutable')
+    return conftest._make_fileset(tmpdir, orig_files)
 
 
-f2 = """
-CHANGE
-THESE
-leave
-"""
-f22 = """
-changed them
-leave
-"""
-
-
-@pytest.fixture
-def f2_graft():
-    return {'regex': r'(?m)^CHANGE\s+THESE$',
-            'subst': 'changed them'}
-
-
-f3 = """
-Lorem ipsum dolor sit amet,
-consectetur adipiscing elit,
-sed do eiusm
-"""
-
-files = {
-    'a/f1': f1,
-    'a/f2': f2,
-    'a/f3': f3,
-
-    'b/f1': f1,
-    'b/f2': f2,
-    'b/f3': f3,
-}
-
-ok_files = {
-    'a/f1': f11,
-    'a/f2': f22,
-    'a/f3': f3,
-
-    'b/f1': f11,
-    'b/f2': f22,
-    'b/f3': f3,
-}
-
-
-@pytest.fixture
-def fileset(tmpdir):
-    tmpdir.chdir()
-    for fpath, text in files.items():
-        (tmpdir / fpath).write_text(tw.dedent(text),
-                                    encoding='utf-8', ensure=True)
-
-    return tmpdir
-
+################
+## TEST CASES ##
+################
 
 @pytest.mark.parametrize('globs', [
     ('/a/f*', 'b/f?'),
@@ -138,6 +77,7 @@ def fileset(tmpdir):
     ('/**/f*', ),
 ])
 def test_glob(globs, fileset):
+    fileset.chdir()
     files = engrave.glob_files(globs)
     assert posixize(files) == 'a/f1 a/f2 a/f3 b/f1 b/f2 b/f3'.split()
 
@@ -151,6 +91,7 @@ def test_glob(globs, fileset):
     ('/a/f* /b/f* !a/ !b/', 'a/f1 a/f2 a/f3 b/f1 b/f2 b/f3'),
 ])
 def test_glob_negatives(globs, exp, fileset):
+    fileset.chdir()
     files = engrave.glob_files(globs.split())
     assert posixize(files) == exp.split()
 
@@ -167,7 +108,17 @@ def test_glob_relative(fileset):
     assert posixize(files) == 'f1 f2 f3'.split()
 
 
-def test_glob_otherbases(fileset):
+def test_glob_filter_out_other_bases(fileset, orig_files):
+    fileset.chdir()
+    search_files = [Path(f) for f in orig_files]
+    obases = [Path('b')]
+    filtered_files = engrave._glob_filter_out_other_bases(search_files, obases)
+    assert filtered_files == [f for f in search_files
+                              if str(f).startswith('a')]
+
+
+def test_glob_otherbases(fileset, orig_files):
+    fileset.chdir()
     files = engrave.glob_files(['*/*'], other_bases=['b'])
     assert posixize(files) == 'a/f1 a/f2 a/f3'.split()
 
@@ -206,7 +157,8 @@ def test_MatchSpec_slicing(slices, listlen, exp):
     assert len(hits_indices) == len(hits)
 
 
-def test_engrave(fileset, f1_graft, f2_graft):
+def test_engrave(fileset_mutable, ok_files, f1_graft, f2_graft):
+    fileset_mutable.chdir()
     cfg = Config()
     cfg.Engrave.globs = ['/a/f*', 'b/f1', '/b/f2', 'b/?3']
     cfg.Engrave.grafts = [f1_graft, f2_graft]
@@ -218,11 +170,13 @@ def test_engrave(fileset, f1_graft, f2_graft):
     assert nhits == nsubs == 4
 
     for fpath, text in ok_files.items():
-        ftxt = (fileset / fpath).read_text('utf-8')
+        ftxt = (fileset_mutable / fpath).read_text('utf-8')
         assert ftxt == tw.dedent(text)
 
 
-def test_engrave_subs_None(fileset, f1_graft, f2_graft):
+def test_engrave_subs_None(fileset_mutable, f1_graft, f2_graft):
+    fileset_mutable.chdir()
+
     f1_graft['subst'] = None
 
     cfg = Config()
@@ -242,21 +196,22 @@ def test_engrave_subs_None(fileset, f1_graft, f2_graft):
     assert nsubs == 2
 
     ok_files = {
-        'a/f1': f1,
-        'a/f2': f22,
-        'a/f3': f3,
+        'a/f1': conftest.f1,
+        'a/f2': conftest.f22,
+        'a/f3': conftest.f3,
 
-        'b/f1': f1,
-        'b/f2': f22,
-        'b/f3': f3,
+        'b/f1': conftest.f1,
+        'b/f2': conftest.f22,
+        'b/f3': conftest.f3,
     }
 
     for fpath, text in ok_files.items():
-        ftxt = (fileset / fpath).read_text('utf-8')
+        ftxt = (fileset_mutable / fpath).read_text('utf-8')
         assert ftxt == tw.dedent(text)
 
 
-def test_scan_engrave(fileset, f1_graft, f2_graft):
+def test_scan_engrave(fileset_mutable, f1_graft, f2_graft):
+    fileset_mutable.chdir()
     cfg = Config()
     globs = ['/a/f*', 'b/f1', '/b/f2', 'b/?3']
     cfg.Engrave.grafts = [f1_graft, f2_graft]
