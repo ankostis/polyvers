@@ -9,7 +9,7 @@
 
 from collections import OrderedDict, defaultdict, Mapping
 from pathlib import Path
-from typing import Dict
+from typing import Dict, Set  # @UnusedImport
 import io
 import logging
 
@@ -240,6 +240,7 @@ class PolyversCmd(cmdlets.Cmd):
 
         - Used when auto-discovering projects, to construct new or update
           a configuration file.
+        - Screams if discovered samek project-name with conflicting basepaths.
         """)
 
     def _autodiscover_project_basepaths(self) -> Dict[str, Path]:
@@ -251,14 +252,30 @@ class PolyversCmd(cmdlets.Cmd):
         """
         file_hits = self.projects_scan.scan_hits(mybase=self.git_root)
 
-        projects: Dict[str, Path] = {
-            fspec.grafts[0].hits[0].groupdict()['pname']: fpath.parent
+        project_paths = {
+            (fspec.grafts[0].hits[0].groupdict()['pname'], fpath.parent)
             for fpath, fspec in file_hits.items()
             if fspec.nhits == 1}
 
+        ## check basepath conflicts.
+        #
+        projects: Dict[str, Path] = {}
+        dupe_projects: Dict[str, Set[Path]] = defaultdict(set)
+        for pname, basepath in project_paths:
+            dupe_basepath = projects.get(pname)
+            if dupe_basepath and dupe_basepath != basepath:
+                dupe_projects[pname].add(basepath)
+            else:
+                projects[pname] = basepath
+
+        if dupe_projects:
+            raise cmdlets.CmdException(
+                "Discovered conflicting project-basepaths: %s" %
+                ydumps(dupe_basepath))
+
         return projects
 
-    def _autodiscover_project(self):
+    def _autodiscover_versioning_scheme(self):
         """
         Guess whether *monorepo* or *mono-project* versioning schema applies.
 
@@ -294,8 +311,9 @@ class PolyversCmd(cmdlets.Cmd):
                                 template_project.pvtag_regex)
 
         if not has_template_project:
-            template_project = self._autodiscover_project()
-            log.info("Auto-discovered versioning scheme: %s", template_project.pname)
+            template_project = self._autodiscover_versioning_scheme()
+            log.info("Auto-discovered versioning scheme: %s",
+                     template_project.pname)
 
         has_subprojects = bool(self.projects)
         if not has_subprojects:
