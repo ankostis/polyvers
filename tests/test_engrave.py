@@ -122,6 +122,12 @@ def test_glob_otherbases(fileset, orig_files):
     files = engrave.glob_files(['*/*'], other_bases=['b'])
     assert posixize(files) == 'a/f1 a/f2 a/f3'.split()
 
+    ## `mybase` wins coinciding `obases`.
+    #
+    files = engrave.glob_files(['*/*'],
+                               other_bases=['.'])
+    assert files == [Path(f) for f in orig_files]
+
 
 slices_test_data = [
     ('-1:', 5, [4]),

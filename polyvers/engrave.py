@@ -80,7 +80,7 @@ def _glob_find_files(pattern_pairs: Tuple[str, str], mybase: Path):
             new_notfiles = mybase.glob(negative)
             notfiles.update(new_notfiles)
         else:
-            raise AssertionError("Both in (positive, negative) pair ar None!")
+            raise AssertionError("Both in (positive, negative) pair are None!")
 
     return files
 
@@ -118,18 +118,26 @@ def _glob_filter_out_other_bases(files: FPaths,
 def glob_files(patterns: List[str],
                mybase: FLike = '.',
                other_bases: Union[FLikeList, None] = None) -> FPaths:
-        pattern_pairs = _prepare_glob_pairs(patterns)
+    """
+    Glob files in `mybase` but not in `other_bases` (unless bases coincide).
 
-        mybase = Path(mybase)
-        files = _glob_find_files(pattern_pairs, mybase)
+    - support exclude patterns: ``!foo``.
+    """
+    pattern_pairs = _prepare_glob_pairs(patterns)
 
-        files = _glob_filter_in_mybase(files, mybase)
-        if other_bases:
-            other_paths: FPaths = [Path(ob) for ob in other_bases]
-            files = _glob_filter_out_other_bases(files, other_paths)
+    mybase = Path(mybase)
+    files = _glob_find_files(pattern_pairs, mybase)
 
-        assert all(isinstance(f, Path) for f in files)
-        return files
+    files = _glob_filter_in_mybase(files, mybase)
+    if other_bases:
+        ## Exclude bases coinciding with mybase.
+        other_ppaths = [Path(ob) for ob in other_bases]
+        other_ppaths = [ob for ob in other_ppaths
+                        if not fu._is_same_file(mybase, ob)]
+        files = _glob_filter_out_other_bases(files, other_ppaths)
+
+    assert all(isinstance(f, Path) for f in files)
+    return files
 
 
 PatternClass = type(re.compile('.*'))  # For traitlets
