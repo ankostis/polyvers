@@ -333,7 +333,7 @@ class Replaceable:
         return clone
 
 
-class Strable:
+class Strable(metaclass=trt.MetaHasTraits):
     """
     A :class:`HasTraits` mixin providing a ``str()`` for specific traits.
 
@@ -347,11 +347,11 @@ class Strable:
        and if no traits found,
     5. don't print any traits, just the class-name.
     """
-    printable_traits = ()
-#     printable_traits = Union(
-#         (Unicode(), List(Unicode())),
-#         allow_none=True, default_value=None,
-#         help="Trait-names to include in ``__str__()``")
+    ## TODO: rename mixin Strable-->Printable.
+    printable_traits = Union(
+        (Unicode(), List(Unicode())),
+        #allow_none=True, default_value=None,
+        help="Trait-names to include in ``__str__()``")
 
     def _decide_printable_traits(self):
         tnames_to_print = self.printable_traits
