@@ -64,10 +64,34 @@ def test_Replaceable_Configurable():
 
 def test_Strable():
     class C(trt.HasTraits, cmdlets.Strable):
-        a = Int()
+        c = Int()
 
-    c = C(a=1)
-    assert str(c) == 'C(a=1)'
+    c = C(c=1)
+    assert c._decide_printable_traits() == ['c']
+    assert str(c) == 'C(c=1)'
+
+    class D(C):
+        d = Int()
+    assert set(D()._decide_printable_traits()) == {'c', 'd'}
+    assert str(D()) == 'D(d=0, c=0)'  # mro trait definition
+
+    D.d.metadata['printable'] = True
+    assert set(D()._decide_printable_traits()) == {'d'}
+    del D.d.metadata['printable']
+
+    D.printable_traits = '*'
+    assert set(D()._decide_printable_traits()) == {'c', 'd'}
+
+    D.printable_traits = ('c', )
+    assert set(D()._decide_printable_traits()) == {'c'}
+    D.printable_traits = ('d', )
+    assert set(D()._decide_printable_traits()) == {'d'}
+
+    ## Mention in superclass subclass trait to print!
+
+    D.printable_traits = ()
+    C.printable_traits = ('c', 'd')
+    assert set(D()._decide_printable_traits()) == {'c', 'd'}
 
 
 def test_CfgFilesRegistry_consolidate_posix_1():

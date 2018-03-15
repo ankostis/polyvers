@@ -334,11 +334,52 @@ class Replaceable:
 
 
 class Strable:
-    "Provide a ``__str__()`` with all traits of this ``HasTraits``."
+    """
+    A :class:`HasTraits` mixin providing a ``str()`` for specific traits.
+
+    Which traits to print are decided in this order:
+
+    1. Print traits with their names specified in :attr:`printable_traits`
+       list, or ALL traits if it's equal to '*', and if empty,
+    3. print traits marked with ``printable`` metadata,
+       and if none found,
+    4. prints all :class:`Strable` owned traits in ``mro()``,
+       and if no traits found,
+    5. don't print any traits, just the class-name.
+    """
+    printable_traits = ()
+#     printable_traits = Union(
+#         (Unicode(), List(Unicode())),
+#         allow_none=True, default_value=None,
+#         help="Trait-names to include in ``__str__()``")
+
+    def _decide_printable_traits(self):
+        tnames_to_print = self.printable_traits
+        if tnames_to_print == '*':
+            tnames_to_print = self.class_traits()
+        else:
+            if not tnames_to_print:
+                tnames_to_print = self.traits(printable=True)
+            if not tnames_to_print:
+                ## Print all traits for subclasses after(above) Strable in mro().
+                #
+                strable_subclasses = [cls for cls in type(self).mro()
+                                      if issubclass(cls, Strable) and
+                                      cls is not Strable]
+                tnames_to_print = [tname
+                                   for cls in strable_subclasses
+                                   for tname in cls.class_own_traits()]
+        return tnames_to_print
+
     def __str__(self):
-        values = ', '.join('%s=%s' % tpair for tpair in self.trait_values().items())
-        name = getattr(self, 'name', type(self).__name__)
-        return '%s(%s)' % (name, values)
+        tnames_to_print = self._decide_printable_traits()
+        if not tnames_to_print:
+            tnames_to_print = ()
+
+        cls_name = getattr(self, 'name', type(self).__name__)
+        trait_values_msg = ', '.join('%s=%s' % (tname, getattr(self, tname))
+                                     for tname in tnames_to_print)
+        return '%s(%s)' % (cls_name, trait_values_msg)
 
 
 class CmdletsInterpolation(interpctxt.InterpolationContext):
