@@ -59,7 +59,7 @@ import os.path as osp
 from . import fileutils as fu, interpctxt
 from ._vendor import traitlets as trt
 from ._vendor.traitlets import config as trc
-from ._vendor.traitlets.traitlets import Bool, List, Unicode, Instance, Union
+from ._vendor.traitlets.traitlets import Bool, List, Unicode, Int, Instance, Union, Dict
 from .yamlconfloader import YAMLFileConfigLoader
 
 
@@ -414,18 +414,42 @@ class Spec(trc.Configurable):
         config=True,
         help="Change certain actions, to discover possible problems.")
 
-    force = Union(
-        (Bool(), Unicode()),
-        allow_null=True,
-        config=True,
-        help="Force things to perform their duties without complaints.")
-
     dry_run = Bool(
         allow_null=True,
         config=True,
         help="Do not write files - just pretend.")
 
+    force = Union(
+        (Bool(), Int(), Unicode()),
+        allow_null=True,
+        config=True,
+        help="Force things to perform their duties without complaints.")
+
+    force_tokens = Dict(
+        key_trait=Union((Int(), Unicode())),
+        value_trait=Unicode(help="help text"),
+        help="""
+            Optional map of force-tokens available in an application
+
+            with help-texts as values, to include in `force` help-message.
+        """)
+
+    _force_original_help = None
+
+    @trt.observe('force_tokens')
+    def _update_force_help(self, change):
+        force_trait = self.get_trait('force_tokens')
+
+        if not self._force_original_help:
+            self._force_original_help = force_trait.help
+
+        force_trait.help = '%s\n           %s' % (
+            self._force_original_help,
+            '\n  - '.join("%-7s: %s" % (token, htext)
+                          for token, htext in change.new.items()))
+
     interpolations = cmdlets_interpolations
+
 
     @classmethod
     def class_get_help(cls, inst=None):

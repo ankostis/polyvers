@@ -105,6 +105,12 @@ class PolyversCmd(cmdlets.Cmd):
     """)
     classes = [pvtags.Project]
 
+    @trt.default('force_tokens')
+    def _setup_force_tokens(self):
+        return {
+            'tag': "Replace an existing tag when bumping version.",
+        }
+
     projects = List(
         AutoInstance(pvtags.Project),
         config=True)
@@ -580,5 +586,5 @@ PolyversCmd.flags = {  # type: ignore
 PolyversCmd.aliases = {  # type: ignore
     ('m', 'message'): 'Project.message',
     ('u', 'sign-user'): 'Project.sign_user',
-    ('f', 'force'): 'Spec.force',
+    'force': 'Spec.force',
 }
