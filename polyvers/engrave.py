@@ -10,7 +10,7 @@
 
 from collections import OrderedDict as odict
 from pathlib import Path
-from typing import List, Tuple, Dict, Match, Union, Optional
+from typing import List, Tuple, Sequence, Dict, Match, Union, Optional
 import logging
 import re
 
@@ -423,3 +423,21 @@ class Engrave(cmdlets.Spec, cmdlets.Replaceable):
     def scan_and_engrave(self) -> FilesMap:
         hits = self.scan_hits()
         return self.engrave_hits(hits)
+
+
+def scan_engraves(engraves: Sequence[Engrave]) -> FilesMap:
+    hits = [(engpaths, enghits)
+            for eng in engraves
+            for engpaths, enghits in eng.scan_hits().items()]
+
+    ## Consolidate grafts-per-file in a single map.
+    #
+    hits_map: FilesMap = odict()
+    for fpath, fspec in hits:
+        prev_fspec = hits_map.get(fpath)
+        if prev_fspec:
+            prev_fspec.grafts.extend(fspec.grafts)
+        else:
+            hits_map[fpath] = fspec
+
+    return hits_map

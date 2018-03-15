@@ -254,3 +254,19 @@ def test_engrave_subs_None(fileset, f1_graft, f2_graft):
     for fpath, text in ok_files.items():
         ftxt = (fileset / fpath).read_text('utf-8')
         assert ftxt == tw.dedent(text)
+
+
+def test_scan_engrave(fileset, f1_graft, f2_graft):
+    cfg = Config()
+    globs = ['/a/f*', 'b/f1', '/b/f2', 'b/?3']
+    cfg.Engrave.grafts = [f1_graft, f2_graft]
+
+    e1 = engrave.Engrave(globs=globs, grafts=[f1_graft])
+    e2 = engrave.Engrave(globs=globs, grafts=[f2_graft])
+
+    hits_map = engrave.scan_engraves([e1, e2])
+    assert isinstance(hits_map, dict)
+    nhits = sum(fspec.nhits for fspec in hits_map.values())
+
+    assert nhits == 4
+    assert len(hits_map) == 6
