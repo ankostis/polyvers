@@ -431,6 +431,8 @@ class ShowCmd(_ConfigBase):
             obj = C()
             obj.__dict__ = dict(config[clsname])
 
+        return obj
+
     def _yield_configs_and_defaults(self, config, search_terms,
                                     merged: bool):
         verbose = self.verbose
