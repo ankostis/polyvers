@@ -11,6 +11,7 @@ import pytest
 
 from py.path import local as P  # @UnresolvedImport
 import subprocess as sbp
+import textwrap as tw
 
 
 def touchpaths(tdir, paths_txt):
@@ -109,6 +110,96 @@ def today():
     #     Thu, 1 Mar 2018 09:46:47 +0000
     return rfc2822_tstamp()[:5]  # till Day-of-week
 
+
+#############
+## FILESET ##
+#############
+
+f1 = """
+stays the same
+a = b
+stays the same
+"""
+f11 = """
+stays the same
+AaA = BbB
+stays the same
+"""
+
+
+@pytest.fixture
+def f1_graft():
+    return {'regex': r'(?m)^(\w+) *= *(\w+)',
+            'subst': r'A\1A = B\2B'}
+
+
+f2 = """
+CHANGE
+THESE
+leave
+"""
+f22 = """
+changed them
+leave
+"""
+
+
+@pytest.fixture
+def f2_graft():
+    return {'regex': r'(?m)^CHANGE\s+THESE$',
+            'subst': 'changed them'}
+
+
+f3 = """
+Lorem ipsum dolor sit amet,
+consectetur adipiscing elit,
+sed do eiusm
+"""
+
+
+@pytest.fixture(scope='module')
+def orig_files():
+    return {
+        'a/f1': f1,
+        'a/f2': f2,
+        'a/f3': f3,
+
+        'b/f1': f1,
+        'b/f2': f2,
+        'b/f3': f3,
+    }
+
+
+@pytest.fixture(scope='module')
+def ok_files():
+    return {
+        'a/f1': f11,
+        'a/f2': f22,
+        'a/f3': f3,
+
+        'b/f1': f11,
+        'b/f2': f22,
+        'b/f3': f3,
+    }
+
+
+def _make_fileset(tdir, files):
+    for fpath, text in files.items():
+        (tdir / fpath).write_text(tw.dedent(text),
+                                  encoding='utf-8', ensure=True)
+
+    return tdir
+
+
+@pytest.fixture(scope='module')
+def fileset(tmpdir_factory, orig_files):
+    tmpdir = tmpdir_factory.mktemp('engraveset')
+    return _make_fileset(tmpdir, orig_files)
+
+
+######################
+## IMMMUTABLE REPOS ##
+######################
 
 @pytest.fixture(scope="session")
 def ok_repo(tmpdir_factory):

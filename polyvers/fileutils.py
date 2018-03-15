@@ -8,10 +8,10 @@
 #
 """Generic utils."""
 
-import os
 from pathlib import Path
+from typing import Optional, Union
+import os
 import re
-from typing import Optional
 
 import itertools as itt
 import os.path as osp
@@ -155,3 +155,47 @@ def find_git_root() -> Optional[Path]:
 
     # raise pvtags.GitVoidError(
     #     "Current-dir '%s' is not within a git repository!" % Path.cwd())
+
+
+###################
+## pathlib.Paths ##
+###################
+
+def _is_base_or_same(basepath: Path, longpath: Path, strict=False) -> Union[bool, None]:
+    """
+    Inverses, resolving, same-file checking, non-raising :meth:`pathlib.relative_to()`.
+
+    :return:
+        A 3-state bool denoting relativeness, or None the when they are the same;
+        non-existing file(s) are still checked for relativeness
+        BUT when not resolved, them surprises happen, check TCs!
+        (e.g. 'BAD' considered base of 'BAD/..', but not on Linux...)
+
+    .. TIP::
+       To check if `longpath` has or `basepath` use::
+
+           _is_base_or_same(obase, long) in (None, True)
+
+    """
+    try:
+        rel = longpath.resolve(strict=strict).relative_to(basepath.resolve(strict=strict))
+        return None if str(rel) == '.' else bool(rel)
+    except (ValueError, FileNotFoundError):
+        try:
+            rel = longpath.relative_to(basepath)
+            return None if str(rel) == '.' else bool(rel)
+        except ValueError:
+            return False
+
+
+def _is_same_file(fp1: Path, fp2: Path) -> Union[bool, None]:
+    """
+    Non-raising version of pathlib.
+
+    :return:
+        a 3-state bool denoting sameness, or None if non-existing file(s) involved.
+    """
+    try:
+        return fp1.samefile(fp2)
+    except FileNotFoundError:
+        return None
