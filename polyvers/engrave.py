@@ -157,7 +157,6 @@ def _slices_to_ids(slices, thelist):
 
 class GraftSpec(cmdlets.Spec, cmdlets.Replaceable, cmdlets.Printable):
     regex = CRegExp(
-        read_only=True,
         config=True,
         help="What to search"
     )
@@ -177,7 +176,6 @@ class GraftSpec(cmdlets.Spec, cmdlets.Replaceable, cmdlets.Printable):
 
     slices = UnionTrait(
         (SliceTrait(), ListTrait(SliceTrait())),
-        read_only=True,
         config=True,
         help="""
         Which of the `hits` to substitute, in "slice" notation(s); all if not given.
@@ -193,11 +191,9 @@ class GraftSpec(cmdlets.Spec, cmdlets.Replaceable, cmdlets.Printable):
         """
     )
 
-    hits = ListTrait(Instance(MatchClass), read_only=True)
-    hits_indices = ListTrait(Int(),
-                             allow_none=True,
-                             default_value=None, read_only=True)
-    nsubs = Int(allow_none=True, read_only=True)
+    hits = ListTrait(Instance(MatchClass))
+    hits_indices = ListTrait(Int(), allow_none=True, default_value=None)
+    nsubs = Int(allow_none=True)
 
     def collect_graft_hits(self, ftext: str) -> 'GraftSpec':
         """
@@ -272,14 +268,12 @@ class Engrave(cmdlets.Spec, cmdlets.Replaceable):
 
     globs = ListTrait(
         Unicode(),
-        read_only=True,
         config=True,
         help="A list of POSIX file patterns (.gitgnore-like) to search and replace"
     )
 
     grafts = ListTrait(
         AutoInstance(GraftSpec),
-        read_only=True,
         config=True,
         help="""
         A list of `GraftSpec` for engraving (search & replace) version-ids or other infos.
@@ -290,14 +284,12 @@ class Engrave(cmdlets.Spec, cmdlets.Replaceable):
 
     encoding = Unicode(
         'utf-8',
-        read_only=True,
         config=True,
         help="Open files with this encoding."
     )
 
     encoding_errors = Unicode(
         'surrogateescape',
-        read_only=True,
         config=True,
         help="""
         Open files with this encoding-error handling.
@@ -306,8 +298,8 @@ class Engrave(cmdlets.Spec, cmdlets.Replaceable):
         """
     )
 
-    fpath = Instance(Path, allow_none=True, read_only=True)
-    ftext = Unicode(allow_none=True, read_only=True)
+    fpath = Instance(Path, allow_none=True)
+    ftext = Unicode(allow_none=True)
 
     def _fread(self, fpath: Path):
         return fpath.read_text(

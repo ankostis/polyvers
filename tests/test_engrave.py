@@ -154,11 +154,11 @@ def test_MatchSpec_slicing(slices, listlen, exp):
     m = re.match('.*', '')  # Get hold of some re.match object.
     hits = list(itt.repeat(m, listlen))
 
-    gs = GraftSpec.new(hits=hits, slices=slices, regex='')
+    gs = GraftSpec(hits=hits, slices=slices, regex='')
     hits_indices = gs._get_hits_indices()
     assert hits_indices == exp
 
-    gs = gs.replace(hits_indices=hits_indices)
+    gs.hits_indices = hits_indices
     hits = gs.valid_hits()
     assert len(hits_indices) == len(hits)
 
