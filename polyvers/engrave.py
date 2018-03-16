@@ -264,55 +264,6 @@ class GraftSpec(cmdlets.Spec, cmdlets.Printable, cmdlets.Replaceable):
         return (ftext, clone)
 
 
-class FileSpec(cmdlets.Spec, cmdlets.Printable, cmdlets.Replaceable):
-    fpath = Instance(Path)
-    ftext = Unicode()
-    grafts = ListTrait(Instance(GraftSpec))
-
-    def collect_file_hits(self) -> 'FileSpec':
-        """
-        :return:
-            a clone with `grafts` updated
-        """
-        new_grafts: List[GraftSpec] = []
-        ftext = self.ftext
-        for vg in self.grafts:
-            nvgraft = vg.collect_graft_hits(ftext)
-            new_grafts.append(nvgraft)
-
-        return self.replace(grafts=new_grafts)
-
-    def substitute_file_hits(self) -> Optional['FileSpec']:
-        """
-        :return:
-            a clone with substituted `grafts` updated, or none if nothing substituted
-        """
-        new_grafts: List[GraftSpec] = []
-        ftext = self.ftext
-        fpath = self.fpath
-        for vg in self.grafts:
-            subst_res = vg.substitute_graft_hits(fpath, ftext)
-            if subst_res:
-                ftext, nvgraft = subst_res
-                new_grafts.append(nvgraft)
-
-        if new_grafts:
-            return self.replace(ftext=ftext, grafts=new_grafts)
-        else:
-            assert self.ftext == ftext, (self.ftext, ftext)
-
-    @property
-    def nhits(self):
-        return sum(len(vg.valid_hits()) for vg in self.grafts)
-
-    @property
-    def nsubs(self):
-        return sum(vg.nsubs for vg in self.grafts)
-
-
-FilesMap = Dict[Path, FileSpec]
-
-
 class Engrave(cmdlets.Spec, cmdlets.Replaceable):
     """File-patterns to search and replace with version-id patterns."""
 
@@ -344,6 +295,9 @@ class Engrave(cmdlets.Spec, cmdlets.Replaceable):
         """
     ).tag(config=True)
 
+    fpath = Instance(Path, allow_none=True)
+    ftext = Unicode(allow_none=True)
+
     def _fread(self, fpath: Path):
         return fpath.read_text(
             encoding=self.encoding, errors=self.encoding_errors)
@@ -352,90 +306,137 @@ class Engrave(cmdlets.Spec, cmdlets.Replaceable):
         fpath.write_text(
             text, encoding=self.encoding, errors=self.encoding_errors)
 
-    def read_files(self, files: FPaths) -> FilesMap:
-        file_specs: FilesMap = odict()
+    def read_files(self, files: FPaths) -> 'PathEngraves':
+        pathengs: 'PathEngraves' = odict()
 
         for fpath in files:
             ## TODO: try-catch file-reading.
             ftext = self._fread(fpath)
 
-            file_specs[fpath] = FileSpec(fpath=fpath, ftext=ftext, grafts=self.grafts)
+            pathengs[fpath] = self.replace(fpath=fpath, ftext=ftext)
 
-        return file_specs
+        return pathengs
 
     def collect_glob_files(self,
                            mybase: FLike = '.',
                            other_bases: Union[FLikeList, None] = None) -> FPaths:
         return glob_files(self.globs, mybase, other_bases)
 
-    def collect_all_hits(self, file_specs: FilesMap) -> FilesMap:
-        hits: FilesMap = odict()
-        for fpath, filespec in file_specs.items():
+    def collect_file_hits(self) -> 'Engrave':
+        """
+        :return:
+            a clone with `grafts` updated
+        """
+        new_grafts: List[GraftSpec] = []
+        ftext = self.ftext
+        for vg in self.grafts:
+            nvgraft = vg.collect_graft_hits(ftext)
+            new_grafts.append(nvgraft)
+
+        return self.replace(grafts=new_grafts)
+
+    def substitute_file_hits(self) -> Optional['Engrave']:
+        """
+        :return:
+            a clone with substituted `grafts` updated, or none if nothing substituted
+        """
+        new_grafts: List[GraftSpec] = []
+        ftext = self.ftext
+        fpath = self.fpath
+        for vg in self.grafts:
+            subst_res = vg.substitute_graft_hits(fpath, ftext)
+            if subst_res:
+                ftext, nvgraft = subst_res
+                new_grafts.append(nvgraft)
+
+        if new_grafts:
+            return self.replace(ftext=ftext, grafts=new_grafts)
+        else:
+            assert self.ftext == ftext, (self.ftext, ftext)
+
+    @property
+    def nhits(self):
+        return sum(len(vg.valid_hits()) for vg in self.grafts)
+
+    @property
+    def nsubs(self):
+        return sum(vg.nsubs for vg in self.grafts)
+
+    ####################
+    ## PathEngs maps ##
+    ####################
+
+    def collect_all_hits(self, pathengs: 'PathEngraves') -> 'PathEngraves':
+        hits: 'PathEngraves' = odict()
+        for fpath, eng in pathengs.items():
             ## TODO: try-catch regex matching.
-            nfilespec = filespec.collect_file_hits()
-            hits[fpath] = nfilespec
+            neng = eng.collect_file_hits()
+            hits[fpath] = neng
 
         return hits
 
-    def substitute_hits(self, hits: FilesMap) -> FilesMap:
-        substs: FilesMap = odict()
-        for fpath, filespec in hits.items():
+    def substitute_hits(self, hits: 'PathEngraves') -> 'PathEngraves':
+        substs: 'PathEngraves' = odict()
+        for fpath, eng in hits.items():
             ## TODO: try-catch regex substitution.
-            nfilespec = filespec.substitute_file_hits()
-            if nfilespec:
-                substs[fpath] = nfilespec
+            neng = eng.substitute_file_hits()
+            if neng:
+                substs[fpath] = neng
 
         return substs
 
-    def write_engraves(self, substs: FilesMap) -> None:
+    def write_engraves(self, substs: 'PathEngraves') -> None:
         if not self.dry_run:
-            for fpath, filespec in substs.items():
+            for fpath, eng in substs.items():
                 ## TODO: try-catch regex matching.
-                self._fwrite(fpath, filespec.ftext)
+                self._fwrite(fpath, eng.ftext)
 
-    def _log_action(self, filespecs_map: FilesMap, action: str):
-        file_lines = '\n  '.join('%s: %i %s' % (fpath, filespec.nhits, action)
-                                 for fpath, filespec in filespecs_map.items())
-        ntotal = sum(filespec.nhits for filespec in filespecs_map.values())
+    def _log_action(self, pathengs: 'PathEngraves', action: str):
+        file_lines = '\n  '.join('%s: %i %s' % (fpath, eng.nhits, action)
+                                 for fpath, eng in pathengs.items())
+        ntotal = sum(eng.nhits for eng in pathengs.values())
         log.info("%sed %i files: %s", action.capitalize(), ntotal, file_lines)
 
     def scan_hits(self,
                   mybase: FLike = '.',
                   other_bases: Union[FLikeList, None] = None
-                  ) -> FilesMap:
+                  ) -> 'PathEngraves':
         files: FPaths = self.collect_glob_files(mybase=mybase,
                                                 other_bases=other_bases)
         log.info("Globbed %i files in '%s': %s",
                  len(files), Path(mybase).resolve(), ', '.join(str(f) for f in files))
 
-        file_specs: FilesMap = self.read_files(files)
+        pathengs: 'PathEngraves' = self.read_files(files)
 
-        file_hits: FilesMap = self.collect_all_hits(file_specs)
+        file_hits: 'PathEngraves' = self.collect_all_hits(pathengs)
         self._log_action(file_hits, 'match')
 
         return file_hits
 
-    def engrave_hits(self, hits: FilesMap) -> FilesMap:
-        substs: FilesMap = self.substitute_hits(hits)
+    def engrave_hits(self, hits: 'PathEngraves') -> 'PathEngraves':
+        substs: 'PathEngraves' = self.substitute_hits(hits)
         self._log_action(substs, 'graft')
 
         self.write_engraves(substs)
 
         return substs
 
-    def scan_and_engrave(self) -> FilesMap:
+    def scan_and_engrave(self) -> 'PathEngraves':
         hits = self.scan_hits()
         return self.engrave_hits(hits)
 
 
-def scan_engraves(engraves: Sequence[Engrave]) -> FilesMap:
+PathEngraves = Dict[Path, Engrave]
+
+
+def scan_engraves(engraves: Sequence[Engrave]) -> PathEngraves:
     hits = [(engpaths, enghits)
             for eng in engraves
             for engpaths, enghits in eng.scan_hits().items()]
 
     ## Consolidate grafts-per-file in a single map.
     #
-    hits_map: FilesMap = odict()
+    hits_map: PathEngraves = odict()
     for fpath, fspec in hits:
         prev_fspec = hits_map.get(fpath)
         if prev_fspec:

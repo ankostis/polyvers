@@ -9,7 +9,7 @@
 
 from collections import OrderedDict, defaultdict, Mapping
 from pathlib import Path
-from typing import Dict, Set  # @UnusedImport
+from typing import Dict, Set  # noqa: F401, @UnusedImport  flake not seeing Set usage
 import io
 import logging
 
