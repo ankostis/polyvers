@@ -341,6 +341,13 @@ class Replaceable:
 
     Works nicely with *read-only* traits.
     """
+    @classmethod
+    def new(cls, **trait_values):
+        clone = cls()
+        clone.set_trait_values(**trait_values)
+
+        return clone
+
     def replace(self, **changes):
         clone = type(self)()
         clone.set_trait_values(**self.trait_values())
@@ -348,12 +355,50 @@ class Replaceable:
 
         return clone
 
-    @classmethod
-    def new(cls, **trait_values):
-        clone = cls()
-        clone.set_trait_values(**trait_values)
+    def _load_config(self, cfg, section_names=None, traits=None):
+        """load traits from a Config object"""
 
-        return clone
+        if traits is None:
+            traits = self.traits(config=True)
+        if section_names is None:
+            section_names = self.section_names()
+
+        my_config = self._find_my_config(cfg)
+
+        # hold trait notifications until after all config has been loaded
+        with self.hold_trait_notifications():
+            from copy import deepcopy
+            from ._vendor.traitlets.config.loader import _is_section_key
+
+            for name, config_value in my_config.items():
+                if name in traits:
+                    if isinstance(config_value, trc.LazyConfigValue):
+                        # ConfigValue is a wrapper for using append / update on containers
+                        # without having to copy the initial value
+                        initial = getattr(self, name)
+                        config_value = config_value.get_value(initial)
+                    # We have to do a deepcopy here if we don't deepcopy the entire
+                    # config object. If we don't, a mutable config_value will be
+                    # shared by all instances, effectively making it a class attribute.
+                    self.set_trait(name, deepcopy(config_value))
+                elif not _is_section_key(name) and not isinstance(config_value, trc.Config):
+                    from difflib import get_close_matches
+                    if isinstance(self, trc.LoggingConfigurable):
+                        warn = self.log.warning
+                    else:
+                        import warnings
+
+                        warn = lambda msg: warnings.warn(msg, stacklevel=9)
+                    matches = get_close_matches(name, traits)
+                    msg = u"Config option `{option}` not recognized by `{klass}`.".format(
+                        option=name, klass=self.__class__.__name__)
+
+                    if len(matches) == 1:
+                        msg += u"  Did you mean `{matches}`?".format(matches=matches[0])
+                    elif len(matches) >= 1:
+                        msg += "  Did you mean one of: `{matches}`?".format(
+                            matches=', '.join(sorted(matches)))
+                    warn(msg)
 
 
 class Printable(metaclass=trt.MetaHasTraits):
