@@ -155,13 +155,12 @@ def _slices_to_ids(slices, thelist):
     return list(mask_ids)
 
 
-class GraftSpec(cmdlets.Spec, cmdlets.Printable, cmdlets.Replaceable):
-    def __init__(self, *args, **kw):
-        super().__init__(*args, **kw)
-
+class GraftSpec(cmdlets.Spec, cmdlets.Replaceable, cmdlets.Printable):
     regex = CRegExp(
+        read_only=True,
+        config=True,
         help="What to search"
-    ).tag(config=True)
+    )
 
     subst = Unicode(
         allow_none=True, default_value='',
@@ -174,10 +173,12 @@ class GraftSpec(cmdlets.Spec, cmdlets.Printable, cmdlets.Replaceable):
         - interpolation variables; Keys available (apart from env-vars prefixed with '$'):
           {ikeys}
         """
-    ).tag(config=True)
+    )
 
     slices = UnionTrait(
         (SliceTrait(), ListTrait(SliceTrait())),
+        read_only=True,
+        config=True,
         help="""
         Which of the `hits` to substitute, in "slice" notation(s); all if not given.
 
@@ -190,11 +191,13 @@ class GraftSpec(cmdlets.Spec, cmdlets.Printable, cmdlets.Replaceable):
                 "
 
         """
-    ).tag(config=True)
+    )
 
-    hits = ListTrait(Instance(MatchClass))
-    hits_indices = ListTrait(Int(), allow_none=True, default_value=None)
-    nsubs = Int(allow_none=True)
+    hits = ListTrait(Instance(MatchClass), read_only=True)
+    hits_indices = ListTrait(Int(),
+                             allow_none=True,
+                             default_value=None, read_only=True)
+    nsubs = Int(allow_none=True, read_only=True)
 
     def collect_graft_hits(self, ftext: str) -> 'GraftSpec':
         """
@@ -269,34 +272,42 @@ class Engrave(cmdlets.Spec, cmdlets.Replaceable):
 
     globs = ListTrait(
         Unicode(),
+        read_only=True,
+        config=True,
         help="A list of POSIX file patterns (.gitgnore-like) to search and replace"
-    ).tag(config=True)
+    )
 
     grafts = ListTrait(
         AutoInstance(GraftSpec),
+        read_only=True,
+        config=True,
         help="""
         A list of `GraftSpec` for engraving (search & replace) version-ids or other infos.
 
         Use `{appname} config desc GraftSpec` to see its syntax.
         """
-    ).tag(config=True)
+    )
 
     encoding = Unicode(
         'utf-8',
+        read_only=True,
+        config=True,
         help="Open files with this encoding."
-    ).tag(config=True)
+    )
 
     encoding_errors = Unicode(
         'surrogateescape',
+        read_only=True,
+        config=True,
         help="""
         Open files with this encoding-error handling.
 
         See https://docs.python.org/3/library/codecs.html#codecs.register_error
         """
-    ).tag(config=True)
+    )
 
-    fpath = Instance(Path, allow_none=True)
-    ftext = Unicode(allow_none=True)
+    fpath = Instance(Path, allow_none=True, read_only=True)
+    ftext = Unicode(allow_none=True, read_only=True)
 
     def _fread(self, fpath: Path):
         return fpath.read_text(
