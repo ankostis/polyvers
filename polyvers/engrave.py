@@ -156,7 +156,7 @@ def _slices_to_ids(slices, thelist):
     return list(mask_ids)
 
 
-class GraftSpec(cmdlets.Replaceable, cmdlets.Printable, cmdlets.Spec):
+class Graft(cmdlets.Replaceable, cmdlets.Printable, cmdlets.Spec):
     regex = CRegExp(
         read_only=True,
         config=True,
@@ -185,7 +185,7 @@ class GraftSpec(cmdlets.Replaceable, cmdlets.Printable, cmdlets.Spec):
 
         Example::
 
-            gs = GraftSpec()
+            gs = Graft()
             gs.slices = 0                ## Only the 1st match.
             gs.slices = '1:'             ## Everything except the 1st match
             gs.slices = ['1:3', '-1:']   ## Only 2nd, 3rd and the last match.
@@ -200,7 +200,7 @@ class GraftSpec(cmdlets.Replaceable, cmdlets.Printable, cmdlets.Spec):
                              default_value=None, read_only=True)
     nsubs = Int(allow_none=True)
 
-    def collect_graft_hits(self, ftext: str) -> 'GraftSpec':
+    def collect_graft_hits(self, ftext: str) -> 'Graft':
         """
         :return:
             a clone with updated `hits`
@@ -230,11 +230,11 @@ class GraftSpec(cmdlets.Replaceable, cmdlets.Printable, cmdlets.Spec):
         else:
             return [hits[i] for i in hits_indices]
 
-    def substitute_graft_hits(self, fpath: Path, ftext: str) -> Tuple[str, 'GraftSpec']:
+    def substitute_graft_hits(self, fpath: Path, ftext: str) -> Tuple[str, 'Graft']:
         """
         :return:
-            A 2-TUPLE ``(<substituted-ftext>, <updated-graft-spec>)``, where
-            ``<updated-graft-spec>`` is a *possibly* clone with updated
+            A 2-TUPLE ``(<substituted-ftext>, <updated-graft>)``, where
+            ``<updated-graft>`` is a *possibly* clone with updated
             `hits_indices` (if one used), or the same if no idices used,
             or None if no hits remained. after hits-slices filtering
         """
@@ -279,13 +279,13 @@ class Engrave(cmdlets.Replaceable, cmdlets.Spec):
     )
 
     grafts = ListTrait(
-        AutoInstance(GraftSpec),
+        AutoInstance(Graft),
         read_only=True,
         config=True,
         help="""
-        A list of `GraftSpec` for engraving (search & replace) version-ids or other infos.
+        A list of `Graft` for engraving (search & replace) version-ids or other infos.
 
-        Use `{appname} config desc GraftSpec` to see its syntax.
+        Use `{appname} config desc Graft` to see its syntax.
         """
     )
 
@@ -339,7 +339,7 @@ class Engrave(cmdlets.Replaceable, cmdlets.Spec):
         :return:
             a clone with `grafts` updated
         """
-        new_grafts: List[GraftSpec] = []
+        new_grafts: List[Graft] = []
         ftext = self.ftext
         for vg in self.grafts:
             nvgraft = vg.collect_graft_hits(ftext)
@@ -352,7 +352,7 @@ class Engrave(cmdlets.Replaceable, cmdlets.Spec):
         :return:
             a clone with substituted `grafts` updated, or none if nothing substituted
         """
-        new_grafts: List[GraftSpec] = []
+        new_grafts: List[Graft] = []
         ftext = self.ftext
         fpath = self.fpath
         for vg in self.grafts:
