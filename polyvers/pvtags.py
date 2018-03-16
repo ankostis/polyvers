@@ -316,8 +316,10 @@ class Project(cmdlets.Spec, cmdlets.Replaceable):
             out = cli._(*git_args, **git_flags)(match=tag_pattern)
 
         version = out
+
         ## `git describe --all` fetches 'tags/` prefix.
-        version = version.lstrip('tags/')
+        if 'all' in git_flags:
+            version = version.lstrip('tags/')
 
         if not self.version_from_pvtag(version):
             raise trt.TraitError(
