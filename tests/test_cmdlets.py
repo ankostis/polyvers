@@ -62,8 +62,8 @@ def test_Replaceable_Configurable():
     assert c2.b == 2
 
 
-def test_Strable():
-    class C(trt.HasTraits, cmdlets.Strable):
+def test_Printable():
+    class C(trt.HasTraits, cmdlets.Printable):
         c = Int()
 
     c = C(c=1)

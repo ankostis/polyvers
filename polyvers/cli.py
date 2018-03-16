@@ -421,7 +421,7 @@ class StatusCmd(_SubCmd):
     def _fetch_all(self, projects):
         ## TODO: extract method to classify pre-populated histories.
         pvtags.populate_pvtags_history(*projects)
-        ## TODO: YAMLable Project (apart from Strable) with metadata Print/header
+        ## TODO: YAMLable Project (apart from Printable) with metadata Print/header
         pinfos = {p.pname: {'history': p.pvtags_history,
                             'basepath': str(p.basepath)}
                   for p in projects}

@@ -155,7 +155,7 @@ def _slices_to_ids(slices, thelist):
     return list(mask_ids)
 
 
-class GraftSpec(cmdlets.Spec, cmdlets.Strable, cmdlets.Replaceable):
+class GraftSpec(cmdlets.Spec, cmdlets.Printable, cmdlets.Replaceable):
     def __init__(self, *args, **kw):
         super().__init__(*args, **kw)
 
@@ -264,7 +264,7 @@ class GraftSpec(cmdlets.Spec, cmdlets.Strable, cmdlets.Replaceable):
         return (ftext, clone)
 
 
-class FileSpec(cmdlets.Spec, cmdlets.Strable, cmdlets.Replaceable):
+class FileSpec(cmdlets.Spec, cmdlets.Printable, cmdlets.Replaceable):
     fpath = Instance(Path)
     ftext = Unicode()
     grafts = ListTrait(Instance(GraftSpec))

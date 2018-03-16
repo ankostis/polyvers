@@ -333,7 +333,7 @@ class Replaceable:
         return clone
 
 
-class Strable(metaclass=trt.MetaHasTraits):
+class Printable(metaclass=trt.MetaHasTraits):
     """
     A :class:`HasTraits` mixin providing a ``str()`` for specific traits.
 
@@ -343,11 +343,10 @@ class Strable(metaclass=trt.MetaHasTraits):
        list, or ALL traits if it's equal to '*', and if empty,
     3. print traits marked with ``printable`` metadata,
        and if none found,
-    4. prints all :class:`Strable` owned traits in ``mro()``,
+    4. prints all :class:`Printable` owned traits in ``mro()``,
        and if no traits found,
     5. don't print any traits, just the class-name.
     """
-    ## TODO: rename mixin Strable-->Printable.
     printable_traits = Union(
         (Unicode(), List(Unicode())),
         #allow_none=True, default_value=None,
@@ -361,11 +360,11 @@ class Strable(metaclass=trt.MetaHasTraits):
             if not tnames_to_print:
                 tnames_to_print = self.traits(printable=True)
             if not tnames_to_print:
-                ## Print all traits for subclasses after(above) Strable in mro().
+                ## Print all traits for subclasses after(above) Printable in mro().
                 #
                 strable_subclasses = [cls for cls in type(self).mro()
-                                      if issubclass(cls, Strable) and
-                                      cls is not Strable]
+                                      if issubclass(cls, Printable) and
+                                      cls is not Printable]
                 tnames_to_print = [tname
                                    for cls in strable_subclasses
                                    for tname in cls.class_own_traits()]
