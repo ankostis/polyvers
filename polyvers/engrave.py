@@ -155,7 +155,7 @@ def _slices_to_ids(slices, thelist):
     return list(mask_ids)
 
 
-class GraftSpec(cmdlets.Spec, cmdlets.Replaceable, cmdlets.Printable):
+class GraftSpec(cmdlets.Replaceable, cmdlets.Printable, cmdlets.Spec):
     regex = CRegExp(
         read_only=True,
         config=True,
@@ -197,7 +197,7 @@ class GraftSpec(cmdlets.Spec, cmdlets.Replaceable, cmdlets.Printable):
     hits_indices = ListTrait(Int(),
                              allow_none=True,
                              default_value=None, read_only=True)
-    nsubs = Int(allow_none=True, read_only=True)
+    nsubs = Int(allow_none=True)
 
     def collect_graft_hits(self, ftext: str) -> 'GraftSpec':
         """
@@ -267,7 +267,7 @@ class GraftSpec(cmdlets.Spec, cmdlets.Replaceable, cmdlets.Printable):
         return (ftext, clone)
 
 
-class Engrave(cmdlets.Spec, cmdlets.Replaceable):
+class Engrave(cmdlets.Replaceable, cmdlets.Spec):
     """File-patterns to search and replace with version-id patterns."""
 
     globs = ListTrait(
