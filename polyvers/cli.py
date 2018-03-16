@@ -107,25 +107,14 @@ class PolyversCmd(cmdlets.Cmd):
     examples = Unicode("""
         - Let it guess the configurations for your monorepo::
               {cmd_chain} init
-          You may specify different configurations paths with:
-              {cmd_chain} --config-paths /foo/bar/:~/.%(appname)s.yaml:.
+          You may specify different configurations paths with::
+              {cmd_chain} --config-paths /foo/bar/:~/{config_basename}.yaml:.
 
         - Use then the main sub-commands::
+              {cmd_chain} init    # (optional) use it once, or to update configs.
               {cmd_chain} status
-              {cmd_chain} setver 0.0.0.dev0 -c '1st commit, untagged'
+              {cmd_chain} bump 0.0.1.dev0 -c '1st commit, untagged'
               {cmd_chain} bump -t 'Mostly model changes, tagged'
-
-        PEP-440 Version Samples:
-        - Pre-releases: when working on new features:
-            X.YbN               # Beta release
-            X.YrcN  or  X.YcN   # Release Candidate
-            X.Y                 # Final release
-        - Post-release:
-            X.YaN.postM         # Post-release of an alpha release
-            X.YrcN.postM        # Post-release of a release candidate
-        - Dev-release:
-            X.YaN.devM          # Developmental release of an alpha release
-            X.Y.postN.devM      # Developmental release of a post-release
     """)
     classes = [pvtags.Project]
 
@@ -133,11 +122,11 @@ class PolyversCmd(cmdlets.Cmd):
         AutoInstance(pvtags.Project),
         config=True)
 
-    use_leaf_releases = Bool(
-        True,
+    no_release_tag = Bool(
+        False,
         config=True,
         help="""
-            Version-ids statically engraved in-trunk when false, otherwise in "leaf" commits.
+            Version-ids statically engraved in-trunk when true, otherwise in "leaf" commits.
 
             - Limit branches considered as "in-trunk" using `in_trunk_branches` param.
             - Select the name of the Leaf branch with `leaf_branch` param.
@@ -448,14 +437,32 @@ class BumpCmd(_SubCmd):
     Increase the version of project(s) by the given offset.
 
     SYNTAX:
-        {cmd_chain} [OPTIONS] [<version-offset>] [<project>]...
+{cmd_chain} [OPTIONS] [<version>] [<project>]...
         {cmd_chain} [OPTIONS] --part <offset> [<project>]...
 
-    - If no <version-offset> specified, increase the last part (e.g 0.0.dev0-->dev1).
-    - If no project(s) specified, increase the versions for all projects.
-    - Denied if version for some projects is backward-in-time or has jumped parts;
+    - A version specifier, either ABSOLUTE, or RELATIVE to current version:
+      - ABSOLUTE PEP-440 version samples:
+        - Pre-releases: when working on new features:
+            X.YbN               # Beta release
+            X.YrcN  or  X.YcN   # Release Candidate
+            X.Y                 # Final release
+        - Post-release:
+            X.YaN.postM         # Post-release of an alpha release
+            X.YrcN.postM        # Post-release of a release candidate
+        - Dev-release:
+            X.YaN.devM          # Developmental release of an alpha release
+            X.Y.postN.devM      # Developmental release of a post-release
+      - RELATIVE samples:
+        - +0.1          # For instance:
+                        #   1.2.3    --> 1.3.0
+        - ^2            # Increases the last non-zero part of current version:
+                        #   1.2.3    --> 1.2.5
+                        #   0.1.0b0  --> 0.1.0b2
+    - If no <version> specified, '^1' assumed.
+    - If no project(s) specified, increase the versions on all projects.
+    - Denied if version for some projects is backward-in-time (or has jumped parts?);
       use --force if you might.
-    - Don't add a 'v' prefix!
+    - The 'v' prefix is not needed!
     """
     def run(self, *args):
         self.check_project_configs_exist(self._cfgfiles_registry)

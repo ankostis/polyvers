@@ -121,7 +121,8 @@ def glob_files(patterns: List[str],
     """
     Glob files in `mybase` but not in `other_bases` (unless bases coincide).
 
-    - support exclude patterns: ``!foo``.
+    - Supports exclude patterns: ``!foo``.
+    - If `mybase` is in `other_bases`, it doesn't change the results.
     """
     pattern_pairs = _prepare_glob_pairs(patterns)
 
