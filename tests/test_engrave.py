@@ -154,11 +154,11 @@ def test_MatchSpec_slicing(slices, listlen, exp):
     m = re.match('.*', '')  # Get hold of some re.match object.
     hits = list(itt.repeat(m, listlen))
 
-    gs = GraftSpec(hits=hits, slices=slices, regex='')
+    gs = GraftSpec.new(hits=hits, slices=slices, regex='')
     hits_indices = gs._get_hits_indices()
     assert hits_indices == exp
 
-    gs.hits_indices = hits_indices
+    gs = gs.replace(hits_indices=hits_indices)
     hits = gs.valid_hits()
     assert len(hits_indices) == len(hits)
 
@@ -222,8 +222,8 @@ def test_scan_engrave(fileset_mutable, f1_graft, f2_graft):
     globs = ['/a/f*', 'b/f1', '/b/f2', 'b/?3']
     cfg.Engrave.grafts = [f1_graft, f2_graft]
 
-    e1 = engrave.Engrave(globs=globs, grafts=[f1_graft])
-    e2 = engrave.Engrave(globs=globs, grafts=[f2_graft])
+    e1 = engrave.Engrave.new(globs=globs, grafts=[f1_graft])
+    e2 = engrave.Engrave.new(globs=globs, grafts=[f2_graft])
 
     hits_map = engrave.scan_engraves([e1, e2])
     assert isinstance(hits_map, dict)
