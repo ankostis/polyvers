@@ -77,7 +77,7 @@ def test_all_cmds_help_version(cmd, capsys):
     ('config infos', [], ['config_paths: null']),
     ('config desc', ['--Cmd.config_paths=', 'StatusCmd'], []),
     ('config desc bump -c', ['Increase the version of project', 'BumpCmd'], []),
-    ('config show Project', ['Project(Spec'], []),
+    ('config show Project', ['Project(Replaceable'], []),
     ('config show Project.tag', ["tag_vprefixes = ('v', 'r')"], []),
 ])
 def test_config_cmd(cmd, match, illegal):

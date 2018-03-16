@@ -110,7 +110,7 @@ class _EscapedObjectDict(interpctxt._HasTraitObjectDict):
 
 
 ## TODO: Make Project printable.
-class Project(cmdlets.Spec, cmdlets.Replaceable):
+class Project(cmdlets.Replaceable, cmdlets.Printable, cmdlets.Spec):
     pname = Unicode()
     basepath = Instance(Path, default_value=None, allow_none=True, castable=str)
 
