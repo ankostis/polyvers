@@ -339,12 +339,19 @@ class Replaceable:
     :param changes:
         a dict of values keyed be their trait-name.
 
-    Sets also read-only values.
+    Works nicely with *read-only* traits.
     """
     def replace(self, **changes):
         clone = type(self)()
         clone.set_trait_values(**self.trait_values())
         clone.set_trait_values(**changes)
+
+        return clone
+
+    @classmethod
+    def new(cls, **trait_values):
+        clone = cls()
+        clone.set_trait_values(**trait_values)
 
         return clone
 
@@ -483,18 +490,6 @@ class Spec(trc.Configurable):
 
     def is_force(self, token):
         return self.force in (True, token)
-
-    @trt.observe('force_tokens')
-    def _update_force_help(self, change):
-        force_trait = self.get_trait('force_tokens')
-
-        if not self._force_original_help:
-            self._force_original_help = force_trait.help
-
-        force_trait.help = '%s\n           %s' % (
-            self._force_original_help,
-            '\n  - '.join("%-7s: %s" % (token, htext)
-                          for token, htext in change.new.items()))
 
     interpolations = cmdlets_interpolations
 
