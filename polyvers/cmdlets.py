@@ -82,6 +82,15 @@ def first_line(doc):
             return l.strip()
 
 
+def _set_also_read_only_trait_values(self, **trait_values):
+    """Allow to set even `read_only` values."""
+    for k, v in trait_values.items():
+        self.set_trait(k, v)
+
+
+trt.HasTraits.set_trait_values = _set_also_read_only_trait_values
+
+
 _no_app_help_message = "<Help for '%s' is missing>"
 
 
@@ -324,11 +333,18 @@ class CmdException(Exception):
 
 
 class Replaceable:
-    """Mixin to enable classes to clone like namedtupple's ``replace()``."""
+    """
+    A mixin to make :class:`HasTraits` instances clone like namedtupple's ``replace()``.
+
+    :param changes:
+        a dict of values keyed be their trait-name.
+
+    Sets also read-only values.
+    """
     def replace(self, **changes):
-        mytraits = self.trait_values()
-        mytraits.update(**changes)
-        clone = type(self)(**mytraits)
+        clone = type(self)()
+        clone.set_trait_values(**self.trait_values())
+        clone.set_trait_values(**changes)
 
         return clone
 

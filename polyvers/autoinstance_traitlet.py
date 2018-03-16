@@ -18,7 +18,10 @@ class AutoInstance(Instance):
     def cast(self, value):
         iclass = self.klass
         if (issubclass(iclass, HasTraits) and isinstance(value, dict)):
-            instance = iclass(**value)
+            instance = iclass()
+            ## Use :meth:`set_trait_values()` to write also `read_only` traits.
+            instance.set_trait_values(**value)
+
             if issubclass(iclass, Configurable):
                 ## Store dict-values so when `validate()` provides config
                 #  from `obj.parent`, these values overwrite.
@@ -50,9 +53,11 @@ class AutoInstance(Instance):
 
         elif (issubclass(iclass, HasTraits) and isinstance(value, dict)):
             if issubclass(iclass, Configurable):
-                instance = iclass(parent=obj, **value)
+                instance = iclass(parent=obj)
             else:
-                instance = iclass(**value)
+                instance = iclass()
+            ## Use :meth:`set_trait_values()` to write also `read_only` traits.
+            instance.set_trait_values(**value)
 
             return instance
 
