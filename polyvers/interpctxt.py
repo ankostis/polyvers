@@ -36,10 +36,13 @@ class Keys:  # TODO: privatize
 
 
 class _MissingKeys(dict):
-    __slots__ = ()
+    __slots__ = ('value')
+
+    def __init__(self, value=None):
+        self.value = value
 
     def __missing__(self, key):
-        return '{%s}' % key
+        return self.value or '{%s}' % key
 
 
 #: Used when interp-context claiming to have all keys.
@@ -134,7 +137,9 @@ class InterpolationContext(ChainMap):
         orig_maps = self.maps
         maps = orig_maps[:1] + tmp_maps[::-1] + orig_maps[1:]
         if stub_keys:
-            maps.append(_missing_keys)
+            maps.append(_missing_keys
+                        if stub_keys is True
+                        else _MissingKeys(stub_keys))
         self.maps = maps
         try:
             yield self

@@ -106,6 +106,11 @@ def test_interp_missing_ikeys():
             assert frmt.format(**ictxt) == frmt
         assert frmt.format_map(ictxt) == frmt
 
+    with ctxt.ikeys(stub_keys='no') as ictxt:
+        with pytest.raises(KeyError):
+            assert frmt.format(**ictxt) == frmt
+        assert frmt.format_map(ictxt) == 'no key'
+
     with ctxt.ikeys(a=1, stub_keys=True) as ictxt:
         with pytest.raises(KeyError):
             assert frmt.format(**ictxt) == frmt
