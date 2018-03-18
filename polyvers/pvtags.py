@@ -308,12 +308,12 @@ class Project(cmdlets.Replaceable, cmdlets.Printable, cmdlets.Spec):
         pname = self.pname
         tag_pattern = self.tag_fnmatch(is_release)
 
-        cli = cmd.git.describe
+        acli = cmd.git.describe
         if include_lightweight:
-            cli._(tags=True)
+            acli._(tags=True)
 
         with _git_errors_handler(pname):
-            out = cli._(*git_args, **git_flags)(match=tag_pattern)
+            out = acli._(*git_args, **git_flags)(match=tag_pattern)
 
         version = out
 
@@ -419,12 +419,12 @@ def make_match_all_vtags_project(**project_kw) -> Project:
                              **project_kw)
 
 
-def _fetch_all_tags(cli, tag_patterns: List[str],
+def _fetch_all_tags(acli, tag_patterns: List[str],
                     pnames_msg: str):
-    cli.tag
+    acli.tag
 
     with _git_errors_handler(pnames_msg):
-        out = cli('--list', *tag_patterns)
+        out = acli('--list', *tag_patterns)
 
     return out and out.split('\n') or ()
 
@@ -444,16 +444,16 @@ def _parse_git_tag_ref_lines(tag_ref_lines: List[str],
     return tags
 
 
-def _fetch_annotated_tags(cli, tag_patterns: Sequence[str],
+def _fetch_annotated_tags(acli, tag_patterns: Sequence[str],
                           pnames_msg: str) -> List[str]:
     """
     Collect only non-annotated tags (those pointing to tag-objects).
 
     From https://stackoverflow.com/a/21032332/548792
     """
-    cli.for_each_ref._('refs/tags/', format='%(objecttype) %(refname:short)')
+    acli.for_each_ref._('refs/tags/', format='%(objecttype) %(refname:short)')
     with _git_errors_handler(pnames_msg):
-        out = cli(*tag_patterns)
+        out = acli(*tag_patterns)
 
     if not out:
         return []
@@ -509,11 +509,11 @@ def populate_pvtags_history(*projects: Project,
             tag_patterns.append(proj.tag_fnmatch(is_release))
 
     pnames_msg = ', '.join(p.pname for p in projects)
-    cli = cmd.git
+    acli = cmd.git
     if include_lightweight:
-        tags = _fetch_all_tags(cli, tag_patterns, pnames_msg)
+        tags = _fetch_all_tags(acli, tag_patterns, pnames_msg)
     else:
-        tags = _fetch_annotated_tags(cli, tag_patterns, pnames_msg)
+        tags = _fetch_annotated_tags(acli, tag_patterns, pnames_msg)
 
     for proj in projects:
         proj._pvtags_collected = []
