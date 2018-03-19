@@ -46,7 +46,7 @@ Of course you can mix'n match.
 
 from collections import OrderedDict
 from os import PathLike
-from typing import Union
+from typing import Any, Union, Tuple, Optional  # noqa: F401 @UnusedImport
 import contextlib
 import io
 import logging
@@ -63,6 +63,9 @@ from ._vendor.traitlets import config as trc
 from ._vendor.traitlets.traitlets import Bool, List, Unicode, Int, Instance, \
     Union as UnionTrait  # @UnresolvedImport
 from .yamlconfloader import YAMLFileConfigLoader
+
+
+log = logging.getLogger(__name__)
 
 
 def class2cmd_name(cls):
@@ -558,6 +561,69 @@ class Spec(trc.Configurable):
 
         return False
 
+    #: List of 3 tuples (action, raise_later, ex) maintained by :class:`Enforcer`
+    #: through `meth:`enforced`.
+    enforced_error_tuples: 'List[Tuple[Any, bool, Exception]]' = []
+
+    def enforced(self,
+                 *exceptions: Exception,
+                 token: str = False,
+                 action=None,
+                 raise_immediately=False):
+        """
+        Returns an :class:`Enforcer` that collects (and suppress) errors from context-body.
+
+        :param exceptions:
+            the exceptions to suppress
+        :param token:
+            the token that when in :attr:`Spec.force`, the errors is suppressed;
+            if missing, any true `force` value supresses the error.
+            See :meth:`Spec.is_forced` for acceptable values.
+        :param action:
+            a label used to mark errors collected
+        :param raise_immediately:
+            if not forced, do not wait for `collected_errors()` call to raise them.
+
+        - See :class:`Enforce` for details.
+        - Example of using the same enforcer for multiple actions in a loop::
+
+              for fpath in file_paths:
+                  with self.enforced(Exception, token='fread', action=fpath):
+                      fbytes.append(fpath.read_bytes())
+              self.report_enforced_errors("reading X-files")
+
+        """
+        return Enforcer(self, exceptions,
+                        token=token, action=action,
+                        raise_immediately=raise_immediately)
+
+    def report_enforced_errors(self, activity=None) -> Optional[str]:
+        """
+        Raise or return spec's collected errors, and clears the error-list.
+
+        :param activity:
+            something like "reading X-files" to include in the error-message
+        :return:
+            the errors collected in a pre-formatted message, if any
+        :raise CmdException:
+            with any non-forced collected errors
+        """
+        etuples = self.enforced_error_tuples
+        if etuples:
+            erlines = ''.join('\n  %s' % Enforcer.format_err_tuple(*etuple)
+                              for etuple in etuples)
+            activity = ' while %s' % activity if activity else ''
+            err_args = (len(etuples), activity, erlines)
+
+            self.enforced_error_tuples = []
+
+            if any(raise_later for _, raise_later, _ in etuples):
+                msg = "Collected %i error(s)%s: %s"
+                raise CmdException(msg % err_args)
+            else:
+                msg = "Bypassed %i \"forced\" error(s)%s: %s"
+                return getattr(self, 'log', log).warning(msg % err_args)
+
     interpolations = cmdlets_interpolations
 
     @classmethod
@@ -577,6 +643,79 @@ class Spec(trc.Configurable):
         #
         with obj.interpolations.ikeys(obj, stub_keys=True) as ctxt:
             return text.format_map(ctxt)
+
+
+class Enforcer(trt.HasTraits):
+    """
+    A contextman collecting errors or "forced" or suppressed, in a :class:`Spec` error-list.
+
+
+    - Unknown errors (not in `exceptions`) are always raised immediately.
+    - If `token` is in :attr:`Spec.force`, errors just collected..
+    - If an errors is not "forced", it is either `raise_immediately`,
+      or collected to raise alltogether when :meth:`collected_errors()` is invoked.
+    - Collected errors (either "forced" or because `raise_immediately`) are reported
+      on DEBUG, and return later, when :meth:`collected_errors()` is called,
+      as a pre-formatted message, or raised.
+
+    :param spec:
+        the spec instance to search :attr:`Spec.force` for the token
+    :param exceptions:
+        the exceptions to suppress
+    :param token:
+        the :attr:`force` token to respect
+    :param raise_immediately:
+        if not forced, do not wait for `collected_errors()` call to raise them;
+        set it to true if used as a function decorator.
+    :param log_level:
+        the logging level to use when just reporting errors.
+        Note that all errors are always reported immediately on DEBUG.
+
+    See :meth:`Spec.enforced()` for example.
+    """
+    spec: Spec = Instance(Spec)
+
+    def __init__(self,
+                 spec: Spec,
+                 exceptions: Exception,
+                 token, action,
+                 raise_immediately: bool):
+        self.spec = spec
+        self.exceptions = exceptions
+        self.token = token
+        self.raise_immediately = raise_immediately
+        self._action = action
+
+    def __enter__(self):
+        """Return `self` upon entering the runtime context."""
+        return self
+
+    def __exit__(self, exctype, excinst, exctb):
+        if exctype is not None and issubclass(exctype, self.exceptions):
+            spec = self.spec
+            is_forced = spec.is_forced(self.token)
+            if is_forced or not self.raise_immediately:
+                #excinst = excinst.with_traceback(exctb)
+                raise_later = not is_forced
+                spec.enforced_error_tuples.append((self._action,
+                                                   raise_later,
+                                                   excinst))
+                if log.isEnabledFor(logging.DEBUG):
+                    getattr(spec, 'log', log).debug(
+                        "Collected %s",
+                        self.format_err_tuple(self._action, raise_later, excinst),
+                        exc_info=excinst)
+                return True
+
+        return False
+
+    @staticmethod
+    def format_err_tuple(action, raise_later, ex):
+        if action:
+            return "%serror '%s' -> %s(%s)" % ('' if raise_later else '"forced" ',
+                                               action, type(ex).__name__, ex)
+        return "%serror %s(%s)" % ('' if raise_later else '"forced" ',
+                                   type(ex).__name__, ex)
 
 
 class Cmd(trc.Application, Spec):

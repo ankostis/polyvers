@@ -132,6 +132,38 @@ def test_Spec_is_forced(force, token, exp):
     assert sp.is_forced(token) is exp
 
 
+def test_Enforcer():
+    level = logging.DEBUG
+    logging.basicConfig(level=level)
+    logging.getLogger().setLevel(level)
+    spec = cmdlets.Spec()
+    enforcer = cmdlets.Enforcer(spec, Exception, 'kento', 'fire', False)
+    with enforcer:
+        raise Exception("Wrong!")
+
+    assert len(spec.enforced_error_tuples) == 1
+
+    with pytest.raises(cmdlets.CmdException, match="Collected 1 error"):
+        spec.report_enforced_errors()
+    assert len(spec.enforced_error_tuples) == 0
+
+    with spec.enforced(Exception, token='aa'):
+        raise Exception()
+    spec.force = True
+    with spec.enforced(Exception):
+        raise Exception()
+    assert len(spec.enforced_error_tuples) == 2
+
+    with pytest.raises(cmdlets.CmdException):
+        spec.report_enforced_errors()
+    assert len(spec.enforced_error_tuples) == 0
+
+    spec.force = 'abc'
+    with spec.enforced(Exception, token='abc'):
+        raise Exception()
+    spec.report_enforced_errors()
+
+
 def test_CfgFilesRegistry_consolidate_posix_1():
     visited = [
         ('/d/foo/bar/.appname', None),
