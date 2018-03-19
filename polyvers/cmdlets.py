@@ -534,31 +534,44 @@ class Spec(trc.Configurable):
 
     force = ListTrait(
         UnionTrait((Bool(), Unicode())),
-        allow_none=True,
         config=True,
         help="Force things to perform their duties without complaints.")
 
-    def is_forced(self, token: str = None):
+    def is_forced(self, token: Union[str, bool] = None):
         """
         Whether some action ided by `token` is allowed to go thorugh in case of errors.
 
         :param token:
-            an optional string to search for in :attr:`force`:
-            - if string, it is searched in the comma/space separated string `force`.
-            - if `None`, `True` must be in `force`.
+            an optional string/bool to search for in :attr:`force` according
+            to the following table::
+
+                               token:
+                                    |FALSE|TRUE|"str"|NONE|
+                 force-element:     |-----|----|-----|----|
+                      [], '-', FALSE|  X  |  X |  X  | X  |
+                           '*', TRUE|  X  |  O |  O  | O  |
+                               "str"|  X  |  X |  O  | X  |
+
+            - Empty cells mean "check other values in `force` list".
+            - Rows above, win; columns to the left win.
+            - Value `None` is forbiddden for :attr:`force`.
 
         .. Note::
-           prefer using it via :class:`Enforcer` contextman.
+           prefer using it via :class:`ErrLog` contextman.
         """
-        assert token is None or isinstance(token, str), token
+        assert token is None or isinstance(token, (bool, str)), token
         force = self.force
+
+        if token is False or not force:
+            return False
+
+        force = set(False if el == '-' else el == '*' or el
+                    for el in force)
+
         if False in force:
             return False
 
-        if token is None:
-            return True in force
-
-        return token in force
+        return bool(set((True, token)) & force)
 
     #: List of 3 tuples (action, raise_later, ex) maintained by :class:`Enforcer`
     #: through `meth:`enforced`.

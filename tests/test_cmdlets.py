@@ -97,19 +97,32 @@ def test_Printable():
 @pytest.mark.parametrize('force, token, exp', [
     ([], 'abc', False),
     ([], None, False),
+    (False, None, False),
+    (False, False, False),
     (False, 'abc', False),
     ([], 'abc', False),
-    (False, None, False),
     ('abc', None, False),
     (' abc ', 'abc', False),        # no stripping
     ('abc def', ' abc ', False),    # no splitting
-    (True, 'abc', False),
 
     (True, None, True),
+    (True, 'abc', True),
     ('abc', 'abc', True),
 
+    ([False, 'abc'], None, False),
+    ([True, 'abc', False], None, False),
+    ([True, 'abc', False], 'abc', False),
+
+    ([True, False], None, False),
+    ([True, False], True, False),
+    ([False, True], True, False),
+    ([False, True], 'abc', False),
+    ([False, True, 'abc'], 'abc', False),
+
     ([True, 'abc'], None, True),
+    ([True, 'abc', True, ], 'abc', True),
     ([True, 'FOO', 'abc'], 'abc', True),
+    ([True, 'BAD'], 'abc', True),
     ('ad bb tt gg'.split(), 'ad', True),
     ('ad bb tt gg'.split(), 'tt', True),
     ('ad bb tt gg'.split(), 'gg', True),
@@ -119,6 +132,18 @@ def test_Printable():
 def test_Spec_is_forced(force, token, exp):
     if not isinstance(force, list):
         force = [force]
+    sp = cmdlets.Spec(force=force)
+    assert sp.is_forced(token) is exp
+
+    ## Check also string-symbols for True/False.
+    #
+    if False in force:
+        force = ['-' if f is False else f
+                 for f in force]
+    if True in force:
+        force = ['*' if f is True else f
+                 for f in force]
+
     sp = cmdlets.Spec(force=force)
     assert sp.is_forced(token) is exp
 
