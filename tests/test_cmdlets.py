@@ -95,39 +95,30 @@ def test_Printable():
 
 
 @pytest.mark.parametrize('force, token, exp', [
-    (None, 'abc', False),
-    (None, 1, False),
-    (None, None, False),
+    ([], 'abc', False),
+    ([], None, False),
     (False, 'abc', False),
-    (False, 1, False),
+    ([], 'abc', False),
     (False, None, False),
-    (True, 'abc', True),
-    (True, 1, True),
+    ('abc', None, False),
+    (' abc ', 'abc', False),        # no stripping
+    ('abc def', ' abc ', False),    # no splitting
+    (True, 'abc', False),
+
     (True, None, True),
-
-
     ('abc', 'abc', True),
-    (1, 1, True),
-    ('2', 2, False),
-    (3, '3', False),
-    ('abc', None, True),
 
-    (None, 'abc', False),
-    (None, 1, False),
-    (None, None, False),
+    ([True, 'abc'], None, True),
+    ([True, 'FOO', 'abc'], 'abc', True),
+    ('ad bb tt gg'.split(), 'ad', True),
+    ('ad bb tt gg'.split(), 'tt', True),
+    ('ad bb tt gg'.split(), 'gg', True),
 
-    (' abc ', 'abc', True),
-    (' abc ', ' abc ', True),
-    (' abc def', ' abc ', True),
-
-    ('ad, bb,tt gg', 'ad', True),
-    ('ad, bb,tt gg', 'bb', True),
-    ('ad, bb,tt gg', 'tt', True),
-    ('ad, bb,tt gg', 'gg', True),
-
-    ('aa bb', 'aa bb', False),
+    ('aa bb', 'aa bb', True),
 ])
 def test_Spec_is_forced(force, token, exp):
+    if not isinstance(force, list):
+        force = [force]
     sp = cmdlets.Spec(force=force)
     assert sp.is_forced(token) is exp
 
@@ -149,7 +140,7 @@ def test_Enforcer():
 
     with spec.enforced(Exception, token='aa'):
         raise Exception()
-    spec.force = True
+    spec.force = [True]
     with spec.enforced(Exception):
         raise Exception()
     assert len(spec.enforced_error_tuples) == 2
@@ -158,7 +149,7 @@ def test_Enforcer():
         spec.report_enforced_errors()
     assert len(spec.enforced_error_tuples) == 0
 
-    spec.force = 'abc'
+    spec.force = ['abc']
     with spec.enforced(Exception, token='abc'):
         raise Exception()
     spec.report_enforced_errors()

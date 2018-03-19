@@ -60,8 +60,8 @@ import os.path as osp
 from . import fileutils as fu, interpctxt
 from ._vendor import traitlets as trt
 from ._vendor.traitlets import config as trc
-from ._vendor.traitlets.traitlets import Bool, List, Unicode, Int, Instance, \
-    Union as UnionTrait  # @UnresolvedImport
+from ._vendor.traitlets.traitlets import Bool, Unicode, Instance, \
+    List as ListTrait, Union as UnionTrait  # @UnresolvedImport
 from .yamlconfloader import YAMLFileConfigLoader
 
 
@@ -312,7 +312,7 @@ class CfgFilesRegistry(contextlib.ContextDecorator):
                 return dirpath
 
 
-class PathList(List):
+class PathList(ListTrait):
     """Trait that splits unicode strings on `os.pathsep` to form a the list of paths."""
     def __init__(self, *args, **kwargs):
         super().__init__(*args,
@@ -421,7 +421,7 @@ class Printable(metaclass=trt.MetaHasTraits):
     5. don't print any traits, just the class-name.
     """
     printable_traits = UnionTrait(
-        (Unicode(), List(Unicode())),
+        (Unicode(), ListTrait(Unicode())),
         #allow_none=True, default_value=None,
         help="Trait-names to include in ``__str__()``")
 
@@ -532,34 +532,30 @@ class Spec(trc.Configurable):
         config=True,
         help="Do not write files - just pretend.")
 
-    force = UnionTrait(
-        (Bool(), Int(), Unicode()),
+    force = ListTrait(
+        UnionTrait((Bool(), Unicode())),
         allow_none=True,
         config=True,
         help="Force things to perform their duties without complaints.")
 
-    def is_forced(self, token: Union[str, int, None] = None):
+    def is_forced(self, token: str = None):
         """
         Whether some action ided by `token` is allowed to go thorugh in case of errors.
 
         :param token:
-            what to search for in :attr:`force`:
+            an optional string to search for in :attr:`force`:
             - if string, it is searched in the comma/space separated string `force`.
-            - if an integer, it is compared for equality with `force`;
-            - if `None`, `force` evaluating to true is enough.
+            - if `None`, `True` must be in `force`.
         """
-        assert token is None or isinstance(token, (int, str))
+        assert token is None or isinstance(token, str), token
         force = self.force
-        if force in (True, False) or token is None:
-            return bool(force)
+        if False in force:
+            return False
 
-        if all(isinstance(i, int) for i in (force, token)) and force == token:
-            return True
+        if token is None:
+            return True in force
 
-        if all(isinstance(i, str) for i in (force, token)):
-            return token.strip() in re.split(r'[, ]+', force)
-
-        return False
+        return token in force
 
     #: List of 3 tuples (action, raise_later, ex) maintained by :class:`Enforcer`
     #: through `meth:`enforced`.
@@ -567,7 +563,7 @@ class Spec(trc.Configurable):
 
     def enforced(self,
                  *exceptions: Exception,
-                 token: str = False,
+                 token: str = None,
                  action=None,
                  raise_immediately=False):
         """
@@ -1010,7 +1006,7 @@ class Cmd(trc.Application, Spec):
         with io.open(config_file, mode='wt') as fp:
             fp.write(config_text)
 
-    all_app_configurables = List(
+    all_app_configurables = ListTrait(
         help="""
         A sequence of all app configurables to feed into `config` sub-command.
 
