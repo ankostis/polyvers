@@ -546,6 +546,9 @@ class Spec(trc.Configurable):
             an optional string to search for in :attr:`force`:
             - if string, it is searched in the comma/space separated string `force`.
             - if `None`, `True` must be in `force`.
+
+        .. Note::
+           prefer using it via :class:`Enforcer` contextman.
         """
         assert token is None or isinstance(token, str), token
         force = self.force
@@ -655,7 +658,8 @@ class Enforcer(trt.HasTraits):
       as a pre-formatted message, or raised.
 
     :param spec:
-        the spec instance to search :attr:`Spec.force` for the token
+        the spec instance to search :attr:`Spec.force` for the token,
+        and to append collected errors in :attr:`Spec.enforced_error_tuples`.
     :param exceptions:
         the exceptions to suppress
     :param token:
@@ -680,7 +684,7 @@ class Enforcer(trt.HasTraits):
         self.exceptions = exceptions
         self.token = token
         self.raise_immediately = raise_immediately
-        self._action = action
+        self.action = action
 
     def __enter__(self):
         """Return `self` upon entering the runtime context."""
@@ -693,13 +697,13 @@ class Enforcer(trt.HasTraits):
             if is_forced or not self.raise_immediately:
                 #excinst = excinst.with_traceback(exctb)
                 raise_later = not is_forced
-                spec.enforced_error_tuples.append((self._action,
+                spec.enforced_error_tuples.append((self.action,
                                                    raise_later,
                                                    excinst))
                 if log.isEnabledFor(logging.DEBUG):
                     getattr(spec, 'log', log).debug(
                         "Collected %s",
-                        self.format_err_tuple(self._action, raise_later, excinst),
+                        self.format_err_tuple(self.action, raise_later, excinst),
                         exc_info=excinst)
                 return True
 
