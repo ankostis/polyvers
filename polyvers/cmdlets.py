@@ -46,7 +46,7 @@ Of course you can mix'n match.
 
 from collections import OrderedDict
 from os import PathLike
-from typing import Any, Union, Tuple, Optional  # noqa: F401 @UnusedImport
+from typing import Any, List, Union, Tuple, Optional, Sequence  # noqa: F401 @UnusedImport
 import contextlib
 import io
 import logging
@@ -60,8 +60,8 @@ import os.path as osp
 from . import fileutils as fu, interpctxt
 from ._vendor import traitlets as trt
 from ._vendor.traitlets import config as trc
-from ._vendor.traitlets.traitlets import Bool, Unicode, Instance, \
-    List as ListTrait, Union as UnionTrait  # @UnresolvedImport
+from ._vendor.traitlets.traitlets import Bool, CBool, Unicode, Instance, \
+    List as ListTrait, Type as TypeTrait, Union as UnionTrait  # @UnresolvedImport
 from .yamlconfloader import YAMLFileConfigLoader
 
 
@@ -93,7 +93,7 @@ def _set_also_read_only_trait_values(self, **trait_values):
         self.set_trait(k, v)
 
 
-trt.HasTraits.set_trait_values = _set_also_read_only_trait_values
+trt.HasTraits.set_trait_values = _set_also_read_only_trait_values  # type: ignore
 
 
 _no_app_help_message = "<Help for '%s' is missing>"
@@ -485,7 +485,7 @@ def _travel_parents(self) -> trc.Configurable:
     return self
 
 
-trc.Configurable.root_object = _travel_parents
+trc.Configurable.root_object = _travel_parents  # type: ignore
 
 
 def _travel_parents_untill_active_cmd(self, scream=False) -> trc.Application:
@@ -513,7 +513,7 @@ def _travel_parents_untill_active_cmd(self, scream=False) -> trc.Application:
 
 
 #: NOT USED!!
-trc.Configurable.active_subcmd = _travel_parents_untill_active_cmd
+trc.Configurable.active_subcmd = _travel_parents_untill_active_cmd  # type: ignore
 
 
 class Spec(trc.Configurable):
@@ -570,68 +570,53 @@ class Spec(trc.Configurable):
             return True
         return isinstance(token, str) and '*' in force
 
-    #: List of 3 tuples (action, raise_later, ex) maintained by :class:`Enforcer`
-    #: through `meth:`enforced`.
-    enforced_error_tuples: 'List[Tuple[Any, bool, Exception]]' = []
-
-    def enforced(self,
-                 *exceptions: Exception,
-                 token: str = None,
-                 action=None,
-                 raise_immediately=False):
+    @contextlib.contextmanager
+    def errlog(self,
+               exceptions: Union[Exception, Sequence[Exception]] = (),
+               token: Union[bool, str] = None,
+               action=None,
+               raise_immediately=False,
+               doing=''):
         """
-        Returns an :class:`Enforcer` that collects (and suppress) errors from context-body.
+        Run cntxt-body via :class:`ErrLog` and report collected errors at exit.
 
         :param exceptions:
-            the exceptions to suppress
+            Default for :class:`ErrLog` contructor value.
         :param token:
-            the token that when in :attr:`Spec.force`, the errors is suppressed;
-            if missing, any true `force` value supresses the error.
-            See :meth:`Spec.is_forced` for acceptable values.
+            Default for :class:`ErrLog` contructor value.
         :param action:
-            a label used to mark errors collected
+            Default for :class:`ErrLog` contructor value.
         :param raise_immediately:
-            if not forced, do not wait for `collected_errors()` call to raise them.
+            Default for :class:`ErrLog` contructor value.
+        :param doing:
+            See :meth:`ErrLog.report_errors()`
 
         - See :class:`Enforce` for details.
-        - Example of using the same enforcer for multiple actions in a loop::
+        - Example of using this method for multiple actions in a loop::
 
-              for fpath in file_paths:
-                  with self.enforced(Exception, token='fread', action=fpath):
-                      fbytes.append(fpath.read_bytes())
-              self.report_enforced_errors("reading X-files")
+              def read_x_files(spec: Spec):
+                  with spec.errlog(IOError,
+                                     doing="reading X-files",
+                                     token='fread') as errlog:
+                      for fpath in file_paths:
+                          with errlog.forcing(action=fpath):
+                              fbytes.append(fpath.read_bytes())
+
+                  # Any errors collected will be raised or WARNed here.
 
         """
-        return Enforcer(self, exceptions,
+        errlog = ErrLog(self,
+                        exceptions,
                         token=token, action=action,
                         raise_immediately=raise_immediately)
-
-    def report_enforced_errors(self, activity=None) -> Optional[str]:
-        """
-        Raise or return spec's collected errors, and clears the error-list.
-
-        :param activity:
-            something like "reading X-files" to include in the error-message
-        :return:
-            the errors collected in a pre-formatted message, if any
-        :raise CmdException:
-            with any non-forced collected errors
-        """
-        etuples = self.enforced_error_tuples
-        if etuples:
-            erlines = ''.join('\n  %s' % Enforcer.format_err_tuple(*etuple)
-                              for etuple in etuples)
-            activity = ' while %s' % activity if activity else ''
-            err_args = (len(etuples), activity, erlines)
-
-            self.enforced_error_tuples = []
-
-            if any(raise_later for _, raise_later, _ in etuples):
-                msg = "Collected %i error(s)%s: %s"
-                raise CmdException(msg % err_args)
-            else:
-                msg = "Bypassed %i \"forced\" error(s)%s: %s"
-                return getattr(self, 'log', log).warning(msg % err_args)
+        ok = False
+        try:
+            yield errlog
+            ok = True
+        finally:
+            if not ok:
+                doing = ' '.join([doing, "failed unexpectedly"])
+            errlog.report_errors(doing, no_raise=not ok)
 
     interpolations = cmdlets_interpolations
 
@@ -654,7 +639,7 @@ class Spec(trc.Configurable):
             return text.format_map(ctxt)
 
 
-class Enforcer(trt.HasTraits):
+class ErrLog(Spec):
     """
     A contextman collecting errors or "forced" or suppressed, in a :class:`Spec` error-list.
 
@@ -667,52 +652,94 @@ class Enforcer(trt.HasTraits):
       on DEBUG, and return later, when :meth:`collected_errors()` is called,
       as a pre-formatted message, or raised.
 
-    :param spec:
-        the spec instance to search :attr:`Spec.force` for the token,
-        and to append collected errors in :attr:`Spec.enforced_error_tuples`.
-    :param exceptions:
+    :ivar spec:
+        the spec instance to search in its :attr:`Spec.force` for the token
+    :ivar exceptions:
         the exceptions to suppress
-    :param token:
-        the :attr:`force` token to respect
-    :param raise_immediately:
+    :ivar token:
+        the :attr:`force` token to respect, like :meth:`Spec.is_force()`,
+        with `False` also in the possible values:
+          - `False`: (default) completely ignore `force` trait
+            (used by :meth:`collecting()`;
+          - <a string>: search for this token in `force` trait;
+          - `None`: forces only if :attr:`force``force` is `True`.
+
+        All 3 values are possible values can be given in constructor
+        or is :meth:`forcing()`.
+    :ivar raise_immediately:
         if not forced, do not wait for `collected_errors()` call to raise them;
-        set it to true if used as a function decorator.
-    :param log_level:
+        set it to true if used as a function decorator.  Also when --debug.
+    :ivar log_level:
         the logging level to use when just reporting errors.
         Note that all errors are always reported immediately on DEBUG.
 
-    See :meth:`Spec.enforced()` for example.
+    :ivar enforced_error_tuples:
+        list of 3-tuples (action, raise_later, ex) maintained by :class:`ErrLog`
+
+    See :meth:`Spec.errlog()` for example.
     """
-    spec: Spec = Instance(Spec)
+    spec = Instance(Spec)
+    exceptions = ListTrait(TypeTrait(Exception))
+    token = UnionTrait((Unicode(), Bool()), allow_none=True)
+    raise_immediately = CBool()
+
+    def forcing(self,
+                exceptions: Union[Exception, Sequence[Exception]] = (),
+                token: Union[bool, str, None] = True,
+                action=None,  # `None` means a `True` in `force` will enact it
+                raise_immediately=None):
+        if exceptions:
+            if not isinstance(exceptions, (list, tuple)):
+                exceptions = [exceptions]  # type: ignore
+            self.exceptions = exceptions
+        if token is not None:
+            self.token = token
+        if raise_immediately is not None:
+            self.raise_immediately = raise_immediately
+        if action is not None:
+            self.action = action
+
+        return self
+
+    def collecting(self,
+                   exceptions: Union[Exception, Sequence[Exception]] = (),
+                   action=None,
+                   raise_immediately=None):
+        return self.forcing(exceptions,
+                            token=False,  # locked as "non-forced"
+                            action=action,
+                            raise_immediately=raise_immediately)
 
     def __init__(self,
-                 spec: Spec,
-                 exceptions: Exception,
-                 token, action,
-                 raise_immediately: bool):
-        self.spec = spec
-        self.exceptions = exceptions
-        self.token = token
-        self.raise_immediately = raise_immediately
-        self.action = action
+                 parent: Spec,
+                 exceptions: Union[Exception, Sequence[Exception]] = (),
+                 token: Union[bool, str, None] = False,  # Start as collecting only
+                 action=None,
+                 raise_immediately=False,
+                 ) -> None:
+        self.parent = parent  # to inherit configs
+        self.forcing(exceptions,  # Use `forcing()` to pass any `token`.
+                     token=token,
+                     action=action,
+                     raise_immediately=raise_immediately)
+        self.enforced_error_tuples: List[Tuple[Any, bool, Exception]] = []
 
     def __enter__(self):
         """Return `self` upon entering the runtime context."""
         return self
 
-    def __exit__(self, exctype, excinst, exctb):
-        if exctype is not None and issubclass(exctype, self.exceptions):
-            spec = self.spec
-            is_forced = spec.is_forced(self.token)
+    def __exit__(self, exctype, excinst, _exctb):
+        if exctype is not None and issubclass(exctype, tuple(self.exceptions)):
+            is_forced = self.is_forced(self.token)
             if is_forced or not self.raise_immediately:
-                #excinst = excinst.with_traceback(exctb)
+                #excinst = excinst.with_traceback(exctb)  # Ex already has it.
                 raise_later = not is_forced
-                spec.enforced_error_tuples.append((self.action,
+                self.enforced_error_tuples.append((self.action,
                                                    raise_later,
                                                    excinst))
                 if log.isEnabledFor(logging.DEBUG):
-                    getattr(spec, 'log', log).debug(
-                        "Collected %s",
+                    getattr(self.parent, 'log', log).debug(
+                        "Collecting %s",
                         self.format_err_tuple(self.action, raise_later, excinst),
                         exc_info=excinst)
                 return True
@@ -726,6 +753,35 @@ class Enforcer(trt.HasTraits):
                                                action, type(ex).__name__, ex)
         return "%serror %s(%s)" % ('' if raise_later else '"forced" ',
                                    type(ex).__name__, ex)
+
+    def report_errors(self, doing=None, no_raise=False) -> None:
+        """
+        Raise or return spec's collected errors.
+
+        :param doing:
+            A label for the activity, included in the final err-message reported,
+            e.g. "reading X-files",
+        :param no_raise:
+            Log-report errors, even if non "forced" ones collected.
+        :raise CmdException:
+            with any non-forced collected errors
+        """
+        etuples = self.enforced_error_tuples
+        if etuples:
+            erlines = ''.join('\n  %s' % ErrLog.format_err_tuple(*etuple)
+                              for etuple in etuples)
+            doing = ' while %s' % doing if doing else ''
+            err_args = (len(etuples), doing, erlines)
+            any_raise_later = any(raise_later for _, raise_later, _ in etuples)
+
+            if no_raise or not any_raise_later:
+                msg = ("Suppressed %i error(s)%s: %s"
+                       if any_raise_later else
+                       "Bypassed %i error(s)%s: %s")
+                getattr(self.parent, 'log', log).warning(msg, *err_args)
+            else:
+                msg = "Collected %i error(s)%s: %s"
+                raise CmdException(msg % err_args)
 
 
 class Cmd(trc.Application, Spec):
@@ -1250,7 +1306,7 @@ def class_config_yaml(cls, outer_cfg, classes=None):
         cfg.yaml_set_comment_before_after_key(name, before='\n'.join(trait_lines))
 
 
-trc.Configurable.class_config_yaml = classmethod(class_config_yaml)
+trc.Configurable.class_config_yaml = classmethod(class_config_yaml)  # type: ignore
 
 
 def generate_config_file_yaml(self, classes=None):
@@ -1268,4 +1324,4 @@ def generate_config_file_yaml(self, classes=None):
     return cfg
 
 
-trc.Application.generate_config_file_yaml = generate_config_file_yaml
+trc.Application.generate_config_file_yaml = generate_config_file_yaml  # type: ignore

@@ -15,6 +15,7 @@ from polyvers.cli import ydumps
 from polyvers.logconfutils import init_logging
 import logging
 import os
+import re
 import tempfile
 
 from ruamel.yaml.comments import CommentedMap
@@ -142,36 +143,67 @@ def test_Spec_is_forced(force, token, exp):
     assert sp.is_forced(token) is exp
 
 
-def test_Enforcer():
+def test_ErrLog_non_forced_errors(caplog):
     level = logging.DEBUG
     logging.basicConfig(level=level)
     logging.getLogger().setLevel(level)
     spec = cmdlets.Spec()
-    enforcer = cmdlets.Enforcer(spec, Exception, 'kento', 'fire', False)
+
+    enforcer = cmdlets.ErrLog(spec, (IOError, ValueError), action='fire')
     with enforcer:
-        raise Exception("Wrong!")
+        raise IOError("Wrong!")
+    assert len(enforcer.enforced_error_tuples) == 1
+    with enforcer.collecting():  # check default `token` value
+        raise IOError("Wrong!")
+    assert len(enforcer.enforced_error_tuples) == 2
 
-    assert len(spec.enforced_error_tuples) == 1
+    with pytest.raises(cmdlets.CmdException,
+                       match="Collected 2 error") as ex_info:
+        enforcer.report_errors()
+    assert '"forced"' not in str(ex_info.value)
 
-    with pytest.raises(cmdlets.CmdException, match="Collected 1 error"):
-        spec.report_enforced_errors()
-    assert len(spec.enforced_error_tuples) == 0
+    ## Mixed case still raises
+    #
+    enforcer.force = [True]
+    with enforcer.forcing():
+        raise IOError()
+    assert len(enforcer.enforced_error_tuples) == 3
 
-    with spec.enforced(Exception, token='aa'):
+    with pytest.raises(cmdlets.CmdException) as ex_info:
+        enforcer.report_errors()
+    assert "Collected 3 error" in str(ex_info.value)
+    enforcer.report_errors(no_raise=True)
+    assert "Suppress" in caplog.text
+
+    ## Check raise_immediately
+    #
+    with enforcer.forcing(token=False, raise_immediately=True):
+        with pytest.raises(IOError) as ex_info:
+            raise IOError("STOP!")
+    assert "Collected" not in str(ex_info.value)
+
+
+def test_ErrLog_forced_errors(caplog):
+    level = logging.DEBUG
+    logging.basicConfig(level=level)
+    logging.getLogger().setLevel(level)
+    spec = cmdlets.Spec()
+
+    enforcer = cmdlets.ErrLog(spec, Exception,
+                              token='kento', action='fire')
+
+    enforcer.force = ['aa']
+    with enforcer.forcing(token='aa'):
         raise Exception()
-    spec.force = [True]
-    with spec.enforced(Exception):
+    enforcer.force.append(True)
+    with enforcer.forcing():
         raise Exception()
-    assert len(spec.enforced_error_tuples) == 2
+    assert len(enforcer.enforced_error_tuples) == 2
 
-    with pytest.raises(cmdlets.CmdException):
-        spec.report_enforced_errors()
-    assert len(spec.enforced_error_tuples) == 0
-
-    spec.force = ['abc']
-    with spec.enforced(Exception, token='abc'):
-        raise Exception()
-    spec.report_enforced_errors()
+    enforcer.report_errors()
+    assert re.search('DEBUG +Collecting "forced" error', caplog.text)
+    assert re.search('WARNING +Bypassed 2 error', caplog.text)
+    assert "Suppress" not in caplog.text
 
 
 def test_CfgFilesRegistry_consolidate_posix_1():
