@@ -537,7 +537,7 @@ class Spec(trc.Configurable):
         config=True,
         help="Force things to perform their duties without complaints.")
 
-    def is_forced(self, token: Union[str, bool] = None):
+    def is_forced(self, token: Union[str, bool] = True):
         """
         Whether some action ided by `token` is allowed to go thorugh in case of errors.
 
@@ -546,32 +546,29 @@ class Spec(trc.Configurable):
             to the following table::
 
                                token:
-                                    |FALSE|TRUE|"str"|NONE|
-                 force-element:     |-----|----|-----|----|
-                      [], '-', FALSE|  X  |  X |  X  | X  |
-                           '*', TRUE|  X  |  O |  O  | O  |
-                               "str"|  X  |  X |  O  | X  |
+                                    |NONE |
+                                    |FALSE|TRUE|"str"|
+                 force-element:     |-----|----|-----|
+                           [], FALSE|  X  |  X |  X  |
+                                TRUE|  X  |  O |  X  |
+                                 '*'|  X  |  X |  O  |
+                               "str"|  X  |  X |  =  |
 
-            - Empty cells mean "check other values in `force` list".
             - Rows above, win; columns to the left win.
-            - Value `None` is forbiddden for :attr:`force`.
+            - To catch all tokens, use ``--force=true, --force='*'``
 
         .. Note::
            prefer using it via :class:`ErrLog` contextman.
         """
         assert token is None or isinstance(token, (bool, str)), token
-        force = self.force
+        force = set(self.force)
 
-        if token is False or not force:
+        if not token or not force or False in force:
             return False
 
-        force = set(False if el == '-' else el == '*' or el
-                    for el in force)
-
-        if False in force:
-            return False
-
-        return bool(set((True, token)) & force)
+        if token in force:
+            return True
+        return isinstance(token, str) and '*' in force
 
     #: List of 3 tuples (action, raise_later, ex) maintained by :class:`Enforcer`
     #: through `meth:`enforced`.

@@ -102,27 +102,33 @@ def test_Printable():
     (False, 'abc', False),
     ([], 'abc', False),
     ('abc', None, False),
-    (' abc ', 'abc', False),        # no stripping
-    ('abc def', ' abc ', False),    # no splitting
+    (' abc ', 'abc', False),    # no stripping
+    ('abc def', ' abc ', False),  # no splitting
 
-    (True, None, True),
-    (True, 'abc', True),
+    (True, None, False),
+    (True, False, False),
+    ('*', None, False),
+    ('*', False, False),
+    (True, 'abc', False),
+
     ('abc', 'abc', True),
+    ('*', 'abc', True),
 
-    ([False, 'abc'], None, False),
+    ## False force short-circuits to false.
+    #
     ([True, 'abc', False], None, False),
+    ([False, 'abc'], None, False),
+    (['*', 'abc'], True, False),
     ([True, 'abc', False], 'abc', False),
-
-    ([True, False], None, False),
+    ([True, '*', 'abc', False], 'abc', False),
     ([True, False], True, False),
     ([False, True], True, False),
-    ([False, True], 'abc', False),
-    ([False, True, 'abc'], 'abc', False),
 
-    ([True, 'abc'], None, True),
     ([True, 'abc', True, ], 'abc', True),
     ([True, 'FOO', 'abc'], 'abc', True),
-    ([True, 'BAD'], 'abc', True),
+    ([True, 'FOO', '*'], 'abc', True),
+    ([True, 'BAD'], True, True),
+    ([True, '*'], True, True),
     ('ad bb tt gg'.split(), 'ad', True),
     ('ad bb tt gg'.split(), 'tt', True),
     ('ad bb tt gg'.split(), 'gg', True),
@@ -132,18 +138,6 @@ def test_Printable():
 def test_Spec_is_forced(force, token, exp):
     if not isinstance(force, list):
         force = [force]
-    sp = cmdlets.Spec(force=force)
-    assert sp.is_forced(token) is exp
-
-    ## Check also string-symbols for True/False.
-    #
-    if False in force:
-        force = ['-' if f is False else f
-                 for f in force]
-    if True in force:
-        force = ['*' if f is True else f
-                 for f in force]
-
     sp = cmdlets.Spec(force=force)
     assert sp.is_forced(token) is exp
 
