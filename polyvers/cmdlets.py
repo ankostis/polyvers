@@ -46,6 +46,7 @@ Of course you can mix'n match.
 
 from collections import OrderedDict
 from os import PathLike
+from typing import Union
 import contextlib
 import io
 import logging
@@ -59,7 +60,8 @@ import os.path as osp
 from . import fileutils as fu, interpctxt
 from ._vendor import traitlets as trt
 from ._vendor.traitlets import config as trc
-from ._vendor.traitlets.traitlets import Bool, List, Unicode, Int, Instance, Union
+from ._vendor.traitlets.traitlets import Bool, List, Unicode, Int, Instance, \
+    Union as UnionTrait  # @UnresolvedImport
 from .yamlconfloader import YAMLFileConfigLoader
 
 
@@ -311,7 +313,7 @@ class PathList(List):
     """Trait that splits unicode strings on `os.pathsep` to form a the list of paths."""
     def __init__(self, *args, **kwargs):
         super().__init__(*args,
-                         trait=Union((Unicode(), Instance(PathLike))),
+                         trait=UnionTrait((Unicode(), Instance(PathLike))),
                          **kwargs)
 
     def validate(self, obj, value):
@@ -415,7 +417,7 @@ class Printable(metaclass=trt.MetaHasTraits):
        and if no traits found,
     5. don't print any traits, just the class-name.
     """
-    printable_traits = Union(
+    printable_traits = UnionTrait(
         (Unicode(), List(Unicode())),
         #allow_none=True, default_value=None,
         help="Trait-names to include in ``__str__()``")
@@ -527,14 +529,34 @@ class Spec(trc.Configurable):
         config=True,
         help="Do not write files - just pretend.")
 
-    force = Union(
+    force = UnionTrait(
         (Bool(), Int(), Unicode()),
         allow_none=True,
         config=True,
         help="Force things to perform their duties without complaints.")
 
-    def is_force(self, token):
-        return self.force in (True, token)
+    def is_forced(self, token: Union[str, int, None] = None):
+        """
+        Whether some action ided by `token` is allowed to go thorugh in case of errors.
+
+        :param token:
+            what to search for in :attr:`force`:
+            - if string, it is searched in the comma/space separated string `force`.
+            - if an integer, it is compared for equality with `force`;
+            - if `None`, `force` evaluating to true is enough.
+        """
+        assert token is None or isinstance(token, (int, str))
+        force = self.force
+        if force in (True, False) or token is None:
+            return bool(force)
+
+        if all(isinstance(i, int) for i in (force, token)) and force == token:
+            return True
+
+        if all(isinstance(i, str) for i in (force, token)):
+            return token.strip() in re.split(r'[, ]+', force)
+
+        return False
 
     interpolations = cmdlets_interpolations
 

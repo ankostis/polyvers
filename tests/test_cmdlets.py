@@ -94,6 +94,44 @@ def test_Printable():
     assert set(D()._decide_printable_traits()) == {'c', 'd'}
 
 
+@pytest.mark.parametrize('force, token, exp', [
+    (None, 'abc', False),
+    (None, 1, False),
+    (None, None, False),
+    (False, 'abc', False),
+    (False, 1, False),
+    (False, None, False),
+    (True, 'abc', True),
+    (True, 1, True),
+    (True, None, True),
+
+
+    ('abc', 'abc', True),
+    (1, 1, True),
+    ('2', 2, False),
+    (3, '3', False),
+    ('abc', None, True),
+
+    (None, 'abc', False),
+    (None, 1, False),
+    (None, None, False),
+
+    (' abc ', 'abc', True),
+    (' abc ', ' abc ', True),
+    (' abc def', ' abc ', True),
+
+    ('ad, bb,tt gg', 'ad', True),
+    ('ad, bb,tt gg', 'bb', True),
+    ('ad, bb,tt gg', 'tt', True),
+    ('ad, bb,tt gg', 'gg', True),
+
+    ('aa bb', 'aa bb', False),
+])
+def test_Spec_is_forced(force, token, exp):
+    sp = cmdlets.Spec(force=force)
+    assert sp.is_forced(token) is exp
+
+
 def test_CfgFilesRegistry_consolidate_posix_1():
     visited = [
         ('/d/foo/bar/.appname', None),
