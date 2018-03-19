@@ -178,7 +178,7 @@ class ConfigCmd(_ConfigBase):
             cmdlets.Spec.verbose.help
         ),
         ('n', 'dry-run'): (
-            {'Spec': {'force': True}},
+            {'Spec': {'dry_run': True}},
             cmdlets.Spec.dry_run.help
         ),
         **cmdlets.Cmd.flags  # @UndefinedVariable
@@ -226,7 +226,7 @@ class WriteCmd(_ConfigBase):
         self.classes = all_configurables(self)
         args = args or [None]
         for fpath in args:
-            self.write_default_config(fpath, self.force)
+            self.write_default_config(fpath, self.is_forced('foverwrite'))
 
 
 class InfosCmd(_ConfigBase):
