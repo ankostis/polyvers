@@ -354,8 +354,14 @@ class Replaceable:
         return clone
 
     def replace(self, **changes):
-        clone = type(self)()
-        clone.set_trait_values(**self.trait_values())
+        from copy import copy
+
+        clone = copy(self)
+        clone._trait_values = self._trait_values.copy()
+        clone._trait_notifiers = self._trait_notifiers.copy()
+        clone._trait_validators = self._trait_validators.copy()
+        clone._cross_validation_lock = False
+
         clone.set_trait_values(**changes)
 
         return clone
