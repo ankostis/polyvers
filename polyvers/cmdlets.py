@@ -598,25 +598,14 @@ class Spec(trc.Configurable):
         """
         Run cntxt-body via :class:`ErrLog` and report collected errors at exit.
 
-        :param exceptions:
-            Default for :class:`ErrLog` contructor value.
-        :param token:
-            Default for :class:`ErrLog` contructor value.
-        :param action:
-            Default for :class:`ErrLog` contructor value.
-        :param raise_immediately:
-            Default for :class:`ErrLog` contructor value.
-        :param doing:
-            See :meth:`ErrLog.report_errors()`
-
-        - See :class:`Enforce` for details.
+        - See :class:`ErrLog` for params.
         - Example of using this method for multiple actions in a loop::
 
               with self.errlog(IOError,
                                doing="reading X-files",
                                token='fread') as errlog:
                   for fpath in file_paths:
-                      with errlog.delayed(token='fread', action=fpath):
+                      with errlog.delayed(action=fpath):
                           fbytes.append(fpath.read_bytes())
 
               # Any errors collected will be raised or WARNed here.
@@ -634,7 +623,7 @@ class Spec(trc.Configurable):
             if not ok:
                 doing = ' '.join([doing, "failed unexpectedly"])
             errlog.report_errors(doing, no_raise=not ok)
-            errlog._enforced_error_tuples = []  # Avoid stacktrace memleaks.
+
     interpolations = cmdlets_interpolations
 
 
@@ -720,7 +709,8 @@ class ErrLog(Spec):
 
     def __exit__(self, exctype, excinst, _exctb):
         if exctype is not None and issubclass(exctype, tuple(self.exceptions)):
-            is_forced = self.is_forced(self.token)
+            is_forced_meth = getattr(self.parent, 'is_forced', self.is_forced)
+            is_forced = is_forced_meth(self.token)
             if is_forced or not self.raise_immediately:
                 #excinst = excinst.with_traceback(exctb)  # Ex already has it.
                 raise_later = not is_forced

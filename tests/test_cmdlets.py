@@ -164,7 +164,7 @@ def test_ErrLog_non_forced_errors(caplog):
 
     ## Mixed case still raises
     #
-    errlog.force = [True]
+    spec.force = [True]
     with errlog.delayed(token=True):
         raise IOError()
     assert len(errlog._enforced_error_tuples) == 3
@@ -192,10 +192,10 @@ def test_ErrLog_forced_errors(caplog):
     errlog = cmdlets.ErrLog(spec, Exception,
                             token='kento', action='fire')
 
-    errlog.force = ['aa']
+    spec.force = ['aa']
     with errlog.delayed(token='aa'):
         raise Exception()
-    errlog.force.append(True)
+    spec.force.append(True)
     with errlog.delayed(token=True):
         raise Exception()
     assert len(errlog._enforced_error_tuples) == 2
