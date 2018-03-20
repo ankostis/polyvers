@@ -35,6 +35,14 @@ log = logging.getLogger(__name__)
 mydir = osp.dirname(__file__)
 
 
+@pytest.fixture
+def forceable():
+    class Processor(cmdlets.Forceable, trt.HasTraits):
+        pass
+
+    return Processor()
+
+
 def test_Replaceable():
     class C(trt.HasTraits, cmdlets.Replaceable):
         a = Int()
@@ -136,16 +144,15 @@ def test_Printable():
 
     ('aa bb', 'aa bb', True),
 ])
-def test_Spec_is_forced(force, token, exp):
+def test_Forceable_is_forced(force, token, exp):
     if not isinstance(force, list):
         force = [force]
     sp = cmdlets.Spec(force=force)
     assert sp.is_forced(token) is exp
 
 
-def test_ErrLog():
-    spec = cmdlets.Spec()
-    errlog = cmdlets.ErrLog(spec, IOError, ValueError, doing='fire')
+def test_ErrLog(forceable):
+    errlog = cmdlets.ErrLog(forceable, IOError, ValueError, doing='fire')
     #TODO assert not errlog._build_error_message()
 
     with errlog(token='gg') as errlog2:
@@ -157,15 +164,14 @@ def test_ErrLog():
     ## TODO: check stacked errlog messages
 
 
-def test_ErrLog_non_forced_errors(caplog):
+def test_ErrLog_non_forced_errors(caplog, forceable):
     level = logging.DEBUG
     logging.basicConfig(level=level)
     logging.getLogger().setLevel(level)
-    spec = cmdlets.Spec()
 
     clearlog(caplog)
 
-    errlog = cmdlets.ErrLog(spec, IOError, ValueError)
+    errlog = cmdlets.ErrLog(forceable, IOError, ValueError)
     with errlog:
         raise IOError("Wrong!")
     assert len(errlog._enforced_error_tuples) == 1
@@ -185,7 +191,7 @@ def test_ErrLog_non_forced_errors(caplog):
     ## Mixed case still raises
     #
     clearlog(caplog)
-    spec.force = [True]
+    forceable.force = [True]
     with errlog():  # check default `token` value
         raise IOError("Wrong!")
     with errlog(token=True):
@@ -213,19 +219,18 @@ def test_ErrLog_non_forced_errors(caplog):
     assert "Collected" not in str(ex_info.value)
 
 
-def test_ErrLog_forced_errors(caplog):
+def test_ErrLog_forced_errors(caplog, forceable):
     level = logging.DEBUG
     logging.basicConfig(level=level)
     logging.getLogger().setLevel(level)
-    spec = cmdlets.Spec()
 
-    errlog = cmdlets.ErrLog(spec, Exception,
+    errlog = cmdlets.ErrLog(forceable, Exception,
                             token='kento')
 
-    spec.force = ['kento']
+    forceable.force = ['kento']
     with errlog():
         raise Exception()
-    spec.force.append(True)
+    forceable.force.append(True)
     with errlog(doing='looting', token=True):
         raise Exception()
     assert len(errlog._enforced_error_tuples) == 2

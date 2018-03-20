@@ -479,107 +479,8 @@ class Printable(metaclass=trt.MetaHasTraits):
         return '%s(%s)' % (cls_name, trait_values_msg)
 
 
-class CmdletsInterpolation(interpctxt.InterpolationContext):
-    """
-    Adds `cmdlets_map` into interp-manager for for help & cmd mechanics.
-
-    Client-code may add more dicts in `interpolation_context.maps` list.
-    """
-    def __init__(self, *args, **kw):
-        super().__init__(*args, **kw)
-        self.cmdlets_map = {
-            'appname': '<APP>',
-            'cmd_chain': '<CMD>',
-        }
-        self.maps.append(self.cmdlets_map)
-
-
-#: That's the singleton interp-manager used by all cmdlet configurables.
-cmdlets_interpolations = CmdletsInterpolation()
-
-
-def _travel_parents(self) -> trc.Configurable:
-    """
-    Utility to travel up parent-chain.
-
-    :return:
-        the top parent (or self if no parents)
-    """
-    while self.parent:
-        self = self.parent
-    return self
-
-
-trc.Configurable.root_object = _travel_parents  # type: ignore
-
-
-def _travel_parents_untill_active_cmd(self, scream=False) -> trc.Application:
-    """
-    Utility to travel up parent-chain until the active subcmd is met.
-
-    :return:
-        the active subcmd, or None if not `scream`
-    :raise AssertionError:
-        if `scream` and no active subcmd found
-    """
-    def test_app(app):
-        return getattr(app, 'subapp', False) is None
-
-    while self.parent:
-        if test_app(self):
-            return self
-        self = self.parent
-
-    if test_app(self):
-        return self
-
-    if scream:
-        raise AssertionError('ROOTED!')
-
-
-#: NOT USED!!
-trc.Configurable.active_subcmd = _travel_parents_untill_active_cmd  # type: ignore
-
-
-class Spec(trc.Configurable):
-    @classmethod
-    def class_get_help(cls, inst=None):
-        text = super().class_get_help(inst)
-        obj = inst if inst else cls
-        with obj.interpolations.ikeys(obj, stub_keys=True) as ctxt:
-            return text.format_map(ctxt)
-
-    @classmethod
-    def class_get_trait_help(cls, trait, inst=None, helptext=None):
-        text = super().class_get_trait_help(trait, inst=None, helptext=None)
-        obj = inst if inst else cls
-        ## Stub missing keys because some trait-values may contain
-        #  interpolation patterns themselves (to be expanded on runtime),
-        #  so allow them to print.
-        #
-        with obj.interpolations.ikeys(obj, stub_keys=True) as ctxt:
-            return text.format_map(ctxt)
-
-    @property
-    def plog(self) -> logging.Logger:
-        """Search log property up the `parent` hierarchy."""
-        return getattr(self, 'log', getattr(self.parent, 'plog', log))
-
-    verbose = Bool(
-        allow_none=True,
-        config=True,
-        help="Repeated use increase logging-level from WARNING-->INFO-->DEBUG.")
-
-    debug = Bool(
-        allow_none=True,
-        config=True,
-        help="Change certain actions, to discover possible problems.")
-
-    dry_run = Bool(
-        allow_none=True,
-        config=True,
-        help="Do not write files - just pretend.")
-
+class Forceable(metaclass=trt.MetaHasTraits):
+    """Mixin to facilitate "forcing" actions by ignoring/delaying their errors. """
     force = ListTrait(
         UnionTrait((Bool(), Unicode())),
         config=True,
@@ -650,10 +551,8 @@ class Spec(trc.Configurable):
                       raise_immediately=raise_immediately,
                       log_level=log_level)
 
-    interpolations = cmdlets_interpolations
 
-
-class ErrLog(Spec, Replaceable):
+class ErrLog(Replaceable, trt.HasTraits):
     """
     A contextman collecting or "forcing" errors in a :class:`Spec` error-list.
 
@@ -690,15 +589,24 @@ class ErrLog(Spec, Replaceable):
 
     See :meth:`Spec.errlog()` for example.
     """
-    parent = Instance(Spec)
+    parent = Instance(Forceable)
     exceptions = ListTrait(TypeTrait(Exception))
     token = UnionTrait((Unicode(), Bool()), allow_none=True)
     doing = Unicode(None, allow_none=True)
     raise_immediately = CBool()
     log_level = UnionTrait((Int(), Unicode()))
 
+    @property
+    def plog(self) -> logging.Logger:
+        """Search log property up the `parent` hierarchy."""
+        return getattr(self.parent, 'log', log)
+
+    def is_forced(self):
+        """Try `force` in `parent` first."""
+        return getattr(self.parent, 'is_forced')(token=self.token)
+
     def __init__(self,
-                 parent: Spec,
+                 parent: Forceable,
                  *exceptions: Exception,
                  token: Union[bool, str, None] = None,  # Start as collecting only
                  doing=None,
@@ -733,11 +641,6 @@ class ErrLog(Spec, Replaceable):
         clone._enforced_error_tuples = self._enforced_error_tuples
 
         return clone
-
-    def is_forced(self):
-        """Try `force` in `parent` first."""
-        return getattr(self.parent, 'is_forced',
-                       super().is_forced)(token=self.token)
 
     def __enter__(self):
         """Return `self` upon entering the runtime context."""
@@ -808,6 +711,105 @@ class ErrLog(Spec, Replaceable):
                 self.plog.log(self.log_level, err_msg)
             else:
                 raise CmdException(err_msg)
+
+
+class CmdletsInterpolation(interpctxt.InterpolationContext):
+    """
+    Adds `cmdlets_map` into interp-manager for for help & cmd mechanics.
+
+    Client-code may add more dicts in `interpolation_context.maps` list.
+    """
+    def __init__(self, *args, **kw):
+        super().__init__(*args, **kw)
+        self.cmdlets_map = {
+            'appname': '<APP>',
+            'cmd_chain': '<CMD>',
+        }
+        self.maps.append(self.cmdlets_map)
+
+
+#: That's the singleton interp-manager used by all cmdlet configurables.
+cmdlets_interpolations = CmdletsInterpolation()
+
+
+def _travel_parents(self) -> trc.Configurable:
+    """
+    Utility to travel up parent-chain.
+
+    :return:
+        the top parent (or self if no parents)
+    """
+    while self.parent:
+        self = self.parent
+    return self
+
+
+trc.Configurable.root_object = _travel_parents  # type: ignore
+
+
+def _travel_parents_untill_active_cmd(self, scream=False) -> trc.Application:
+    """
+    Utility to travel up parent-chain until the active subcmd is met.
+
+    :return:
+        the active subcmd, or None if not `scream`
+    :raise AssertionError:
+        if `scream` and no active subcmd found
+    """
+    def test_app(app):
+        return getattr(app, 'subapp', False) is None
+
+    while self.parent:
+        if test_app(self):
+            return self
+        self = self.parent
+
+    if test_app(self):
+        return self
+
+    if scream:
+        raise AssertionError('ROOTED!')
+
+
+#: NOT USED!!
+trc.Configurable.active_subcmd = _travel_parents_untill_active_cmd  # type: ignore
+
+
+class Spec(Forceable, trc.Configurable):
+    @classmethod
+    def class_get_help(cls, inst=None):
+        text = super().class_get_help(inst)
+        obj = inst if inst else cls
+        with obj.interpolations.ikeys(obj, stub_keys=True) as ctxt:
+            return text.format_map(ctxt)
+
+    @classmethod
+    def class_get_trait_help(cls, trait, inst=None, helptext=None):
+        text = super().class_get_trait_help(trait, inst=None, helptext=None)
+        obj = inst if inst else cls
+        ## Stub missing keys because some trait-values may contain
+        #  interpolation patterns themselves (to be expanded on runtime),
+        #  so allow them to print.
+        #
+        with obj.interpolations.ikeys(obj, stub_keys=True) as ctxt:
+            return text.format_map(ctxt)
+
+    verbose = Bool(
+        allow_none=True,
+        config=True,
+        help="Repeated use increase logging-level from WARNING-->INFO-->DEBUG.")
+
+    debug = Bool(
+        allow_none=True,
+        config=True,
+        help="Change certain actions, to discover possible problems.")
+
+    dry_run = Bool(
+        allow_none=True,
+        config=True,
+        help="Do not write files - just pretend.")
+
+    interpolations = cmdlets_interpolations
 
 
 class Cmd(trc.Application, Spec):
