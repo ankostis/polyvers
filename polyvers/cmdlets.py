@@ -414,7 +414,7 @@ class Replaceable(CloneableHasTraits):
                 elif not _is_section_key(name) and not isinstance(config_value, trc.Config):
                     from difflib import get_close_matches
                     if isinstance(self, trc.LoggingConfigurable):
-                        warn = self.log.warning
+                        warn = self.plog.warning
                     else:
                         import warnings
 
@@ -560,6 +560,11 @@ class Spec(trc.Configurable):
         with obj.interpolations.ikeys(obj, stub_keys=True) as ctxt:
             return text.format_map(ctxt)
 
+    @property
+    def plog(self) -> logging.Logger:
+        """Search log property up the `parent` hierarchy."""
+        return getattr(self, 'log', getattr(self.parent, 'plog', log))
+
     verbose = Bool(
         allow_none=True,
         config=True,
@@ -660,7 +665,7 @@ class Spec(trc.Configurable):
     interpolations = cmdlets_interpolations
 
 
-class ErrLog(Replaceable, Spec):
+class ErrLog(Spec, Replaceable):
     """
     A contextman collecting or "forcing" errors in a :class:`Spec` error-list.
 
@@ -740,25 +745,22 @@ class ErrLog(Replaceable, Spec):
 
         return clone
 
+    def is_forced(self):
+        """Try `force` in `parent` first."""
+        return getattr(self.parent, 'is_forced',
+                       super().is_forced)(token=self.token)
+
     def __enter__(self):
         """Return `self` upon entering the runtime context."""
         return self
 
     def __exit__(self, exctype, excinst, _exctb):
         if exctype is not None and issubclass(exctype, tuple(self.exceptions)):
-            is_forced_meth = getattr(self.parent, 'is_forced', self.is_forced)
-            is_forced = is_forced_meth(self.token)
+            is_forced = self.is_forced()
             if is_forced or not self.raise_immediately:
-                raise_later = not is_forced
                 #excinst = excinst.with_traceback(exctb)  Ex already has it!
-                etuple = (self.action, raise_later, excinst)
-
-                if log.isEnabledFor(logging.DEBUG):
-                    getattr(self.parent, 'log', log).debug(
-                        "Collecting %s" % self._format_etuple(*etuple),
-                        exc_info=excinst)
-
-                self._enforced_error_tuples.append(etuple)
+                raise_later = not is_forced
+                self._collect_error(raise_later, excinst)
 
                 return True
         return False
@@ -774,6 +776,17 @@ class ErrLog(Replaceable, Spec):
             exstr = type(ex).__name__
         return "%s error%s -> %s" % (errtype, action, exstr)
 
+    def _collect_error(self, raise_later, error):
+        #error = error.with_traceback(exctb)  Ex already has it!
+        etuple = (self.action, raise_later, error)
+
+        log = self.plog
+        if log.isEnabledFor(logging.DEBUG):
+            log.debug("Collecting %s" % self._format_etuple(*etuple),
+                      exc_info=error)
+
+        self._enforced_error_tuples.append(etuple)
+
     def report_errors(self, doing=None, no_raise=False) -> str:
         if self._enforced_error_tuples:
             etuples = list(self._enforced_error_tuples)
@@ -788,8 +801,7 @@ class ErrLog(Replaceable, Spec):
                 msg = ("Delayed %i error(s)%s: %s"
                        if any_raise_later else
                        "Bypassed %i error(s)%s: %s")
-                getattr(self.parent, 'log', log).log(
-                    self.log_level, msg, *err_args)
+                self.plog.log(self.log_level, msg, *err_args)
             else:
                 msg = "Collected %i error(s)%s: %s"
                 raise CmdException(msg % err_args)
