@@ -517,6 +517,24 @@ trc.Configurable.active_subcmd = _travel_parents_untill_active_cmd  # type: igno
 
 
 class Spec(trc.Configurable):
+    @classmethod
+    def class_get_help(cls, inst=None):
+        text = super().class_get_help(inst)
+        obj = inst if inst else cls
+        with obj.interpolations.ikeys(obj, stub_keys=True) as ctxt:
+            return text.format_map(ctxt)
+
+    @classmethod
+    def class_get_trait_help(cls, trait, inst=None, helptext=None):
+        text = super().class_get_trait_help(trait, inst=None, helptext=None)
+        obj = inst if inst else cls
+        ## Stub missing keys because some trait-values may contain
+        #  interpolation patterns themselves (to be expanded on runtime),
+        #  so allow them to print.
+        #
+        with obj.interpolations.ikeys(obj, stub_keys=True) as ctxt:
+            return text.format_map(ctxt)
+
     verbose = Bool(
         allow_none=True,
         config=True,
@@ -594,15 +612,14 @@ class Spec(trc.Configurable):
         - See :class:`Enforce` for details.
         - Example of using this method for multiple actions in a loop::
 
-              def read_x_files(spec: Spec):
-                  with spec.errlog(IOError,
-                                     doing="reading X-files",
-                                     token='fread') as errlog:
-                      for fpath in file_paths:
-                          with errlog.forcing(action=fpath):
-                              fbytes.append(fpath.read_bytes())
+              with self.errlog(IOError,
+                               doing="reading X-files",
+                               token='fread') as errlog:
+                  for fpath in file_paths:
+                      with errlog.delayed(token='fread', action=fpath):
+                          fbytes.append(fpath.read_bytes())
 
-                  # Any errors collected will be raised or WARNed here.
+              # Any errors collected will be raised or WARNed here.
 
         """
         errlog = ErrLog(self,
@@ -617,26 +634,8 @@ class Spec(trc.Configurable):
             if not ok:
                 doing = ' '.join([doing, "failed unexpectedly"])
             errlog.report_errors(doing, no_raise=not ok)
-
+            errlog._enforced_error_tuples = []  # Avoid stacktrace memleaks.
     interpolations = cmdlets_interpolations
-
-    @classmethod
-    def class_get_help(cls, inst=None):
-        text = super().class_get_help(inst)
-        obj = inst if inst else cls
-        with obj.interpolations.ikeys(obj, stub_keys=True) as ctxt:
-            return text.format_map(ctxt)
-
-    @classmethod
-    def class_get_trait_help(cls, trait, inst=None, helptext=None):
-        text = super().class_get_trait_help(trait, inst=None, helptext=None)
-        obj = inst if inst else cls
-        ## Stub missing keys because some trait-values may contain
-        #  interpolation patterns themselves (to be expanded on runtime),
-        #  so allow them to print.
-        #
-        with obj.interpolations.ikeys(obj, stub_keys=True) as ctxt:
-            return text.format_map(ctxt)
 
 
 class ErrLog(Spec):
@@ -658,14 +657,14 @@ class ErrLog(Spec):
         the exceptions to suppress
     :ivar token:
         the :attr:`force` token to respect, like :meth:`Spec.is_force()`,
-        with `False` also in the possible values:
+        with possible values:
           - `False`: (default) completely ignore `force` trait
-            (used by :meth:`collecting()`;
-          - <a string>: search for this token in `force` trait;
-          - `None`: forces only if :attr:`force``force` is `True`.
+            (just delay errors collected)`;
+          - <a string>: "force" errors if this token is in `force` trait;
+          - `True`: "force" errors if `True` is in :attr:`force``force`.
 
         All 3 values are possible values can be given in constructor
-        or is :meth:`forcing()`.
+        or is :meth:`delayed()`.
     :ivar raise_immediately:
         if not forced, do not wait for `collected_errors()` call to raise them;
         set it to true if used as a function decorator.  Also when --debug.
@@ -673,7 +672,7 @@ class ErrLog(Spec):
         the logging level to use when just reporting errors.
         Note that all errors are always reported immediately on DEBUG.
 
-    :ivar enforced_error_tuples:
+    :ivar _enforced_error_tuples:
         list of 3-tuples (action, raise_later, ex) maintained by :class:`ErrLog`
 
     See :meth:`Spec.errlog()` for example.
@@ -683,10 +682,10 @@ class ErrLog(Spec):
     token = UnionTrait((Unicode(), Bool()), allow_none=True)
     raise_immediately = CBool()
 
-    def forcing(self,
+    def delayed(self,
                 exceptions: Union[Exception, Sequence[Exception]] = (),
-                token: Union[bool, str, None] = True,
-                action=None,  # `None` means a `True` in `force` will enact it
+                token: Union[bool, str, None] = None,
+                action=None,
                 raise_immediately=None):
         if exceptions:
             if not isinstance(exceptions, (list, tuple)):
@@ -701,15 +700,6 @@ class ErrLog(Spec):
 
         return self
 
-    def collecting(self,
-                   exceptions: Union[Exception, Sequence[Exception]] = (),
-                   action=None,
-                   raise_immediately=None):
-        return self.forcing(exceptions,
-                            token=False,  # locked as "non-forced"
-                            action=action,
-                            raise_immediately=raise_immediately)
-
     def __init__(self,
                  parent: Spec,
                  exceptions: Union[Exception, Sequence[Exception]] = (),
@@ -718,11 +708,11 @@ class ErrLog(Spec):
                  raise_immediately=False,
                  ) -> None:
         self.parent = parent  # to inherit configs
-        self.forcing(exceptions,  # Use `forcing()` to pass any `token`.
+        self.delayed(exceptions,
                      token=token,
                      action=action,
                      raise_immediately=raise_immediately)
-        self.enforced_error_tuples: List[Tuple[Any, bool, Exception]] = []
+        self._enforced_error_tuples: List[Tuple[Any, bool, Exception]] = []
 
     def __enter__(self):
         """Return `self` upon entering the runtime context."""
@@ -734,7 +724,7 @@ class ErrLog(Spec):
             if is_forced or not self.raise_immediately:
                 #excinst = excinst.with_traceback(exctb)  # Ex already has it.
                 raise_later = not is_forced
-                self.enforced_error_tuples.append((self.action,
+                self._enforced_error_tuples.append((self.action,
                                                    raise_later,
                                                    excinst))
                 if log.isEnabledFor(logging.DEBUG):
@@ -766,7 +756,7 @@ class ErrLog(Spec):
         :raise CmdException:
             with any non-forced collected errors
         """
-        etuples = self.enforced_error_tuples
+        etuples = self._enforced_error_tuples
         if etuples:
             erlines = ''.join('\n  %s' % ErrLog.format_err_tuple(*etuple)
                               for etuple in etuples)

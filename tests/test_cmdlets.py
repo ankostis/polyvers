@@ -149,35 +149,35 @@ def test_ErrLog_non_forced_errors(caplog):
     logging.getLogger().setLevel(level)
     spec = cmdlets.Spec()
 
-    enforcer = cmdlets.ErrLog(spec, (IOError, ValueError), action='fire')
-    with enforcer:
+    errlog = cmdlets.ErrLog(spec, (IOError, ValueError), action='fire')
+    with errlog:
         raise IOError("Wrong!")
-    assert len(enforcer.enforced_error_tuples) == 1
-    with enforcer.collecting():  # check default `token` value
+    assert len(errlog._enforced_error_tuples) == 1
+    with errlog.delayed():  # check default `token` value
         raise IOError("Wrong!")
-    assert len(enforcer.enforced_error_tuples) == 2
+    assert len(errlog._enforced_error_tuples) == 2
 
     with pytest.raises(cmdlets.CmdException,
                        match="Collected 2 error") as ex_info:
-        enforcer.report_errors()
+        errlog.report_errors()
     assert '"forced"' not in str(ex_info.value)
 
     ## Mixed case still raises
     #
-    enforcer.force = [True]
-    with enforcer.forcing():
+    errlog.force = [True]
+    with errlog.delayed(token=True):
         raise IOError()
-    assert len(enforcer.enforced_error_tuples) == 3
+    assert len(errlog._enforced_error_tuples) == 3
 
     with pytest.raises(cmdlets.CmdException) as ex_info:
-        enforcer.report_errors()
+        errlog.report_errors()
     assert "Collected 3 error" in str(ex_info.value)
-    enforcer.report_errors(no_raise=True)
+    errlog.report_errors(no_raise=True)
     assert "Suppress" in caplog.text
 
     ## Check raise_immediately
     #
-    with enforcer.forcing(token=False, raise_immediately=True):
+    with errlog.delayed(token=False, raise_immediately=True):
         with pytest.raises(IOError) as ex_info:
             raise IOError("STOP!")
     assert "Collected" not in str(ex_info.value)
@@ -189,18 +189,18 @@ def test_ErrLog_forced_errors(caplog):
     logging.getLogger().setLevel(level)
     spec = cmdlets.Spec()
 
-    enforcer = cmdlets.ErrLog(spec, Exception,
-                              token='kento', action='fire')
+    errlog = cmdlets.ErrLog(spec, Exception,
+                            token='kento', action='fire')
 
-    enforcer.force = ['aa']
-    with enforcer.forcing(token='aa'):
+    errlog.force = ['aa']
+    with errlog.delayed(token='aa'):
         raise Exception()
-    enforcer.force.append(True)
-    with enforcer.forcing():
+    errlog.force.append(True)
+    with errlog.delayed(token=True):
         raise Exception()
-    assert len(enforcer.enforced_error_tuples) == 2
+    assert len(errlog._enforced_error_tuples) == 2
 
-    enforcer.report_errors()
+    errlog.report_errors()
     assert re.search('DEBUG +Collecting "forced" error', caplog.text)
     assert re.search('WARNING +Bypassed 2 error', caplog.text)
     assert "Suppress" not in caplog.text
