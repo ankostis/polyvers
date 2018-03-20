@@ -145,7 +145,7 @@ def test_Spec_is_forced(force, token, exp):
 
 def test_ErrLog():
     spec = cmdlets.Spec()
-    errlog = cmdlets.ErrLog(spec, IOError, ValueError, action='fire')
+    errlog = cmdlets.ErrLog(spec, IOError, ValueError, doing='fire')
     #TODO assert not errlog._build_error_message()
 
     with errlog(token='gg') as errlog2:
@@ -169,7 +169,7 @@ def test_ErrLog_non_forced_errors(caplog):
     with errlog:
         raise IOError("Wrong!")
     assert len(errlog._enforced_error_tuples) == 1
-    with errlog():  # check default `token` value
+    with errlog(doing='burning'):  # check default `token` value
         raise IOError("Wrong!")
     assert len(errlog._enforced_error_tuples) == 2
     assert re.search('DEBUG +Collecting delayed error', caplog.text)
@@ -177,7 +177,7 @@ def test_ErrLog_non_forced_errors(caplog):
     clearlog(caplog)
     with pytest.raises(cmdlets.CmdException,
                        match="Collected 2 error") as ex_info:
-        errlog.report_errors(doing='burning')
+        errlog.report_errors()
     assert '"forced"' not in str(ex_info.value)
     assert 'while burning' in str(ex_info.value)
     assert not errlog._enforced_error_tuples
@@ -226,14 +226,15 @@ def test_ErrLog_forced_errors(caplog):
     with errlog():
         raise Exception()
     spec.force.append(True)
-    with errlog(token=True):
+    with errlog(doing='looting', token=True):
         raise Exception()
     assert len(errlog._enforced_error_tuples) == 2
     assert re.search('DEBUG +Collecting "forced" error', caplog.text)
 
     clearlog(caplog)
-    errlog.report_errors(doing='looting')
-    assert re.search(r'WARNING +Bypassed 2 error\(s\) while looting', caplog.text)
+    errlog.report_errors()
+    assert re.search(r'WARNING +Bypassed 2 error', caplog.text)
+    assert 'while looting' in caplog.text
     assert not re.search("WARNING +Delayed ", caplog.text)
     assert not errlog._enforced_error_tuples
 

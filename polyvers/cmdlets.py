@@ -621,9 +621,8 @@ class Spec(trc.Configurable):
     @contextlib.contextmanager
     def errlog(self,
                *exceptions: Exception,
-               doing=None,
                token: Union[bool, str] = None,
-               action=None,
+               doing=None,
                raise_immediately=None,
                log_level=logging.WARNING):
         """
@@ -636,31 +635,20 @@ class Spec(trc.Configurable):
         - Example of using this method for multiple actions in a loop::
 
               with self.errlog(IOError,
-                               doing="reading X-files",
+                               doing="loading X-files",
                                token='fread') as errlog:
                   for fpath in file_paths:
-                      with errlog(action=fpath):
+                      with errlog(doing="reading '%s'" % fpath):
                           fbytes.append(fpath.read_bytes())
 
-              # Any errors collected will be raised or WARNed here.
+              # Any errors collected above, will be raised/WARNed here.
 
         """
-        errlog = ErrLog(self,
-                        *exceptions,
-                        token=token, action=action,
-                        raise_immediately=raise_immediately,
-                        log_level=log_level)
-        ok = False
-        try:
-            yield errlog
-            ok = True
-        finally:
-            if not ok:
-                if doing:
-                    doing = "%s failed unexpectedly" % doing
-                else:
-                    doing = "failing unexpectedly"
-            errlog.report_errors(doing, no_raise=not ok)
+        return ErrLog(self,
+                      *exceptions,
+                      token=token, doing=doing,
+                      raise_immediately=raise_immediately,
+                      log_level=log_level)
 
     interpolations = cmdlets_interpolations
 
@@ -697,14 +685,15 @@ class ErrLog(Spec, Replaceable):
         Note that all errors are always reported immediately on DEBUG.
 
     :ivar _enforced_error_tuples:
-        collected arrors as a list of 3-tuples (action, raise_later, ex)
+        collected arrors as a list of 3-tuples (doing, raise_later, ex),
+        cleared only when :meth:`report_errors()` called.
 
     See :meth:`Spec.errlog()` for example.
     """
     parent = Instance(Spec)
     exceptions = ListTrait(TypeTrait(Exception))
     token = UnionTrait((Unicode(), Bool()), allow_none=True)
-    action = Unicode(None, allow_none=True)
+    doing = Unicode(None, allow_none=True)
     raise_immediately = CBool()
     log_level = UnionTrait((Int(), Unicode()))
 
@@ -712,11 +701,11 @@ class ErrLog(Spec, Replaceable):
                  parent: Spec,
                  *exceptions: Exception,
                  token: Union[bool, str, None] = None,  # Start as collecting only
-                 action=None,
+                 doing=None,
                  raise_immediately=None,
                  log_level=logging.WARNING
                  ) -> None:
-        super().__init__(parent=parent, token=token, action=action,
+        super().__init__(parent=parent, token=token, doing=doing,
                          raise_immediately=raise_immediately,
                          log_level=log_level)
         if exceptions:
@@ -726,13 +715,13 @@ class ErrLog(Spec, Replaceable):
     def __call__(self,
                  *exceptions: Exception,
                  token: Union[bool, str, None] = None,
-                 action=None,
+                 doing=None,
                  raise_immediately=None,
                  log_level: Union[int, str] = None):
         """Reconfigure a new errlog."""
         changes = {}
-        fields = zip('token action raise_immediately log_level'.split(),
-                     [token, action, raise_immediately, log_level])
+        fields = zip('token doing raise_immediately log_level'.split(),
+                     [token, doing, raise_immediately, log_level])
         for k, v in fields:
             if v is not None:
                 changes[k] = v
@@ -755,30 +744,39 @@ class ErrLog(Spec, Replaceable):
         return self
 
     def __exit__(self, exctype, excinst, _exctb):
-        if exctype is not None and issubclass(exctype, tuple(self.exceptions)):
-            is_forced = self.is_forced()
-            if is_forced or not self.raise_immediately:
-                #excinst = excinst.with_traceback(exctb)  Ex already has it!
-                raise_later = not is_forced
-                self._collect_error(raise_later, excinst)
+        if exctype is not None:
+            suppress_ex = False
+            try:
+                if issubclass(exctype, tuple(self.exceptions)):
+                    is_forced = self.is_forced()
+                    if is_forced or not self.raise_immediately:
+                        #excinst = excinst.with_traceback(exctb)  Ex already has it!
+                        self._collect_error(is_forced, excinst)
+                        suppress_ex = True
 
-                return True
-        return False
+                return suppress_ex
+            finally:
+                if not suppress_ex:
+                    doing = self.doing
+                    self.doing = ("%s failed unexpectedly" % doing
+                                  if doing else
+                                  "failing unexpectedly")
+                    self.report_errors(no_raise=True)
 
     @classmethod
-    def _format_etuple(cls, action, raise_later, ex):
-        action = action and " '%s'" % action or ''
-        errtype = 'delayed' if raise_later else '"forced"'
+    def _format_etuple(cls, doing, is_forced, ex):
+        doing = doing and " while %s" % doing or ''
+        errtype = '"forced"' if is_forced else 'delayed'
         exstr = str(ex)
         if exstr:
             exstr = "%s: %s" % (type(ex).__name__, exstr)
         else:
             exstr = type(ex).__name__
-        return "%s error%s -> %s" % (errtype, action, exstr)
+        return "%s error%s -> %s" % (errtype, doing, exstr)
 
-    def _collect_error(self, raise_later, error):
+    def _collect_error(self, is_forced, error):
         #error = error.with_traceback(exctb)  Ex already has it!
-        etuple = (self.action, raise_later, error)
+        etuple = (self.doing, is_forced, error)
 
         log = self.plog
         if log.isEnabledFor(logging.DEBUG):
@@ -787,24 +785,29 @@ class ErrLog(Spec, Replaceable):
 
         self._enforced_error_tuples.append(etuple)
 
-    def report_errors(self, doing=None, no_raise=False) -> str:
+    def _flush_errors(self) -> Optional[str]:
+        """Generate a message for all collected errors, before clearing them."""
         if self._enforced_error_tuples:
-            etuples = list(self._enforced_error_tuples)
+            etuples = self._enforced_error_tuples
             self._enforced_error_tuples = []  # Avoid stacktrace memleaks.
             erlines = ''.join('\n  %s' % self._format_etuple(*etuple)
                               for etuple in etuples)
-            doing = ' while %s' % doing if doing else ''
-            err_args = (len(etuples), doing, erlines)
-            any_raise_later = any(raise_later for _, raise_later, _ in etuples)
+            doing = self.doing and ' while %s' % self.doing or ''
+            all_forced = all(is_forced for _, is_forced, _ in etuples)
+            reason = 'Bypassed' if all_forced else 'Collected'
 
-            if no_raise or not any_raise_later:
-                msg = ("Delayed %i error(s)%s: %s"
-                       if any_raise_later else
-                       "Bypassed %i error(s)%s: %s")
-                self.plog.log(self.log_level, msg, *err_args)
+            return "%s %i error(s)%s: %s" % (
+                reason, len(etuples), doing, erlines)
+
+    def report_errors(self, no_raise=False) -> str:
+        etuples = self._enforced_error_tuples  # Order with `_flush()` matters!
+        if etuples:
+            err_msg = self._flush_errors()
+            all_forced = all(is_forced for _, is_forced, _ in etuples)
+            if no_raise or all_forced:
+                self.plog.log(self.log_level, err_msg)
             else:
-                msg = "Collected %i error(s)%s: %s"
-                raise CmdException(msg % err_args)
+                raise CmdException(err_msg)
 
 
 class Cmd(trc.Application, Spec):
