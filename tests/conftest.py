@@ -105,8 +105,10 @@ def assert_in_text(text, require=None, forbid=None, is_regex=False):
 
 def clearlog(caplog):
     "Workaround not clearing text: https://github.com/pytest-dev/pytest/issues/3297"
+    import io
+
     caplog.clear()
-    caplog.handler.stream.truncate(0)
+    caplog.handler.stream = io.StringIO()
 
 
 @pytest.fixture()
