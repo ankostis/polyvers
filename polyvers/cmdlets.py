@@ -337,7 +337,31 @@ class CmdException(Exception):
     pass
 
 
-class Replaceable:
+class CloneableHasTraits:
+    """Mixin to ``copy(HasTraits)`` machinery without resorting to ``deepcopy()``."""
+    def _populate_clone(self, clone):
+        clone._trait_values = self._trait_values.copy()
+        clone._trait_notifiers = self._trait_notifiers.copy()
+        clone._trait_validators = self._trait_validators.copy()
+        clone._cross_validation_lock = False
+
+    def __copy__(self):
+        ## Trick from https://stackoverflow.com/a/40484215/548792
+        from copy import copy
+
+        cls = type(self)
+        orig_copy, cls.__copy__ = cls.__copy__, None
+        try:
+            clone = copy(self)
+        finally:
+            cls.__copy__ = orig_copy
+
+        self._populate_clone(clone)
+
+        return clone
+
+
+class Replaceable(CloneableHasTraits):
     """
     A mixin to make :class:`HasTraits` instances clone like namedtupple's ``replace()``.
 
@@ -357,11 +381,6 @@ class Replaceable:
         from copy import copy
 
         clone = copy(self)
-        clone._trait_values = self._trait_values.copy()
-        clone._trait_notifiers = self._trait_notifiers.copy()
-        clone._trait_validators = self._trait_validators.copy()
-        clone._cross_validation_lock = False
-
         clone.set_trait_values(**changes)
 
         return clone
