@@ -25,7 +25,7 @@ from py.path import local as P  # @UnresolvedImport
 import os.path as osp
 import textwrap as tw
 
-from .conftest import touchpaths
+from .conftest import touchpaths, clearlog
 
 
 init_logging(level=logging.DEBUG, logconf_files=[])
@@ -143,41 +143,71 @@ def test_Spec_is_forced(force, token, exp):
     assert sp.is_forced(token) is exp
 
 
+def test_ErrLog():
+    spec = cmdlets.Spec()
+    errlog = cmdlets.ErrLog(spec, IOError, ValueError, action='fire')
+    #TODO assert not errlog._build_error_message()
+
+    with errlog(token='gg') as errlog2:
+        assert errlog2.token == 'gg'
+        assert errlog.token is None
+    assert errlog.token is None
+    assert errlog.log_level is logging.WARNING
+
+    ## TODO: check stacked errlog messages
+
+
 def test_ErrLog_non_forced_errors(caplog):
     level = logging.DEBUG
     logging.basicConfig(level=level)
     logging.getLogger().setLevel(level)
     spec = cmdlets.Spec()
 
-    errlog = cmdlets.ErrLog(spec, (IOError, ValueError), action='fire')
+    clearlog(caplog)
+
+    errlog = cmdlets.ErrLog(spec, IOError, ValueError)
     with errlog:
         raise IOError("Wrong!")
     assert len(errlog._enforced_error_tuples) == 1
-    with errlog.delayed():  # check default `token` value
+    with errlog():  # check default `token` value
         raise IOError("Wrong!")
     assert len(errlog._enforced_error_tuples) == 2
+    assert re.search('DEBUG +Collecting delayed error', caplog.text)
 
+    clearlog(caplog)
     with pytest.raises(cmdlets.CmdException,
                        match="Collected 2 error") as ex_info:
-        errlog.report_errors()
+        errlog.report_errors(doing='burning')
     assert '"forced"' not in str(ex_info.value)
+    assert 'while burning' in str(ex_info.value)
+    assert not errlog._enforced_error_tuples
 
     ## Mixed case still raises
     #
+    clearlog(caplog)
     spec.force = [True]
-    with errlog.delayed(token=True):
+    with errlog():  # check default `token` value
+        raise IOError("Wrong!")
+    with errlog(token=True):
         raise IOError()
-    assert len(errlog._enforced_error_tuples) == 3
+    assert len(errlog._enforced_error_tuples) == 2
 
+    clearlog(caplog)
     with pytest.raises(cmdlets.CmdException) as ex_info:
         errlog.report_errors()
-    assert "Collected 3 error" in str(ex_info.value)
+    assert "Collected 2 error" in str(ex_info.value)
+
+    clearlog(caplog)
+    with errlog(token=True):
+        raise IOError()
+    assert re.search('DEBUG +Collecting "forced" error', caplog.text)
     errlog.report_errors(no_raise=True)
-    assert "Suppress" in caplog.text
+    assert re.search("WARNING +Bypassed 1 error", caplog.text)
+    assert not errlog._enforced_error_tuples
 
     ## Check raise_immediately
     #
-    with errlog.delayed(token=False, raise_immediately=True):
+    with errlog(token=False, raise_immediately=True):
         with pytest.raises(IOError) as ex_info:
             raise IOError("STOP!")
     assert "Collected" not in str(ex_info.value)
@@ -190,20 +220,22 @@ def test_ErrLog_forced_errors(caplog):
     spec = cmdlets.Spec()
 
     errlog = cmdlets.ErrLog(spec, Exception,
-                            token='kento', action='fire')
+                            token='kento')
 
-    spec.force = ['aa']
-    with errlog.delayed(token='aa'):
+    spec.force = ['kento']
+    with errlog():
         raise Exception()
     spec.force.append(True)
-    with errlog.delayed(token=True):
+    with errlog(token=True):
         raise Exception()
     assert len(errlog._enforced_error_tuples) == 2
-
-    errlog.report_errors()
     assert re.search('DEBUG +Collecting "forced" error', caplog.text)
-    assert re.search('WARNING +Bypassed 2 error', caplog.text)
-    assert "Suppress" not in caplog.text
+
+    clearlog(caplog)
+    errlog.report_errors(doing='looting')
+    assert re.search(r'WARNING +Bypassed 2 error\(s\) while looting', caplog.text)
+    assert not re.search("WARNING +Delayed ", caplog.text)
+    assert not errlog._enforced_error_tuples
 
 
 def test_CfgFilesRegistry_consolidate_posix_1():

@@ -46,7 +46,7 @@ Of course you can mix'n match.
 
 from collections import OrderedDict
 from os import PathLike
-from typing import Any, List, Union, Tuple, Optional, Sequence  # noqa: F401 @UnusedImport
+from typing import Any, List, Dict, Union, Tuple, Optional, Sequence  # noqa: F401 @UnusedImport
 import contextlib
 import io
 import logging
@@ -60,7 +60,7 @@ import os.path as osp
 from . import fileutils as fu, interpctxt
 from ._vendor import traitlets as trt
 from ._vendor.traitlets import config as trc
-from ._vendor.traitlets.traitlets import Bool, CBool, Unicode, Instance, \
+from ._vendor.traitlets.traitlets import Bool, CBool, Int, Unicode, Instance, \
     List as ListTrait, Type as TypeTrait, Union as UnionTrait  # @UnresolvedImport
 from .yamlconfloader import YAMLFileConfigLoader
 
@@ -596,118 +596,130 @@ class Spec(trc.Configurable):
 
     @contextlib.contextmanager
     def errlog(self,
-               exceptions: Union[Exception, Sequence[Exception]] = (),
+               *exceptions: Exception,
+               doing=None,
                token: Union[bool, str] = None,
                action=None,
-               raise_immediately=False,
-               doing=''):
+               raise_immediately=None,
+               log_level=logging.WARNING):
         """
         Run cntxt-body via :class:`ErrLog` and report collected errors at exit.
 
-        - See :class:`ErrLog` for params.
+        :param doing:
+            See :meth:`ErrLog.report_errors()`
+
+        - See :class:`ErrLog` for other params.
         - Example of using this method for multiple actions in a loop::
 
               with self.errlog(IOError,
                                doing="reading X-files",
                                token='fread') as errlog:
                   for fpath in file_paths:
-                      with errlog.delayed(action=fpath):
+                      with errlog(action=fpath):
                           fbytes.append(fpath.read_bytes())
 
               # Any errors collected will be raised or WARNed here.
 
         """
         errlog = ErrLog(self,
-                        exceptions,
+                        *exceptions,
                         token=token, action=action,
-                        raise_immediately=raise_immediately)
+                        raise_immediately=raise_immediately,
+                        log_level=log_level)
         ok = False
         try:
             yield errlog
             ok = True
         finally:
             if not ok:
-                doing = ' '.join([doing, "failed unexpectedly"])
+                if doing:
+                    doing = "%s failed unexpectedly" % doing
+                else:
+                    doing = "failing unexpectedly"
             errlog.report_errors(doing, no_raise=not ok)
 
     interpolations = cmdlets_interpolations
 
 
-class ErrLog(Spec):
+class ErrLog(Replaceable, Spec):
     """
-    A contextman collecting errors or "forced" or suppressed, in a :class:`Spec` error-list.
+    A contextman collecting or "forcing" errors in a :class:`Spec` error-list.
 
-
-    - Unknown errors (not in `exceptions`) are always raised immediately.
-    - If `token` is in :attr:`Spec.force`, errors just collected..
-    - If an errors is not "forced", it is either `raise_immediately`,
-      or collected to raise alltogether when :meth:`collected_errors()` is invoked.
-    - Collected errors (either "forced" or because `raise_immediately`) are reported
-      on DEBUG, and return later, when :meth:`collected_errors()` is called,
-      as a pre-formatted message, or raised.
+    - Unknown errors (not in `exceptions`) always bubble up immediately.
+    - If `token` given and exitst in :attr:`Spec.force`, errors are "forced",
+      i.e. are collected and logged as `log_level` when :meth:`report_errors()`
+      invoked.
+    - Non-"forced" errors are either `raise_immediately`, or raised collectively
+      when :meth:`report_errors()` invoked.
+    - Collected errors ("forced" or non-`raise_immediately`) are logged on DEBUG
+      immediately.
 
     :ivar spec:
         the spec instance to search in its :attr:`Spec.force` for the token
     :ivar exceptions:
-        the exceptions to suppress
+        the exceptions to delay or forced; others are left to bubble immediately
     :ivar token:
         the :attr:`force` token to respect, like :meth:`Spec.is_force()`,
         with possible values:
-          - `False`: (default) completely ignore `force` trait
-            (just delay errors collected)`;
+          - false: (default) completely ignore `force` trait
+            (errors collected are just delayed);
           - <a string>: "force" errors if this token is in `force` trait;
           - `True`: "force" errors if `True` is in :attr:`force``force`.
-
-        All 3 values are possible values can be given in constructor
-        or is :meth:`delayed()`.
     :ivar raise_immediately:
-        if not forced, do not wait for `collected_errors()` call to raise them;
-        set it to true if used as a function decorator.  Also when --debug.
+        if not forced, do not wait for `report_errors()` call to raise them;
+        suggested use when a function decorator.  Also when --debug.
     :ivar log_level:
         the logging level to use when just reporting errors.
         Note that all errors are always reported immediately on DEBUG.
 
     :ivar _enforced_error_tuples:
-        list of 3-tuples (action, raise_later, ex) maintained by :class:`ErrLog`
+        collected arrors as a list of 3-tuples (action, raise_later, ex)
 
     See :meth:`Spec.errlog()` for example.
     """
-    spec = Instance(Spec)
+    parent = Instance(Spec)
     exceptions = ListTrait(TypeTrait(Exception))
     token = UnionTrait((Unicode(), Bool()), allow_none=True)
+    action = Unicode(None, allow_none=True)
     raise_immediately = CBool()
-
-    def delayed(self,
-                exceptions: Union[Exception, Sequence[Exception]] = (),
-                token: Union[bool, str, None] = None,
-                action=None,
-                raise_immediately=None):
-        if exceptions:
-            if not isinstance(exceptions, (list, tuple)):
-                exceptions = [exceptions]  # type: ignore
-            self.exceptions = exceptions
-        if token is not None:
-            self.token = token
-        if raise_immediately is not None:
-            self.raise_immediately = raise_immediately
-        if action is not None:
-            self.action = action
-
-        return self
+    log_level = UnionTrait((Int(), Unicode()))
 
     def __init__(self,
                  parent: Spec,
-                 exceptions: Union[Exception, Sequence[Exception]] = (),
-                 token: Union[bool, str, None] = False,  # Start as collecting only
+                 *exceptions: Exception,
+                 token: Union[bool, str, None] = None,  # Start as collecting only
                  action=None,
-                 raise_immediately=False,
+                 raise_immediately=None,
+                 log_level=logging.WARNING
                  ) -> None:
-        self.parent = parent  # to inherit configs
-        self.delayed(exceptions,
-                     token=token,
-                     action=action,
-                     raise_immediately=raise_immediately)
+        super().__init__(parent=parent, token=token, action=action,
+                         raise_immediately=raise_immediately,
+                         log_level=log_level)
+        if exceptions:
+            self.exceptions = exceptions
         self._enforced_error_tuples: List[Tuple[Any, bool, Exception]] = []
+
+    def __call__(self,
+                 *exceptions: Exception,
+                 token: Union[bool, str, None] = None,
+                 action=None,
+                 raise_immediately=None,
+                 log_level: Union[int, str] = None):
+        """Reconfigure a new errlog."""
+        changes = {}
+        fields = zip('token action raise_immediately log_level'.split(),
+                     [token, action, raise_immediately, log_level])
+        for k, v in fields:
+            if v is not None:
+                changes[k] = v
+        if exceptions:  # None-check futile
+            changes['exceptions'] = self.exceptions
+
+        clone = self.replace(**changes)
+        ## Share my etuples with clone.
+        clone._enforced_error_tuples = self._enforced_error_tuples
+
+        return clone
 
     def __enter__(self):
         """Return `self` upon entering the runtime context."""
@@ -718,53 +730,47 @@ class ErrLog(Spec):
             is_forced_meth = getattr(self.parent, 'is_forced', self.is_forced)
             is_forced = is_forced_meth(self.token)
             if is_forced or not self.raise_immediately:
-                #excinst = excinst.with_traceback(exctb)  # Ex already has it.
                 raise_later = not is_forced
-                self._enforced_error_tuples.append((self.action,
-                                                   raise_later,
-                                                   excinst))
+                #excinst = excinst.with_traceback(exctb)  Ex already has it!
+                etuple = (self.action, raise_later, excinst)
+
                 if log.isEnabledFor(logging.DEBUG):
                     getattr(self.parent, 'log', log).debug(
-                        "Collecting %s",
-                        self.format_err_tuple(self.action, raise_later, excinst),
+                        "Collecting %s" % self._format_etuple(*etuple),
                         exc_info=excinst)
-                return True
 
+                self._enforced_error_tuples.append(etuple)
+
+                return True
         return False
 
-    @staticmethod
-    def format_err_tuple(action, raise_later, ex):
-        if action:
-            return "%serror '%s' -> %s(%s)" % ('' if raise_later else '"forced" ',
-                                               action, type(ex).__name__, ex)
-        return "%serror %s(%s)" % ('' if raise_later else '"forced" ',
-                                   type(ex).__name__, ex)
+    @classmethod
+    def _format_etuple(cls, action, raise_later, ex):
+        action = action and " '%s'" % action or ''
+        errtype = 'delayed' if raise_later else '"forced"'
+        exstr = str(ex)
+        if exstr:
+            exstr = "%s: %s" % (type(ex).__name__, exstr)
+        else:
+            exstr = type(ex).__name__
+        return "%s error%s -> %s" % (errtype, action, exstr)
 
-    def report_errors(self, doing=None, no_raise=False) -> None:
-        """
-        Raise or return spec's collected errors.
-
-        :param doing:
-            A label for the activity, included in the final err-message reported,
-            e.g. "reading X-files",
-        :param no_raise:
-            Log-report errors, even if non "forced" ones collected.
-        :raise CmdException:
-            with any non-forced collected errors
-        """
-        etuples = self._enforced_error_tuples
-        if etuples:
-            erlines = ''.join('\n  %s' % ErrLog.format_err_tuple(*etuple)
+    def report_errors(self, doing=None, no_raise=False) -> str:
+        if self._enforced_error_tuples:
+            etuples = list(self._enforced_error_tuples)
+            self._enforced_error_tuples = []  # Avoid stacktrace memleaks.
+            erlines = ''.join('\n  %s' % self._format_etuple(*etuple)
                               for etuple in etuples)
             doing = ' while %s' % doing if doing else ''
             err_args = (len(etuples), doing, erlines)
             any_raise_later = any(raise_later for _, raise_later, _ in etuples)
 
             if no_raise or not any_raise_later:
-                msg = ("Suppressed %i error(s)%s: %s"
+                msg = ("Delayed %i error(s)%s: %s"
                        if any_raise_later else
                        "Bypassed %i error(s)%s: %s")
-                getattr(self.parent, 'log', log).warning(msg, *err_args)
+                getattr(self.parent, 'log', log).log(
+                    self.log_level, msg, *err_args)
             else:
                 msg = "Collected %i error(s)%s: %s"
                 raise CmdException(msg % err_args)
