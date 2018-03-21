@@ -373,6 +373,22 @@ class directional_link(object):
 dlink = directional_link
 
 
+class _RecursedError(Exception):
+    pass
+
+
+def norecurse(func):
+    """Decorator breaking recursion on :class:`_RecursedError`. """
+    @contextlib.wraps(func)
+    def inner(*args, **kw):
+        try:
+            return func(*args, **kw)
+        except _RecursedError:
+            pass
+
+    return inner
+
+
 #-----------------------------------------------------------------------------
 # Base Descriptor Class
 #-----------------------------------------------------------------------------
@@ -410,6 +426,14 @@ class BaseDescriptor(object):
         passing the class (`cls`) and `name` under which the descriptor
         has been assigned.
         """
+
+        ## Break infinity in recursive-traits.
+        #
+        visited = cls._traits_visited
+        if id(self) in visited:
+            raise _RecursedError()
+        visited.add(id(self))
+
         self.this_class = cls
         self.name = name
         if parent is not None:
@@ -797,6 +821,7 @@ class MetaHasDescriptors(type):
         BaseDescriptor in the class dict of the newly created ``cls`` before
         calling their :attr:`class_init` method.
         """
+        cls._traits_visited = set()  # to detect infinite recursion.
         for k, v in classdict.items():
             if isinstance(v, BaseDescriptor):
                 v.class_init(cls, k)
@@ -995,6 +1020,7 @@ class DefaultHandler(EventHandler):
     def __init__(self, name):
         self.trait_name = name
 
+    @norecurse
     def class_init(self, cls, name, parent=None):
         super(DefaultHandler, self).class_init(cls, name, parent)
         cls._trait_default_generators[self.trait_name] = self
@@ -2014,10 +2040,11 @@ class Union(TraitType):
                 break
         return default
 
+    @norecurse
     def class_init(self, cls, name, parent=None):
+        super(Union, self).class_init(cls, name, parent)
         for trait_type in reversed(self.trait_types):
             trait_type.class_init(cls, None, self)
-        super(Union, self).class_init(cls, name, parent)
 
     def instance_init(self, obj):
         for trait_type in reversed(self.trait_types):
@@ -2735,11 +2762,12 @@ class Collection(Container):
 
         super(Collection, self).__init__(**kwargs)
 
+    @norecurse
     def class_init(self, cls, name, parent=None):
+        super(Container, self).class_init(cls, name, parent)
         for trait in self._traits:
             if isinstance(trait, TraitType):
                 trait.class_init(cls, None, self)
-        super(Container, self).class_init(cls, name, parent)
 
     def instance_init(self, obj):
         for trait in self._traits:
@@ -2794,10 +2822,11 @@ class Sequence(Mutable, Container):
         self._trait = trait
         super(Sequence, self).__init__(**kwargs)
 
+    @norecurse
     def class_init(self, cls, name, parent=None):
+        super(Sequence, self).class_init(cls, name, parent)
         if isinstance(self._trait, TraitType):
             self._trait.class_init(cls, None, self)
-        super(Sequence, self).class_init(cls, name, parent)
 
     def instance_init(self, obj):
         if isinstance(self._trait, TraitType):
@@ -3026,7 +3055,9 @@ class Mapping(Mutable, Container):
 
         super(Mapping, self).__init__(default_value=default_value, **kwargs)
 
+    @norecurse
     def class_init(self, cls, name, parent=None):
+        super(Mapping, self).class_init(cls, name, parent)
         if self._value_trait is not None:
             self._value_trait.class_init(cls, None, self)
         if self._key_trait is not None:
@@ -3034,7 +3065,6 @@ class Mapping(Mutable, Container):
         if self._trait_mapping is not None:
             for trait in self._trait_mapping.values():
                 trait.class_init(cls, None, self)
-        super(Mapping, self).class_init(cls, name, parent)
 
     def instance_init(self, obj):
         if self._value_trait is not None:

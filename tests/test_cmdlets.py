@@ -43,6 +43,15 @@ def forceable():
     return Processor()
 
 
+def test_traitlets_recurse():
+    stack = trt.Tuple(trt.Int(), trt.List())
+    stack._traits[1]._trait = stack
+
+    ## Class definition will crash if not recursion broken!
+    class C(trt.HasTraits):
+        t = stack
+
+
 def test_Replaceable():
     class C(trt.HasTraits, cmdlets.Replaceable):
         a = Int()
