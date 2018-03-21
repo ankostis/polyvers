@@ -13,9 +13,9 @@ from polyvers._vendor.traitlets import traitlets as trt
 from polyvers._vendor.traitlets.traitlets import Int
 from polyvers.cli import ydumps
 from polyvers.logconfutils import init_logging
+from tests.conftest import touchpaths
 import logging
 import os
-import re
 import tempfile
 
 from ruamel.yaml.comments import CommentedMap
@@ -24,8 +24,6 @@ import pytest
 from py.path import local as P  # @UnresolvedImport
 import os.path as osp
 import textwrap as tw
-
-from .conftest import touchpaths, clearlog
 
 
 init_logging(level=logging.DEBUG, logconf_files=[])
@@ -149,99 +147,6 @@ def test_Forceable_is_forced(force, token, exp):
         force = [force]
     sp = cmdlets.Spec(force=force)
     assert sp.is_forced(token) is exp
-
-
-def test_ErrLog(forceable):
-    errlog = cmdlets.ErrLog(forceable, IOError, ValueError, doing='fire')
-    #TODO assert not errlog._build_error_message()
-
-    with errlog(token='gg') as errlog2:
-        assert errlog2.token == 'gg'
-        assert errlog.token is None
-    assert errlog.token is None
-    assert errlog.log_level is logging.WARNING
-
-    ## TODO: check stacked errlog messages
-
-
-def test_ErrLog_non_forced_errors(caplog, forceable):
-    level = logging.DEBUG
-    logging.basicConfig(level=level)
-    logging.getLogger().setLevel(level)
-
-    clearlog(caplog)
-
-    errlog = cmdlets.ErrLog(forceable, IOError, ValueError)
-    with errlog:
-        raise IOError("Wrong!")
-    assert len(errlog._enforced_error_tuples) == 1
-    with errlog(doing='burning'):  # check default `token` value
-        raise IOError("Wrong!")
-    assert len(errlog._enforced_error_tuples) == 2
-    assert re.search('DEBUG +Collecting delayed error', caplog.text)
-
-    clearlog(caplog)
-    with pytest.raises(cmdlets.CmdException,
-                       match="Collected 2 error") as ex_info:
-        errlog.report_errors()
-    assert '"forced"' not in str(ex_info.value)
-    assert 'while burning' in str(ex_info.value)
-    assert not errlog._enforced_error_tuples
-
-    ## Mixed case still raises
-    #
-    clearlog(caplog)
-    forceable.force = [True]
-    with errlog():  # check default `token` value
-        raise IOError("Wrong!")
-    with errlog(token=True):
-        raise IOError()
-    assert len(errlog._enforced_error_tuples) == 2
-
-    clearlog(caplog)
-    with pytest.raises(cmdlets.CmdException) as ex_info:
-        errlog.report_errors()
-    assert "Collected 2 error" in str(ex_info.value)
-
-    clearlog(caplog)
-    with errlog(token=True):
-        raise IOError()
-    assert re.search('DEBUG +Collecting "forced" error', caplog.text)
-    errlog.report_errors(no_raise=True)
-    assert re.search("WARNING +Bypassed 1 error", caplog.text)
-    assert not errlog._enforced_error_tuples
-
-    ## Check raise_immediately
-    #
-    with errlog(token=False, raise_immediately=True):
-        with pytest.raises(IOError) as ex_info:
-            raise IOError("STOP!")
-    assert "Collected" not in str(ex_info.value)
-
-
-def test_ErrLog_forced_errors(caplog, forceable):
-    level = logging.DEBUG
-    logging.basicConfig(level=level)
-    logging.getLogger().setLevel(level)
-
-    errlog = cmdlets.ErrLog(forceable, Exception,
-                            token='kento')
-
-    forceable.force = ['kento']
-    with errlog():
-        raise Exception()
-    forceable.force.append(True)
-    with errlog(doing='looting', token=True):
-        raise Exception()
-    assert len(errlog._enforced_error_tuples) == 2
-    assert re.search('DEBUG +Collecting "forced" error', caplog.text)
-
-    clearlog(caplog)
-    errlog.report_errors()
-    assert re.search(r'WARNING +Bypassed 2 error', caplog.text)
-    assert 'while looting' in caplog.text
-    assert not re.search("WARNING +Delayed ", caplog.text)
-    assert not errlog._enforced_error_tuples
 
 
 def test_CfgFilesRegistry_consolidate_posix_1():

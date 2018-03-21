@@ -54,6 +54,7 @@ script:
         mypy -m polyvers.engrave \
              -m polyvers.pvtags \
              -m polyvers.cmdlets \
+             -m polyvers.errlog \
              -m polyvers.cli
     fi
 
