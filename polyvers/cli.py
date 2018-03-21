@@ -12,13 +12,16 @@ from pathlib import Path
 from typing import Dict, Set  # noqa: F401, @UnusedImport  flake not seeing Set usage
 import io
 import logging
+from boltons.setutils import IndexedSet as iset
+import textwrap as tw
 
 from . import APPNAME, __version__, __updated__, cmdlets, pvtags, engrave, \
     polyverslib as pvlib, fileutils as fu
 from . import logconfutils as lcu
 from ._vendor import traitlets as trt
 from ._vendor.traitlets import config as trc
-from ._vendor.traitlets.traitlets import List, Bool, Unicode
+from ._vendor.traitlets.traitlets import List, Bool, Unicode, \
+        Tuple as TupleTrait
 from .autoinstance_traitlet import AutoInstance
 
 
@@ -231,15 +234,15 @@ class PolyversCmd(cmdlets.Cmd):
           or when no configuration file exists.
         """)
 
-    pvtags_scan = List(
-        AutoInstance(pvtags.Project),
-        default_value=[
+    autodiscover_version_scheme_projects = TupleTrait(
+        AutoInstance(pvtags.Project), AutoInstance(pvtags.Project),
+        default_value=(
             pvtags.make_match_all_pvtags_project(),
             pvtags.make_match_all_vtags_project(),
-        ],
+        ),
         config=True,
         help="""
-        Patterns and regexps to search for *pvtags* or plain *vtags* in git repo.
+        A pair of Projects with patterns/regexps matching *pvtags* or *vtags*, respectively.
 
         - Used when auto-discovering projects, to construct new or update
           a configuration file.
@@ -285,6 +288,7 @@ class PolyversCmd(cmdlets.Cmd):
         :return:
             one of :func:`pvtags.make_vtag_project`, :func:`pvtags.make_pvtag_project`
         """
+        ## TODO: Use `autodiscover_version_scheme_projects` trait.
         pvtag_proj, vtag_proj = pvtags.collect_standard_versioning_tags(parent=self)
 
         if bool(pvtag_proj.pvtags_history) ^ bool(vtag_proj.pvtags_history):
@@ -437,7 +441,7 @@ class BumpCmd(_SubCmd):
     Increase the version of project(s) by the given offset.
 
     SYNTAX:
-{cmd_chain} [OPTIONS] [<version>] [<project>]...
+        {cmd_chain} [OPTIONS] [<version>] [<project>]...
         {cmd_chain} [OPTIONS] --part <offset> [<project>]...
 
     - A version specifier, either ABSOLUTE, or RELATIVE to current version:
@@ -464,8 +468,64 @@ class BumpCmd(_SubCmd):
       use --force if you might.
     - The 'v' prefix is not needed!
     """
-    def run(self, *args):
-        self.check_project_configs_exist(self._cfgfiles_registry)
+    classes = [pvtags.Project, engrave.Engrave, engrave.Graft]
+
+    def _stop_if_git_dirty(self):
+        """
+        Note: ``git diff-index --quiet HEAD --``
+        from https://stackoverflow.com/a/2659808/548792
+        give false positives!
+        """
+        from .oscmd import cmd
+
+        out = cmd.git.describe(dirty=True, all=True)
+        if out.endswith('dirty'):
+            raise pvtags.GitError("Aborting bump, dirty working directory.")
+
+    def _filter_projects_by_pnames(self, projects, version, *pnames):
+        """Process args to identify projects, and scream on unknowns"""
+        if pnames:
+            all_pnames = [prj.pname for prj in projects]
+            pnames = iset(pnames)
+            unknown_projects = (pnames - iset(all_pnames))
+            if unknown_projects:
+                raise cmdlets.CmdException(
+                    "Unknown project(s): %s\n  Choose from existing one(s): %s" %
+                    (', '.join(unknown_projects), ', '.join(all_pnames)))
+
+            projects = [p for p in projects
+                        if p.pname in pnames]
+
+        return version, projects
+
+    def run(self, *version_and_pnames):
+
+        projects = self.bootstrapp_projects()
+        if version_and_pnames:
+            version, projects = self._filter_projects_by_pnames(projects, *version_and_pnames)
+        else:
+            version = self.default_version_bump
+
+        ##  TODO: Scan current version & maybe convert relative versions
+        ## TODO: Stop bump if version fails pep440 validation.
+
+        ## Finally stop before serious damage happens,
+        #  (but only after allowing some validation to run).
+        self._stop_if_git_dirty()
+
+        log.info('Bumping %r --> %r for projects: %s', 'old-v', version,
+                 ', '.join(proj.pname for proj in projects))
+
+        with pvtags.git_restore_point(restore=self.dry_run):
+            for proj in projects:
+                proj.tag_version_commit(version, is_release=False)
+
+            for proj in projects:
+                proj.engrave_version(version)
+
+            if not self.no_release_tag:
+                for proj in projects:
+                    proj.tag_version_commit(version, is_release=True)
 
 
 class LogconfCmd(_SubCmd):
@@ -552,3 +612,12 @@ PolyversCmd.aliases = {  # type: ignore
     ('u', 'sign-user'): 'Project.sign_user',
     ('f', 'force'): 'Spec.force',
 }
+
+cmdlets.Spec.force.help += """
+Supported tokens:
+  'fread'     : don't stop engraving on file-reading errors.
+  'fwrite'    : don't stop engraving on file-writting errors.
+  'foverwrite': overwrite existing file.
+  'glob'      : keep-going even if glob-patterns are invalid.
+  'tag'       : replace existing tag.
+"""

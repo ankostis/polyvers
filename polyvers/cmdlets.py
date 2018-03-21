@@ -649,6 +649,9 @@ class ErrLog(Replaceable, trt.HasTraits):
 
         self._enforced_error_tuples: List[Tuple[Any, bool, Exception]] = []
 
+    def _populate_clone(self, clone):
+        clone._stack = self._stack.copy()
+
     def __call__(self,
                  *exceptions: Exception,
                  token: Union[bool, str, None] = None,
@@ -662,27 +665,27 @@ class ErrLog(Replaceable, trt.HasTraits):
         for k, v in fields:
             if v is not None:
                 changes[k] = v
-        if doing is not None:  # Need to convert to list.
-            stack = self._stack.copy()
-            stack[-1] = doing
-            changes['_stack'] = stack
-        if exceptions:  # None-check futile
-            changes['exceptions'] = self.exceptions
 
         clone = self.replace(**changes)
+        if exceptions:  # None-check futile
+            clone.exceptions = self.exceptions
+        if doing is not None:
+            clone.stack[-1] = doing  # stack cloned already
+
         ## Share my etuples with clone.
         clone._enforced_error_tuples = self._enforced_error_tuples
 
         return clone
 
     def stack(self,
-               *exceptions: Exception,
-               token: Union[bool, str, None] = None,
-               doing=None,
-               raise_immediately=None,
-               log_level: Union[int, str] = None):
+              *exceptions: Exception,
+              token: Union[bool, str, None] = None,
+              doing=None,
+              raise_immediately=None,
+              log_level: Union[int, str] = None):
         clone = self(*exceptions, token, raise_immediately, log_level)
         clone._stack.append(doing)
+        clone._enforced_error_tuples = []
         return clone
 
     def __enter__(self):

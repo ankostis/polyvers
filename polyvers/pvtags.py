@@ -18,6 +18,7 @@ There are 3 important methods/functions calling Git:
   this function has not been applies on a project instance.
 """
 
+from collections import OrderedDict as odict
 from pathlib import Path
 from typing import List, Dict, Tuple, Sequence, Optional
 import contextlib
@@ -28,11 +29,12 @@ import re
 
 import subprocess as sbp
 
-from . import polyverslib as pvlib, cmdlets, interpctxt
+from . import polyverslib as pvlib, cmdlets, interpctxt, engrave
 from ._vendor.traitlets import traitlets as trt
 from ._vendor.traitlets.traitlets import (
     Bool, Unicode, Instance,
     List as ListTrait, Tuple as TupleTrait)  # @UnresolvedImport
+from .autoinstance_traitlet import AutoInstance
 from .oscmd import cmd
 
 
@@ -137,12 +139,13 @@ class Project(cmdlets.Replaceable, cmdlets.Printable, cmdlets.Spec):
            in `pvtag_frmt` kw-arg.
     """).tag(config=True)
 
-    @trt.default('pvtag_frmt')
-    def _tag_frmt_from_template(self):
-        template_project = getattr(self.active_subcmd(), 'template_project', None)
-        if template_project and template_project is not self:
-            return template_project.pvtag_frmt
-        return ''
+    def _format_vtag(self, version, is_release=False):
+        with self.interpolations.ikeys(self,
+                                       version=version,
+                                       vprefix=self.tag_vprefixes[int(is_release)]
+                                       ) as ictxt:
+            tag = self.pvtag_frmt.format_map(ictxt)
+        return tag
 
     def tag_fnmatch(self, is_release=False):
         """
@@ -202,17 +205,25 @@ class Project(cmdlets.Replaceable, cmdlets.Printable, cmdlets.Spec):
 
         """)
     sign_tags = Bool(
+        allow_none=True,
         config=True,
         help="Enable PGP-signing of tags (see also `sign_user`)."
     )
 
+    sign_commmits = Bool(
+        allow_none=True,
+        config=True,
+        help="Enable PGP-signing of commits (see also `sign_user`)."
+    )
+
     sign_user = Unicode(
+        allow_none=True,
         config=True,
         help="The signing PGP user (email, key-id)."
     )
 
     message = Unicode(
-        "chore(ver): bump {{current_version}} → {{new_version}}",
+        "chore(ver): bump {current_version} → {version}",
         config=True,
         help="""
             The message for commits and per-project tags.
@@ -352,6 +363,117 @@ class Project(cmdlets.Replaceable, cmdlets.Printable, cmdlets.Spec):
             out = cmd.git.log(n=1, format='format:%cD')  # TODO: traitize log-date format
 
         return out
+
+    def tag_version_commit(self, new_version: str, is_release=False):
+        """
+        Make a tag on current commit denoting a version-bump.
+
+        :param version:
+            the new version, in final form
+        :param is_release:
+            `False` for version-tags, `True` for release-tags
+        """
+        tag_name = self._format_vtag(new_version, is_release)
+        cmd.git.tag(tag_name,
+                    message=self.message,
+                    force=self.is_force('tag') or None,
+                    sign=self.sign_tags or None,
+                    local_self=self.sign_user or None,
+                    )
+
+    engraves = ListTrait(
+        AutoInstance(engrave.Engrave),
+        default_value=[{
+            'globs': ['setup.py', '__init__.py'],
+            'grafts': [
+                {
+                    'regex': r'''(?x)
+                            \bversion
+                            (\ *=\ *)
+                            (.+)$
+                        ''',
+                    'subst': r"version\1'{version}'"
+                }
+            ],
+        }],
+        config=True,
+        help="""
+        """)
+
+    def _engraves_interpolated(self, version: str) -> List[engrave.Engrave]:
+        ## Clone them all
+        # (but not grafts contained yet).
+        engraves = [eng.replace() for eng in self.engraves]
+
+        for eng in engraves:
+            with self.interpolations.ikeys(_EscapedObjectDict(self, glob.escape),
+                                           vprefix=self.tag_vprefixes[0],
+                                           version=version,
+                                           ) as ictxt:
+                eng.globs = [glob.format_map(ictxt) for glob in eng.globs]
+
+            with self.interpolations.ikeys(_EscapedObjectDict(self, re.escape),
+                                           vprefix=self.tag_vprefixes[0],
+                                           version=version,
+                                           ) as ictxt:
+                ## Clone graft & interpolate their regex.
+                eng.grafts = [graft.replace(regex=graft.regex.pattern.format_map(ictxt))
+                              for graft in eng.grafts]
+
+            with self.interpolations.ikeys(self,
+                                           vprefix=self.tag_vprefixes[0],
+                                           version=version,
+                                           ) as ictxt:
+                for graft in eng.grafts:
+                    graft.subst = graft.subst.format_map(ictxt)
+
+        return engraves
+
+    def scan_versions(self, version: str) -> engrave.PathEngraves:
+        engraves = self._engraves_interpolated(version)
+        hits = engrave.scan_engraves(engraves)
+
+        nhits = sum(fspec.nhits for fspec in hits.values())
+        if nhits == 0:
+            raise cmdlets.CmdException(
+                "No version graft-points found in %i globbed files!" % len(hits))
+
+        return hits
+
+    def engrave_versions(self, version: str,
+                         hits: engrave.PathEngraves) -> None:
+        nfiles = nhits = nsubs = 0
+        for eng in self._engraves_interpolated(version):
+            subs = eng.engrave_all()
+            nfiles += len(subs)
+            nhits += sum(fspec.nhits for fspec in subs.values())
+            nsubs += sum(fspec.nsubs for fspec in subs.values())
+
+        if nsubs == 0:
+            raise cmdlets.CmdException(
+                "No engraves performed (%i substitutions out of %i hits in %i files)!"
+                "\n  Aborting before release-version" % (nsubs, nhits, nfiles))
+        out = cmd.git.commit(message=self.message,
+                             all=True,
+                             sign=self.sign_commmits or None,
+                             dry_run=self.dry_run or None,
+                             )
+        if self.dry_run:
+            log.info('PRETEND commit: %s' % out)
+
+    default_version_bump = Unicode(
+        '^1',
+        config=True,
+        help="Which relative version to imply if not given in the cmd-line."
+    )
+
+    @trt.validate('default_version_bump')
+    def _require_relative_version(self, change):
+        if change.new.startswith(('+', '^')):
+            raise trt.TraitError(
+                "Expected a relative version for '%s.%s', but got '%s'!"
+                "\n  Relative versions start either with '+' or '^'." %
+                change.owner, change.trait.name, change.new)
 
 
 def make_pvtag_project(pname: str = '<monorepo-project>',

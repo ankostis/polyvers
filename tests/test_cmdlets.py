@@ -201,9 +201,10 @@ def test_ErrLog_mixed_errors(caplog, forceable):
     clearlog(caplog)
     forceable.force = [True]
     with errlog:
-        with errlog.stack('foo'):  # check default `token` value
+        erl2 = errlog.stack('foo')
+        with erl2:  # check default `token` value
             raise IOError("Wrong!")
-        with errlog.stack('foo', token=True):
+        with erl2(token=True):
             raise IOError()
         assert len(errlog._enforced_error_tuples) == 2
     assert len(errlog._enforced_error_tuples) == 0
