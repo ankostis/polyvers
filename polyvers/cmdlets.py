@@ -576,6 +576,8 @@ class ErrLog(Replaceable, trt.HasTraits):
             (errors collected are just delayed);
           - <a string>: "force" errors if this token is in `force` trait;
           - `True`: "force" errors if `True` is in :attr:`force``force`.
+    :ivar _stack:
+        a list of `doing` with each nested errlog appending one more
     :ivar raise_immediately:
         if not forced, do not wait for `report_errors()` call to raise them;
         suggested use when a function decorator.  Also when --debug.
@@ -589,10 +591,35 @@ class ErrLog(Replaceable, trt.HasTraits):
 
     See :meth:`Spec.errlog()` for example.
     """
+    @staticmethod
+    def _format_etuple(doing, is_forced, ex):
+        doing = doing and " while %s" % doing or ''
+        errtype = '"forced"' if is_forced else 'delayed'
+        exstr = str(ex)
+        if exstr:
+            exstr = "%s: %s" % (type(ex).__name__, exstr)
+        else:
+            exstr = type(ex).__name__
+        return "%s error%s -> %s" % (errtype, doing, exstr)
+
+    class ErrLogErrors(CmdException):
+        def __init__(self, etuples, doing=None):
+            #self.etuples = etuples
+
+            doing = ' while %s' % doing if doing else ''
+            self.is_all_forced = all(is_forced for _, is_forced, _ in etuples)
+            reason = 'Bypassed' if self.is_all_forced else 'Collected'
+            erlines = ''.join('\n  %s' % ErrLog._format_etuple(*etuple)
+                              for etuple in etuples)
+            self.msg = "%s %i error(s)%s: %s" % (reason, len(etuples), doing, erlines)
+
+        def __str__(self):
+            return self.msg
+
     parent = Instance(Forceable)
     exceptions = ListTrait(TypeTrait(Exception))
     token = UnionTrait((Unicode(), Bool()), allow_none=True)
-    doing = Unicode(None, allow_none=True)
+    _stack = ListTrait(Unicode(allow_none=True))
     raise_immediately = CBool()
     log_level = UnionTrait((Int(), Unicode()))
 
@@ -613,11 +640,13 @@ class ErrLog(Replaceable, trt.HasTraits):
                  raise_immediately=None,
                  log_level=logging.WARNING
                  ) -> None:
-        super().__init__(parent=parent, token=token, doing=doing,
-                         raise_immediately=raise_immediately,
-                         log_level=log_level)
         if exceptions:
             self.exceptions = exceptions
+        super().__init__(parent=parent, exceptions=exceptions,
+                         token=token, _stack=[doing],
+                         raise_immediately=raise_immediately,
+                         log_level=log_level)
+
         self._enforced_error_tuples: List[Tuple[Any, bool, Exception]] = []
 
     def __call__(self,
@@ -626,13 +655,17 @@ class ErrLog(Replaceable, trt.HasTraits):
                  doing=None,
                  raise_immediately=None,
                  log_level: Union[int, str] = None):
-        """Reconfigure a new errlog."""
+        """Reconfigure a new errlog on the same stack-level."""
         changes = {}
-        fields = zip('token doing raise_immediately log_level'.split(),
-                     [token, doing, raise_immediately, log_level])
+        fields = zip('token raise_immediately log_level'.split(),
+                     [token, raise_immediately, log_level])
         for k, v in fields:
             if v is not None:
                 changes[k] = v
+        if doing is not None:  # Need to convert to list.
+            stack = self._stack.copy()
+            stack[-1] = doing
+            changes['_stack'] = stack
         if exceptions:  # None-check futile
             changes['exceptions'] = self.exceptions
 
@@ -642,44 +675,61 @@ class ErrLog(Replaceable, trt.HasTraits):
 
         return clone
 
+    def stack(self,
+               *exceptions: Exception,
+               token: Union[bool, str, None] = None,
+               doing=None,
+               raise_immediately=None,
+               log_level: Union[int, str] = None):
+        clone = self(*exceptions, token, raise_immediately, log_level)
+        clone._stack.append(doing)
+        return clone
+
     def __enter__(self):
         """Return `self` upon entering the runtime context."""
         return self
 
-    def __exit__(self, exctype, excinst, _exctb):
-        if exctype is not None:
-            suppress_ex = False
-            try:
-                if issubclass(exctype, tuple(self.exceptions)):
+    def __exit__(self, exctype, ex, _exctb):
+        ## 3-state out flag:
+        #  - None: no exc
+        #  - False: raising
+        #  - True: collecting raised ex
+        suppress_ex = None
+        try:
+            if exctype is not None:
+                suppress_ex = False
+
+                if issubclass(exctype, ErrLog.ErrLogErrors):
+                    self._collect_error(ex.is_all_forced, ex)
+                    suppress_ex = True
+
+                elif issubclass(exctype, tuple(self.exceptions)):
                     is_forced = self.is_forced()
                     if is_forced or not self.raise_immediately:
-                        #excinst = excinst.with_traceback(exctb)  Ex already has it!
-                        self._collect_error(is_forced, excinst)
+                        #ex = ex.with_traceback(exctb)  Ex already has it!
+                        self._collect_error(is_forced, ex)
                         suppress_ex = True
 
                 return suppress_ex
-            finally:
-                if not suppress_ex:
-                    doing = self.doing
-                    self.doing = ("%s failed unexpectedly" % doing
+        finally:
+            stack = self._stack
+            stack_level = len(stack)
+            assert stack_level >= 1, stack
+
+            if suppress_ex is False:  # exit is raising
+                doing = stack[-1]
+                self._stack[-1] = ("%s failed unexpectedly" % doing
                                   if doing else
                                   "failing unexpectedly")
-                    self.report_errors(no_raise=True)
-
-    @classmethod
-    def _format_etuple(cls, doing, is_forced, ex):
-        doing = doing and " while %s" % doing or ''
-        errtype = '"forced"' if is_forced else 'delayed'
-        exstr = str(ex)
-        if exstr:
-            exstr = "%s: %s" % (type(ex).__name__, exstr)
-        else:
-            exstr = type(ex).__name__
-        return "%s error%s -> %s" % (errtype, doing, exstr)
+                self.report_errors(do_raise=False)
+            elif stack_level == 1:
+                self.report_errors(do_raise=None)
+            else:
+                self.report_errors(do_raise=True)
 
     def _collect_error(self, is_forced, error):
         #error = error.with_traceback(exctb)  Ex already has it!
-        etuple = (self.doing, is_forced, error)
+        etuple = (self._stack[-1], is_forced, error)
 
         log = self.plog
         if log.isEnabledFor(logging.DEBUG):
@@ -688,29 +738,47 @@ class ErrLog(Replaceable, trt.HasTraits):
 
         self._enforced_error_tuples.append(etuple)
 
-    def _flush_errors(self) -> Optional[str]:
-        """Generate a message for all collected errors, before clearing them."""
-        if self._enforced_error_tuples:
-            etuples = self._enforced_error_tuples
-            self._enforced_error_tuples = []  # Avoid stacktrace memleaks.
-            erlines = ''.join('\n  %s' % self._format_etuple(*etuple)
-                              for etuple in etuples)
-            doing = self.doing and ' while %s' % self.doing or ''
-            all_forced = all(is_forced for _, is_forced, _ in etuples)
-            reason = 'Bypassed' if all_forced else 'Collected'
-
-            return "%s %i error(s)%s: %s" % (
-                reason, len(etuples), doing, erlines)
-
-    def report_errors(self, no_raise=False) -> str:
-        etuples = self._enforced_error_tuples  # Order with `_flush()` matters!
+    def report_errors(self, do_raise=None) -> str:
+        """
+        :param raise:
+            3-state bool:
+            - None: raise only if any non-forced (i.e. stack-level == 1)
+            - False: log only (i.e. in a finally block)
+            - True: raise only (i.e. stack-level > 1)
+        """
+        etuples = self._enforced_error_tuples.copy()  # Order with `_flush()` matters!
         if etuples:
-            err_msg = self._flush_errors()
-            all_forced = all(is_forced for _, is_forced, _ in etuples)
-            if no_raise or all_forced:
-                self.plog.log(self.log_level, err_msg)
+            self._enforced_error_tuples.clear()  # Avoid tb-memleaks from all clones.
+
+            ex = ErrLog.ErrLogErrors(etuples)
+            is_all_forced = ex.is_all_forced
+            if do_raise is True or (do_raise is None and not is_all_forced):
+                raise ex from None
+
+            if do_raise is False or (do_raise is None and is_all_forced):
+                self.plog.log(self.log_level, str(ex))
             else:
-                raise CmdException(err_msg)
+                raise AssertionError(do_raise, is_all_forced)
+
+
+def errlogged(*errlog_args, **errlog_kw):
+    """
+    Decorate functions/methods with a :class:`ErrLog` instance.
+
+    The errlog-contextman is attached on the wrapped function/method
+    as the `errlog` attribute.
+    """
+    def decorate(func):
+        @contextlib.wraps(func)
+        def inner(forceable, *args, **kw):
+            errlog = ErrLog(forceable, *errlog_args, **errlog_kw)
+            inner.errlog = errlog
+            with errlog(*errlog_args, **errlog_kw):
+                return func(forceable, *args, **kw)
+
+        return inner
+
+    return decorate
 
 
 class CmdletsInterpolation(interpctxt.InterpolationContext):

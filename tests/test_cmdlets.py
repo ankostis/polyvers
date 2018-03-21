@@ -169,34 +169,44 @@ def test_ErrLog_non_forced_errors(caplog, forceable):
     logging.basicConfig(level=level)
     logging.getLogger().setLevel(level)
 
-    clearlog(caplog)
-
     errlog = cmdlets.ErrLog(forceable, IOError, ValueError)
-    with errlog:
-        raise IOError("Wrong!")
-    assert len(errlog._enforced_error_tuples) == 1
-    with errlog(doing='burning'):  # check default `token` value
-        raise IOError("Wrong!")
-    assert len(errlog._enforced_error_tuples) == 2
-    assert re.search('DEBUG +Collecting delayed error', caplog.text)
 
     clearlog(caplog)
     with pytest.raises(cmdlets.CmdException,
-                       match="Collected 2 error") as ex_info:
-        errlog.report_errors()
+                       match="Collected 1 error") as ex_info:
+        with errlog:
+            raise IOError("Wrong!")
+    assert len(errlog._enforced_error_tuples) == 0
+    assert re.search('DEBUG +Collecting delayed error', caplog.text)
     assert '"forced"' not in str(ex_info.value)
-    assert 'while burning' in str(ex_info.value)
-    assert not errlog._enforced_error_tuples
+    assert 'delayed' in str(ex_info.value)
 
+    clearlog(caplog)
+    with pytest.raises(cmdlets.CmdException,
+                       match="Collected 1 error") as ex_info:
+        with errlog(doing='burning'):  # check default `token` value
+            raise IOError("Wrong!")
+    assert not errlog._enforced_error_tuples
+    assert 'while burning' in str(ex_info.value)
+
+
+def test_ErrLog_mixed_errors(caplog, forceable):
+    level = logging.DEBUG
+    logging.basicConfig(level=level)
+    logging.getLogger().setLevel(level)
+
+    errlog = cmdlets.ErrLog(forceable, IOError, ValueError)
     ## Mixed case still raises
     #
     clearlog(caplog)
     forceable.force = [True]
-    with errlog():  # check default `token` value
-        raise IOError("Wrong!")
-    with errlog(token=True):
-        raise IOError()
-    assert len(errlog._enforced_error_tuples) == 2
+    with errlog:
+        with errlog.stack('foo'):  # check default `token` value
+            raise IOError("Wrong!")
+        with errlog.stack('foo', token=True):
+            raise IOError()
+        assert len(errlog._enforced_error_tuples) == 2
+    assert len(errlog._enforced_error_tuples) == 0
 
     clearlog(caplog)
     with pytest.raises(cmdlets.CmdException) as ex_info:
@@ -242,6 +252,33 @@ def test_ErrLog_forced_errors(caplog, forceable):
     assert 'while looting' in caplog.text
     assert not re.search("WARNING +Delayed ", caplog.text)
     assert not errlog._enforced_error_tuples
+
+
+def test_ErrLog_decorator(caplog):
+    class C(cmdlets.Spec):
+        @cmdlets.errlogged(Exception, token=True)
+        def f_log(self):
+            assert self.f_log.errlog
+            raise Exception
+
+        @cmdlets.errlogged(ValueError)
+        def f_raise(self):
+            assert self.f_raise.errlog
+            raise ValueError
+
+    C(force=[True]).f_log()
+    assert "Collected 1 error" in caplog.text
+
+    with pytest.raises(cmdlets.CmdException, match='Collected 1 error'):
+        C().f_log()
+
+    obj = C(force=[True])
+    clearlog(caplog)
+    obj.f_log()
+    assert "Collected 1 error" in caplog.text
+
+    with pytest.raises(cmdlets.CmdException, match='Collected 1 error'):
+        obj.f_raise()
 
 
 def test_CfgFilesRegistry_consolidate_posix_1():
