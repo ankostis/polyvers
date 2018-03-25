@@ -19,6 +19,7 @@ import textwrap as tw
 
 
 CollectedErrors = errlog.ErrLog.CollectedErrors
+ErrLogException = errlog.ErrLog.ErrLogException
 
 
 @pytest.fixture
@@ -31,15 +32,15 @@ def forceable():
 
 @pytest.mark.parametrize('fields, exp_str, exp_repr', [
     ({}, 'ELN', None),
-    ({'doing': '1'}, "ELN('1')", None),
-    ({'is_forced': True}, 'ELN(F)', None),
-    ({'is_forced': False}, 'ELN(NF)', None),
-    ({'err': ValueError()}, 'ELN(ValueError())', None),
+    ({'doing': '1'}, "ELN<'1'>", None),
+    ({'is_forced': True}, 'ELN<F>', None),
+    ({'is_forced': False}, 'ELN<NF>', None),
+    ({'err': ValueError()}, 'ELN<ValueError()>', None),
 
     ({'doing': 'well', 'is_forced': True, 'err': ValueError()},
-     "ELN('well', F, ValueError())", None),
+     "ELN<'well', F, ValueError()>", None),
 
-    ({'cnodes': [_ErrNode()]}, 'ELN(+)', 'ELN([ELN'),
+    ({'cnodes': [_ErrNode()]}, 'ELN<+>', 'ELN<[ELN'),
 ])
 def test_ErrNode_str(fields, exp_str, exp_repr):
     node = _ErrNode(**fields)
@@ -55,47 +56,60 @@ _err2 = KeyError()
     ({}, None),
     ({'doing': '1', 'is_forced': True}, None),
 
-    ({'err': ValueError()}, "delayed: ValueError"),
-    ({'err': ValueError('hi')}, "delayed: ValueError: hi"),
-    ({'doing': 'rafting', 'err': _err}, "delayed while rafting: ValueError"),
-    ({'is_forced': True, 'err': _err}, "ignored: ValueError"),
+    ({'err': ValueError()}, "while ??:\n  delayed: ValueError"),
+    ({'err': ValueError('hi'), 'doing': "zing"},
+     "while zing:\n  delayed: ValueError: hi"),
+    ({'doing': 'rafting', 'err': _err}, "while rafting:\n  delayed: ValueError"),
+    ({'is_forced': True, 'err': _err}, "while ??:\n  ignored: ValueError"),
     ({'doing': 'rafting', 'is_forced': True, 'err': _err},
-     "ignored while rafting: ValueError"),
+     "while rafting:\n  ignored: ValueError"),
 
 
     ({'err': _err, 'cnodes': [_ErrNode(err=_err2)]},
      tw.dedent("""\
-        delayed: ValueError
-          - delayed: KeyError""")),
+        while ??:
+          - while ??:
+            delayed: KeyError
+          delayed: ValueError""")),
 
-    ({'err': _err, 'cnodes': [_ErrNode(err=_err2),
-                              _ErrNode(),
+    ({'err': _err, 'cnodes': [_ErrNode(err=_err2, doing='sing'),
+                              _ErrNode(doing='jjj'),
                               _ErrNode(err=_err)]},
      tw.dedent("""\
-        delayed: ValueError
-          - delayed: KeyError
-          - delayed: ValueError""")),
+        while ??:
+          - while sing:
+            delayed: KeyError
+          - while ??:
+            delayed: ValueError
+          delayed: ValueError""")),
 
     ({'doing': 'parsing', 'err': _err, 'cnodes': [_ErrNode(err=_err2,
                                                            doing='opening')]},
      tw.dedent("""\
-        delayed while parsing: ValueError
-          - delayed while opening: KeyError""")),
+        while parsing:
+          - while opening:
+            delayed: KeyError
+          delayed: ValueError""")),
 
     ({'err': _err, 'cnodes': [_ErrNode(err=_err2),
                               _ErrNode(cnodes=[_ErrNode(), _ErrNode()])]},  # ignore empty
      tw.dedent("""\
-        delayed: ValueError
-          - delayed: KeyError""")),
+        while ??:
+          - while ??:
+            delayed: KeyError
+          delayed: ValueError""")),
 
     ({'err': _err, 'cnodes': [_ErrNode(),
                               _ErrNode(err=_err2,
                                        cnodes=[_ErrNode(),
                                                _ErrNode(err=_err)])]},
      tw.dedent("""\
-        delayed: ValueError
-          - delayed: KeyError
-            - delayed: ValueError""")),
+        while ??:
+          - while ??:
+            - while ??:
+              delayed: ValueError
+            delayed: KeyError
+          delayed: ValueError""")),
 ])
 def test_ErrNode_tree_text(fields, exp):
     node = _ErrNode(**fields)
@@ -104,23 +118,22 @@ def test_ErrNode_tree_text(fields, exp):
 
 
 def test_ErrLog_str(forceable):
-    exp = r'ErrLog\(rot=ELN@\w{5}, anc=ELN@\w{5}, crd=\[\]\, act=None\)'
+    exp = r'ErrLog<rot=ELN@\w{5}, anc=ELN@\w{5}, crd=, act=None>'
     erl = ErrLog(forceable)
     assert re.search(exp, str(erl))
     assert re.search(exp, repr(erl))
 
     exp1 = r"""(?x)
-        ErrLog\(rot=ELN\(\[ELN\(NF\)@\w{5}\]\)@\w{5},
-        \ anc=ELN\(\+\)@\w{5},
-        \ crd=\[\],
-        \ act=None\)@\w{5}
+        ErrLog<rot=ELN<\[ELN<NF>@\w{5}\]>@\w{5},
+        \ anc=ELN<\+>@\w{5},
+        \ crd=,
+        \ act=None>@\w{5}
     """
-    ## TODO: Not sure COORDINATES correct!
     exp2 = r"""(?x)
-        ErrLog\(rot=ELN\(\[ELN\(NF\)@\w{5}\]\)@\w{5},
-        \ anc=ELN\(NF\)@\w{5},
-        \ crd=\[0\],
-        \ act=None\)@\w{5}
+        ErrLog<rot=ELN<\[ELN<NF>@\w{5}\]>@\w{5},
+        \ anc=ELN<NF>@\w{5},
+        \ crd=0,
+        \ act=None>@\w{5}
     """
     with erl(token='golf') as erl2:
         assert re.search(exp1, str(erl))
@@ -186,15 +199,16 @@ def test_ErrLog_no_errors(caplog, forceable):
 
 
 def test_ErrLog_root(forceable, caplog):
-#     with pytest.raises(CollectedErrors, match="Collected 1 errors:"):
-#         with ErrLog(forceable, ValueError):
-#             raise ValueError()
-#     assert re.search('DEBUG +Collecting ValueError', caplog.text)
+    with pytest.raises(CollectedErrors, match="Collected 1 errors while"):
+        with ErrLog(forceable, ValueError):
+            raise ValueError()
+    assert re.search('DEBUG +Collecting ValueError', caplog.text)
 
+    clearlog(caplog)
     forceable.force.append(True)
     with ErrLog(forceable, ValueError, token=True):
         raise ValueError()
-    assert "Ignored 1 errors:" in caplog.text
+    assert "Ignored 1 errors while" in caplog.text
     assert re.search('DEBUG +Collecting ValueError', caplog.text)
 
     clearlog(caplog)
@@ -204,52 +218,94 @@ def test_ErrLog_root(forceable, caplog):
     assert not caplog.text
 
 
-def test_ErrLog_nested(caplog, forceable):
+def test_ErrLog_nested_all_captured(caplog, forceable):
     forceable.force.append(True)
     erl = ErrLog(forceable, ValueError, token=True)
 
     clearlog(caplog)
-    #with pytest.raises(ErrLog.CollectedErrors) as ex_info:
-    with erl(doing="walking") as erl2:
+    with erl(doing="starting") as erl2:
         with erl2(doing="notting"):
             pass
 
-        with erl2(doing="burning"):
-            raise ValueError("Wrong!")
-        with erl2(doing="looting"):
-            raise KeyError("Wrong!")
+        with erl2(doing="doing-1"):
+            raise ValueError("Wrong-1!")
 
-        with erl2(doing="eating") as erl3:
-            with erl3(doing="burping"):
-                raise ValueError("GOOOD")
-                raise KeyError("GOOOD")
-    exp = tw.dedent("""sdsdfdsfs""")
-    print(ex_info.value)
-    assert ex_info.value == exp
+        with erl2(doing="doing-2") as erl3:
+            with erl3(doing="do-doing"):
+                raise ValueError("Good-do-do")
+            raise ValueError("better-2")
+
+    exp = tw.dedent("""\
+        Ignored 3 errors while starting:
+          - while doing-1:
+            ignored: ValueError: Wrong-1!
+          - while doing-2:
+            - while do-doing:
+              ignored: ValueError: Good-do-do
+            ignored: ValueError: better-2""")
+    #print(caplog.text)
+    assert exp in caplog.text
+
+
+def test_ErrLog_nested_reuse(caplog, forceable):
+    forceable.force.append(True)
+    erl = ErrLog(forceable, token=True)
+
+    with pytest.raises(ValueError):
+        with erl:
+            raise ValueError()
+
+    clearlog(caplog)
+    with erl(ValueError, doing="starting"):
+        raise ValueError("HiHi")
+    assert "HiHi" in caplog.text
+
+
+def test_ErrLog_nested_complex_msg(caplog, forceable):
+    forceable.force.append(True)
+    erl = ErrLog(forceable, ValueError, token=True)
+    ## Re-use non-failed errlog, and fail it.
+    #
+    clearlog(caplog)
+    with pytest.raises(KeyError):
+        with erl(doing="starting") as erl2:
+            with erl2(doing="doing-1"):
+                raise ValueError("Wrong-1!")
+
+            with erl2(doing="doing-3"):
+                raise KeyError("Wrong-3")
+    exp = tw.dedent("""\
+        Ignored 1 errors while starting:
+          - while doing-1:
+            ignored: ValueError: Wrong-1!
+    """)
+    assert exp in caplog.text
 
 
 def test_ErrLog_decorator(caplog):
     class C(cmdlets.Spec):
-        @errlog.errlogged(Exception, token=True)
+        @errlog.errlogged(KeyError, token=True)
         def f_log(self):
-            assert self.f_log.errlog
-            raise Exception
+            assert self.f_log.errlog  # installed by decorator
+            raise KeyError()
 
-        @errlog.errlogged(ValueError)
+        @errlog.errlogged(KeyError)
         def f_raise(self):
-            assert self.f_raise.errlog
-            raise ValueError
+            assert self.f_raise.errlog  # installed by decorator
+            raise ValueError()
 
     C(force=[True]).f_log()
-    assert "Collected 1 error" in caplog.text
+    assert "Collecting KeyError" in caplog.text
+    assert "Ignored 1 errors while ??" in caplog.text
 
+    clearlog(caplog)
     with pytest.raises(cmdlets.CmdException, match='Collected 1 error'):
         C().f_log()
 
     obj = C(force=[True])
     clearlog(caplog)
     obj.f_log()
-    assert "Collected 1 error" in caplog.text
+    assert "Ignored 1 error" in caplog.text
 
-    with pytest.raises(cmdlets.CmdException, match='Collected 1 error'):
+    with pytest.raises(ValueError):
         obj.f_raise()

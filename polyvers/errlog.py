@@ -63,7 +63,8 @@ class _ErrNode(trt.HasTraits):
     doing = Unicode(default_value=None, allow_none=True)
     is_forced = Bool(default_value=None, allow_none=True)
     err = Instance(Exception, default_value=None, allow_none=True)
-    cnodes = ListTrait()
+    cnodes = ListTrait()  # eventful=True)
+    #cnodes._trait = Instance('polyvers.errlog._ErrNode')
 
     def new_cnode(self, doing, is_forced):
         assert self.err is None, repr(self)
@@ -79,7 +80,7 @@ class _ErrNode(trt.HasTraits):
         coords = []
         self._cnode_coords_recurse(node, coords)
 
-        return coords[::-1]
+        return ', '.join(str(i) for i in coords[::-1])
 
     def _cnode_coords_recurse(self, node, coords: List[int]):
         """
@@ -132,7 +133,7 @@ class _ErrNode(trt.HasTraits):
                 fields.append(repr(self.cnodes))
             else:
                 fields.append('+')
-        return 'ELN(%s)@%s' % (', '.join(fields),_idstr(self))
+        return 'ELN<%s>@%s' % (', '.join(fields), _idstr(self))
 
     def __str__(self):
         return self._str(print_cnodes=False)
@@ -155,19 +156,15 @@ class _ErrNode(trt.HasTraits):
 
         ## Prepare text for my exception.
         #
-        my_msg = None
-        doing = self.doing
-        doing = ' while %s' % doing if doing else ''
+        msg_parts = ['while %s:' % (self.doing or '??')]
+
+        if cnodes_msg:
+            msg_parts.append(cnodes_msg)
         if self.err:
             errtype = 'ignored' if self.is_forced else 'delayed'
-            my_msg = "%s%s: %s" % (errtype, doing, _exstr(self.err))
-        elif doing:
-            my_msg = doing + ':'
+            msg_parts.append("\n  %s: %s" % (errtype, _exstr(self.err)))
 
-        return ''.join(m for m in (my_msg, cnodes_msg) if m)
-
-
-_ErrNode.cnodes._trait = Instance(_ErrNode)
+        return ''.join(msg_parts)
 
 
 ## TODO: decouple `force` from `ErrLog`.
@@ -245,13 +242,7 @@ class ErrLog(cmdlets.Replaceable, trt.HasTraits):
         pass
 
     class CollectedErrors(cmdlets.CmdException):
-        def __init__(self, msg):
-            # if self.debug:
-            #     self.node = node
-            self.msg = msg
-
-        def __str__(self):
-            return self.msg
+        pass
 
     ## TODO: weakref(ErrLog.parent), see `BaseDescriptor._property`.
     parent = Instance(cmdlets.Forceable)
@@ -318,7 +309,7 @@ class ErrLog(cmdlets.Replaceable, trt.HasTraits):
         self._anchor = self._root_node = _ErrNode()
 
     def __repr__(self):
-        return '%s(rot=%r, anc=%s, crd=%s, act=%s)@%s)' % (
+        return '%s<rot=%r, anc=%s, crd=%s, act=%s>@%s' % (
             type(self).__name__,
             self._root_node,
             self._anchor,
@@ -345,7 +336,7 @@ class ErrLog(cmdlets.Replaceable, trt.HasTraits):
             if v is not None:
                 changes[k] = v
         if exceptions:  # None-check futile
-            changes['exceptions'] = exceptions
+            changes['exceptions'] = exceptions  # type: ignore
 
         ## Note etuples-root & children always shared (not deepcopy).
 
@@ -395,16 +386,22 @@ class ErrLog(cmdlets.Replaceable, trt.HasTraits):
         if log.isEnabledFor(logging.DEBUG):
             log.debug("Collecting %s.", _exstr(ex), exc_info=ex)
 
-    def report(self, ex_raised) -> str:
+    def report(self, ex_raised) -> Optional['ErrLog.CollectedErrors']:
         """
         :param ex_raised:
-            exception captured in ``__exit__()`` (if any)
+            any exception captured in tree (if any), unless `ex_raised` given
+        :return:
+            a :class:`ErrLog.CollectedErrors` in case catured errors contain
+            non-forced errors BUT `ex_raised` given.
+        :raise ErrLog.CollectedErrors:
+            any non-forced exceptions captured in tree (if any),
+            unless `ex_raised` given
         """
         node = self._active
         nerrors, nforced = node.count_error_tree()
         assert nerrors >= nforced >= 0, (nerrors, nforced, self)
         if nerrors == 0:
-            return
+            return None
 
         is_all_forced = nerrors == nforced
         if is_all_forced:
@@ -414,27 +411,19 @@ class ErrLog(cmdlets.Replaceable, trt.HasTraits):
         else:
             count_msg = "collected %i errors" % nerrors
 
-        doing = node.doing
-        doing = ' while %s' % doing if doing else ''
+        msg = ' '.join((count_msg.capitalize(), node.tree_text()))
 
-        if ex_raised:
-            msg = tw.dedent("""\
-                Failed%s due to: %s(%s)"
-                ...and %s: \n%s""" % (doing,
-                                      type(ex_raised).__name__,
-                                      str(ex_raised),
-                                      count_msg,
-                                      node.tree_text()))
-        else:
-            msg = "%s%s: \n%s" % (count_msg.capitalize(), doing, node.tree_text())
-
-        if is_all_forced and not ex_raised:
+        if is_all_forced or ex_raised:
             self.plog.log(self.log_level, msg)
+
+            if is_all_forced:
+                return None
+
+        errors = ErrLog.CollectedErrors(msg)
+        if ex_raised:
+            return errors
         else:
-            multiex = ErrLog.CollectedErrors(msg)
-            if ex_raised:
-                raise multiex from ex_raised
-            raise multiex from None
+            raise errors
 
 
 def errlogged(*errlog_args, **errlog_kw):
