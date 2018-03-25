@@ -29,23 +29,22 @@ def forceable():
     return Processor()
 
 
-@pytest.mark.parametrize('fields, exp', [
-    ({}, 'ELN()'),
-    ({'doing': '1'}, 'ELN(1, None, None, [])'),
-    ({'is_forced': True}, 'ELN(None, True, None, [])'),
-    ({'is_forced': False}, 'ELN(None, False, None, [])'),
-    ({'err': ValueError()}, 'ELN(None, None, ValueError(), [])'),
+@pytest.mark.parametrize('fields, exp_str, exp_repr', [
+    ({}, 'ELN', None),
+    ({'doing': '1'}, "ELN('1')", None),
+    ({'is_forced': True}, 'ELN(F)', None),
+    ({'is_forced': False}, 'ELN(NF)', None),
+    ({'err': ValueError()}, 'ELN(ValueError())', None),
 
-    ({'doing': '1', 'is_forced': True, 'err': ValueError()},
-     'ELN(1, True, ValueError(), [])'),
+    ({'doing': 'well', 'is_forced': True, 'err': ValueError()},
+     "ELN('well', F, ValueError())", None),
 
-    ({'cnodes': [_ErrNode()]}, 'ELN(None, None, None, ...)'),
-
+    ({'cnodes': [_ErrNode()]}, 'ELN(+)', 'ELN([ELN'),
 ])
-def test_ErrNode_str(fields, exp):
+def test_ErrNode_str(fields, exp_str, exp_repr):
     node = _ErrNode(**fields)
-    assert str(node).startswith(exp)
-    assert repr(node).startswith(exp)
+    assert str(node).startswith(exp_str)
+    assert repr(node).startswith(exp_repr or exp_str)
 
 
 _err = ValueError()
@@ -105,19 +104,30 @@ def test_ErrNode_tree_text(fields, exp):
 
 
 def test_ErrLog_str(forceable):
-    exp = r'ErrLog\(root=ELN\(\)@\w+, node=ELN\(\)@\w+, coords=\[\]\)'
+    exp = r'ErrLog\(rot=ELN@\w{5}, anc=ELN@\w{5}, crd=\[\]\, act=None\)'
     erl = ErrLog(forceable)
     assert re.search(exp, str(erl))
     assert re.search(exp, repr(erl))
 
-    exp = r"""(?x)
-        ErrLog\(root=ELN\(,\ False,\ None,\ ...\)@\w+,
-        \ node=ELN\(,\ False,\ None,\ ...\)@\w+,
-        \ coords=\[\]\)@\w+\)
-        """
-    with erl(token='golf'):
-        assert re.search(exp, str(erl))
-        assert re.search(exp, repr(erl))
+    exp1 = r"""(?x)
+        ErrLog\(rot=ELN\(\[ELN\(NF\)@\w{5}\]\)@\w{5},
+        \ anc=ELN\(\+\)@\w{5},
+        \ crd=\[\],
+        \ act=None\)@\w{5}
+    """
+    ## TODO: Not sure COORDINATES correct!
+    exp2 = r"""(?x)
+        ErrLog\(rot=ELN\(\[ELN\(NF\)@\w{5}\]\)@\w{5},
+        \ anc=ELN\(NF\)@\w{5},
+        \ crd=\[0\],
+        \ act=None\)@\w{5}
+    """
+    with erl(token='golf') as erl2:
+        assert re.search(exp1, str(erl))
+        assert re.search(exp1, repr(erl))
+
+        assert re.search(exp2, str(erl2))
+        assert re.search(exp2, repr(erl2))
 
 
 def test_ErrLog_properties(forceable):
@@ -142,9 +152,11 @@ def test_ErrLog_properties(forceable):
     assert erl.is_root and not erl.is_armed
 
     erl = ErrLog(forceable)
-    with erl() as erl2:
+    with erl as erl2:
         assert erl2 is not erl
         assert erl.is_root and erl.is_armed
+        assert erl().is_armed
+        assert not erl2.is_root and not erl2.is_armed
         assert erl2.token is erl.token is None
         assert erl2.doing is erl.doing is None
 
@@ -174,16 +186,16 @@ def test_ErrLog_no_errors(caplog, forceable):
 
 
 def test_ErrLog_root(forceable, caplog):
-    with pytest.raises(CollectedErrors, match="Collected 1 errors:"):
-        with ErrLog(forceable, ValueError):
-            raise ValueError()
-    assert re.search('DEBUG +Collecting delayed', caplog.text)
+#     with pytest.raises(CollectedErrors, match="Collected 1 errors:"):
+#         with ErrLog(forceable, ValueError):
+#             raise ValueError()
+#     assert re.search('DEBUG +Collecting ValueError', caplog.text)
 
     forceable.force.append(True)
     with ErrLog(forceable, ValueError, token=True):
         raise ValueError()
     assert "Ignored 1 errors:" in caplog.text
-    assert re.search('DEBUG +Collecting ignored', caplog.text)
+    assert re.search('DEBUG +Collecting ValueError', caplog.text)
 
     clearlog(caplog)
     with pytest.raises(KeyError, match="bad key"):
@@ -193,16 +205,26 @@ def test_ErrLog_root(forceable, caplog):
 
 
 def test_ErrLog_nested(caplog, forceable):
-    erl = ErrLog(forceable, ValueError, KeyError)
+    forceable.force.append(True)
+    erl = ErrLog(forceable, ValueError, token=True)
 
     clearlog(caplog)
-    with pytest.raises(ErrLog.CollectedErrors) as ex_info:
-        with erl(doing="burning"):
-            with erl(doing="looting"):
-                raise ValueError("Wrong!")
-    exp = tw.dedent("""\
-        delayed while parsing: ValueError
-          - delayed while opening: KeyError""")
+    #with pytest.raises(ErrLog.CollectedErrors) as ex_info:
+    with erl(doing="walking") as erl2:
+        with erl2(doing="notting"):
+            pass
+
+        with erl2(doing="burning"):
+            raise ValueError("Wrong!")
+        with erl2(doing="looting"):
+            raise KeyError("Wrong!")
+
+        with erl2(doing="eating") as erl3:
+            with erl3(doing="burping"):
+                raise ValueError("GOOOD")
+                raise KeyError("GOOOD")
+    exp = tw.dedent("""sdsdfdsfs""")
+    print(ex_info.value)
     assert ex_info.value == exp
 
 

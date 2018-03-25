@@ -25,7 +25,16 @@ from ._vendor.traitlets.traitlets import Bool, CBool, Int, Unicode, Instance
 log = logging.getLogger(__name__)
 
 
+def _idstr(obj):
+    if obj is None:
+        return ''
+    return ('%x' % id(obj))[-5:]
+
+
 def _exstr(err):
+    if err is None:
+        return ''
+
     exstr = str(err)
     if exstr:
         exstr = "%s: %s" % (type(err).__name__, exstr)
@@ -57,35 +66,16 @@ class _ErrNode(trt.HasTraits):
     cnodes = ListTrait()
 
     def new_cnode(self, doing, is_forced):
-        ## `is_empty` already checked by client code
-        #   to explain situation.
-        assert all(i is None
-                   for i in (self.doing, self.is_forced, self.err)
-                   ), self
+        assert self.err is None, repr(self)
 
-        self.doing = doing or ''
-        self.is_forced = bool(is_forced)
-
-        child = _ErrNode()
+        child = _ErrNode(doing=doing or '',
+                         is_forced=bool(is_forced))
         self.cnodes.append(child)
 
         return child
 
-    def clear(self):
-        """Prepare for reuse, unless `err` is occupied. """
-        if not self.err:
-            self.doing = self.is_forced = None
-
-    @property
-    def is_empty(self):
-        props = (self.doing, self.is_forced)
-        is_empty = any(i is None for i in props)
-        if is_empty and not all(i is None for i in props):
-            raise ErrLog.ErrLogException('Expected an fully empty %r!' % self)
-
-        return is_empty
-
     def node_coordinates(self, node):
+        ## TODO: FIX node coordinates!
         coords = []
         self._cnode_coords_recurse(node, coords)
 
@@ -124,15 +114,31 @@ class _ErrNode(trt.HasTraits):
 
         return nerrors, nforced
 
-    def __repr__(self):
+    def _str(self, print_cnodes):
         props = (self.doing, self.is_forced, self.err)
         ## Avoid recursion using `is_empty()`.
         is_empty = all(i is None for i in props) and not self.cnodes
         if is_empty:
-            return 'ELN()@%s' % id(self)
-        return 'ELN(%s, %s, %r, %s)@%s' % (
-            self.doing, self.is_forced, self.err,
-            self.cnodes and '...' or '[]', id(self))
+            return 'ELN@%s' % _idstr(self)
+        fields = []
+        if self.doing:
+            fields.append('%r' % self.doing)
+        if self.is_forced is not None:
+            fields.append('F' if self.is_forced else 'NF')
+        if self.err:
+            fields.append(repr(self.err))
+        if self.cnodes:
+            if print_cnodes:
+                fields.append(repr(self.cnodes))
+            else:
+                fields.append('+')
+        return 'ELN(%s)@%s' % (', '.join(fields),_idstr(self))
+
+    def __str__(self):
+        return self._str(print_cnodes=False)
+
+    def __repr__(self):
+        return self._str(print_cnodes=True)
 
     def tree_text(self):
         ## Prepare child-text.
@@ -214,13 +220,25 @@ class ErrLog(cmdlets.Replaceable, trt.HasTraits):
         the logging level to use when just reporting.
         Note that all are always reported immediately on DEBUG.
 
-    :ivar _my_node:
-        a list of `doing` with each nested errlog appending one more
-    :ivar _enforced_error_tuples:
-        collected arrors as a list of 3-tuples (doing, is_forced, ex),
-        cleared only when :meth:`report()` called.
+    :ivar _root_node:
+        The root of the tree of nodes, populated when entering contexts recursively.
+    :ivar _anchor:
+         the parent node in the tree where on :meth:`__enter__()` a new `_active`
+         child-node is attached, and the tree grows.
+    :ivar _active:
+         the node created in `_anchor`
 
-    See :meth:`Spec.errlog()` for example.
+    Example of using this method for multiple actions in a loop::
+
+        with ErrLog(enforeceable, IOError,
+                    doing="loading X-files",
+                    token='fread') as errlog:
+            for fpath in file_paths:
+                with errlog(doing="reading '%s'" % fpath) as erl2:
+                    fbytes.append(fpath.read_bytes())
+
+        # Any errors collected will raise/WARN here (root-context exit).
+
     """
     class ErrLogException(Exception):
         """A pass-through for critical ErrLog, e.g. context re-enter. """
@@ -243,9 +261,10 @@ class ErrLog(cmdlets.Replaceable, trt.HasTraits):
     raise_immediately = CBool()
     log_level = UnionTrait((Int(), Unicode()))
 
-    #: A point in the `_root_node` to grow from.
-    _root_node: _ErrNode = Instance(_ErrNode)  # type: ignore
-    _my_node = _root_node
+    _root_node: _ErrNode = Instance(_ErrNode)   # type: ignore
+    _anchor: _ErrNode = Instance(_ErrNode)      # type: ignore
+    _active: _ErrNode = Instance(_ErrNode,      # type: ignore
+                                 default_value=None, allow_none=True)
 
     @property
     def plog(self) -> logging.Logger:
@@ -264,21 +283,21 @@ class ErrLog(cmdlets.Replaceable, trt.HasTraits):
 
     @property
     def is_root(self):
-        return self._my_node is self._root_node
+        return self._anchor is self._root_node
 
     @property
     def is_armed(self):
         """Is context ``__enter__()`` currently under process? """
-        return not self._my_node.is_empty
+        return self._active is not None
 
     @property
     def is_good(self):
         """
-        Has not captured some exception previously?
+        An errlog is "good" if its anchor has not captured any exception yet.
 
-        If it does, it can be used anymore.
+        If it does, it cannot be used anymore.
         """
-        return not bool(self._my_node.err)
+        return not bool(self._anchor.err)
 
     def __init__(self,
                  parent: cmdlets.Forceable,
@@ -296,17 +315,20 @@ class ErrLog(cmdlets.Replaceable, trt.HasTraits):
                          raise_immediately=raise_immediately,
                          log_level=log_level,
                          )
-        self._root_node = _ErrNode()
+        self._anchor = self._root_node = _ErrNode()
 
     def __repr__(self):
-        return '%s(root=%r, node=%r, coords=%s)@%s)' % (
+        return '%s(rot=%r, anc=%s, crd=%s, act=%s)@%s)' % (
             type(self).__name__,
-            self._root_node, self._my_node, self._my_node.node_coordinates(self),
-            id(self))
+            self._root_node,
+            self._anchor,
+            self._root_node.node_coordinates(self._anchor),
+            self._active,
+            _idstr(self))
 
-    def _check_dead_not_reused(self):
-        if self._my_node.err:
-            raise ErrLog.ErrLogException('Cannot re-use dead %r!' % self)
+    def _scream_on_faulted_reuse(self):
+        if self._anchor.err:
+            raise ErrLog.ErrLogException('Cannot re-use faulted %r!' % self)
 
     def __call__(self,
                  *exceptions: Exception,
@@ -315,7 +337,7 @@ class ErrLog(cmdlets.Replaceable, trt.HasTraits):
                  raise_immediately=None,
                  log_level: Union[int, str] = None):
         """Reconfigure a new errlog on the same stack-level."""
-        self._check_dead_not_reused()
+        self._scream_on_faulted_reuse()
         changes = {}  # to gather replaced fields
         fields = zip('token doing raise_immediately log_level'.split(),
                      [token, doing, raise_immediately, log_level])
@@ -333,12 +355,12 @@ class ErrLog(cmdlets.Replaceable, trt.HasTraits):
 
     def __enter__(self):
         """Return `self` upon entering the runtime context."""
-        self._check_dead_not_reused()
+        self._scream_on_faulted_reuse()
         if self.is_armed:
-            raise ErrLog.ErrLogException("Cannot re-enter context!")
+            raise ErrLog.ErrLogException("Cannot re-enter context of %r!" % self)
 
-        new_node = self._my_node.new_cnode(self.doing, self.is_forced())
-        new_errlog = self.replace(_my_node=new_node)
+        self._active = self._anchor.new_cnode(self.doing, self.is_forced())
+        new_errlog = self.replace(_anchor=self._active, _active=None)
 
         return new_errlog
 
@@ -362,21 +384,23 @@ class ErrLog(cmdlets.Replaceable, trt.HasTraits):
         finally:
             if self.is_root:
                 self.report(None if suppressed_ex else ex)
-            self._my_node.clear()
+            ## NOTE: won't clear `active` if `report()` raises!
+            #        Not yet sure if we want that...
+            self._active = None
 
     def _collect_error(self, ex):
-        self._my_node.err = ex
+        self._active.err = ex
 
         log = self.plog
         if log.isEnabledFor(logging.DEBUG):
-            log.debug("Collecting %s." % self._my_node.tree_text(), exc_info=ex)
+            log.debug("Collecting %s.", _exstr(ex), exc_info=ex)
 
     def report(self, ex_raised) -> str:
         """
         :param ex_raised:
             exception captured in ``__exit__()`` (if any)
         """
-        node = self._my_node
+        node = self._active
         nerrors, nforced = node.count_error_tree()
         assert nerrors >= nforced >= 0, (nerrors, nforced, self)
         if nerrors == 0:
@@ -410,7 +434,7 @@ class ErrLog(cmdlets.Replaceable, trt.HasTraits):
             multiex = ErrLog.CollectedErrors(msg)
             if ex_raised:
                 raise multiex from ex_raised
-            raise multiex
+            raise multiex from None
 
 
 def errlogged(*errlog_args, **errlog_kw):
