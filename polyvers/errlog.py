@@ -267,6 +267,7 @@ class ErrLog(cmdlets.Replaceable, trt.HasTraits):
         """Search `debug` property in `parent`, or False."""
         return getattr(self.parent, 'debug', False)
 
+    @property
     def is_forced(self):
         """Try `force` in `parent` first."""
         ## TODO: decouple `force` from `ErrLog`.
@@ -350,7 +351,7 @@ class ErrLog(cmdlets.Replaceable, trt.HasTraits):
         if self.is_armed:
             raise ErrLog.ErrLogException("Cannot re-enter context of %r!" % self)
 
-        self._active = self._anchor.new_cnode(self.doing, self.is_forced())
+        self._active = self._anchor.new_cnode(self.doing, self.is_forced)
         new_errlog = self.replace(_anchor=self._active, _active=None)
 
         return new_errlog

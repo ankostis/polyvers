@@ -282,6 +282,29 @@ def test_ErrLog_nested_complex_msg(caplog, forceable):
     assert exp in caplog.text
 
 
+def test_ErrLog_nested_forced(forceable, caplog):
+    forceable.force.append('abc')
+    erl = ErrLog(forceable, ValueError, token='abc')
+    with pytest.raises(KeyError):
+        with erl(doing="starting") as erl2:
+            with erl2(doing="doing-1"):
+                raise ValueError("Wrong-1!")
+
+            with erl2(KeyError,
+                      doing="doing-2",
+                      token='BAD',
+                      raise_immediately=True):
+                raise KeyError("Wrong-2")
+
+            pytest.fail("Should have raised immediately, above.")
+
+    exp = tw.dedent("""\
+        Ignored 1 errors while starting:
+          - while doing-1:
+            ignored: ValueError: Wrong-1!""")
+    assert exp in caplog.text
+
+
 def test_ErrLog_decorator(caplog):
     class C(cmdlets.Spec):
         @errlog.errlogged(KeyError, token=True)
