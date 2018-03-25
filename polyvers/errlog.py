@@ -6,7 +6,7 @@
 # You may not use this work except in compliance with the Licence.
 # You may obtain a copy of the Licence at: http://ec.europa.eu/idabc/eupl
 #
-"""Gather multiple exceptions in a nested contexts. """
+"""Suppress or ignore  exceptions collected in a nested contexts. """
 
 from typing import Any, List, Dict, Union, Tuple, Optional, Sequence  # noqa: F401 @UnusedImport
 import contextlib
@@ -53,7 +53,8 @@ class _ErrNode(trt.HasTraits):
         node :=   (doing, is_forced, err, [node, ...])
 
     Cannot store textualized exception in the first place because
-    this is only known after all its children have been born (if any).
+    this is only known after all its children have been born (if any),
+    or an error has been captured
 
     :ivar err:
         any collected error on ``__exit__()`` (forced or not).
@@ -115,7 +116,7 @@ class _ErrNode(trt.HasTraits):
 
         return nerrors, nforced
 
-    def _str(self, print_cnodes):
+    def _node_repr(self, print_cnodes):
         props = (self.doing, self.is_forced, self.err)
         ## Avoid recursion using `is_empty()`.
         is_empty = all(i is None for i in props) and not self.cnodes
@@ -136,10 +137,10 @@ class _ErrNode(trt.HasTraits):
         return 'ELN<%s>@%s' % (', '.join(fields), _idstr(self))
 
     def __str__(self):
-        return self._str(print_cnodes=False)
+        return self._node_repr(print_cnodes=False)
 
     def __repr__(self):
-        return self._str(print_cnodes=True)
+        return self._node_repr(print_cnodes=True)
 
     def tree_text(self):
         ## Prepare child-text.
@@ -168,19 +169,16 @@ class _ErrNode(trt.HasTraits):
 
 
 ## TODO: decouple `force` from `ErrLog`.
-## TODO: rename `ErrTree`.
 class ErrLog(cmdlets.Replaceable, trt.HasTraits):
     """
-    Collecting or "forcing" errors in hierarchical contexts forming a tree.
+    Collects errors in "stacked" contexts and delays or ignores ("forces") them.
 
     - Unknown errors (not in `exceptions`) always bubble up immediately.
-    - If `token` given and exists in :attr:`Spec.force`, are "forced",
-      i.e. are collected and logged as `log_level` when :meth:`report()`
-      invoked.
-    - Non-"forced" are either `raise_immediately`, or raised collectively
-      when :meth:`report()` invoked.
-    - Collected ("forced" or non-`raise_immediately`) are logged on DEBUG
-      immediately.
+    - Any "forced" errors are collected and logged as `log_level` on context-exit,
+      forcing is enabled when the `token` given exists in `spec`'s ``force`` attribute.
+    - Non-"forced" errors are either `raise_immediately`, or raised collectively
+      in a :class:`CollectedErrors`, on context-exit.
+    - Collected are always logged on DEBUG immediately.
 
     :ivar spec:
         the spec instance to search in its :attr:`Spec.force` for the token
@@ -216,6 +214,8 @@ class ErrLog(cmdlets.Replaceable, trt.HasTraits):
     :ivar log_level:
         the logging level to use when just reporting.
         Note that all are always reported immediately on DEBUG.
+
+    PRIVATE FIELDS:
 
     :ivar _root_node:
         The root of the tree of nodes, populated when entering contexts recursively.
@@ -319,6 +319,7 @@ class ErrLog(cmdlets.Replaceable, trt.HasTraits):
             _idstr(self))
 
     def _scream_on_faulted_reuse(self):
+        ## TODO: test _scream_on_faulted_reuse
         if self._anchor.err:
             raise ErrLog.ErrLogException('Cannot re-use faulted %r!' % self)
 
@@ -327,7 +328,7 @@ class ErrLog(cmdlets.Replaceable, trt.HasTraits):
                  token: Union[bool, str, None] = None,
                  doing=None,
                  raise_immediately=None,
-                 log_level: Union[int, str] = None):
+                 log_level: Union[int, str] = None) -> 'ErrLog':
         """Reconfigure a new errlog on the same stack-level."""
         self._scream_on_faulted_reuse()
         changes = {}  # to gather replaced fields
@@ -345,7 +346,7 @@ class ErrLog(cmdlets.Replaceable, trt.HasTraits):
 
         return clone
 
-    def __enter__(self):
+    def __enter__(self) -> 'ErrLog':
         """Return `self` upon entering the runtime context."""
         self._scream_on_faulted_reuse()
         if self.is_armed:
