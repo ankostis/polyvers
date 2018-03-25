@@ -8,21 +8,17 @@
 
 from polyvers import cmdlets, errlog
 from polyvers._vendor.traitlets import traitlets as trt
-from polyvers.logconfutils import init_logging
+from polyvers.errlog import _ErrNode, ErrLog
 from tests.conftest import clearlog
 import logging
 import re
 
 import pytest
 
-import os.path as osp
+import textwrap as tw
 
 
-init_logging(level=logging.DEBUG, logconf_files=[])
-
-log = logging.getLogger(__name__)
-
-mydir = osp.dirname(__file__)
+CollectedErrors = errlog.ErrLog.CollectedErrors
 
 
 @pytest.fixture
@@ -33,140 +29,193 @@ def forceable():
     return Processor()
 
 
-def test_ErrLog(forceable):
+@pytest.mark.parametrize('fields, exp', [
+    ({}, 'ELN()'),
+    ({'doing': '1'}, 'ELN(1, None, None, [])'),
+    ({'is_forced': True}, 'ELN(None, True, None, [])'),
+    ({'is_forced': False}, 'ELN(None, False, None, [])'),
+    ({'err': ValueError()}, 'ELN(None, None, ValueError(), [])'),
+
+    ({'doing': '1', 'is_forced': True, 'err': ValueError()},
+     'ELN(1, True, ValueError(), [])'),
+
+    ({'cnodes': [_ErrNode()]}, 'ELN(None, None, None, ...)'),
+
+])
+def test_ErrNode_str(fields, exp):
+    node = _ErrNode(**fields)
+    assert str(node).startswith(exp)
+    assert repr(node).startswith(exp)
+
+
+_err = ValueError()
+_err2 = KeyError()
+
+
+@pytest.mark.parametrize('fields, exp', [
+    ({}, None),
+    ({'doing': '1', 'is_forced': True}, None),
+
+    ({'err': ValueError()}, "delayed: ValueError"),
+    ({'err': ValueError('hi')}, "delayed: ValueError: hi"),
+    ({'doing': 'rafting', 'err': _err}, "delayed while rafting: ValueError"),
+    ({'is_forced': True, 'err': _err}, "ignored: ValueError"),
+    ({'doing': 'rafting', 'is_forced': True, 'err': _err},
+     "ignored while rafting: ValueError"),
+
+
+    ({'err': _err, 'cnodes': [_ErrNode(err=_err2)]},
+     tw.dedent("""\
+        delayed: ValueError
+          - delayed: KeyError""")),
+
+    ({'err': _err, 'cnodes': [_ErrNode(err=_err2),
+                              _ErrNode(),
+                              _ErrNode(err=_err)]},
+     tw.dedent("""\
+        delayed: ValueError
+          - delayed: KeyError
+          - delayed: ValueError""")),
+
+    ({'doing': 'parsing', 'err': _err, 'cnodes': [_ErrNode(err=_err2,
+                                                           doing='opening')]},
+     tw.dedent("""\
+        delayed while parsing: ValueError
+          - delayed while opening: KeyError""")),
+
+    ({'err': _err, 'cnodes': [_ErrNode(err=_err2),
+                              _ErrNode(cnodes=[_ErrNode(), _ErrNode()])]},  # ignore empty
+     tw.dedent("""\
+        delayed: ValueError
+          - delayed: KeyError""")),
+
+    ({'err': _err, 'cnodes': [_ErrNode(),
+                              _ErrNode(err=_err2,
+                                       cnodes=[_ErrNode(),
+                                               _ErrNode(err=_err)])]},
+     tw.dedent("""\
+        delayed: ValueError
+          - delayed: KeyError
+            - delayed: ValueError""")),
+])
+def test_ErrNode_tree_text(fields, exp):
+    node = _ErrNode(**fields)
+    #print(node.tree_text())
+    assert node.tree_text() == exp
+
+
+def test_ErrLog_str(forceable):
+    exp = r'ErrLog\(root=ELN\(\)@\w+, node=ELN\(\)@\w+, coords=\[\]\)'
+    erl = ErrLog(forceable)
+    assert re.search(exp, str(erl))
+    assert re.search(exp, repr(erl))
+
+    exp = r"""(?x)
+        ErrLog\(root=ELN\(,\ False,\ None,\ ...\)@\w+,
+        \ node=ELN\(,\ False,\ None,\ ...\)@\w+,
+        \ coords=\[\]\)@\w+\)
+        """
+    with erl(token='golf'):
+        assert re.search(exp, str(erl))
+        assert re.search(exp, repr(erl))
+
+
+def test_ErrLog_properties(forceable):
     with pytest.raises(trt.TraitError, match='not Forceable'):
-        errlog.ErrLog(object())
+        ErrLog(object())
 
-    erl = errlog.ErrLog(forceable)
-    assert erl.token == erl.doing is None
+    erl = ErrLog(forceable)
+    assert erl.token is erl.doing is None
     assert erl.exceptions == []
+    assert erl.is_root and not erl.is_armed
 
-    erl = errlog.ErrLog(forceable, IOError, ValueError)
-    assert erl.token is None
+    erl = ErrLog(forceable, IOError, ValueError)
+    assert erl.token is erl.doing is None
     assert erl.exceptions == [IOError, ValueError]
+    assert erl.is_root and not erl.is_armed
+
     erl2 = erl(token='water')
     assert erl2.token == 'water'
     assert erl.token is None
-    assert erl.doing == erl2.doing is None
+    assert erl.doing is erl2.doing is None
     assert erl.exceptions == erl2.exceptions == [IOError, ValueError]
+    assert erl.is_root and not erl.is_armed
 
-    erl(doing='fine')
-
-    erl = errlog.ErrLog(forceable, IOError, doing='fine')
-    with erl(token='gg') as erl2:
+    erl = ErrLog(forceable)
+    with erl() as erl2:
         assert erl2 is not erl
-        assert erl2.token == 'gg'
-        assert erl.token is None
-    with erl as erl2:
-        assert erl2 is not erl  # NOT the same!
-        assert erl2.token is None
-    assert erl.token is None
-    assert erl.doing == 'fine'
-    assert erl.log_level is logging.WARNING
-
-    ## TODO: check stacked erl messages
+        assert erl.is_root and erl.is_armed
+        assert erl2.token is erl.token is None
+        assert erl2.doing is erl.doing is None
 
 
-def test_ErrLog_non_forced_errors(caplog, forceable):
+def test_ErrLog_no_errors(caplog, forceable):
     level = logging.DEBUG
     logging.basicConfig(level=level)
     logging.getLogger().setLevel(level)
 
-    erl = errlog.ErrLog(forceable, IOError, ValueError)
+    erl = ErrLog(forceable, ValueError, ValueError)
 
     clearlog(caplog)
-    with pytest.raises(cmdlets.CmdException,
-                       match="Collected 1 error") as ex_info:
-        with erl:
-            raise IOError("Wrong!")
-    assert len(erl._enforced_error_tuples) == 0
-    assert re.search('DEBUG +Collecting delayed error', caplog.text)
-    assert '"forced"' not in str(ex_info.value)
-    assert 'delayed' in str(ex_info.value)
-
-    clearlog(caplog)
-    with pytest.raises(cmdlets.CmdException,
-                       match="Collected 1 error") as ex_info:
-        with erl(doing='burning'):  # check default `token` value
-            raise IOError("Wrong!")
-    assert not erl._enforced_error_tuples
-    assert 'while burning' in str(ex_info.value)
-
-
-def test_ErrLog_mixed_errors(caplog, forceable):
-    level = logging.DEBUG
-    logging.basicConfig(level=level)
-    logging.getLogger().setLevel(level)
-
-    erl = errlog.ErrLog(forceable, IOError, ValueError)
-    ## Mixed case still raises
-    #
-    clearlog(caplog)
-    forceable.force = [True]
     with erl:
-        erl2 = erl.stack('foo')
-        with erl2:  # check default `token` value
-            raise IOError("Wrong!")
-        with erl2(token=True):
-            raise IOError()
-        assert len(erl._enforced_error_tuples) == 2
-    assert len(erl._enforced_error_tuples) == 0
+        pass
+    assert not caplog.text
+    assert erl.is_good
+    assert not erl.is_armed
 
-    clearlog(caplog)
-    with pytest.raises(cmdlets.CmdException) as ex_info:
-        erl.report_errors()
-    assert "Collected 2 error" in str(ex_info.value)
-
-    clearlog(caplog)
-    with erl(token=True):
-        raise IOError()
-    assert re.search('DEBUG +Collecting "forced" error', caplog.text)
-    erl.report_errors(no_raise=True)
-    assert re.search("WARNING +Bypassed 1 error", caplog.text)
-    assert not erl._enforced_error_tuples
-
-    ## Check raise_immediately
+    ## Check re-use clean errlogs.
     #
-    with erl(token=False, raise_immediately=True):
-        with pytest.raises(IOError) as ex_info:
-            raise IOError("STOP!")
-    assert "Collected" not in str(ex_info.value)
+    clearlog(caplog)
+    with erl:
+        pass
+    assert not caplog.text
+    assert not erl.is_armed
+    assert erl.is_good
 
 
-def test_ErrLog_forced_errors(caplog, forceable):
-    level = logging.DEBUG
-    logging.basicConfig(level=level)
-    logging.getLogger().setLevel(level)
+def test_ErrLog_root(forceable, caplog):
+    with pytest.raises(CollectedErrors, match="Collected 1 errors:"):
+        with ErrLog(forceable, ValueError):
+            raise ValueError()
+    assert re.search('DEBUG +Collecting delayed', caplog.text)
 
-    erl = errlog.ErrLog(forceable, Exception, token='kento')
-
-    forceable.force = ['kento']
-    with erl():
-        raise Exception()
     forceable.force.append(True)
-    with erl(doing='looting', token=True):
-        raise Exception()
-    assert len(erl._enforced_error_tuples) == 2
-    assert re.search('DEBUG +Collecting "forced" error', caplog.text)
+    with ErrLog(forceable, ValueError, token=True):
+        raise ValueError()
+    assert "Ignored 1 errors:" in caplog.text
+    assert re.search('DEBUG +Collecting ignored', caplog.text)
 
     clearlog(caplog)
-    erl.report_errors()
-    assert re.search(r'WARNING +Bypassed 2 error', caplog.text)
-    assert 'while looting' in caplog.text
-    assert not re.search("WARNING +Delayed ", caplog.text)
-    assert not erl._enforced_error_tuples
+    with pytest.raises(KeyError, match="bad key"):
+        with ErrLog(forceable, ValueError):
+            raise KeyError('bad key')
+    assert not caplog.text
+
+
+def test_ErrLog_nested(caplog, forceable):
+    erl = ErrLog(forceable, ValueError, KeyError)
+
+    clearlog(caplog)
+    with pytest.raises(ErrLog.CollectedErrors) as ex_info:
+        with erl(doing="burning"):
+            with erl(doing="looting"):
+                raise ValueError("Wrong!")
+    exp = tw.dedent("""\
+        delayed while parsing: ValueError
+          - delayed while opening: KeyError""")
+    assert ex_info.value == exp
 
 
 def test_ErrLog_decorator(caplog):
     class C(cmdlets.Spec):
-        @cmdlets.errlogged(Exception, token=True)
+        @errlog.errlogged(Exception, token=True)
         def f_log(self):
-            assert self.f_log.erl
+            assert self.f_log.errlog
             raise Exception
 
-        @cmdlets.errlogged(ValueError)
+        @errlog.errlogged(ValueError)
         def f_raise(self):
-            assert self.f_raise.erl
+            assert self.f_raise.errlog
             raise ValueError
 
     C(force=[True]).f_log()

@@ -6,12 +6,13 @@
 # You may not use this work except in compliance with the Licence.
 # You may obtain a copy of the Licence at: http://ec.europa.eu/idabc/eupl
 #
-from builtins import property
 """Gather multiple exceptions in a nested contexts. """
 
 from typing import Any, List, Dict, Union, Tuple, Optional, Sequence  # noqa: F401 @UnusedImport
 import contextlib
 import logging
+
+import textwrap as tw
 
 from . import cmdlets
 from ._vendor import traitlets as trt
@@ -24,31 +25,31 @@ from ._vendor.traitlets.traitlets import Bool, CBool, Int, Unicode, Instance
 log = logging.getLogger(__name__)
 
 
-class ErrLogErrors(cmdlets.CmdException):
-    def __init__(self, etuples, doing=None):
-        #self.etuples = etuples
+def _exstr(err):
+    exstr = str(err)
+    if exstr:
+        exstr = "%s: %s" % (type(err).__name__, exstr)
+    else:
+        exstr = type(err).__name__
 
-        doing = ' while %s' % doing if doing else ''
-        self.is_all_forced = all(is_forced for _, is_forced, _ in etuples)
-        reason = 'Bypassed' if self.is_all_forced else 'Collected'
-        erlines = ''.join('\n  %s' % ErrLog._format_etuple(*etuple)
-                          for etuple in etuples)
-        self.msg = "%s %i error(s)%s: %s" % (reason, len(etuples), doing, erlines)
-
-    def __str__(self):
-        return self.msg
+    return exstr
 
 
-class _ELNode(trt.HasTraits):
+class _ErrNode(trt.HasTraits):
     """
     The basic element of a *recursive* "stack" of.
 
     ::
 
-        node :=   (doing, is_forced, exception, [node, ...])
+        node :=   (doing, is_forced, err, [node, ...])
 
     Cannot store textualized exception in the first place because
     this is only known after all its children have been born (if any).
+
+    :ivar err:
+        any collected error on ``__exit__()`` (forced or not).
+        Note that any non-collected errors buble-up as normal exceptions,
+        until handled by :class:`ErrLog`'s *root* node.
     """
     doing = Unicode(default_value=None, allow_none=True)
     is_forced = Bool(default_value=None, allow_none=True)
@@ -65,56 +66,112 @@ class _ELNode(trt.HasTraits):
         self.doing = doing or ''
         self.is_forced = bool(is_forced)
 
-        if self.cnodes is None:
-            self.cnodes = []
-
-        child = _ELNode()
+        child = _ErrNode()
         self.cnodes.append(child)
 
         return child
 
-    def dissarm(self, err=None):
-        self.doing = self.is_forced = self.err = err
+    def clear(self):
+        """Prepare for reuse, unless `err` is occupied. """
+        if not self.err:
+            self.doing = self.is_forced = None
 
     @property
     def is_empty(self):
-        props = (self.doing, self.is_forced, self.err)
+        props = (self.doing, self.is_forced)
         is_empty = any(i is None for i in props)
         if is_empty and not all(i is None for i in props):
-            raise ErrLogErrors('Expected an fully empty %r!' % self)
+            raise ErrLog.ErrLogException('Expected an fully empty %r!' % self)
 
         return is_empty
 
-    def cnode_coordinates(self, node, coords: List[int]):
-        if self is node:
-            return
+    def node_coordinates(self, node):
+        coords = []
+        self._cnode_coords_recurse(node, coords)
 
-        for i, self in enumerate(self.cnodes):
-            if node is self:
+        return coords[::-1]
+
+    def _cnode_coords_recurse(self, node, coords: List[int]):
+        """
+        Append the 1st index of my `cnodes` subtree containing `node`, recursively.
+
+        Indices appended eventually in reverse order.
+        """
+        if self is node:
+            return True
+
+        for i, cn in enumerate(self.cnodes):
+            if cn._cnode_coords_recurse(node, coords):
                 coords.append(i)
-                return
+
+                return True
+
+    def count_error_tree(self) -> Tuple[int, int]:
+        """
+        :return:
+            a 2-tuple(total errors, how many of them are "forced")
+        """
+        nerrors = nforced = 0
+        if self.err:
+            nerrors += 1
+            if self.is_forced:
+                nforced += 1
+
+        for cn in self.cnodes:
+            cn_nerrors, cn_nforced = cn.count_error_tree()
+            nerrors += cn_nerrors
+            nforced += cn_nforced
+
+        return nerrors, nforced
 
     def __repr__(self):
-        props = (self.doing, self.is_forced, self.cnodes)
+        props = (self.doing, self.is_forced, self.err)
         ## Avoid recursion using `is_empty()`.
-        is_empty = any(i is None for i in props)
+        is_empty = all(i is None for i in props) and not self.cnodes
         if is_empty:
-            return 'ELN()'
-        return 'ELN(%s, %s, %s, %s)@%s' % (
+            return 'ELN()@%s' % id(self)
+        return 'ELN(%s, %s, %r, %s)@%s' % (
             self.doing, self.is_forced, self.err,
             self.cnodes and '...' or '[]', id(self))
 
+    def tree_text(self):
+        ## Prepare child-text.
+        #
+        cnodes_msg = None
+        indent = '  '
+        c_errs = [cn.tree_text() for cn in self.cnodes]
+        c_errs = [msg for msg in c_errs if msg]
+        if c_errs:
+            cnodes_msg = ''.join('\n- %s' % t for t in c_errs)
+            cnodes_msg = tw.indent(cnodes_msg, indent)
+        elif not self.err:
+            return
 
-_ELNode.cnodes._trait = Instance(_ELNode)
+        ## Prepare text for my exception.
+        #
+        my_msg = None
+        doing = self.doing
+        doing = ' while %s' % doing if doing else ''
+        if self.err:
+            errtype = 'ignored' if self.is_forced else 'delayed'
+            my_msg = "%s%s: %s" % (errtype, doing, _exstr(self.err))
+        elif doing:
+            my_msg = doing + ':'
+
+        return ''.join(m for m in (my_msg, cnodes_msg) if m)
+
+
+_ErrNode.cnodes._trait = Instance(_ErrNode)
 
 
 ## TODO: decouple `force` from `ErrLog`.
+## TODO: rename `ErrTree`.
 class ErrLog(cmdlets.Replaceable, trt.HasTraits):
     """
-    A contextman collecting or "forcing" in a :class:`Spec` error-list.
+    Collecting or "forcing" errors in hierarchical contexts forming a tree.
 
-    - Unknown (not in `exceptions`) always bubble up immediately.
-    - If `token` given and exitst in :attr:`Spec.force`, are "forced",
+    - Unknown errors (not in `exceptions`) always bubble up immediately.
+    - If `token` given and exists in :attr:`Spec.force`, are "forced",
       i.e. are collected and logged as `log_level` when :meth:`report()`
       invoked.
     - Non-"forced" are either `raise_immediately`, or raised collectively
@@ -135,9 +192,20 @@ class ErrLog(cmdlets.Replaceable, trt.HasTraits):
           - `True`: "force" if `True` is in :attr:`force``force`.
     :ivar doing:
         A description of the running activity for the current stacked-context,
-        e.g. "having fun" would result roughly in::
+        in present continuous tense, e.g. "readind X-files".
 
-            ErrLogErrors("Collected 2 while having fun:")
+        Assuming `doing = "having fun"`, it may generate
+        one of those 3 error messages::
+
+            Failed having fun due to: EX
+            ...and collected 21 errors (3 ignored):
+                - Err 1: ...
+
+            Collected 21 errors (3 ignored) while having fun:
+                - Err 1: ...
+
+            LOG: Ignored 9 errors while having fun:
+                - Err 1: ...
 
     :ivar raise_immediately:
         if not forced, do not wait for `report()` call to raise them;
@@ -158,16 +226,14 @@ class ErrLog(cmdlets.Replaceable, trt.HasTraits):
         """A pass-through for critical ErrLog, e.g. context re-enter. """
         pass
 
-    @staticmethod
-    def _format_etuple(doing, is_forced, ex):
-        doing = doing and " while %s" % doing or ''
-        errtype = '"forced"' if is_forced else 'delayed'
-        exstr = str(ex)
-        if exstr:
-            exstr = "%s: %s" % (type(ex).__name__, exstr)
-        else:
-            exstr = type(ex).__name__
-        return "%s error%s -> %s" % (errtype, doing, exstr)
+    class CollectedErrors(cmdlets.CmdException):
+        def __init__(self, msg):
+            # if self.debug:
+            #     self.node = node
+            self.msg = msg
+
+        def __str__(self):
+            return self.msg
 
     ## TODO: weakref(ErrLog.parent), see `BaseDescriptor._property`.
     parent = Instance(cmdlets.Forceable)
@@ -178,7 +244,7 @@ class ErrLog(cmdlets.Replaceable, trt.HasTraits):
     log_level = UnionTrait((Int(), Unicode()))
 
     #: A point in the `_root_node` to grow from.
-    _root_node: _ELNode = Instance(_ELNode)  # type: ignore
+    _root_node: _ErrNode = Instance(_ErrNode)  # type: ignore
     _my_node = _root_node
 
     @property
@@ -206,8 +272,13 @@ class ErrLog(cmdlets.Replaceable, trt.HasTraits):
         return not self._my_node.is_empty
 
     @property
-    def _my_node_coordinates(self):
-        return self._root_node._my_node_coords(self)
+    def is_good(self):
+        """
+        Has not captured some exception previously?
+
+        If it does, it can be used anymore.
+        """
+        return not bool(self._my_node.err)
 
     def __init__(self,
                  parent: cmdlets.Forceable,
@@ -225,13 +296,17 @@ class ErrLog(cmdlets.Replaceable, trt.HasTraits):
                          raise_immediately=raise_immediately,
                          log_level=log_level,
                          )
-        self._root_node = _ELNode()
+        self._root_node = _ErrNode()
 
     def __repr__(self):
-        return '%s(%s, coords=root=%s, root=%s)@%s)' % (
+        return '%s(root=%r, node=%r, coords=%s)@%s)' % (
             type(self).__name__,
-            self._my_node, self._my_node_coordinates, self._root_node,
+            self._root_node, self._my_node, self._my_node.node_coordinates(self),
             id(self))
+
+    def _check_dead_not_reused(self):
+        if self._my_node.err:
+            raise ErrLog.ErrLogException('Cannot re-use dead %r!' % self)
 
     def __call__(self,
                  *exceptions: Exception,
@@ -240,6 +315,7 @@ class ErrLog(cmdlets.Replaceable, trt.HasTraits):
                  raise_immediately=None,
                  log_level: Union[int, str] = None):
         """Reconfigure a new errlog on the same stack-level."""
+        self._check_dead_not_reused()
         changes = {}  # to gather replaced fields
         fields = zip('token doing raise_immediately log_level'.split(),
                      [token, doing, raise_immediately, log_level])
@@ -257,6 +333,7 @@ class ErrLog(cmdlets.Replaceable, trt.HasTraits):
 
     def __enter__(self):
         """Return `self` upon entering the runtime context."""
+        self._check_dead_not_reused()
         if self.is_armed:
             raise ErrLog.ErrLogException("Cannot re-enter context!")
 
@@ -266,71 +343,74 @@ class ErrLog(cmdlets.Replaceable, trt.HasTraits):
         return new_errlog
 
     def __exit__(self, exctype, ex, _exctb):
-        ## 3-state out flag:
+        ## A 3-state flag:
         #  - None: no exc
         #  - False: raising
-        #  - True: collecting raised ex
-        suppress_ex = None
+        #  - True: suppressing raised ex
+        suppressed_ex = None
         try:
             if exctype is not None:
-                suppress_ex = False
+                suppressed_ex = False
 
-                if issubclass(exctype, ErrLog.ErrLogException):
-                    pass  # Let critical internal error bubble-up.
+                if issubclass(exctype, tuple(self.exceptions)) and (
+                        self.is_forced or not self.raise_immediately):
+                    #ex = ex.with_traceback(exctb)  Ex already has it!
+                    self._collect_error(ex)
+                    suppressed_ex = True
 
-                if issubclass(exctype, tuple(self.exceptions)):
-                    is_forced = self.is_forced()
-                    if is_forced or not self.raise_immediately:
-                        #ex = ex.with_traceback(exctb)  Ex already has it!
-                        self._collect_error(is_forced, ex)
-                        suppress_ex = True
-
-                return suppress_ex
+                return suppressed_ex
         finally:
-            node = self._my_node
-            if suppress_ex is False:  # exit is raising
-                doing = node.doing
-                doing = ("%s failed unexpectedly" % doing
-                         if doing else
-                         "failing unexpectedly")
-                self.report(do_raise=False, doing=doing)
-            elif not node:
-                self.report(do_raise=None)
-            else:
-                pass  ## stacked, do nothing
+            if self.is_root:
+                self.report(None if suppressed_ex else ex)
+            self._my_node.clear()
 
-    def _collect_error(self, is_forced, error):
-        #error = error.with_traceback(exctb)  Ex already has it!
-        etuple = (self._my_node[-1], is_forced, error)
+    def _collect_error(self, ex):
+        self._my_node.err = ex
 
         log = self.plog
         if log.isEnabledFor(logging.DEBUG):
-            log.debug("Collecting %s" % self._format_etuple(*etuple),
-                      exc_info=error)
+            log.debug("Collecting %s." % self._my_node.tree_text(), exc_info=ex)
 
-        self._enforced_error_tuples.append(etuple)
-
-    def report(self, do_raise=None, doing=None) -> str:
+    def report(self, ex_raised) -> str:
         """
-        :param raise:
-            3-state bool:
-            - None: raise only if any non-forced (i.e. stack-level == 1)
-            - False: log only (i.e. in a finally block)
-            - True: raise only (i.e. stack-level > 1)
+        :param ex_raised:
+            exception captured in ``__exit__()`` (if any)
         """
-        etuples = self._enforced_error_tuples[:]  # Order with `_flush()` matters!
-        if etuples:
-            self._enforced_error_tuples.clear()  # Avoid tb-memleaks from all clones.
+        node = self._my_node
+        nerrors, nforced = node.count_error_tree()
+        assert nerrors >= nforced >= 0, (nerrors, nforced, self)
+        if nerrors == 0:
+            return
 
-            ex = ErrLogErrors(etuples)
-            is_all_forced = ex.is_all_forced
-            if do_raise is True or (do_raise is None and not is_all_forced):
-                raise ex from None
+        is_all_forced = nerrors == nforced
+        if is_all_forced:
+            count_msg = "ignored %i errors" % nerrors
+        elif nforced > 0:
+            count_msg = "collected %i errors (%i ignored)" % (nerrors, nforced)
+        else:
+            count_msg = "collected %i errors" % nerrors
 
-            if do_raise is False or (do_raise is None and is_all_forced):
-                self.plog.log(self.log_level, str(ex))
-            else:
-                raise AssertionError(do_raise, is_all_forced)
+        doing = node.doing
+        doing = ' while %s' % doing if doing else ''
+
+        if ex_raised:
+            msg = tw.dedent("""\
+                Failed%s due to: %s(%s)"
+                ...and %s: \n%s""" % (doing,
+                                      type(ex_raised).__name__,
+                                      str(ex_raised),
+                                      count_msg,
+                                      node.tree_text()))
+        else:
+            msg = "%s%s: \n%s" % (count_msg.capitalize(), doing, node.tree_text())
+
+        if is_all_forced and not ex_raised:
+            self.plog.log(self.log_level, msg)
+        else:
+            multiex = ErrLog.CollectedErrors(msg)
+            if ex_raised:
+                raise multiex from ex_raised
+            raise multiex
 
 
 def errlogged(*errlog_args, **errlog_kw):
