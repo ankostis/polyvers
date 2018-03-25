@@ -8,7 +8,9 @@
 #
 """Suppress or ignore  exceptions collected in a nested contexts. """
 
-from typing import Any, List, Dict, Union, Tuple, Optional, Sequence  # noqa: F401 @UnusedImport
+from functools import partial
+from typing import Any, Dict, Union, Callable  # noqa: F401 @UnusedImport
+from typing import List, Tuple, Optional
 import contextlib
 import logging
 
@@ -17,9 +19,9 @@ import textwrap as tw
 from . import cmdlets
 from ._vendor import traitlets as trt
 from ._vendor.traitlets.traitlets import (
-    List as ListTrait, Type as TypeTrait, Union as UnionTrait
+    List as ListTrait, Type as TypeTrait, Union as UnionTrait, Callable as CallableTrait
 )  # @UnresolvedImport
-from ._vendor.traitlets.traitlets import Bool, CBool, Int, Unicode, Instance
+from ._vendor.traitlets.traitlets import Bool, CBool, Unicode, Instance
 
 
 log = logging.getLogger(__name__)
@@ -81,7 +83,7 @@ class _ErrNode(trt.HasTraits):
         coords = []
         self._cnode_coords_recurse(node, coords)
 
-        return ', '.join(str(i) for i in coords[::-1])
+        return coords[::-1]
 
     def _cnode_coords_recurse(self, node, coords: List[int]):
         """
@@ -174,7 +176,7 @@ class ErrLog(cmdlets.Replaceable, trt.HasTraits):
     Collects errors in "stacked" contexts and delays or ignores ("forces") them.
 
     - Unknown errors (not in `exceptions`) always bubble up immediately.
-    - Any "forced" errors are collected and logged as `log_level` on context-exit,
+    - Any "forced" errors are collected and logged in `warn_log` on context-exit,
       forcing is enabled when the `token` given exists in `spec`'s ``force`` attribute.
     - Non-"forced" errors are either `raise_immediately`, or raised collectively
       in a :class:`CollectedErrors`, on context-exit.
@@ -211,9 +213,13 @@ class ErrLog(cmdlets.Replaceable, trt.HasTraits):
     :ivar raise_immediately:
         if not forced, do not wait for `report()` call to raise them;
         suggested use when a function decorator.  Also when --debug.
-    :ivar log_level:
-        the logging level to use when just reporting.
-        Note that all are always reported immediately on DEBUG.
+    :ivar warn_log:
+        the logging method to report forced errors; if none given,
+        use searched the log ov the `parent` or falls back to this's modules log.
+        Note that all failures are always reported immediately on DEBUG.
+    :ivar info_log:
+        the logging method to report completed "doing" tasks; if none given
+        does not report them.
 
     PRIVATE FIELDS:
 
@@ -250,7 +256,8 @@ class ErrLog(cmdlets.Replaceable, trt.HasTraits):
     token = UnionTrait((Unicode(), Bool()), allow_none=True)
     doing = Unicode(allow_none=True)
     raise_immediately = CBool()
-    log_level = UnionTrait((Int(), Unicode()))
+    warn_log = CallableTrait(allow_none=True)
+    info_log = CallableTrait(allow_none=True)
 
     _root_node: _ErrNode = Instance(_ErrNode)   # type: ignore
     _anchor: _ErrNode = Instance(_ErrNode)      # type: ignore
@@ -261,6 +268,10 @@ class ErrLog(cmdlets.Replaceable, trt.HasTraits):
     def plog(self) -> logging.Logger:
         """Search `log` property in `parent`, or use this module's logger."""
         return getattr(self.parent, 'log', log)
+
+    def logw(self, *args, **kwds):
+        log = self.warn_log or partial(self.plog.log, logging.INFO)
+        log(*args, **kwds)
 
     @property
     def pdebug(self) -> logging.Logger:
@@ -291,13 +302,19 @@ class ErrLog(cmdlets.Replaceable, trt.HasTraits):
         """
         return not bool(self._anchor.err)
 
+    @property
+    def coords(self) -> List[int]:
+        """Return my anchor's coordinate-indices from the root of the tree. """
+        return self._root_node.node_coordinates(self._anchor)
+
     def __init__(self,
                  parent: cmdlets.Forceable,
                  *exceptions: Exception,
                  token: Union[bool, str, None] = None,  # Start as collecting only
                  doing=None,
                  raise_immediately=None,
-                 log_level=logging.WARNING
+                 warn_log: Callable = None,
+                 info_log: Callable = None,
                  ) -> None:
         """Root created only in constructor - the rest in __call__()/__enter__()."""
         if not isinstance(parent, cmdlets.Forceable):
@@ -305,7 +322,8 @@ class ErrLog(cmdlets.Replaceable, trt.HasTraits):
         super().__init__(parent=parent, exceptions=exceptions,
                          token=token, doing=doing,
                          raise_immediately=raise_immediately,
-                         log_level=log_level,
+                         warn_log=warn_log,
+                         info_log=info_log,
                          )
         self._anchor = self._root_node = _ErrNode()
 
@@ -314,7 +332,7 @@ class ErrLog(cmdlets.Replaceable, trt.HasTraits):
             type(self).__name__,
             self._root_node,
             self._anchor,
-            self._root_node.node_coordinates(self._anchor),
+            ', '.join(str(i) for i in self.coords),
             self._active,
             _idstr(self))
 
@@ -328,12 +346,14 @@ class ErrLog(cmdlets.Replaceable, trt.HasTraits):
                  token: Union[bool, str, None] = None,
                  doing=None,
                  raise_immediately=None,
-                 log_level: Union[int, str] = None) -> 'ErrLog':
+                 warn_log: Callable = None,
+                 info_log: Callable = None,
+                 ) -> 'ErrLog':
         """Reconfigure a new errlog on the same stack-level."""
         self._scream_on_faulted_reuse()
         changes = {}  # to gather replaced fields
-        fields = zip('token doing raise_immediately log_level'.split(),
-                     [token, doing, raise_immediately, log_level])
+        fields = zip('token doing raise_immediately warn_log info_log'.split(),
+                     [token, doing, raise_immediately, warn_log, info_log])
         for k, v in fields:
             if v is not None:
                 changes[k] = v
@@ -357,22 +377,33 @@ class ErrLog(cmdlets.Replaceable, trt.HasTraits):
 
         return new_errlog
 
+    def _report_completion(self) -> None:
+        if self.info_log:
+            doing = ' %s' % self.doing if self.doing else ''
+            coord_ids = self._root_node.node_coordinates(self._active)
+            coords = '.'.join(str(i + 1) for i in coord_ids)
+            if coords:
+                coords += '. '
+            self.info_log("%sFinished%s." % (coords, doing))
+
     def __exit__(self, exctype, ex, _exctb):
         ## A 3-state flag:
         #  - None: no exc
         #  - False: raising
         #  - True: suppressing raised ex
         suppressed_ex = None
+        if exctype is None:
+            self._report_completion()
+        else:
+            suppressed_ex = False
+
+            if issubclass(exctype, tuple(self.exceptions)) and (
+                    self.is_forced or not self.raise_immediately):
+                #ex = ex.with_traceback(exctb)  Ex already has it!
+                self._collect_error(ex)
+                suppressed_ex = True
+
         try:
-            if exctype is not None:
-                suppressed_ex = False
-
-                if issubclass(exctype, tuple(self.exceptions)) and (
-                        self.is_forced or not self.raise_immediately):
-                    #ex = ex.with_traceback(exctb)  Ex already has it!
-                    self._collect_error(ex)
-                    suppressed_ex = True
-
                 return suppressed_ex
         finally:
             if self.is_root:
@@ -416,7 +447,7 @@ class ErrLog(cmdlets.Replaceable, trt.HasTraits):
         msg = ' '.join((count_msg.capitalize(), node.tree_text()))
 
         if is_all_forced or ex_raised:
-            self.plog.log(self.log_level, msg)
+            self.logw(msg)
 
             if is_all_forced:
                 return None

@@ -30,6 +30,18 @@ def forceable():
     return Processor()
 
 
+@pytest.fixture
+def logcollector():
+    logs = []
+
+    def log_collector(msg, *args, **_kwd):
+        logs.append(msg % args)
+
+    log_collector.logs = logs
+
+    return log_collector
+
+
 @pytest.mark.parametrize('fields, exp_str, exp_repr', [
     ({}, 'ELN', None),
     ({'doing': '1'}, "ELN<'1'>", None),
@@ -174,7 +186,7 @@ def test_ErrLog_properties(forceable):
         assert erl2.doing is erl.doing is None
 
 
-def test_ErrLog_no_errors(caplog, forceable):
+def test_ErrLog_no_errors(caplog, forceable, logcollector):
     level = logging.DEBUG
     logging.basicConfig(level=level)
     logging.getLogger().setLevel(level)
@@ -191,36 +203,53 @@ def test_ErrLog_no_errors(caplog, forceable):
     ## Check re-use clean errlogs.
     #
     clearlog(caplog)
-    with erl:
-        pass
+    with erl(doing='0', info_log=logcollector) as erl2:
+        with erl2(doing='01'):
+            pass
+        with erl2(doing='02') as erl3:
+            with erl3(doing='021') as erl4:
+                with erl4(doing='0211'):
+                    pass
+        with erl2(doing='03') as erl3:
+            pass
     assert not caplog.text
     assert not erl.is_armed
     assert erl.is_good
+    info_text = '\n'.join(logcollector.logs)
+    exp_info = tw.dedent("""\
+        2.1. Finished 01.
+        2.2.1.1. Finished 0211.
+        2.2.1. Finished 021.
+        2.2. Finished 02.
+        2.3. Finished 03.
+        2. Finished 0.""")
+    assert exp_info in info_text
 
 
-def test_ErrLog_root(forceable, caplog):
+def test_ErrLog_root(forceable, caplog, logcollector):
     with pytest.raises(CollectedErrors, match="Collected 1 errors while"):
         with ErrLog(forceable, ValueError):
             raise ValueError()
     assert re.search('DEBUG +Collecting ValueError', caplog.text)
 
-    clearlog(caplog)
+    logcollector.logs.clear()
     forceable.force.append(True)
-    with ErrLog(forceable, ValueError, token=True):
+    with ErrLog(forceable, ValueError, token=True, warn_log=logcollector):
         raise ValueError()
-    assert "Ignored 1 errors while" in caplog.text
+    text = '\n'.join(logcollector.logs)
+    assert "Ignored 1 errors while" in text
     assert re.search('DEBUG +Collecting ValueError', caplog.text)
 
-    clearlog(caplog)
+    logcollector.logs.clear()
     with pytest.raises(KeyError, match="bad key"):
-        with ErrLog(forceable, ValueError):
+        with ErrLog(forceable, ValueError, warn_log=logcollector):
             raise KeyError('bad key')
-    assert not caplog.text
+    assert not logcollector.logs
 
 
-def test_ErrLog_nested_all_captured(caplog, forceable):
+def test_ErrLog_nested_all_captured_and_info(caplog, logcollector, forceable):
     forceable.force.append(True)
-    erl = ErrLog(forceable, ValueError, token=True)
+    erl = ErrLog(forceable, ValueError, token=True, info_log=logcollector)
 
     clearlog(caplog)
     with erl(doing="starting") as erl2:
@@ -235,7 +264,7 @@ def test_ErrLog_nested_all_captured(caplog, forceable):
                 raise ValueError("Good-do-do")
             raise ValueError("better-2")
 
-    exp = tw.dedent("""\
+    exp_warn = tw.dedent("""\
         Ignored 3 errors while starting:
           - while doing-1:
             ignored: ValueError: Wrong-1!
@@ -244,7 +273,11 @@ def test_ErrLog_nested_all_captured(caplog, forceable):
               ignored: ValueError: Good-do-do
             ignored: ValueError: better-2""")
     #print(caplog.text)
-    assert exp in caplog.text
+    assert exp_warn in caplog.text
+
+    exp_info = "1.1. Finished notting.\n1. Finished starting."
+    text = '\n'.join(logcollector.logs)
+    assert exp_info in text
 
 
 def test_ErrLog_nested_reuse(caplog, forceable):
