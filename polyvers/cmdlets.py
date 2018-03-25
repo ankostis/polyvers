@@ -46,7 +46,8 @@ Of course you can mix'n match.
 
 from collections import OrderedDict
 from os import PathLike
-from typing import Any, List, Dict, Union, Tuple, Optional, Sequence  # noqa: F401 @UnusedImport
+from typing import (  # noqa: F401
+    Any, List, Dict, Union, Tuple, Optional, Sequence, Callable)  # @UnusedImport
 import contextlib
 import io
 import logging
@@ -503,7 +504,9 @@ class Forceable(metaclass=trt.MetaHasTraits):
                token: Union[bool, str] = None,
                doing=None,
                raise_immediately=None,
-               log_level=logging.WARNING):
+               warn_log: Callable = None,
+               info_log: Callable = None,
+               ):
         """
         Run cntxt-body via :class:`ErrLog` and report collected errors at exit.
 
@@ -529,7 +532,9 @@ class Forceable(metaclass=trt.MetaHasTraits):
                              *exceptions,
                              token=token, doing=doing,
                              raise_immediately=raise_immediately,
-                             log_level=log_level)
+                             warn_log=warn_log,
+                             info_log=info_log,
+                             )
 
 
 class CmdletsInterpolation(interpctxt.InterpolationContext):
