@@ -12,4 +12,4 @@ rainbow_logging_handler==2.2.2
 ruamel.yaml==0.15.35
 spectate==0.1.0
 toolz==0.9.0
-ruamel.yaml==0.15.35
+ruamel.yaml==0.15.37

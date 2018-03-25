@@ -5,16 +5,15 @@
 
 #import sys
 
-from setuptools import setup, find_packages
 from polyvers import polyversion
+
+from setuptools import setup, find_packages
 
 
 # MIN_PYTHON = (3, 6)
 # if sys.version_info < MIN_PYTHON:
 #     sys.exit("Sorry, Python >= %s is required, found: %s" %
 #              ('.'.join(str(i) for i in MIN_PYTHON), str(sys.version_info)))
-
-
 with open('README.rst') as readme_file:
     readme = readme_file.read()
 
@@ -28,7 +27,7 @@ requirements = [
     'ruamel.yaml',              # for logconf
     'ipython_genutils',         # by vendorized `traitlets`
     'spectate',                 # by vendorized `traitlets`
-    'ruamel.yaml>=0.15',
+    'ruamel.yaml>=0.15.37',     # fix PY3.7 ruamel/yaml#187
 ]
 
 test_requirements = [
