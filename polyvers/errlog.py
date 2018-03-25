@@ -167,32 +167,18 @@ class _ErrNode(trt.HasTraits):
         return ''.join(msg_parts)
 
 
-## TODO: decouple `force` from `ErrLog`.
-## TODO: rename `ErrTree`.
 class ErrLog(cmdlets.Replaceable, trt.HasTraits):
     """
-    Collecting or "forcing" errors in hierarchical contexts forming a tree.
+    Collects errors in "stacked" contexts and delays or ignores ("forces") building a tree.
 
     - Unknown errors (not in `exceptions`) always bubble up immediately.
-    - If `token` given and exists in :attr:`Spec.force`, are "forced",
-      i.e. are collected and logged as `log_level` when :meth:`report()`
-      invoked.
-    - Non-"forced" are either `raise_immediately`, or raised collectively
-      when :meth:`report()` invoked.
-    - Collected ("forced" or non-`raise_immediately`) are logged on DEBUG
-      immediately.
+    - Any "forced" errors are collected and logged as `log_level` on context-exit.
+    - Non-"forced" are either `raise_immediately`, or raised collectively in
+      a :class:`CollectedErrors`, on context-exit.
+    - Collected are always logged on DEBUG immediately.
 
-    :ivar spec:
-        the spec instance to search in its :attr:`Spec.force` for the token
     :ivar exceptions:
         the exceptions to delay or forced; others are left to bubble immediately
-    :ivar token:
-        the :attr:`force` token to respect, like :meth:`Spec.is_force()`,
-        with possible values:
-          - false: (default) completely ignore `force` trait
-             collected are just delayed);
-          - <a string>: "force" if this token is in `force` trait;
-          - `True`: "force" if `True` is in :attr:`force``force`.
     :ivar doing:
         A description of the running activity for the current stacked-context,
         in present continuous tense, e.g. "readind X-files".
@@ -217,6 +203,8 @@ class ErrLog(cmdlets.Replaceable, trt.HasTraits):
         the logging level to use when just reporting.
         Note that all are always reported immediately on DEBUG.
 
+    PRIVATE FIELDS:
+
     :ivar _root_node:
         The root of the tree of nodes, populated when entering contexts recursively.
     :ivar _anchor:
@@ -224,17 +212,6 @@ class ErrLog(cmdlets.Replaceable, trt.HasTraits):
          child-node is attached, and the tree grows.
     :ivar _active:
          the node created in `_anchor`
-
-    Example of using this method for multiple actions in a loop::
-
-        with ErrLog(enforeceable, IOError,
-                    doing="loading X-files",
-                    token='fread') as errlog:
-            for fpath in file_paths:
-                with errlog(doing="reading '%s'" % fpath) as erl2:
-                    fbytes.append(fpath.read_bytes())
-
-        # Any errors collected will raise/WARN here (root-context exit).
 
     """
     class ErrLogException(Exception):
@@ -244,11 +221,9 @@ class ErrLog(cmdlets.Replaceable, trt.HasTraits):
     class CollectedErrors(cmdlets.CmdException):
         pass
 
-    ## TODO: weakref(ErrLog.parent), see `BaseDescriptor._property`.
-    parent = Instance(cmdlets.Forceable)
     exceptions = ListTrait(TypeTrait(Exception))
-    token = UnionTrait((Unicode(), Bool()), allow_none=True)
-    doing = Unicode(allow_none=True)
+    doing = Unicode()
+    is_forced = CBool()
     raise_immediately = CBool()
     log_level = UnionTrait((Int(), Unicode()))
 
@@ -266,11 +241,6 @@ class ErrLog(cmdlets.Replaceable, trt.HasTraits):
     def pdebug(self) -> logging.Logger:
         """Search `debug` property in `parent`, or False."""
         return getattr(self.parent, 'debug', False)
-
-    def is_forced(self):
-        """Try `force` in `parent` first."""
-        ## TODO: decouple `force` from `ErrLog`.
-        return getattr(self.parent, 'is_forced')(token=self.token)
 
     @property
     def is_root(self):
@@ -291,18 +261,14 @@ class ErrLog(cmdlets.Replaceable, trt.HasTraits):
         return not bool(self._anchor.err)
 
     def __init__(self,
-                 parent: cmdlets.Forceable,
                  *exceptions: Exception,
-                 token: Union[bool, str, None] = None,  # Start as collecting only
                  doing=None,
                  raise_immediately=None,
                  log_level=logging.WARNING
                  ) -> None:
         """Root created only in constructor - the rest in __call__()/__enter__()."""
-        if not isinstance(parent, cmdlets.Forceable):
-            raise trt.TraitError("Parent '%s' is not Forceable!" % parent)
-        super().__init__(parent=parent, exceptions=exceptions,
-                         token=token, doing=doing,
+        super().__init__(exceptions=exceptions,
+                         doing=doing,
                          raise_immediately=raise_immediately,
                          log_level=log_level,
                          )
@@ -323,34 +289,31 @@ class ErrLog(cmdlets.Replaceable, trt.HasTraits):
 
     def __call__(self,
                  *exceptions: Exception,
-                 token: Union[bool, str, None] = None,
                  doing=None,
                  raise_immediately=None,
-                 log_level: Union[int, str] = None):
+                 log_level: Union[int, str] = None) -> ErrLog:
         """Reconfigure a new errlog on the same stack-level."""
         self._scream_on_faulted_reuse()
         changes = {}  # to gather replaced fields
-        fields = zip('token doing raise_immediately log_level'.split(),
-                     [token, doing, raise_immediately, log_level])
+        fields = zip('doing raise_immediately log_level'.split(),
+                     [doing, raise_immediately, log_level])
         for k, v in fields:
             if v is not None:
                 changes[k] = v
         if exceptions:  # None-check futile
             changes['exceptions'] = exceptions  # type: ignore
 
-        ## Note etuples-root & children always shared (not deepcopy).
-
         clone = self.replace(**changes)
 
         return clone
 
-    def __enter__(self):
+    def __enter__(self) -> ErrLog:
         """Return `self` upon entering the runtime context."""
         self._scream_on_faulted_reuse()
         if self.is_armed:
             raise ErrLog.ErrLogException("Cannot re-enter context of %r!" % self)
 
-        self._active = self._anchor.new_cnode(self.doing, self.is_forced())
+        self._active = self._anchor.new_cnode(self.doing, self.is_forced)
         new_errlog = self.replace(_anchor=self._active, _active=None)
 
         return new_errlog
@@ -424,6 +387,59 @@ class ErrLog(cmdlets.Replaceable, trt.HasTraits):
             return errors
         else:
             raise errors
+
+
+class ForcedLogs():
+    """
+    :ivar spec:
+        The :class:`cmdlets.Forceable` instance to search in its :attr:`Spec.force`
+        for the `token` and decide if collected errors are "forced".
+    :ivar token:
+        the :attr:`force` token to respect, like :meth:`Spec.is_force()`,
+        with possible values:
+          - false: (default) completely ignore `force` trait
+             collected are just delayed);
+          - <a string>: "force" if this token is in `force` trait;
+          - `True`: "force" if `True` is in :attr:`force``force`.
+
+    Example of using it for multiple actions in a loop::
+
+        with ErrLog(enforeceable, IOError,
+                    doing="loading X-files",
+                    token='fread') as errlog:
+            for fpath in file_paths:
+                with errlog(doing="reading '%s'" % fpath) as erl2:
+                    fbytes.append(fpath.read_bytes())
+
+        # Any errors collected will raise/WARN here (root-context exit).
+
+    """
+    ## TODO: weakref(ErrLog.parent), see `BaseDescriptor._property`.
+    parent = Instance(cmdlets.Forceable)
+    token = UnionTrait((Unicode(), Bool()), allow_none=True)
+
+    def __init__(self,
+                 parent: cmdlets.Forceable,
+                 *exceptions: Exception,
+                 token: Union[bool, str, None] = None,  # Start as collecting only
+                 **kwds) -> None:
+        if not isinstance(parent, cmdlets.Forceable):
+            raise trt.TraitError("Parent '%s' is not Forceable!" % parent)
+        self.parent = parent
+        self.token = token
+
+        super().__init__(*exceptions, **kwds)
+
+    def __call__(self,
+                 *exceptions: Exception,
+                 token: Union[bool, str, None] = None,
+                 **kwds) -> None:
+
+    @trt.default('is_forced')
+    def _is_force_tken_in_flags(self):
+        """Try `force` in `parent` first."""
+        ## TODO: decouple `force` from `ErrLog`.
+        return getattr(self.parent, 'is_forced')(token=self.token)
 
 
 def errlogged(*errlog_args, **errlog_kw):
