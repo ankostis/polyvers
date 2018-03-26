@@ -19,7 +19,7 @@ There are 3 important methods/functions calling Git:
 """
 
 from pathlib import Path
-from typing import List, Dict, Tuple, Sequence, Optional
+from typing import List, Dict, Sequence, Optional
 import contextlib
 import glob
 import logging
@@ -531,18 +531,3 @@ def assign_tags_to_projects(tags: Sequence[str], projects: Sequence[Project]):
             if version:
                 proj._pvtags_collected.append(pvtag)
                 break
-
-
-def collect_standard_versioning_tags(**project_kw) -> Tuple[Project, Project]:
-    """
-    Utility to collect both *pvtags* and *vtags* from git repo.
-
-    :return:
-        a 2-tuple(pvtag-project, vtag-project) all populated with any
-        versioning tags
-    """
-    catch_all_projects = (make_match_all_pvtags_project(**project_kw),
-                          make_match_all_vtags_project(**project_kw))
-    populate_pvtags_history(*catch_all_projects)
-
-    return catch_all_projects

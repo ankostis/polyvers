@@ -19,6 +19,7 @@ from . import logconfutils as lcu
 from ._vendor import traitlets as trt
 from ._vendor.traitlets import config as trc
 from ._vendor.traitlets.traitlets import List, Bool, Unicode
+from ._vendor.traitlets.traitlets import Tuple as TupleTrait
 from .autoinstance_traitlet import AutoInstance
 
 
@@ -231,15 +232,15 @@ class PolyversCmd(cmdlets.Cmd):
           or when no configuration file exists.
         """)
 
-    pvtags_scan = List(
-        AutoInstance(pvtags.Project),
-        default_value=[
+    autodiscover_version_scheme_projects = TupleTrait(
+        AutoInstance(pvtags.Project), AutoInstance(pvtags.Project),
+        default_value=(
             pvtags.make_match_all_pvtags_project(),
             pvtags.make_match_all_vtags_project(),
-        ],
+        ),
         config=True,
         help="""
-        Patterns and regexps to search for *pvtags* or plain *vtags* in git repo.
+        A pair of Projects with patterns/regexps matching *pvtags* or *vtags*, respectively.
 
         - Used when auto-discovering projects, to construct new or update
           a configuration file.
@@ -285,7 +286,8 @@ class PolyversCmd(cmdlets.Cmd):
         :return:
             one of :func:`pvtags.make_vtag_project`, :func:`pvtags.make_pvtag_project`
         """
-        pvtag_proj, vtag_proj = pvtags.collect_standard_versioning_tags(parent=self)
+        pvtag_proj, vtag_proj = self.autodiscover_version_scheme_projects
+        pvtags.populate_pvtags_history(pvtag_proj, vtag_proj)
 
         if bool(pvtag_proj.pvtags_history) ^ bool(vtag_proj.pvtags_history):
             return (pvtags.make_pvtag_project(parent=self)
