@@ -439,11 +439,11 @@ class BumpCmd(_SubCmd):
     Increase the version of project(s) by the given offset.
 
     SYNTAX:
-{cmd_chain} [OPTIONS] [<version>] [<project>]...
-        {cmd_chain} [OPTIONS] --part <offset> [<project>]...
+        {cmd_chain} [OPTIONS] [<version>] [<project>]...
 
     - A version specifier, either ABSOLUTE, or RELATIVE to current version:
-      - ABSOLUTE PEP-440 version samples:
+
+      - *ABSOLUTE* PEP-440 version samples:
         - Pre-releases: when working on new features:
             X.YbN               # Beta release
             X.YrcN  or  X.YcN   # Release Candidate
@@ -454,12 +454,14 @@ class BumpCmd(_SubCmd):
         - Dev-release:
             X.YaN.devM          # Developmental release of an alpha release
             X.Y.postN.devM      # Developmental release of a post-release
-      - RELATIVE samples:
+
+      - *RELATIVE* samples:
         - +0.1          # For instance:
                         #   1.2.3    --> 1.3.0
         - ^2            # Increases the last non-zero part of current version:
                         #   1.2.3    --> 1.2.5
                         #   0.1.0b0  --> 0.1.0b2
+
     - If no <version> specified, '^1' assumed.
     - If no project(s) specified, increase the versions on all projects.
     - Denied if version for some projects is backward-in-time (or has jumped parts?);
