@@ -211,7 +211,7 @@ class PolyversCmd(cmdlets.Cmd):
         default_value={
             'globs': ['**/setup.py'],
             'grafts': [
-                {'regex': r'''(?x)
+                {'regex': r'''(?xm)
                     \b(name|PROJECT|APPNAME|APPLICATION)
                     \ *=\ *
                     (['"])

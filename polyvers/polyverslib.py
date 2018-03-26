@@ -54,14 +54,14 @@ vtag_frmt = '{vprefix}{version}'
 #:     {pname}, {vprefix} = tag_vprefixes[0 | 1]
 #:
 #: See :pep:`0426` for project-name characters and format.
-pvtag_regex = r"""(?xi)
+pvtag_regex = r"""(?xmi)
     ^(?P<pname>{pname})
     -
     {vprefix}(?P<version>\d[^-]*)
     (?:-(?P<descid>\d+-g[a-f\d]+))?$
 """
 #: Like :data:`pvtag_frmt` but for *mono-project* version-tags.
-vtag_regex = r"""(?xi)
+vtag_regex = r"""(?xmi)
     ^(?P<pname>)
     {vprefix}(?P<version>\d[^-]*)
     (?:-(?P<descid>\d+-g[a-f\d]+))?$

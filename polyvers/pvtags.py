@@ -212,7 +212,7 @@ class Project(cmdlets.Replaceable, cmdlets.Printable, cmdlets.Spec):
     )
 
     message = Unicode(
-        "chore(ver): bump {{current_version}} → {{new_version}}",
+        "chore(ver): bump {current_version} → {version}",
         config=True,
         help="""
             The message for commits and per-project tags.
@@ -381,7 +381,7 @@ def make_match_all_pvtags_project(**project_kw) -> Project:
         pname='<PVTAG>',
         tag_vprefixes=pvlib.tag_vprefixes,
         pvtag_frmt='*-v*',
-        pvtag_regex=r"""(?xi)
+        pvtag_regex=r"""(?xmi)
             ^(?P<pname>[A-Z0-9]|[A-Z0-9][A-Z0-9._-]*?[A-Z0-9])
             -
             v(?P<version>\d[^-]*)

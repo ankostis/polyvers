@@ -47,7 +47,7 @@ def project2():
     return Project(
         pname=pname2,
         pvtag_frmt='{pname}-V{version}',
-        pvtag_regex=r"""(?xi)
+        pvtag_regex=r"""(?xmi)
             ^(?P<pname>{pname})
             -
             V(?P<version>\d[^-]*)
