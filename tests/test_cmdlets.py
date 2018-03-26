@@ -16,7 +16,6 @@ from polyvers.logconfutils import init_logging
 from tests.conftest import touchpaths
 import logging
 import os
-import tempfile
 
 from ruamel.yaml.comments import CommentedMap
 import pytest
@@ -42,7 +41,7 @@ def forceable():
 
 
 def test_Replaceable():
-    class C(trt.HasTraits, cmdlets.Replaceable):
+    class C(cmdlets.Replaceable, trt.HasTraits):
         a = Int()
 
     c = C(a=1)
@@ -50,6 +49,7 @@ def test_Replaceable():
 
     cc = c.replace(a=2)
     assert cc.a == 2
+    assert c.a == 1
 
 
 def test_Replaceable_Configurable():
@@ -279,12 +279,12 @@ def test_no_default_config_paths(tmpdir):
     assert len(c.loaded_config_files) == 0
 
 
-def test_default_loaded_paths():
-    with tempfile.TemporaryDirectory(prefix=__name__) as tdir:
-        c = cmdlets.Cmd(config_paths=[tdir])
-        c.initialize([])
-        print(c._cfgfiles_registry.config_tuples)
-        assert len(c.loaded_config_files) == 1
+def test_default_loaded_paths(tmpdir):
+    tdir = tmpdir.mkdir('cwd')
+    c = cmdlets.Cmd(config_paths=[tdir])
+    c.initialize([])
+    print(c._cfgfiles_registry.config_tuples)
+    assert len(c.loaded_config_files) == 1
 
 
 test_paths0 = [
