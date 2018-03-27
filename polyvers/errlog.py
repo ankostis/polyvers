@@ -181,6 +181,10 @@ class ErrLog(cmdlets.Replaceable, trt.HasTraits):
     - Non-"forced" errors are either `raise_immediately`, or raised collectively
       in a :class:`CollectedErrors`, on context-exit.
     - Collected are always logged on DEBUG immediately.
+    - Instances of this class are callable, and the call will return a *clone*
+      with provided properties updated.
+    - A *clone* is also returned when acquiring the context in a `with`
+      statement.
 
     :ivar spec:
         the spec instance to search in its :attr:`Spec.force` for the token
@@ -380,11 +384,25 @@ class ErrLog(cmdlets.Replaceable, trt.HasTraits):
     def _report_completion(self) -> None:
         if self.info_log:
             doing = ' %s' % self.doing if self.doing else ''
+
             coord_ids = self._root_node.node_coordinates(self._active)
             coords = '.'.join(str(i + 1) for i in coord_ids)
             if coords:
                 coords += '. '
-            self.info_log("%sFinished%s." % (coords, doing))
+
+            nsubs = len(self._active.cnodes)
+            subtasks = ''
+            if nsubs:
+                subtasks = '%i subtasks' % nsubs
+                nforced = sum(1 for cn in self._active.cnodes
+                              if cn.err)
+                ignored = ''
+                if nforced:
+                    ignored = ', %i errors ignored' % nforced
+
+                subtasks = ' (%s%s)' % (subtasks, ignored)
+            self.info_log("%sFinished%s%s." %
+                          (coords, doing, subtasks))
 
     def __exit__(self, exctype, ex, _exctb):
         ## A 3-state flag:

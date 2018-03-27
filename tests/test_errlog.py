@@ -219,11 +219,17 @@ def test_ErrLog_no_errors(caplog, forceable, logcollector):
     exp_info = tw.dedent("""\
         2.1. Finished 01.
         2.2.1.1. Finished 0211.
-        2.2.1. Finished 021.
-        2.2. Finished 02.
+        2.2.1. Finished 021 (1 subtasks).
+        2.2. Finished 02 (1 subtasks).
         2.3. Finished 03.
-        2. Finished 0.""")
+        2. Finished 0 (3 subtasks).""")
     assert exp_info in info_text
+
+    logcollector.logs.clear()
+    with erl(doing='redoing', info_log=logcollector):
+        pass
+    info_text = '\n'.join(logcollector.logs)
+    assert "3. Finished redoing." in info_text
 
 
 def test_ErrLog_root(forceable, caplog, logcollector):
@@ -240,11 +246,17 @@ def test_ErrLog_root(forceable, caplog, logcollector):
     assert "Ignored 1 errors while" in text
     assert re.search('DEBUG +Collecting ValueError', caplog.text)
 
+    erl = ErrLog(forceable, ValueError, warn_log=logcollector)
     logcollector.logs.clear()
     with pytest.raises(KeyError, match="bad key"):
-        with ErrLog(forceable, ValueError, warn_log=logcollector):
+        with erl:
             raise KeyError('bad key')
     assert not logcollector.logs
+
+    ## test re-using failed one.
+    #
+    with erl:
+        pass
 
 
 def test_ErrLog_nested_all_captured_and_info(caplog, logcollector, forceable):
@@ -275,7 +287,9 @@ def test_ErrLog_nested_all_captured_and_info(caplog, logcollector, forceable):
     #print(caplog.text)
     assert exp_warn in caplog.text
 
-    exp_info = "1.1. Finished notting.\n1. Finished starting."
+    exp_info = tw.dedent("""\
+        1.1. Finished notting.
+        1. Finished starting (3 subtasks, 2 errors ignored).""")
     text = '\n'.join(logcollector.logs)
     assert exp_info in text
 
