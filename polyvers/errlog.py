@@ -347,6 +347,7 @@ class ErrLog(cmdlets.Replaceable, trt.HasTraits):
 
     def __call__(self,
                  *exceptions: Exception,
+                 parent: cmdlets.Forceable = None,
                  token: Union[bool, str, None] = None,
                  doing=None,
                  raise_immediately=None,
@@ -356,11 +357,11 @@ class ErrLog(cmdlets.Replaceable, trt.HasTraits):
         """Reconfigure a new errlog on the same stack-level."""
         self._scream_on_faulted_reuse()
         changes = {}  # to gather replaced fields
-        fields = zip('token doing raise_immediately warn_log info_log'.split(),
-                     [token, doing, raise_immediately, warn_log, info_log])
-        for k, v in fields:
+        fields = 'parent token doing raise_immediately warn_log info_log'
+        for f in fields.split():
+            v = locals()[f]
             if v is not None:
-                changes[k] = v
+                changes[f] = v
         if exceptions:  # None-check futile
             changes['exceptions'] = exceptions  # type: ignore
 

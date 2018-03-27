@@ -16,7 +16,6 @@ from polyvers.logconfutils import init_logging
 from tests.conftest import touchpaths
 import logging
 import os
-import tempfile
 
 from ruamel.yaml.comments import CommentedMap
 import pytest
@@ -33,16 +32,8 @@ log = logging.getLogger(__name__)
 mydir = osp.dirname(__file__)
 
 
-@pytest.fixture
-def forceable():
-    class Processor(cmdlets.Forceable, trt.HasTraits):
-        pass
-
-    return Processor()
-
-
 def test_Replaceable():
-    class C(trt.HasTraits, cmdlets.Replaceable):
+    class C(cmdlets.Replaceable, trt.HasTraits):
         a = Int()
 
     c = C(a=1)
@@ -50,6 +41,7 @@ def test_Replaceable():
 
     cc = c.replace(a=2)
     assert cc.a == 2
+    assert c.a == 1
 
 
 def test_Replaceable_Configurable():
@@ -147,6 +139,24 @@ def test_Forceable_is_forced(force, token, exp):
         force = [force]
     sp = cmdlets.Spec(force=force)
     assert sp.is_forced(token) is exp
+
+
+def test_errlog_thread_context():
+    class F(cmdlets.Forceable, trt.HasTraits):
+        pass
+
+    frc1 = F()
+    frc2 = F()
+
+    with frc1.errlogged() as erl1:
+        assert erl1.parent == frc1
+        assert cmdlets._current_errlog is erl1
+        with frc2.errlogged() as erl2:
+            assert cmdlets._current_errlog is erl2
+            assert erl2.parent == frc2
+            assert erl1._root_node is erl2._root_node
+        assert cmdlets._current_errlog is erl1
+    assert cmdlets._current_errlog is None
 
 
 def test_CfgFilesRegistry_consolidate_posix_1():
@@ -279,12 +289,12 @@ def test_no_default_config_paths(tmpdir):
     assert len(c.loaded_config_files) == 0
 
 
-def test_default_loaded_paths():
-    with tempfile.TemporaryDirectory(prefix=__name__) as tdir:
-        c = cmdlets.Cmd(config_paths=[tdir])
-        c.initialize([])
-        print(c._cfgfiles_registry.config_tuples)
-        assert len(c.loaded_config_files) == 1
+def test_default_loaded_paths(tmpdir):
+    tdir = tmpdir.mkdir('cwd')
+    c = cmdlets.Cmd(config_paths=[tdir])
+    c.initialize([])
+    print(c._cfgfiles_registry.config_tuples)
+    assert len(c.loaded_config_files) == 1
 
 
 test_paths0 = [

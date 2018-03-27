@@ -458,6 +458,17 @@ class Printable(metaclass=trt.MetaHasTraits):
         return '%s(%s)' % (cls_name, trait_values_msg)
 
 
+#: The global :class:`ErrLog` used by :meth:`Forceable.errlogged()`.
+_current_errlog = None
+
+
+def clear_global_errlog():
+    global _current_errlog
+
+    log.debug("Clearing global errlog %r.", _current_errlog)
+    _current_errlog = None
+
+
 class Forceable(metaclass=trt.MetaHasTraits):
     """Mixin to facilitate "forcing" actions by ignoring/delaying their errors. """
     force = ListTrait(
@@ -499,42 +510,66 @@ class Forceable(metaclass=trt.MetaHasTraits):
         return isinstance(token, str) and '*' in force
 
     @contextlib.contextmanager
-    def errlog(self,
-               *exceptions: Exception,
-               token: Union[bool, str] = None,
-               doing=None,
-               raise_immediately=None,
-               warn_log: Callable = None,
-               info_log: Callable = None,
-               ):
+    def errlogged(self,
+                  *exceptions: Exception,
+                  token: Union[bool, str] = None,
+                  doing=None,
+                  raise_immediately=None,
+                  warn_log: Callable = None,
+                  info_log: Callable = None
+                  ):
         """
-        Run cntxt-body via :class:`ErrLog` and report collected errors at exit.
-
-        :param doing:
-            See :meth:`ErrLog.report_errors()`
+        A context-man for nesting :class:`ErrLog` instances.
 
         - See :class:`ErrLog` for other params.
+        - The pre-existing `errlog` is searched in :data:`_current_errlog`
+          attribute.
+        - The `_current_errlog` on entering context, is restored on exit;
+          original is `None`.
+        - The returned errlog always has its :attr:`ErrLog.parent` set to
+          this enforceable.
         - Example of using this method for multiple actions in a loop::
 
-              with self.errlog(IOError,
+              with self.errlogged(IOError,
                                doing="loading X-files",
-                               token='fread') as errlog:
+                               token='fread') as erl:
                   for fpath in file_paths:
-                      with errlog(doing="reading '%s'" % fpath):
+                      with erl(doing="reading '%s'" % fpath):
                           fbytes.append(fpath.read_bytes())
 
               # Any errors collected above, will be raised/WARNed here.
 
         """
+        global _current_errlog
+
         from . import errlog
 
-        return errlog.ErrLog(self,
-                             *exceptions,
-                             token=token, doing=doing,
-                             raise_immediately=raise_immediately,
-                             warn_log=warn_log,
-                             info_log=info_log,
-                             )
+        prev_errlog = _current_errlog
+        if _current_errlog:
+
+            _current_errlog = _current_errlog(
+                *exceptions,
+                parent=self,
+                token=token, doing=doing,
+                raise_immediately=raise_immediately,
+                warn_log=warn_log,
+                info_log=info_log,
+            )
+        else:
+            ## TODO: decouple `force` from `ErrLog`.
+            _current_errlog = errlog.ErrLog(
+                self,
+                *exceptions,
+                token=token, doing=doing,
+                raise_immediately=raise_immediately,
+                warn_log=warn_log,
+                info_log=info_log,
+            )
+
+        try:
+            yield _current_errlog
+        finally:
+            _current_errlog = prev_errlog
 
 
 class CmdletsInterpolation(interpctxt.InterpolationContext):
