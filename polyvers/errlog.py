@@ -229,11 +229,8 @@ class ErrLog(cmdlets.Replaceable, trt.HasTraits):
 
     :ivar _root_node:
         The root of the tree of nodes, populated when entering contexts recursively.
-    :ivar _anchor:
-         the parent node in the tree where on :meth:`__enter__()` a new `_active`
-         child-node is attached, and the tree grows.
-    :ivar _active:
-         the node created in `_anchor`
+    :ivar _active_node:
+         the child-node created on :meth:`__enter__()`
 
     Example of using this method for multiple actions in a loop::
 
@@ -263,10 +260,10 @@ class ErrLog(cmdlets.Replaceable, trt.HasTraits):
     warn_log = CallableTrait(allow_none=True)
     info_log = CallableTrait(allow_none=True)
 
-    _root_node: _ErrNode = Instance(_ErrNode)   # type: ignore
-    _anchor: _ErrNode = Instance(_ErrNode)      # type: ignore
-    _active: _ErrNode = Instance(_ErrNode,      # type: ignore
-                                 default_value=None, allow_none=True)
+    _root_node: _ErrNode = Instance(_ErrNode,   # type: ignore
+                                    default_value=None, allow_none=True)
+    _active_node: _ErrNode = Instance(_ErrNode,      # type: ignore
+                                      default_value=None, allow_none=True)
 
     @property
     def plog(self) -> logging.Logger:
@@ -290,12 +287,13 @@ class ErrLog(cmdlets.Replaceable, trt.HasTraits):
 
     @property
     def is_root(self):
-        return self._anchor is self._root_node
+        """Return true regardless if armed."""
+        return self._active_node is self._root_node
 
     @property
     def is_armed(self):
         """Is context ``__enter__()`` currently under process? """
-        return self._active is not None
+        return self._active_node is not None
 
     @property
     def is_good(self):
@@ -304,12 +302,14 @@ class ErrLog(cmdlets.Replaceable, trt.HasTraits):
 
         If it does, it cannot be used anymore.
         """
-        return not bool(self._anchor.err)
+        return not self._active_node or not bool(self._active_node.err)
 
     @property
     def coords(self) -> List[int]:
-        """Return my anchor's coordinate-indices from the root of the tree. """
-        return self._root_node.node_coordinates(self._anchor)
+        """Return the coordinate-indices from the root or [] if root. """
+        if self._root_node and self._active_node:
+            return self._root_node.node_coordinates(self._active_node)
+        return []
 
     def __init__(self,
                  parent: cmdlets.Forceable,
@@ -329,20 +329,18 @@ class ErrLog(cmdlets.Replaceable, trt.HasTraits):
                          warn_log=warn_log,
                          info_log=info_log,
                          )
-        self._anchor = self._root_node = _ErrNode()
 
     def __repr__(self):
-        return '%s<rot=%r, anc=%s, crd=%s, act=%s>@%s' % (
+        return '%s<rot=%r, crd=%s, act=%s>@%s' % (
             type(self).__name__,
             self._root_node,
-            self._anchor,
             ', '.join(str(i) for i in self.coords),
-            self._active,
+            self._active_node,
             _idstr(self))
 
     def _scream_on_faulted_reuse(self):
         ## TODO: test _scream_on_faulted_reuse
-        if self._anchor.err:
+        if not self.is_good:
             raise ErrLog.ErrLogException('Cannot re-use faulted %r!' % self)
 
     def __call__(self,
@@ -376,25 +374,38 @@ class ErrLog(cmdlets.Replaceable, trt.HasTraits):
         if self.is_armed:
             raise ErrLog.ErrLogException("Cannot re-enter context of %r!" % self)
 
-        self._active = self._anchor.new_cnode(self.doing, self.is_forced)
-        new_errlog = self.replace(_anchor=self._active, _active=None)
+        if self._root_node is None:
+            assert not self._active_node, self
 
-        return new_errlog
+            new_root = _ErrNode()
+            changes = {
+                '_root_node': new_root,
+                '_active_node': new_root.new_cnode(self.doing,
+                                                   self.is_forced)}
+        else:
+            assert self._active_node, self
+
+            changes = {
+                '_active_node': self._active_node.new_cnode(self.doing,
+                                                            self.is_forced)}
+
+        return self.replace(**changes)
 
     def _report_completion(self) -> None:
+        assert self._root_node and self._active_node, self
+
         if self.info_log:
             doing = ' %s' % self.doing if self.doing else ''
 
-            coord_ids = self._root_node.node_coordinates(self._active)
-            coords = '.'.join(str(i + 1) for i in coord_ids)
+            coords = '.'.join(str(i + 1) for i in self.coords)
             if coords:
                 coords += '. '
 
-            nsubs = len(self._active.cnodes)
+            nsubs = len(self._active_node.cnodes)
             subtasks = ''
             if nsubs:
                 subtasks = '%i subtasks' % nsubs
-                nforced = sum(1 for cn in self._active.cnodes
+                nforced = sum(1 for cn in self._active_node.cnodes
                               if cn.err)
                 ignored = ''
                 if nforced:
@@ -424,14 +435,14 @@ class ErrLog(cmdlets.Replaceable, trt.HasTraits):
         try:
                 return suppressed_ex
         finally:
-            if self.is_root:
-                self.report(None if suppressed_ex else ex)
-            ## NOTE: won't clear `active` if `report()` raises!
-            #        Not yet sure if we want that...
-            self._active = None
+                if self.is_root:
+                    assert not (self._root_node or self._active_node)
+                    self.report(None if suppressed_ex else ex)
 
     def _collect_error(self, ex):
-        self._active.err = ex
+        assert self.is_armed, self
+
+        self._active_node.err = ex
 
         log = self.plog
         if log.isEnabledFor(logging.DEBUG):
@@ -448,7 +459,9 @@ class ErrLog(cmdlets.Replaceable, trt.HasTraits):
             any non-forced exceptions captured in tree (if any),
             unless `ex_raised` given
         """
-        node = self._active
+        assert self.is_armed, self
+
+        node = self._active_node
         nerrors, nforced = node.count_error_tree()
         assert nerrors >= nforced >= 0, (nerrors, nforced, self)
         if nerrors == 0:
