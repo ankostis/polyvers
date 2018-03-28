@@ -170,6 +170,10 @@ class _ErrNode(trt.HasTraits):
         return ''.join(msg_parts)
 
 
+#: delimetSentinel to detect values given in a :meth:`ErrLog.__call__()`.
+_no_value = object()
+
+
 ## TODO: decouple `force` from `ErrLog`.
 class ErrLog(cmdlets.Replaceable, trt.HasTraits):
     """
@@ -190,9 +194,11 @@ class ErrLog(cmdlets.Replaceable, trt.HasTraits):
         the spec instance to search in its :attr:`Spec.force` for the token
     :ivar exceptions:
         the exceptions to delay or forced; others are left to bubble immediately
+        If none given, :class:`Exception` is assumed.
     :ivar token:
-        the :attr:`force` token to respect, like :meth:`Spec.is_force()`,
-        with possible values:
+        the :attr:`force` token to respect, like :meth:`Spec.is_force()`.
+        Resets on each new instance from :meth:`__call__()`.
+        Possible values:
           - false: (default) completely ignore `force` trait
              collected are just delayed);
           - <a string>: "force" if this token is in `force` trait;
@@ -201,6 +207,7 @@ class ErrLog(cmdlets.Replaceable, trt.HasTraits):
         A description of the running activity for the current stacked-context,
         in present continuous tense, e.g. "readind X-files".
 
+        Resets on each new instance from :meth:`__call__()`.
         Assuming `doing = "having fun"`, it may generate
         one of those 3 error messages::
 
@@ -217,6 +224,7 @@ class ErrLog(cmdlets.Replaceable, trt.HasTraits):
     :ivar raise_immediately:
         if not forced, do not wait for `report()` call to raise them;
         suggested use when a function decorator.  Also when --debug.
+        Resets on each new instance from :meth:`__call__()`.
     :ivar warn_log:
         the logging method to report forced errors; if none given,
         use searched the log ov the `parent` or falls back to this's modules log.
@@ -239,9 +247,9 @@ class ErrLog(cmdlets.Replaceable, trt.HasTraits):
 
         with ErrLog(enforeceable, IOError,
                     doing="loading X-files",
-                    token='fread') as errlog:
+                    token='fread') as erl1:
             for fpath in file_paths:
-                with errlog(doing="reading '%s'" % fpath) as erl2:
+                with erl1(doing="reading '%s'" % fpath) as erl2:
                     fbytes.append(fpath.read_bytes())
 
         # Any errors collected will raise/WARN here (root-context exit).
@@ -323,7 +331,7 @@ class ErrLog(cmdlets.Replaceable, trt.HasTraits):
         """Root created only in constructor - the rest in __call__()/__enter__()."""
         if not isinstance(parent, cmdlets.Forceable):
             raise trt.TraitError("Parent '%s' is not Forceable!" % parent)
-        super().__init__(parent=parent, exceptions=exceptions,
+        super().__init__(parent=parent, exceptions=exceptions or (Exception, ),
                          token=token, doing=doing,
                          raise_immediately=raise_immediately,
                          warn_log=warn_log,
@@ -346,27 +354,51 @@ class ErrLog(cmdlets.Replaceable, trt.HasTraits):
             raise ErrLog.ErrLogException('Cannot re-use faulted %r!' % self)
 
     def __call__(self,
+                 ##TODO: use **kwds to allow reseting errlog props with `None`
                  *exceptions: Exception,
-                 parent: cmdlets.Forceable = None,
-                 token: Union[bool, str, None] = None,
+                 parent=_no_value,
+                 token=_no_value,
                  doing=None,
                  raise_immediately=None,
-                 warn_log: Callable = None,
-                 info_log: Callable = None,
+                 warn_log=_no_value,
+                 info_log=_no_value,
                  ) -> 'ErrLog':
-        """Reconfigure a new errlog on the same stack-level."""
+        """
+        Returns a "cloned" errlog on the same stack-level, reconfigured.
+
+        - Arguments `parent`, `warn_log` & `info_log` are "sticky",
+          i.e. if not given, the returned clone inherits them from this instance.
+
+        :param exceptions:
+            assumed :class:`Exception` if not given.
+        :param token:
+            It is "semi-sticky": if not given and :attr:`token` is `True`,
+            the returned clone inherits it as `True` also; textual tokens
+            are not inherited.
+
+        - Rest arguments are reset to none if not given
+
+        :return:
+            a clone :class:`ErrLog` reconfigured
+        """
         self._scream_on_faulted_reuse()
-        changes = {}  # to gather replaced fields
-        fields = 'parent token doing raise_immediately warn_log info_log'
+
+        if token is _no_value:
+            token = self.token is True or None
+
+        changes = {
+            'exceptions': exceptions or (Exception, ),
+            'token': token
+        }
+
+        fields = 'parent doing raise_immediately warn_log info_log'
         for f in fields.split():
             v = locals()[f]
-            if v is not None:
+            if v is not _no_value:
                 changes[f] = v
-        if exceptions:  # None-check futile
-            changes['exceptions'] = exceptions  # type: ignore
 
-        ## Note etuples-root & children always shared (not deepcopy).
-
+        ## Note root, anchor, active & children pointers
+        #  always shared (not deepcopy).
         clone = self.replace(**changes)
 
         return clone

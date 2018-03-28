@@ -155,33 +155,41 @@ def test_ErrLog_str(forceable):
         assert re.search(exp2, repr(erl2))
 
 
-def test_ErrLog_properties(forceable):
+def test_ErrLog_properties(forceable, logcollector):
     with pytest.raises(trt.TraitError, match='not Forceable'):
         ErrLog(object())
 
     erl = ErrLog(forceable)
     assert erl.token is erl.doing is None
-    assert erl.exceptions == []
+    assert erl.exceptions == [Exception]
     assert erl.is_root and not erl.is_armed
 
-    erl = ErrLog(forceable, IOError, ValueError)
+    erl = ErrLog(forceable, IOError, ValueError, info_log=logcollector)
     assert erl.token is erl.doing is None
     assert erl.exceptions == [IOError, ValueError]
     assert erl.is_root and not erl.is_armed
 
-    erl2 = erl(token='water')
+    erl2 = erl(token='water', doing='something')
+    assert erl.exceptions == [IOError, ValueError]
+    assert erl2.exceptions == [Exception]
     assert erl2.token == 'water'
-    assert erl.token is None
-    assert erl.doing is erl2.doing is None
-    assert erl.exceptions == erl2.exceptions == [IOError, ValueError]
+    assert erl2.doing == 'something'
+    assert erl.doing is erl.doing is None
     assert erl.is_root and not erl.is_armed
+    assert erl.info_log is erl2.info_log is logcollector
 
-    erl = ErrLog(forceable)
+    erl3 = erl2()
+    assert erl3.token is erl3.doing is None
+    assert erl3.exceptions == [Exception]
+
+    assert erl3(token=True)().token is True
+    erl = ErrLog(forceable, ValueError)
     with erl as erl2:
         assert erl2 is not erl
         assert erl.is_root and erl.is_armed
         assert erl().is_armed
         assert not erl2.is_root and not erl2.is_armed
+        assert erl.exceptions == erl2.exceptions == [ValueError]
         assert erl2.token is erl.token is None
         assert erl2.doing is erl.doing is None
 
@@ -261,19 +269,19 @@ def test_ErrLog_root(forceable, caplog, logcollector):
 
 def test_ErrLog_nested_all_captured_and_info(caplog, logcollector, forceable):
     forceable.force.append(True)
-    erl = ErrLog(forceable, ValueError, token=True, info_log=logcollector)
+    erl = ErrLog(forceable, info_log=logcollector)
 
     clearlog(caplog)
     with erl(doing="starting") as erl2:
         with erl2(doing="notting"):
             pass
 
-        with erl2(doing="doing-1"):
+        with erl2(doing="doing-1", token=True):
             raise ValueError("Wrong-1!")
 
-        with erl2(doing="doing-2") as erl3:
-            with erl3(doing="do-doing"):
-                raise ValueError("Good-do-do")
+        with erl2(doing="doing-2", token=True) as erl3:
+            with erl3(AssertionError, doing="do-doing", token=True):
+                raise AssertionError("Good-do-do")
             raise ValueError("better-2")
 
     exp_warn = tw.dedent("""\
@@ -282,7 +290,7 @@ def test_ErrLog_nested_all_captured_and_info(caplog, logcollector, forceable):
             ignored: ValueError: Wrong-1!
           - while doing-2:
             - while do-doing:
-              ignored: ValueError: Good-do-do
+              ignored: AssertionError: Good-do-do
             ignored: ValueError: better-2""")
     #print(caplog.text)
     assert exp_warn in caplog.text
@@ -299,7 +307,7 @@ def test_ErrLog_nested_reuse(caplog, forceable):
     erl = ErrLog(forceable, token=True)
 
     with pytest.raises(ValueError):
-        with erl:
+        with erl(KeyError):
             raise ValueError()
 
     clearlog(caplog)
@@ -315,11 +323,11 @@ def test_ErrLog_nested_complex_msg(caplog, forceable):
     #
     clearlog(caplog)
     with pytest.raises(KeyError):
-        with erl(doing="starting") as erl2:
-            with erl2(doing="doing-1"):
+        with erl(ValueError, doing="starting") as erl2:
+            with erl2(ValueError, doing="doing-1"):
                 raise ValueError("Wrong-1!")
 
-            with erl2(doing="doing-3"):
+            with erl2(ValueError, doing="doing-3"):
                 raise KeyError("Wrong-3")
     exp = tw.dedent("""\
         Ignored 1 errors while starting:
@@ -331,10 +339,10 @@ def test_ErrLog_nested_complex_msg(caplog, forceable):
 
 def test_ErrLog_nested_forced(forceable, caplog):
     forceable.force.append('abc')
-    erl = ErrLog(forceable, ValueError, token='abc')
+    erl = ErrLog(forceable)
     with pytest.raises(KeyError):
-        with erl(doing="starting") as erl2:
-            with erl2(doing="doing-1"):
+        with erl(ValueError, doing="starting", token='abc') as erl2:
+            with erl2(ValueError, doing="doing-1", token='abc'):
                 raise ValueError("Wrong-1!")
 
             with erl2(KeyError,

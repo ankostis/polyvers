@@ -532,9 +532,9 @@ class Forceable(metaclass=trt.MetaHasTraits):
 
               with self.errlogged(IOError,
                                doing="loading X-files",
-                               token='fread') as erl:
+                               token='fread'):
                   for fpath in file_paths:
-                      with erl(doing="reading '%s'" % fpath):
+                      with self.errlogged(doing="reading '%s'" % fpath):
                           fbytes.append(fpath.read_bytes())
 
               # Any errors collected above, will be raised/WARNed here.
