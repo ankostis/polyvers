@@ -23,7 +23,7 @@ def test_InterpolationContext():
     s = 'stop the clock at {now}!'
     assert s.format_map(ctxt) != s
 
-    assert 'Keys we have: {ikeys}'.format_map(ctxt) != 'Keys we have: {ikeys}'
+    assert ctxt.interp('Keys we have: {ikeys}') != 'Keys we have: {ikeys}'
 
     ctxt['A'] = '42'
     assert 'What? {A}'.format(**ctxt) == 'What? 42'
@@ -47,11 +47,11 @@ def test_interp_temp_order(maps, kw, exp):
     ctxt.maps.append({'c': 3})
 
     with ctxt.ikeys(*maps, **kw):
-        assert '{a}'.format_map(ctxt) == exp
+        assert ctxt.interp('{a}') == exp
         assert '{c}'.format_map(ctxt) == '3'
 
     with ctxt.ikeys(*maps, **kw, stub_keys=True):
-        assert '{a}'.format_map(ctxt) == exp
+        assert ctxt.interp('{a}') == exp
         assert '{b}'.format_map(ctxt) == '{b}'
         assert '{c}'.format_map(ctxt) == '3'
 
@@ -76,7 +76,7 @@ def test_interp_temp_ikeys():
 
     with ctxt.ikeys(None, {'b': 13, 'a': 'Cool'}, None, {}) as ictxt:
         assert frmt.format(**ictxt) == exp
-        assert frmt.format_map(ictxt) == exp
+        assert ictxt.interp(frmt) == exp
 
     with pytest.raises(KeyError):
         frmt.format(**ictxt)
@@ -87,7 +87,7 @@ def test_interp_temp_ikeys():
 
     with ctxt.ikeys({'b': 14}, a='Cool', b='13') as ictxt:
         assert frmt.format(**ictxt) == exp
-        assert frmt.format_map(ictxt) == exp
+        assert ictxt.interp(frmt) == exp
 
     with pytest.raises(KeyError):
         frmt.format(**ictxt)
@@ -147,7 +147,7 @@ def test_interp_on_objects():
         assert '{a}{c}{d}'.format_map(ctxt) == '134'
 
         with pytest.raises(KeyError):
-            '{b}'.format_map(ctxt)
+            ctxt.interp('{b}')
 
     with ctxt.ikeys(C, d) as ctxt:
         assert '{a}{c}{d}'.format_map(ctxt) == '134'
@@ -210,7 +210,7 @@ def test_interp_on_HasTraits():
         with pytest.raises(KeyError):
             assert '{c}'.format_map(ctxt)
         with pytest.raises(KeyError):
-            assert '{f}'.format_map(ctxt)
+            assert ctxt.interp('{f}')
 
 
 def test_ikeys_key_on_HasTraits():

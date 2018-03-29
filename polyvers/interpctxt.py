@@ -8,7 +8,7 @@
 Enable Unicode-trait to pep3101-interpolate `{key}` patterns from "context" dicts.
 """
 from collections import ChainMap, abc
-from typing import Dict
+from typing import Dict, Union
 import contextlib
 import os
 
@@ -111,7 +111,9 @@ class InterpolationContext(ChainMap):
         self.env_map.update({'$' + k: v for k, v in os.environ.items()})
 
     @contextlib.contextmanager
-    def ikeys(self, *maps: Dict, stub_keys=False, **kv_pairs) -> Dict:
+    def ikeys(self, *maps: Dict,
+              stub_keys: Union[str, bool, None] = False,
+              **kv_pairs) -> Dict:
         """
         Temporarily place more maps immediately after user-map (2nd position).
 
@@ -120,11 +122,15 @@ class InterpolationContext(ChainMap):
             items/attributes/trait-values, all in decreasing priority.
             Nulls ignored.
         :param stub_keys:
-            If true, any missing-key gets returned as ``{key}``.
+            - If false, missing keys raise KeyError.
+            - If `True`, any missing *key* gets replaced by ``{key}``
+              (practically remain unchanged).
+            - Any other non-false value is returned for every *key*.
 
             .. NOTE::
-               Use ``str.format_map()`` when `stub_keys` is true; ``format()``
-               will clone existing keys in a static map.
+               Must use ``str.format_map()`` when `stub_keys` is true;
+               otherwise, ``format()`` will clone all existing keys in
+               a static map.
 
         Later maps take precedence over earlier ones; `kv_pairs` have the highest,
         `stub_keys` the lowest (if true).
@@ -145,3 +151,8 @@ class InterpolationContext(ChainMap):
             yield self
         finally:
             self.maps = orig_maps
+
+    def interp(self, text, *maps: Dict, stub_keys=False, **kv_pairs) -> str:
+        with self.ikeys(*maps, stub_keys=stub_keys, **kv_pairs) as cntx:
+            new_text = text.format_map(cntx)
+        return new_text
