@@ -15,8 +15,9 @@ import logging
 import re
 
 from . import cmdlets, fileutils as fu
+from ._vendor.traitlets import traitlets as trt
 from ._vendor.traitlets.traitlets import (
-    Union as UnionTrait, Instance, List as ListTrait, Unicode, Int, CRegExp)
+    Union as UnionTrait, Instance, List as ListTrait, Unicode, Int)
 from .autoinstance_traitlet import AutoInstance
 from .slice_traitlet import Slice as SliceTrait
 
@@ -157,11 +158,28 @@ def _slices_to_ids(slices, thelist):
 
 
 class Graft(cmdlets.Replaceable, cmdlets.Printable, cmdlets.Spec):
-    regex = CRegExp(
+    regex = Unicode(
         read_only=True,
         config=True,
         help="What to search"
     )
+
+    @trt.validate('regex')
+    def _is_valid_regex(self, proposal):
+        value = proposal.value
+        try:
+            v = self.interpolations.interp(value,
+                                           self,
+                                           stub_keys=lambda k: '<%s>' % k)
+            re.compile(v)
+        except Exception as ex:
+            proposal.trait.error(None, value, ex)
+        return value
+
+    @property
+    def regex_resolved(self):
+            v = self.interpolations.interp(self.regex, self)
+            return re.compile(v)
 
     subst = Unicode(
         allow_none=True, default_value='',
@@ -205,7 +223,8 @@ class Graft(cmdlets.Replaceable, cmdlets.Printable, cmdlets.Spec):
         :return:
             a clone with updated `hits`
         """
-        hits: List[Match] = list(self.regex.finditer(ftext))
+        regex = self.regex_resolved
+        hits: List[Match] = list(regex.finditer(ftext))
         return self.replace(hits=hits)
 
     def _get_hits_indices(self) -> Optional[List[int]]:
