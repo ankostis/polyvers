@@ -48,6 +48,11 @@ setup(
     author="Kostis Anagnostopoulos",
     author_email='ankostis@gmail.com',
     url='https://github.com/jrcstu/polyvers',
+    project_urls={
+        'Documentation': 'http://polyvers.readthedocs.io/',
+        'Source': 'https://github.com/jrcstu/polyvers',
+        'Tracker': 'https://github.com/jrcstu/polyvers/issues',
+    },
     packages=find_packages(exclude=['tests']),
     include_package_data=True,
     #setup_requires=['polyversion'],
