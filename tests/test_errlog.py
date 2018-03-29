@@ -66,13 +66,16 @@ _err2 = KeyError()
 
 @pytest.mark.parametrize('fields, exp', [
     ({}, None),
-    ({'doing': '1', 'is_forced': True}, None),
+    ({'doing': '1', 'is_forced': True, 'token': 'abc'}, None),
 
     ({'err': ValueError()}, "while ??:\n  delayed: ValueError"),
     ({'err': ValueError('hi'), 'doing': "zing"},
      "while zing:\n  delayed: ValueError: hi"),
     ({'doing': 'rafting', 'err': _err}, "while rafting:\n  delayed: ValueError"),
     ({'is_forced': True, 'err': _err}, "while ??:\n  ignored: ValueError"),
+    ({'token': True, 'err': _err}, "while ??:\n  delayed (force: True): ValueError"),
+    ({'is_forced': True, 'token': 'abc', 'err': _err},
+     "while ??:\n  ignored (force: 'abc'): ValueError"),
     ({'doing': 'rafting', 'is_forced': True, 'err': _err},
      "while rafting:\n  ignored: ValueError"),
 
@@ -136,14 +139,14 @@ def test_ErrLog_str(forceable):
     assert re.search(exp, repr(erl))
 
     exp1 = r"""(?x)
-        ErrLog<rot=ELN<\[ELN<NF>@\w{5}\]>@\w{5},
+        ErrLog<rot=ELN<\[ELN<NF,\ 'golf'>@\w{5}\]>@\w{5},
         \ anc=ELN<\+>@\w{5},
         \ crd=,
         \ act=None>@\w{5}
     """
     exp2 = r"""(?x)
-        ErrLog<rot=ELN<\[ELN<NF>@\w{5}\]>@\w{5},
-        \ anc=ELN<NF>@\w{5},
+        ErrLog<rot=ELN<\[ELN<NF,\ 'golf'>@\w{5}\]>@\w{5},
+        \ anc=ELN<NF,\ 'golf'>@\w{5},
         \ crd=0,
         \ act=None>@\w{5}
     """
@@ -287,11 +290,11 @@ def test_ErrLog_nested_all_captured_and_info(caplog, logcollector, forceable):
     exp_warn = tw.dedent("""\
         Ignored 3 errors while starting:
           - while doing-1:
-            ignored: ValueError: Wrong-1!
+            ignored (force: True): ValueError: Wrong-1!
           - while doing-2:
             - while do-doing:
-              ignored: AssertionError: Good-do-do
-            ignored: ValueError: better-2""")
+              ignored (force: True): AssertionError: Good-do-do
+            ignored (force: True): ValueError: better-2""")
     #print(caplog.text)
     assert exp_warn in caplog.text
 
@@ -332,7 +335,7 @@ def test_ErrLog_nested_warn_while_raising(caplog, forceable):
     exp = tw.dedent("""\
         Ignored 1 errors while starting:
           - while doing-1:
-            ignored: ValueError: Wrong-1!
+            ignored (force: True): ValueError: Wrong-1!
     """)
     assert exp in caplog.text
 
@@ -359,13 +362,13 @@ def test_ErrLog_nested_forced(forceable, caplog):
     exp = tw.dedent("""\
         Collected 4 errors (2 ignored) while starting:
           - while doing-1:
-            ignored: ValueError: Wrong-1!
+            ignored (force: 'abc'): ValueError: Wrong-1!
           - while ??:
             delayed: KeyError
           - while doing-2:
-            delayed: KeyError: 'Wrong-2'
-          ignored: KeyError: 'Wrong-2'""")
-    #print(exinfo.value)
+            delayed (force: 'BAD'): KeyError: 'Wrong-2'
+          ignored (force: 'abc'): KeyError: 'Wrong-2'""")
+    print(exinfo.value)
     assert exp in str(exinfo.value)
 
 

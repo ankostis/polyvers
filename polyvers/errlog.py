@@ -65,15 +65,18 @@ class _ErrNode(trt.HasTraits):
     """
     doing = Unicode(default_value=None, allow_none=True)
     is_forced = Bool(default_value=None, allow_none=True)
+    token = UnionTrait((Bool(), Unicode()),
+                       default_value=None, allow_none=True)
     err = Instance(Exception, default_value=None, allow_none=True)
     cnodes = ListTrait()  # eventful=True)
     #cnodes._trait = Instance('polyvers.errlog._ErrNode')
 
-    def new_cnode(self, doing, is_forced):
+    def new_cnode(self, doing, is_forced, token):
         assert self.err is None, repr(self)
 
         child = _ErrNode(doing=doing or '',
-                         is_forced=bool(is_forced))
+                         is_forced=bool(is_forced),
+                         token=token)
         self.cnodes.append(child)
 
         return child
@@ -119,7 +122,7 @@ class _ErrNode(trt.HasTraits):
         return nerrors, nforced
 
     def _node_repr(self, print_cnodes):
-        props = (self.doing, self.is_forced, self.err)
+        props = (self.doing, self.is_forced, self.err)  # token might be `None`
         ## Avoid recursion using `is_empty()`.
         is_empty = all(i is None for i in props) and not self.cnodes
         if is_empty:
@@ -129,6 +132,8 @@ class _ErrNode(trt.HasTraits):
             fields.append('%r' % self.doing)
         if self.is_forced is not None:
             fields.append('F' if self.is_forced else 'NF')
+        if self.token is not None:
+            fields.append('%r' % self.token)
         if self.err:
             fields.append(repr(self.err))
         if self.cnodes:
@@ -165,7 +170,9 @@ class _ErrNode(trt.HasTraits):
             msg_parts.append(cnodes_msg)
         if self.err:
             errtype = 'ignored' if self.is_forced else 'delayed'
-            msg_parts.append("\n  %s: %s" % (errtype, _exstr(self.err)))
+            force_msg = '' if self.token is None else ' (force: %r)' % self.token
+            msg_parts.append("\n  %s%s: %s" % (
+                errtype, force_msg, _exstr(self.err)))
 
         return ''.join(msg_parts)
 
@@ -409,7 +416,9 @@ class ErrLog(cmdlets.Replaceable, trt.HasTraits):
         if self.is_armed:
             raise ErrLog.ErrLogException("Cannot re-enter context of %r!" % self)
 
-        self._active = self._anchor.new_cnode(self.doing, self.is_forced)
+        self._active = self._anchor.new_cnode(self.doing,
+                                              self.is_forced,
+                                              self.token)
         new_errlog = self.replace(_anchor=self._active, _active=None)
 
         return new_errlog
