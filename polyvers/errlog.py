@@ -414,7 +414,7 @@ class ErrLog(cmdlets.Replaceable, trt.HasTraits):
 
         return new_errlog
 
-    def _report_completion(self) -> None:
+    def _report_ok_completion(self) -> None:
         if self.info_log:
             doing = ' %s' % self.doing if self.doing else ''
 
@@ -444,22 +444,23 @@ class ErrLog(cmdlets.Replaceable, trt.HasTraits):
         #  - True: suppressing raised ex
         suppressed_ex = None
         if exctype is None:
-            self._report_completion()
+            self._report_ok_completion()
         else:
             suppressed_ex = False
 
-            if issubclass(exctype, tuple(self.exceptions)) and (
-                    self.is_forced or not self.raise_immediately):
+            if issubclass(exctype, tuple(self.exceptions)):
                 #ex = ex.with_traceback(exctb)  Ex already has it!
                 self._collect_error(ex)
-                suppressed_ex = True
+
+                if self.is_forced or not self.raise_immediately:
+                    suppressed_ex = True
 
         try:
                 return suppressed_ex
         finally:
             if self.is_root:
-                self.report(None if suppressed_ex else ex)
-            ## NOTE: won't clear `active` if `report()` raises!
+                self.report_root(None if suppressed_ex else ex)
+            ## NOTE: won't clear `active` if `report_root()` raises!
             #        Not yet sure if we want that...
             self._active = None
 
@@ -470,10 +471,11 @@ class ErrLog(cmdlets.Replaceable, trt.HasTraits):
         if log.isEnabledFor(logging.DEBUG):
             log.debug("Collecting %s.", _exstr(ex), exc_info=ex)
 
-    def report(self, ex_raised) -> Optional['ErrLog.CollectedErrors']:
+    def report_root(self, ex_raised: Optional[Exception]) -> Optional['ErrLog.CollectedErrors']:
         """
+        Raise or log the errors collected from
         :param ex_raised:
-            any exception captured in tree (if any), unless `ex_raised` given
+            the cntxt-body exception ``__exit__()`` is about to raise
         :return:
             a :class:`ErrLog.CollectedErrors` in case catured errors contain
             non-forced errors BUT `ex_raised` given.
@@ -481,7 +483,7 @@ class ErrLog(cmdlets.Replaceable, trt.HasTraits):
             any non-forced exceptions captured in tree (if any),
             unless `ex_raised` given
         """
-        node = self._active
+        node = self._active  # ... not `_anchor`, but why?
         nerrors, nforced = node.count_error_tree()
         assert nerrors >= nforced >= 0, (nerrors, nforced, self)
         if nerrors == 0:
@@ -491,6 +493,7 @@ class ErrLog(cmdlets.Replaceable, trt.HasTraits):
         if is_all_forced:
             count_msg = "ignored %i errors" % nerrors
         elif nforced > 0:
+            # FIXME: never reached!
             count_msg = "collected %i errors (%i ignored)" % (nerrors, nforced)
         else:
             count_msg = "collected %i errors" % nerrors
@@ -503,11 +506,11 @@ class ErrLog(cmdlets.Replaceable, trt.HasTraits):
             if is_all_forced:
                 return None
 
-        errors = ErrLog.CollectedErrors(msg)
-        if ex_raised:
-            return errors
+        collected_errors = ErrLog.CollectedErrors(msg)
+        if ex_raised and self.pdebug:
+            ex_raised.__cause__ = collected_errors
         else:
-            raise errors
+            raise collected_errors
 
 
 def errlogged(*errlog_args, **errlog_kw):

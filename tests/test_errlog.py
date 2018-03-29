@@ -316,7 +316,7 @@ def test_ErrLog_nested_reuse(caplog, forceable):
     assert "HiHi" in caplog.text
 
 
-def test_ErrLog_nested_complex_msg(caplog, forceable):
+def test_ErrLog_nested_warn_while_raising(caplog, forceable):
     forceable.force.append(True)
     erl = ErrLog(forceable, ValueError, token=True)
     ## Re-use non-failed errlog, and fail it.
@@ -338,12 +338,15 @@ def test_ErrLog_nested_complex_msg(caplog, forceable):
 
 
 def test_ErrLog_nested_forced(forceable, caplog):
-    forceable.force.append('abc')
+    forceable.force.extend([True, 'abc'])  # `True` must do nothing.
     erl = ErrLog(forceable)
-    with pytest.raises(KeyError):
-        with erl(ValueError, doing="starting", token='abc') as erl2:
+    with pytest.raises(CollectedErrors) as exinfo:
+        with erl(ValueError, KeyError, doing="starting", token='abc') as erl2:
             with erl2(ValueError, doing="doing-1", token='abc'):
                 raise ValueError("Wrong-1!")
+
+            with erl2(KeyError):
+                raise KeyError()
 
             with erl2(KeyError,
                       doing="doing-2",
@@ -354,10 +357,16 @@ def test_ErrLog_nested_forced(forceable, caplog):
             pytest.fail("Should have raised immediately, above.")
 
     exp = tw.dedent("""\
-        Ignored 1 errors while starting:
+        Collected 4 errors (2 ignored) while starting:
           - while doing-1:
-            ignored: ValueError: Wrong-1!""")
-    assert exp in caplog.text
+            ignored: ValueError: Wrong-1!
+          - while ??:
+            delayed: KeyError
+          - while doing-2:
+            delayed: KeyError: 'Wrong-2'
+          ignored: KeyError: 'Wrong-2'""")
+    #print(exinfo.value)
+    assert exp in str(exinfo.value)
 
 
 def test_ErrLog_decorator(caplog):
