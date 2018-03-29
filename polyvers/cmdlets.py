@@ -657,6 +657,7 @@ class Spec(Forceable, trc.Configurable):
         config=True,
         help="Do not write files - just pretend.")
 
+    # TODO: refact to use format_data() --> interp() method
     interpolations = cmdlets_interpolations
 
 

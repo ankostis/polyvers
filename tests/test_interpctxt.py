@@ -121,6 +121,11 @@ def test_interp_missing_ikeys():
             assert frmt.format(**ictxt) == frmt
         assert frmt.format_map(ictxt) == frmt
 
+    with ctxt.ikeys(stub_keys=lambda k: '<%s>' % k) as ictxt:
+        assert frmt.format_map(ictxt) == '<missing> key'
+    with ctxt.ikeys(stub_keys=lambda _: None) as ictxt:
+        assert frmt.format_map(ictxt) == 'None key'
+
     with pytest.raises(KeyError):
         frmt.format()
 

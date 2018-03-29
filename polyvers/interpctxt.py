@@ -42,6 +42,8 @@ class _MissingKeys(dict):
         self.value = value
 
     def __missing__(self, key):
+        if callable(self.value):
+            return self.value(key)
         return self.value or '{%s}' % key
 
 
@@ -125,6 +127,8 @@ class InterpolationContext(ChainMap):
             - If false, missing keys raise KeyError.
             - If `True`, any missing *key* gets replaced by ``{key}``
               (practically remain unchanged).
+            - If callable, the `key` is passed to it as a the only arg, and
+              the result gets replaced.
             - Any other non-false value is returned for every *key*.
 
             .. NOTE::
