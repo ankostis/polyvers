@@ -216,7 +216,7 @@ def test_engrave_subs_None(fileset_mutable, f1_graft, f2_graft):
         assert ftxt == tw.dedent(text)
 
 
-def test_scan_engrave(fileset_mutable, f1_graft, f2_graft):
+def test_scan_engrave_disparate_(fileset_mutable, f1_graft, f2_graft):
     fileset_mutable.chdir()
     cfg = Config()
     globs = ['/a/f*', 'b/f1', '/b/f2', 'b/?3']
@@ -225,7 +225,8 @@ def test_scan_engrave(fileset_mutable, f1_graft, f2_graft):
     e1 = Engrave.new(globs=globs, grafts=[f1_graft])
     e2 = Engrave.new(globs=globs, grafts=[f2_graft])
 
-    hits_map = engrave.scan_engraves([e1, e2])
+    hits_map = engrave.scan_engraves([(e1, None, None),
+                                      (e2, None, None)])
     assert isinstance(hits_map, dict)
     nhits = sum(fspec.nhits for fspec in hits_map.values())
 

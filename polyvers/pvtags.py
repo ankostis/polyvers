@@ -7,7 +7,7 @@
 # You may obtain a copy of the Licence at: http://ec.europa.eu/idabc/eupl
 #
 """
-Make/inspect sub-project "pvtags" and respective commits in Git monorepos.
+Git code to make/inspect sub-project "(p)vtags" and respective commits in (mono)repos.
 
 There are 3 important methods/functions calling Git:
 - :method:`Project.git_describe()` that fetches the same version-id
@@ -22,7 +22,6 @@ from typing import List, Dict, Sequence
 import contextlib
 import logging
 import os
-
 
 import subprocess as sbp
 
