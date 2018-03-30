@@ -82,10 +82,9 @@ def prepare_help_selector(only_class_in_values, verbose):
             def selector(ne, cls):
                 htext = cls.class_get_help()
                 if hasattr(cls, 'interpolations'):
-                    with cls.interpolations.ikeys(cls, stub_keys=True) as ctxt:
-                        htxt = htext.format_map(ctxt)
+                    htext = cls.interpolations.interp(htext, cls, stub_keys=True)
 
-                return htxt
+                return htext
         else:
             def selector(ne, cls):
                 help_lines = []
@@ -108,8 +107,7 @@ def prepare_help_selector(only_class_in_values, verbose):
 
                 htext = '\n'.join(help_lines)
                 if hasattr(cls, 'interpolations'):
-                    with cls.interpolations.ikeys(cls, stub_keys=True) as ctxt:
-                        htext = htext.format_map(ctxt)
+                    htext = cls.interpolations.interp(htext, stub_keys=True)
 
                 return htext
     else:

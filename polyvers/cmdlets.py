@@ -640,8 +640,7 @@ class Spec(Forceable, trc.Configurable):
     def class_get_help(cls, inst=None):
         text = super().class_get_help(inst)
         obj = inst if inst else cls
-        with obj.interpolations.ikeys(obj, stub_keys=True) as ctxt:
-            return text.format_map(ctxt)
+        return obj.interpolations.interp(text, stub_keys=True)
 
     verbose = Bool(
         allow_none=True,
@@ -750,8 +749,7 @@ class Cmd(trc.Application, Spec):
     def emit_description(self):
         ## Overridden for interpolating app-name.
         txt = self.description or self.__doc__ or _no_app_help_message % type(self)
-        with self.interpolations.ikeys(self, stub_keys=True) as ctxt:
-            txt = txt.format_map(ctxt)
+        txt = self.interp(txt, stub_keys=True)
         for p in trc.wrap_paragraphs('%s: %s' % (cmd_line_chain(self), txt)):
             yield p
             yield ''
@@ -763,8 +761,7 @@ class Cmd(trc.Application, Spec):
         header = 'Options'
         yield header
         yield '=' * len(header)
-        with self.interpolations.ikeys(self, stub_keys=True) as ctxt:
-            opt_desc = self.option_description.format_map(ctxt)
+        opt_desc = self.interp(self.option_description, stub_keys=True)
         for p in trc.wrap_paragraphs(opt_desc):
             yield p
             yield ''
@@ -778,9 +775,7 @@ class Cmd(trc.Application, Spec):
     def emit_examples(self):
         ## Overridden for interpolating app-name.
         if self.examples:
-            with self.interpolations.ikeys(self, stub_keys=True) as ctxt:
-                txt = self.examples.format_map(ctxt)
-            txt = txt.strip()
+            txt = self.interp(self.examples, stub_keys=True).strip()
             yield "Examples"
             yield "--------"
             yield ''
@@ -802,8 +797,7 @@ class Cmd(trc.Application, Spec):
             - To inspect configuration values:
                   {appname} config show <class-or-param-1>...
             """)
-            with self.interpolations.ikeys(self, stub_keys=True) as ctxt:
-                yield epilogue.format_map(ctxt)
+            yield self.interp(epilogue, stub_keys=True)
 
     ############
     ## CONFIG ##
