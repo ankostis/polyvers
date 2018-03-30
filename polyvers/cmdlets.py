@@ -637,10 +637,11 @@ trc.Configurable.active_subcmd = _travel_parents_untill_active_cmd  # type: igno
 
 class Spec(Forceable, trc.Configurable):
     @classmethod
-    def class_get_help(cls, inst=None):
-        text = super().class_get_help(inst)
+    def class_get_trait_help(cls, trait, inst=None, helptext=None):
+        text = super().class_get_trait_help(trait, inst=inst, helptext=helptext)
         obj = inst if inst else cls
-        return obj.interpolations.interp(text, _stub_keys=True)
+        return obj.interpolations.interp(text, _stub_keys=True,
+                                         _suppress_errors=True)
 
     verbose = Bool(
         allow_none=True,
@@ -749,7 +750,8 @@ class Cmd(trc.Application, Spec):
     def emit_description(self):
         ## Overridden for interpolating app-name.
         txt = self.description or self.__doc__ or _no_app_help_message % type(self)
-        txt = self.interp(txt, _stub_keys=True)
+        txt = self.interp(txt, _stub_keys=True,
+                          _suppress_errors=True)
         for p in trc.wrap_paragraphs('%s: %s' % (cmd_line_chain(self), txt)):
             yield p
             yield ''
@@ -761,7 +763,8 @@ class Cmd(trc.Application, Spec):
         header = 'Options'
         yield header
         yield '=' * len(header)
-        opt_desc = self.interp(self.option_description, _stub_keys=True)
+        opt_desc = self.interp(self.option_description, _stub_keys=True,
+                               _suppress_errors=True)
         for p in trc.wrap_paragraphs(opt_desc):
             yield p
             yield ''
@@ -775,7 +778,8 @@ class Cmd(trc.Application, Spec):
     def emit_examples(self):
         ## Overridden for interpolating app-name.
         if self.examples:
-            txt = self.interp(self.examples, _stub_keys=True).strip()
+            txt = self.interp(self.examples, _stub_keys=True,
+                              _suppress_errors=True).strip()
             yield "Examples"
             yield "--------"
             yield ''
@@ -797,7 +801,8 @@ class Cmd(trc.Application, Spec):
             - To inspect configuration values:
                   {appname} config show <class-or-param-1>...
             """)
-            yield self.interp(epilogue, _stub_keys=True)
+            yield self.interp(epilogue, _stub_keys=True,
+                              _suppress_errors=True)
 
     ############
     ## CONFIG ##
