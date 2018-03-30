@@ -46,8 +46,9 @@ Of course you can mix'n match.
 
 from collections import OrderedDict
 from os import PathLike
-from typing import (  # noqa: F401
-    Any, List, Dict, Union, Tuple, Optional, Sequence, Callable)  # @UnusedImport
+from typing import (
+    Union, Optional, ContextManager,
+    Callable, )  # @UnusedImport
 import contextlib
 import io
 import logging
@@ -657,8 +658,38 @@ class Spec(Forceable, trc.Configurable):
         config=True,
         help="Do not write files - just pretend.")
 
-    # TODO: refact to use format_data() --> interp() method
+    # TODO: refact to hide `Spec.interpolations` attribute.
     interpolations = cmdlets_interpolations
+
+    def ikeys(self, *maps, **kwds) -> ContextManager[CmdletsInterpolation]:
+        """
+        Temporarily place self before the given maps and kwds in interpolation-cntxt.
+
+        - Self has the least priority, kwds the most.
+        - For params, see :meth:`interp.InterpolationContext.interp()`.
+
+        .. NOTE::
+           Must use ``str.format_map()`` when `stub_keys` is true;
+           otherwise, ``format()`` will clone all existing keys in
+           a static map.
+        """
+        return self.interpolations.ikeys(self, *maps, **kwds)
+
+    def interp(self, text: Optional[str], *maps, **kwds) -> Optional[str]:
+        """
+        Interpolate text with self attributes before maps and kwds given.
+
+        :param text:
+            the text to interplate; None/empty returned as is
+
+        - For params, see :meth:`interp.InterpolationContext.interp()`.
+        - Self has the least priority, kwds the most.
+        """
+        if not text:
+            return text
+        with self.ikeys(*maps, **kwds) as cntx:
+            new_text = text.format_map(cntx)
+        return new_text
 
 
 class Cmd(trc.Application, Spec):

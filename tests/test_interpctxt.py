@@ -5,6 +5,7 @@
 # You may not use this work except in compliance with the Licence.
 # You may obtain a copy of the Licence at: http://ec.europa.eu/idabc/eupl
 
+from polyvers import cmdlets
 from polyvers._vendor.traitlets import traitlets as trt
 from polyvers.interpctxt import Now, InterpolationContext, _HasTraitObjectDict, dictize_object
 
@@ -184,7 +185,7 @@ def test_dictize_object_on_HasTraitObjectDict():
     assert dictize_object(od) is od
 
 
-def test_interp_on_HasTraits():
+def test_interp_on_HasTraits_and_Spec():
     class C(trt.HasTraits):
         a = trt.Int(1)
         b = trt.Int()
@@ -202,16 +203,19 @@ def test_interp_on_HasTraits():
     with pytest.raises(KeyError):
         assert '{c}'.format_map(ctxt)
 
-    class D(C):
+    class D(cmdlets.Spec, C):
         d = trt.Int(4)
         e = trt.Int()
 
     d = D()
     d.e = 5
     d.f = 6
-    with ctxt.ikeys(d) as ctxt:
-        assert '{a}{b}{d}{e}'.format_map(ctxt) == '1245'
+    with d.ikeys(b='bb') as ctxt:
+        assert '{a}{b}{d}{e}'.format_map(ctxt) == '1bb45'
+    assert d.interp('{a}{b}{d}{e}') == '1245'
+    assert d.interp('{a}', a='11') == '11'
 
+    with d.ikeys() as ctxt:
         with pytest.raises(KeyError):
             assert '{c}'.format_map(ctxt)
         with pytest.raises(KeyError):

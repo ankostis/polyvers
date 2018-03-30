@@ -8,7 +8,7 @@
 Enable Unicode-trait to pep3101-interpolate `{key}` patterns from "context" dicts.
 """
 from collections import ChainMap, abc
-from typing import Dict, Union
+from typing import Union, Optional, ContextManager  # @UnusedImport
 import contextlib
 import os
 
@@ -113,31 +113,18 @@ class InterpolationContext(ChainMap):
         self.env_map.update({'$' + k: v for k, v in os.environ.items()})
 
     @contextlib.contextmanager
-    def ikeys(self, *maps: Dict,
+    def ikeys(self, *maps,
               stub_keys: Union[str, bool, None] = False,
-              **kv_pairs) -> Dict:
+              **kv_pairs) -> ContextManager['InterpolationContext']:
         """
-        Temporarily place more maps immediately after user-map (2nd position).
+        Temporarily place maps and kwds immediately after user-map (2nd position).
 
-        :param maps:
-            a list of dictionaries/objects/HasTraits from which to draw
-            items/attributes/trait-values, all in decreasing priority.
-            Nulls ignored.
-        :param stub_keys:
-            - If false, missing keys raise KeyError.
-            - If `True`, any missing *key* gets replaced by ``{key}``
-              (practically remain unchanged).
-            - If callable, the `key` is passed to it as a the only arg, and
-              the result gets replaced.
-            - Any other non-false value is returned for every *key*.
+        - For params, see :meth:`interp()`.
 
-            .. NOTE::
-               Must use ``str.format_map()`` when `stub_keys` is true;
-               otherwise, ``format()`` will clone all existing keys in
-               a static map.
-
-        Later maps take precedence over earlier ones; `kv_pairs` have the highest,
-        `stub_keys` the lowest (if true).
+        .. NOTE::
+           Must use ``str.format_map()`` when `stub_keys` is true;
+           otherwise, ``format()`` will clone all existing keys in
+           a static map.
         """
         tmp_maps = [dictize_object(m) for m in maps
                     if m]
@@ -156,7 +143,29 @@ class InterpolationContext(ChainMap):
         finally:
             self.maps = orig_maps
 
-    def interp(self, text, *maps: Dict, stub_keys=False, **kv_pairs) -> str:
+    def interp(self, text: Optional[str],
+               *maps,
+               stub_keys=False,
+               **kv_pairs
+               ) -> Optional[str]:
+        """
+        Interpolate text with values from maps and kwds given.
+
+        :param maps:
+            a list of dictionaries/objects/HasTraits from which to draw
+            items/attributes/trait-values, all in increasing priority.
+            Nulls ignored.
+        :param stub_keys:
+            - If false, missing keys raise KeyError.
+            - If `True`, any missing *key* gets replaced by ``{key}``
+              (practically remain unchanged).
+            - If callable, the `key` is passed to it as a the only arg, and
+              the result gets replaced.
+            - Any other non-false value is returned for every *key*.
+
+        Later maps take precedence over earlier ones; `kv_pairs` have the highest,
+        but `stub_keys` the lowest (if true).
+        """
         with self.ikeys(*maps, stub_keys=stub_keys, **kv_pairs) as cntx:
             new_text = text.format_map(cntx)
         return new_text
