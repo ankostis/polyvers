@@ -640,7 +640,7 @@ class Spec(Forceable, trc.Configurable):
     def class_get_help(cls, inst=None):
         text = super().class_get_help(inst)
         obj = inst if inst else cls
-        return obj.interpolations.interp(text, stub_keys=True)
+        return obj.interpolations.interp(text, _stub_keys=True)
 
     verbose = Bool(
         allow_none=True,
@@ -668,7 +668,7 @@ class Spec(Forceable, trc.Configurable):
         - For params, see :meth:`interp.InterpolationContext.interp()`.
 
         .. NOTE::
-           Must use ``str.format_map()`` when `stub_keys` is true;
+           Must use ``str.format_map()`` when `_stub_keys` is true;
            otherwise, ``format()`` will clone all existing keys in
            a static map.
         """
@@ -749,7 +749,7 @@ class Cmd(trc.Application, Spec):
     def emit_description(self):
         ## Overridden for interpolating app-name.
         txt = self.description or self.__doc__ or _no_app_help_message % type(self)
-        txt = self.interp(txt, stub_keys=True)
+        txt = self.interp(txt, _stub_keys=True)
         for p in trc.wrap_paragraphs('%s: %s' % (cmd_line_chain(self), txt)):
             yield p
             yield ''
@@ -761,7 +761,7 @@ class Cmd(trc.Application, Spec):
         header = 'Options'
         yield header
         yield '=' * len(header)
-        opt_desc = self.interp(self.option_description, stub_keys=True)
+        opt_desc = self.interp(self.option_description, _stub_keys=True)
         for p in trc.wrap_paragraphs(opt_desc):
             yield p
             yield ''
@@ -775,7 +775,7 @@ class Cmd(trc.Application, Spec):
     def emit_examples(self):
         ## Overridden for interpolating app-name.
         if self.examples:
-            txt = self.interp(self.examples, stub_keys=True).strip()
+            txt = self.interp(self.examples, _stub_keys=True).strip()
             yield "Examples"
             yield "--------"
             yield ''
@@ -797,7 +797,7 @@ class Cmd(trc.Application, Spec):
             - To inspect configuration values:
                   {appname} config show <class-or-param-1>...
             """)
-            yield self.interp(epilogue, stub_keys=True)
+            yield self.interp(epilogue, _stub_keys=True)
 
     ############
     ## CONFIG ##

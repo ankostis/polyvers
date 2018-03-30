@@ -311,7 +311,7 @@ class Graft(cmdlets.Replaceable, cmdlets.Printable, cmdlets.Spec):
         try:
             v = self.interpolations.interp(value,
                                            self,
-                                           stub_keys=lambda k: '<%s>' % k)
+                                           _stub_keys=lambda k: '<%s>' % k)
             re.compile(v)
         except Exception as ex:
             proposal.trait.error(None, value, ex)

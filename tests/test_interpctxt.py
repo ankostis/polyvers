@@ -52,7 +52,7 @@ def test_interp_temp_order(maps, kw, exp):
         assert ctxt.interp('{a}') == exp
         assert '{c}'.format_map(ctxt) == '3'
 
-    with ctxt.ikeys(*maps, **kw, stub_keys=True):
+    with ctxt.ikeys(*maps, **kw, _stub_keys=True):
         assert ctxt.interp('{a}') == exp
         assert '{b}'.format_map(ctxt) == '{b}'
         assert '{c}'.format_map(ctxt) == '3'
@@ -103,29 +103,29 @@ def test_interp_missing_ikeys():
 
     ctxt = InterpolationContext()
 
-    with ctxt.ikeys(stub_keys=True) as ictxt:
+    with ctxt.ikeys(_stub_keys=True) as ictxt:
         with pytest.raises(KeyError):
             assert frmt.format(**ictxt) == frmt
         assert frmt.format_map(ictxt) == frmt
 
-    with ctxt.ikeys(stub_keys='no') as ictxt:
+    with ctxt.ikeys(_stub_keys='no') as ictxt:
         with pytest.raises(KeyError):
             assert frmt.format(**ictxt) == frmt
         assert frmt.format_map(ictxt) == 'no key'
 
-    with ctxt.ikeys(a=1, stub_keys=True) as ictxt:
+    with ctxt.ikeys(a=1, _stub_keys=True) as ictxt:
         with pytest.raises(KeyError):
             assert frmt.format(**ictxt) == frmt
         assert frmt.format_map(ictxt) == frmt
 
-    with ctxt.ikeys({'ff': 12}, stub_keys=True, a=1) as ictxt:
+    with ctxt.ikeys({'ff': 12}, _stub_keys=True, a=1) as ictxt:
         with pytest.raises(KeyError):
             assert frmt.format(**ictxt) == frmt
         assert frmt.format_map(ictxt) == frmt
 
-    with ctxt.ikeys(stub_keys=lambda k: '<%s>' % k) as ictxt:
+    with ctxt.ikeys(_stub_keys=lambda k: '<%s>' % k) as ictxt:
         assert frmt.format_map(ictxt) == '<missing> key'
-    with ctxt.ikeys(stub_keys=lambda _: None) as ictxt:
+    with ctxt.ikeys(_stub_keys=lambda _: None) as ictxt:
         assert frmt.format_map(ictxt) == 'None key'
 
     with pytest.raises(KeyError):

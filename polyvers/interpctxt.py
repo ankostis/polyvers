@@ -159,7 +159,7 @@ class InterpolationContext(ChainMap):
 
     @contextlib.contextmanager
     def ikeys(self, *maps,
-              stub_keys: Union[str, bool, None] = False,
+              _stub_keys: Union[str, bool, None] = False,
               _escaped_for: Union[Callable, str] = None,
               **kv_pairs
               ) -> ContextManager['InterpolationContext']:
@@ -169,7 +169,7 @@ class InterpolationContext(ChainMap):
         - For params, see :meth:`interp()`.
 
         .. NOTE::
-           Must use ``str.format_map()`` when `stub_keys` is true;
+           Must use ``str.format_map()`` when `_stub_keys` is true;
            otherwise, ``format()`` will clone all existing keys in
            a static map.
         """
@@ -180,10 +180,10 @@ class InterpolationContext(ChainMap):
 
         orig_maps = self.maps
         maps = orig_maps[:1] + tmp_maps[::-1] + orig_maps[1:]
-        if stub_keys:
+        if _stub_keys:
             maps.append(_missing_keys
-                        if stub_keys is True
-                        else _MissingKeys(stub_keys))
+                        if _stub_keys is True
+                        else _MissingKeys(_stub_keys))
         self.maps = maps
         try:
             yield self
@@ -192,7 +192,7 @@ class InterpolationContext(ChainMap):
 
     def interp(self, text: Optional[str],
                *maps,
-               stub_keys=False,
+               _stub_keys=False,
                _escaped_for: Union[Callable, str] = None,
                **kv_pairs
                ) -> Optional[str]:
@@ -205,7 +205,7 @@ class InterpolationContext(ChainMap):
             a list of dictionaries/objects/HasTraits from which to draw
             items/attributes/trait-values, all in increasing priority.
             Nulls ignored.
-        :param stub_keys:
+        :param _stub_keys:
             - If false, missing keys raise KeyError.
             - If `True`, any missing *key* gets replaced by ``{key}``
               (practically remain unchanged).
@@ -217,12 +217,12 @@ class InterpolationContext(ChainMap):
             a callable or ('glob'|'regex') to escape object's attribute values
 
         Later maps take precedence over earlier ones; `kv_pairs` have the highest,
-        but `stub_keys` the lowest (if true).
+        but `_stub_keys` the lowest (if true).
         """
         if not text:
             return text
 
-        with self.ikeys(*maps, stub_keys=stub_keys, _escaped_for=_escaped_for,
+        with self.ikeys(*maps, _stub_keys=_stub_keys, _escaped_for=_escaped_for,
                         **kv_pairs) as cntx:
             new_text = text.format_map(cntx)
         return new_text
