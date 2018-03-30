@@ -21,14 +21,13 @@ There are 3 important methods/functions calling Git:
 from pathlib import Path
 from typing import List, Dict, Sequence, Optional
 import contextlib
-import glob
 import logging
 import os
 import re
 
 import subprocess as sbp
 
-from . import polyverslib as pvlib, cmdlets, interpctxt
+from . import polyverslib as pvlib, cmdlets
 from ._vendor.traitlets import traitlets as trt
 from ._vendor.traitlets.traitlets import (
     Bool, Unicode, Instance,
@@ -93,22 +92,6 @@ def git_restore_point(restore=False):
             cmd.git.reset._(hard=True)(original_point)
 
 
-class _EscapedObjectDict(interpctxt._HasTraitObjectDict):
-    def __init__(self, _obj: trt.HasTraits, escape_func) -> None:
-        super().__init__(_obj)
-        self._escape_func = escape_func
-
-    def __getitem__(self, key):
-        if self._obj.has_trait(key):
-            v = getattr(self._obj, key)
-            if isinstance(v, str):
-                v = self._escape_func(v)
-
-            return v
-        else:
-            raise KeyError(key)
-
-
 ## TODO: Make Project printable.
 class Project(cmdlets.Replaceable, cmdlets.Printable, cmdlets.Spec):
     pname = Unicode()
@@ -156,12 +139,11 @@ class Project(cmdlets.Replaceable, cmdlets.Printable, cmdlets.Spec):
             {pname}   <-- this Project.pname
             {version} <-- '*'
         """
-        with self.interpolations.ikeys(_EscapedObjectDict(self, glob.escape),
-                                       version='*',
-                                       vprefix=self.tag_vprefixes[int(is_release)]
-                                       ) as ictxt:
-            tag_fnmatch_frmt = self.pvtag_frmt.format_map(ictxt)
-        return tag_fnmatch_frmt
+        vprefix = self.tag_vprefixes[int(is_release)]
+        return self.interp(self.pvtag_frmt,
+                           vprefix=vprefix,
+                           version='*',
+                           _escaped_for='glob')
 
     pvtag_regex = Unicode(
         help="""
@@ -228,11 +210,11 @@ class Project(cmdlets.Replaceable, cmdlets.Printable, cmdlets.Spec):
         :param is_release:
             `False` for version-tags, `True` for release-tags
         """
-        with self.interpolations.ikeys(_EscapedObjectDict(self, re.escape),
-                                       vprefix=self.tag_vprefixes[int(is_release)]
-                                       ) as ictxt:
-            pvtag_regex = re.compile(self.pvtag_regex.format_map(ictxt))
-        return pvtag_regex
+        vprefix = self.tag_vprefixes[int(is_release)]
+        regex = self.interp(self.pvtag_regex,
+                            vprefix=vprefix,
+                            _escaped_for='regex')
+        return re.compile(regex)
 
     _pvtags_collected = ListTrait(
         Unicode(), allow_none=True, default_value=None,

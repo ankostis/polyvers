@@ -8,7 +8,7 @@
 Enable Unicode-trait to pep3101-interpolate `{key}` patterns from "context" dicts.
 """
 from collections import ChainMap, abc
-from typing import Union, Optional, ContextManager  # @UnusedImport
+from typing import Union, Optional, Callable, ContextManager
 import contextlib
 import os
 
@@ -68,11 +68,56 @@ class _HasTraitObjectDict(abc.Mapping):
         return iter(self._obj.trait_names())
 
 
-def dictize_object(obj):
+class _EscapedObjectDict(_HasTraitObjectDict):
+    """
+    Escape all object's attribute-values through the given function.
+
+    Utility for using objects as :meth:`InterpolationContext.ikeys` maps
+    for regex/glob patterns.
+    """
+    def __init__(self, _obj: trt.HasTraits, escape_func) -> None:
+        super().__init__(_obj)
+        self._escape_func = escape_func
+
+    def __getitem__(self, key):
+        if self._obj.has_trait(key):
+            v = getattr(self._obj, key)
+            if isinstance(v, str):
+                v = self._escape_func(v)
+
+            return v
+        else:
+            raise KeyError(key)
+
+
+def dictize_object(obj, _escaped_for: Union[Callable, str] = None):
+    """
+    Make an object appear as a dict for :meth:`InterpolationContext.ikeys()`.
+
+    :param _escaped_for:
+        one of 'glob', 'regex' or a callable to escape object's attribute values
+    """
     if isinstance(obj, (dict, abc.Mapping)):
         pass
     elif isinstance(obj, trt.HasTraits):
-        obj = _HasTraitObjectDict(obj)
+        if not _escaped_for:
+            obj = _HasTraitObjectDict(obj)
+        else:
+            if _escaped_for == 'glob':
+                import glob
+                _escaped_for = glob.escape
+
+            elif _escaped_for == 'regex':
+                import re
+                _escaped_for = re.escape
+
+            elif not callable(_escaped_for):
+                raise AssertionError(
+                    "Invalid `_escaped_for` %r!"
+                    "\n  It must be either a callable or 'glob'/'regex'." %
+                    _escaped_for)
+
+            obj = _EscapedObjectDict(obj, _escaped_for)
     else:
         ## Collect object's and MRO classes's items
         # in a chain-dict.
@@ -115,7 +160,9 @@ class InterpolationContext(ChainMap):
     @contextlib.contextmanager
     def ikeys(self, *maps,
               stub_keys: Union[str, bool, None] = False,
-              **kv_pairs) -> ContextManager['InterpolationContext']:
+              _escaped_for: Union[Callable, str] = None,
+              **kv_pairs
+              ) -> ContextManager['InterpolationContext']:
         """
         Temporarily place maps and kwds immediately after user-map (2nd position).
 
@@ -126,7 +173,7 @@ class InterpolationContext(ChainMap):
            otherwise, ``format()`` will clone all existing keys in
            a static map.
         """
-        tmp_maps = [dictize_object(m) for m in maps
+        tmp_maps = [dictize_object(m, _escaped_for=_escaped_for) for m in maps
                     if m]
         if kv_pairs:
             tmp_maps.append(kv_pairs)
@@ -146,11 +193,14 @@ class InterpolationContext(ChainMap):
     def interp(self, text: Optional[str],
                *maps,
                stub_keys=False,
+               _escaped_for: Union[Callable, str] = None,
                **kv_pairs
                ) -> Optional[str]:
         """
         Interpolate text with values from maps and kwds given.
 
+        :param text:
+            the text to interpolate; if null/empty, returned as is
         :param maps:
             a list of dictionaries/objects/HasTraits from which to draw
             items/attributes/trait-values, all in increasing priority.
@@ -163,9 +213,16 @@ class InterpolationContext(ChainMap):
               the result gets replaced.
             - Any other non-false value is returned for every *key*.
 
+        :param _escaped_for:
+            a callable or ('glob'|'regex') to escape object's attribute values
+
         Later maps take precedence over earlier ones; `kv_pairs` have the highest,
         but `stub_keys` the lowest (if true).
         """
-        with self.ikeys(*maps, stub_keys=stub_keys, **kv_pairs) as cntx:
+        if not text:
+            return text
+
+        with self.ikeys(*maps, stub_keys=stub_keys, _escaped_for=_escaped_for,
+                        **kv_pairs) as cntx:
             new_text = text.format_map(cntx)
         return new_text

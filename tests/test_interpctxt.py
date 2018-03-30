@@ -7,7 +7,8 @@
 
 from polyvers import cmdlets
 from polyvers._vendor.traitlets import traitlets as trt
-from polyvers.interpctxt import Now, InterpolationContext, _HasTraitObjectDict, dictize_object
+from polyvers.interpctxt import (
+    Now, InterpolationContext, _HasTraitObjectDict, _EscapedObjectDict, dictize_object)
 
 import pytest
 
@@ -177,12 +178,28 @@ def test_ikeys_key_on_objects():
     assert 'aa' in keys and 'bb' in keys
 
 
-def test_dictize_object_on_HasTraitObjectDict():
+def test_dictize_object_pass_through_HasTraitObjectDict():
     class C(trt.HasTraits):
         a = trt.Int(1)
 
     od = _HasTraitObjectDict(C())
     assert dictize_object(od) is od
+
+    od = _EscapedObjectDict(C(), escape_func=str)
+    assert dictize_object(od, _escaped_for='glob') is od
+    assert dictize_object(od, _escaped_for='regex') is od
+    assert dictize_object(od, _escaped_for=str) is od
+
+
+def test_dictize_object_escape():
+    class C(trt.HasTraits):
+        t = trt.Unicode('[')
+
+    od = C()
+    assert od
+    assert dictize_object(od, _escaped_for=str)['t'] == '['
+    assert dictize_object(od, _escaped_for='glob')['t'] == '[[]'
+    assert dictize_object(od, _escaped_for='regex')['t'] == '\\['
 
 
 def test_interp_on_HasTraits_and_Spec():
