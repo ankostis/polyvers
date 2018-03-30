@@ -10,7 +10,7 @@ from polyvers import pvtags, polyverslib as pvlib
 from polyvers._vendor import traitlets as trt
 from polyvers._vendor.traitlets import config as trc
 from polyvers.oscmd import cmd
-from polyvers.pvtags import Project
+from polyvers.pvproject import Project
 import re
 import sys
 

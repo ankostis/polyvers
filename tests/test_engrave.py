@@ -9,8 +9,8 @@
 from pathlib import Path
 from polyvers import engrave
 from polyvers._vendor.traitlets.config import Config
-from polyvers.engrave import Graft, _slices_to_ids
 from polyvers.logconfutils import init_logging
+from polyvers.pvproject import Engrave, Graft, _slices_to_ids
 from polyvers.slice_traitlet import _parse_slice
 from tests import conftest
 import logging
@@ -169,7 +169,7 @@ def test_engrave(fileset_mutable, ok_files, f1_graft, f2_graft):
     cfg.Engrave.globs = ['/a/f*', 'b/f1', '/b/f2', 'b/?3']
     cfg.Engrave.grafts = [f1_graft, f2_graft]
 
-    e = engrave.Engrave(config=cfg)
+    e = Engrave(config=cfg)
     subs_map = e.scan_and_engrave()
     nhits = sum(fspec.nhits for fspec in subs_map.values())
     nsubs = sum(fspec.nsubs for fspec in subs_map.values())
@@ -189,7 +189,7 @@ def test_engrave_subs_None(fileset_mutable, f1_graft, f2_graft):
     cfg.Engrave.globs = ['/a/f*', 'b/f1', '/b/f2', 'b/?3']
     cfg.Engrave.grafts = [f1_graft, f2_graft]
 
-    e = engrave.Engrave(config=cfg)
+    e = Engrave(config=cfg)
 
     hits_map = e.scan_hits()
     nhits = sum(fspec.nhits for fspec in hits_map.values())
@@ -222,8 +222,8 @@ def test_scan_engrave(fileset_mutable, f1_graft, f2_graft):
     globs = ['/a/f*', 'b/f1', '/b/f2', 'b/?3']
     cfg.Engrave.grafts = [f1_graft, f2_graft]
 
-    e1 = engrave.Engrave.new(globs=globs, grafts=[f1_graft])
-    e2 = engrave.Engrave.new(globs=globs, grafts=[f2_graft])
+    e1 = Engrave.new(globs=globs, grafts=[f1_graft])
+    e2 = Engrave.new(globs=globs, grafts=[f2_graft])
 
     hits_map = engrave.scan_engraves([e1, e2])
     assert isinstance(hits_map, dict)

@@ -10,24 +10,13 @@
 
 from collections import OrderedDict as odict
 from pathlib import Path
-from typing import List, Tuple, Sequence, Dict, Match, Union, Optional
+from typing import List, Tuple, Sequence
 import logging
-import re
 
-from . import cmdlets, fileutils as fu
-from ._vendor.traitlets import traitlets as trt
-from ._vendor.traitlets.traitlets import (
-    Union as UnionTrait, Instance, List as ListTrait, Unicode, Int)
-from .autoinstance_traitlet import AutoInstance
-from .slice_traitlet import Slice as SliceTrait
+from . import fileutils as fu, pvproject
 
 
 log = logging.getLogger(__name__)
-
-
-FPaths = List[Path]
-FLike = Union[str, Path]
-FLikeList = List[FLike]
 
 
 def _as_glob_pattern_pair(fpath):
@@ -86,7 +75,7 @@ def _glob_find_files(pattern_pairs: Tuple[str, str], mybase: Path):
     return files
 
 
-def _glob_filter_in_mybase(files: FPaths,
+def _glob_filter_in_mybase(files: pvproject.FPaths,
                            mybase: Path):
     assert all(isinstance(f, Path) for f in files)
     nfiles = []
@@ -101,8 +90,8 @@ def _glob_filter_in_mybase(files: FPaths,
     return nfiles
 
 
-def _glob_filter_out_other_bases(files: FPaths,
-                                 other_bases: FPaths):
+def _glob_filter_out_other_bases(files: pvproject.FPaths,
+                                 other_bases: pvproject.FPaths):
     if not other_bases:
         return files
 
@@ -117,8 +106,8 @@ def _glob_filter_out_other_bases(files: FPaths,
 
 
 def glob_files(patterns: List[str],
-               mybase: FLike = '.',
-               other_bases: Union[FLikeList, None] = None) -> FPaths:
+               mybase: pvproject.FLike = '.',
+               other_bases: pvproject.FLikeList = None) -> pvproject.FPaths:
     """
     Glob files in `mybase` but not in `other_bases` (unless bases coincide).
 
@@ -142,332 +131,14 @@ def glob_files(patterns: List[str],
     return files
 
 
-PatternClass = type(re.compile('.*'))  # For traitlets
-MatchClass = type(re.match('.*', ''))  # For traitlets
-
-
-def _slices_to_ids(slices, thelist):
-    from boltons.setutils import IndexedSet as iset
-
-    all_ids = list(range(len(thelist)))
-    mask_ids = iset()
-    for aslice in slices:
-        mask_ids.update(all_ids[aslice])
-
-    return list(mask_ids)
-
-
-class Graft(cmdlets.Replaceable, cmdlets.Printable, cmdlets.Spec):
-    regex = Unicode(
-        read_only=True,
-        config=True,
-        help="What to search"
-    )
-
-    @trt.validate('regex')
-    def _is_valid_regex(self, proposal):
-        value = proposal.value
-        try:
-            v = self.interpolations.interp(value,
-                                           self,
-                                           stub_keys=lambda k: '<%s>' % k)
-            re.compile(v)
-        except Exception as ex:
-            proposal.trait.error(None, value, ex)
-        return value
-
-    @property
-    def regex_resolved(self):
-            v = self.interpolations.interp(self.regex, self)
-            return re.compile(v)
-
-    subst = Unicode(
-        allow_none=True, default_value='',
-        help="""
-        What to replace with; if `None`, no substitution happens.
-
-        Inside them, supported extensions are:
-        - captured groups with '\\1 or '\g<foo>' expressions
-          (see Python's regex documentation)
-        - interpolation variables; Keys available (apart from env-vars prefixed with '$'):
-          {ikeys}
-        """
-    )
-
-    slices = UnionTrait(
-        (SliceTrait(), ListTrait(SliceTrait())),
-        read_only=True,
-        config=True,
-        help="""
-        Which of the `hits` to substitute, in "slice" notation(s); all if not given.
-
-        Example::
-
-            gs = Graft()
-            gs.slices = 0                ## Only the 1st match.
-            gs.slices = '1:'             ## Everything except the 1st match
-            gs.slices = ['1:3', '-1:']   ## Only 2nd, 3rd and the last match.
-                "
-
-        """
-    )
-
-    hits = ListTrait(Instance(MatchClass), read_only=True)
-    hits_indices = ListTrait(Int(),
-                             allow_none=True,
-                             default_value=None, read_only=True)
-    nsubs = Int(allow_none=True)
-
-    def collect_graft_hits(self, ftext: str) -> 'Graft':
-        """
-        :return:
-            a clone with updated `hits`
-        """
-        regex = self.regex_resolved
-        hits: List[Match] = list(regex.finditer(ftext))
-        return self.replace(hits=hits)
-
-    def _get_hits_indices(self) -> Optional[List[int]]:
-        """
-        :return:
-            A list with the list-indices of hits kept, or None if no `slices` given.
-        """
-        slices: Union[slice, List[slice]] = self.slices
-        if slices:
-            if not isinstance(slices, list):
-                slices = [slices]
-
-            hits_indices = _slices_to_ids(slices, self.hits)
-
-            return hits_indices
-
-    def valid_hits(self) -> List[Match]:
-        hits = self.hits
-        hits_indices = self.hits_indices
-        if hits_indices is None:
-            return hits
-        else:
-            return [hits[i] for i in hits_indices]
-
-    def substitute_graft_hits(self, fpath: Path, ftext: str) -> Tuple[str, 'Graft']:
-        """
-        :return:
-            A 2-TUPLE ``(<substituted-ftext>, <updated-graft>)``, where
-            ``<updated-graft>`` is a *possibly* clone with updated
-            `hits_indices` (if one used), or the same if no idices used,
-            or None if no hits remained. after hits-slices filtering
-        """
-        if not self.hits:
-            return (ftext, self)
-
-        orig_ftext = ftext
-
-        hits_indices = self._get_hits_indices()
-        if hits_indices:
-            clone = self.replace(hits_indices=hits_indices)
-            log.debug(
-                "Replacing %i out of %i matches in file '%s' of pattern '%s': %s",
-                len(hits_indices), len(self.hits), fpath, self.regex, hits_indices)
-        elif self.hits:
-            clone = self.replace()
-
-        ## NOTE: Bad programming style to update state (hits_indices)
-        #  and then rely on that inside the same method.
-
-        nsubs = 0
-        for m in clone.valid_hits():
-            if clone.subst is not None:
-                ftext = ftext[:m.start()] + m.expand(clone.subst) + ftext[m.end():]
-                nsubs += 1
-        clone.nsubs = nsubs
-
-        if not nsubs:
-            assert ftext == orig_ftext, (ftext, orig_ftext)
-
-        return (ftext, clone)
-
-
-class Engrave(cmdlets.Replaceable, cmdlets.Spec):
-    """File-patterns to search and replace with version-id patterns."""
-
-    globs = ListTrait(
-        Unicode(),
-        read_only=True,
-        config=True,
-        help="A list of POSIX file patterns (.gitgnore-like) to search and replace"
-    )
-
-    grafts = ListTrait(
-        AutoInstance(Graft),
-        read_only=True,
-        config=True,
-        help="""
-        A list of `Graft` for engraving (search & replace) version-ids or other infos.
-
-        Use `{appname} config desc Graft` to see its syntax.
-        """
-    )
-
-    encoding = Unicode(
-        'utf-8',
-        read_only=True,
-        config=True,
-        help="Open files with this encoding."
-    )
-
-    encoding_errors = Unicode(
-        'surrogateescape',
-        read_only=True,
-        config=True,
-        help="""
-        Open files with this encoding-error handling.
-
-        See https://docs.python.org/3/library/codecs.html#codecs.register_error
-        """
-    )
-
-    fpath = Instance(Path, allow_none=True, read_only=True)
-    ftext = Unicode(allow_none=True, read_only=True)
-
-    def _fread(self, fpath: Path):
-        return fpath.read_text(
-            encoding=self.encoding, errors=self.encoding_errors)
-
-    def _fwrite(self, fpath: Path, text: str):
-        fpath.write_text(
-            text, encoding=self.encoding, errors=self.encoding_errors)
-
-    def read_files(self, files: FPaths) -> 'PathEngraves':
-        pathengs: 'PathEngraves' = odict()
-
-        for fpath in files:
-            ## TODO: try-catch file-reading.
-            ftext = self._fread(fpath)
-
-            pathengs[fpath] = self.replace(fpath=fpath, ftext=ftext)
-
-        return pathengs
-
-    def collect_glob_files(self,
-                           mybase: FLike = '.',
-                           other_bases: Union[FLikeList, None] = None) -> FPaths:
-        return glob_files(self.globs, mybase, other_bases)
-
-    def collect_file_hits(self) -> 'Engrave':
-        """
-        :return:
-            a clone with `grafts` updated
-        """
-        new_grafts: List[Graft] = []
-        ftext = self.ftext
-        for vg in self.grafts:
-            nvgraft = vg.collect_graft_hits(ftext)
-            new_grafts.append(nvgraft)
-
-        return self.replace(grafts=new_grafts)
-
-    def substitute_file_hits(self) -> Optional['Engrave']:
-        """
-        :return:
-            a clone with substituted `grafts` updated, or none if nothing substituted
-        """
-        new_grafts: List[Graft] = []
-        ftext = self.ftext
-        fpath = self.fpath
-        for vg in self.grafts:
-            subst_res = vg.substitute_graft_hits(fpath, ftext)
-            if subst_res:
-                ftext, nvgraft = subst_res
-                new_grafts.append(nvgraft)
-
-        if new_grafts:
-            return self.replace(ftext=ftext, grafts=new_grafts)
-        else:
-            assert self.ftext == ftext, (self.ftext, ftext)
-
-    @property
-    def nhits(self):
-        return sum(len(vg.valid_hits()) for vg in self.grafts)
-
-    @property
-    def nsubs(self):
-        return sum(vg.nsubs for vg in self.grafts)
-
-    ####################
-    ## PathEngs maps ##
-    ####################
-
-    def collect_all_hits(self, pathengs: 'PathEngraves') -> 'PathEngraves':
-        hits: 'PathEngraves' = odict()
-        for fpath, eng in pathengs.items():
-            ## TODO: try-catch regex matching.
-            neng = eng.collect_file_hits()
-            hits[fpath] = neng
-
-        return hits
-
-    def substitute_hits(self, hits: 'PathEngraves') -> 'PathEngraves':
-        substs: 'PathEngraves' = odict()
-        for fpath, eng in hits.items():
-            ## TODO: try-catch regex substitution.
-            neng = eng.substitute_file_hits()
-            if neng:
-                substs[fpath] = neng
-
-        return substs
-
-    def write_engraves(self, substs: 'PathEngraves') -> None:
-        if not self.dry_run:
-            for fpath, eng in substs.items():
-                ## TODO: try-catch regex matching.
-                self._fwrite(fpath, eng.ftext)
-
-    def _log_action(self, pathengs: 'PathEngraves', action: str):
-        file_lines = '\n  '.join('%s: %i %s' % (fpath, eng.nhits, action)
-                                 for fpath, eng in pathengs.items())
-        ntotal = sum(eng.nhits for eng in pathengs.values())
-        log.info("%sed %i files: %s", action.capitalize(), ntotal, file_lines)
-
-    def scan_hits(self,
-                  mybase: FLike = '.',
-                  other_bases: Union[FLikeList, None] = None
-                  ) -> 'PathEngraves':
-        files: FPaths = self.collect_glob_files(mybase=mybase,
-                                                other_bases=other_bases)
-        log.info("Globbed %i files in '%s': %s",
-                 len(files), Path(mybase).resolve(), ', '.join(str(f) for f in files))
-
-        pathengs: 'PathEngraves' = self.read_files(files)
-
-        file_hits: 'PathEngraves' = self.collect_all_hits(pathengs)
-        self._log_action(file_hits, 'match')
-
-        return file_hits
-
-    def engrave_hits(self, hits: 'PathEngraves') -> 'PathEngraves':
-        substs: 'PathEngraves' = self.substitute_hits(hits)
-        self._log_action(substs, 'graft')
-
-        self.write_engraves(substs)
-
-        return substs
-
-    def scan_and_engrave(self) -> 'PathEngraves':
-        hits = self.scan_hits()
-        return self.engrave_hits(hits)
-
-
-PathEngraves = Dict[Path, Engrave]
-
-
-def scan_engraves(engraves: Sequence[Engrave]) -> PathEngraves:
+def scan_engraves(engraves: Sequence[pvproject.Engrave]) -> pvproject.PathEngraves:
     hits = [(engpaths, enghits)
             for eng in engraves
             for engpaths, enghits in eng.scan_hits().items()]
 
     ## Consolidate grafts-per-file in a single map.
     #
-    hits_map: PathEngraves = odict()
+    hits_map: pvproject.PathEngraves = odict()
     for fpath, fspec in hits:
         prev_fspec = hits_map.get(fpath)
         if prev_fspec:

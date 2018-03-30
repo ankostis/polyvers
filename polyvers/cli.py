@@ -13,7 +13,7 @@ from typing import Dict, Set  # noqa: F401, @UnusedImport  flake not seeing Set 
 import io
 import logging
 
-from . import APPNAME, __version__, __updated__, cmdlets, pvtags, engrave, \
+from . import APPNAME, __version__, __updated__, cmdlets, pvproject, pvtags, \
     polyverslib as pvlib, fileutils as fu
 from . import logconfutils as lcu
 from ._vendor import traitlets as trt
@@ -117,10 +117,10 @@ class PolyversCmd(cmdlets.Cmd):
               {cmd_chain} bump 0.0.1.dev0 -c '1st commit, untagged'
               {cmd_chain} bump -t 'Mostly model changes, tagged'
     """)
-    classes = [pvtags.Project]
+    classes = [pvproject.Project]
 
     projects = List(
-        AutoInstance(pvtags.Project),
+        AutoInstance(pvproject.Project),
         config=True)
 
     no_release_tag = Bool(
@@ -172,9 +172,9 @@ class PolyversCmd(cmdlets.Cmd):
     @trt.default('all_app_configurables')
     def _all_app_configurables(self):
         return [type(self),
-                pvtags.Project,
+                pvproject.Project,
                 InitCmd, StatusCmd, BumpCmd, LogconfCmd,
-                engrave.Engrave, engrave.Graft,
+                pvproject.Engrave, pvproject.Graft,
                 ]
 
     @trt.default('config_paths')
@@ -207,7 +207,7 @@ class PolyversCmd(cmdlets.Cmd):
         return self._git_root
 
     projects_scan = AutoInstance(
-        engrave.Engrave,
+        pvproject.Engrave,
         default_value={
             'globs': ['**/setup.py'],
             'grafts': [
@@ -233,7 +233,7 @@ class PolyversCmd(cmdlets.Cmd):
         """)
 
     autodiscover_version_scheme_projects = TupleTrait(
-        AutoInstance(pvtags.Project), AutoInstance(pvtags.Project),
+        AutoInstance(pvproject.Project), AutoInstance(pvproject.Project),
         default_value=(
             pvtags.make_match_all_pvtags_project(),
             pvtags.make_match_all_vtags_project(),
@@ -310,7 +310,7 @@ class PolyversCmd(cmdlets.Cmd):
         """
         git_root = self.git_root
 
-        template_project = pvtags.Project(parent=self)
+        template_project = pvproject.Project(parent=self)
         has_template_project = (template_project.tag_vprefixes and
                                 template_project.pvtag_frmt and
                                 template_project.pvtag_regex)
@@ -528,11 +528,11 @@ PolyversCmd.flags = {  # type: ignore
     ),
     ('t', 'tag'): (
         {'Project': {'tag': True}},
-        pvtags.Project.tag.help
+        pvproject.Project.tag.help
     ),
     ('s', 'sign-tags'): (
         {'Project': {'sign_tags': True}},
-        pvtags.Project.sign_tags.help
+        pvproject.Project.sign_tags.help
     ),
 
     'monorepo': (
