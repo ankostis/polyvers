@@ -10,9 +10,13 @@ Enable Unicode-trait to pep3101-interpolate `{key}` patterns from "context" dict
 from collections import ChainMap, abc
 from typing import Union, Optional, Callable, ContextManager
 import contextlib
+import logging
 import os
 
 from ._vendor.traitlets import traitlets as trt
+
+
+log = logging.getLogger(__name__)
 
 
 class Now:  # TODO: privatize
@@ -194,6 +198,7 @@ class InterpolationContext(ChainMap):
                *maps,
                _stub_keys=False,
                _escaped_for: Union[Callable, str] = None,
+               _suppress_errors: bool = None,
                **kv_pairs
                ) -> Optional[str]:
         """
@@ -212,7 +217,8 @@ class InterpolationContext(ChainMap):
             - If callable, the `key` is passed to it as a the only arg, and
               the result gets replaced.
             - Any other non-false value is returned for every *key*.
-
+        :param _suppress_errors:
+            ignore any interpolation errors and return original string
         :param _escaped_for:
             a callable or ('glob'|'regex') to escape object's attribute values
 
@@ -222,7 +228,16 @@ class InterpolationContext(ChainMap):
         if not text:
             return text
 
-        with self.ikeys(*maps, _stub_keys=_stub_keys, _escaped_for=_escaped_for,
+        with self.ikeys(*maps, _stub_keys=_stub_keys,
+                        _escaped_for=_escaped_for,
                         **kv_pairs) as cntx:
-            new_text = text.format_map(cntx)
-        return new_text
+            if _suppress_errors:
+                try:
+                    text = text.format_map(cntx)
+                except Exception as ex:
+                    log.debug("Interpolating '%s' failed due to: %r",
+                              text[:100], ex, exc_info=ex)
+            else:
+                text = text.format_map(cntx)
+
+            return text

@@ -271,3 +271,12 @@ def test_ikeys_key_on_HasTraits():
     assert 'aa' in keys
     badkeys = (set(['a', 'b']) & set(keys))
     assert not badkeys
+
+
+def test_suppress_errors():
+    ctxt = InterpolationContext()
+    with pytest.raises(ValueError, match=r"Single '\{'"):
+        ctxt.interp('{', _suppress_errors=False)
+    with pytest.raises(ValueError, match=r"Single '\{'"):
+        ctxt.interp('{', _suppress_errors=None)
+    ctxt.interp('{', _suppress_errors=True)
