@@ -37,8 +37,25 @@ FLikeList = List[FLike]
 
 ## TODO: Make Project printable.
 class Project(cmdlets.Replaceable, cmdlets.Printable, cmdlets.Spec):
-    pname = Unicode()
-    basepath = Instance(Path, default_value=None, allow_none=True, castable=str)
+    pname = Unicode(
+        config=True,
+        help="""The name of the project, used in interpolations and pvtags, among others."""
+    ).tag(printable=True)
+
+    basepath = Instance(
+        Path,
+        default_value=None, allow_none=True,
+        castable=str,
+        config=True,
+        help="""
+        The root-dir of this project.
+
+        - Usually this the folder where `setup.py` resides.
+        - Projects may be nested but not exactly overlap.
+        - Searched and substitutions for a project stop when reaching
+          the basepath of other projects.
+          """
+    ).tag(printable=True)
 
     tag_vprefixes = TupleTrait(
         Unicode(), Unicode(),
