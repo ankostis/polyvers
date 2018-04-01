@@ -635,13 +635,18 @@ def _travel_parents_untill_active_cmd(self, scream=False) -> trc.Application:
 trc.Configurable.active_subcmd = _travel_parents_untill_active_cmd  # type: ignore
 
 
-class Spec(Forceable, trc.Configurable):
+class Spec(Forceable, trc.LoggingConfigurable):
     @classmethod
     def class_get_trait_help(cls, trait, inst=None, helptext=None):
         text = super().class_get_trait_help(trait, inst=inst, helptext=helptext)
         obj = inst if inst else cls
         return obj.interpolations.interp(text, _stub_keys=True,
                                          _suppress_errors=True)
+
+    def _log_default(self):
+        "Mimic log-hierarchies for Configurable; their loggers are not hierarchical. "
+        cls = type(self)
+        return logging.getLogger('.'.join((cls.__module__, cls.__name__)))
 
     verbose = Bool(
         allow_none=True,
@@ -716,12 +721,6 @@ class Cmd(trc.Application, Spec):
 
         return cmd
 
-    @trt.default('log')
-    def _log_default(self):
-        "Mimic log-hierarchies for Configurable; their loggers are not hierarchical. "
-        cls = type(self)
-        return logging.getLogger('%s.%s' % (cls.__module__, cls.__name__))
-
     @trt.default('name')
     def _name(self):
         """Without it, need to set `name` attr on every class."""
@@ -733,6 +732,11 @@ class Cmd(trc.Application, Spec):
         """Without it, need to set `description` attr on every class."""
         cls = type(self)
         return cls.__doc__ or ''
+
+    def _log_default(self):
+        "Mimic log-hierarchies for Configurable; their loggers are not hierarchical. "
+        cls = type(self)
+        return logging.getLogger('.'.join((cls.__module__, cls.__name__)))
 
     ##########
     ## HELP ##
