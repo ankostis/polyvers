@@ -289,7 +289,7 @@ class ErrLog(cmdlets.Replaceable, trt.HasTraits):
         return getattr(self.parent, 'log', log)
 
     def logw(self, *args, **kwds):
-        log = self.warn_log or partial(self.plog.log, logging.INFO)
+        log = self.warn_log or partial(self.plog.log, logging.WARNING)
         log(*args, **kwds)
 
     @property
