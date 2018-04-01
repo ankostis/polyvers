@@ -394,7 +394,7 @@ class Replaceable:
                 elif not _is_section_key(name) and not isinstance(config_value, trc.Config):
                     from difflib import get_close_matches
                     if isinstance(self, trc.LoggingConfigurable):
-                        warn = self.plog.warning
+                        warn = self.log.warning
                     else:
                         import warnings
 
