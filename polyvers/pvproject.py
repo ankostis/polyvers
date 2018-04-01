@@ -181,7 +181,7 @@ class Project(cmdlets.Replaceable, cmdlets.Printable, cmdlets.Spec):
         if m:
             mg = m.groupdict()
             if mg['descid']:
-                log.warning(
+                self.log.warning(
                     "Ignoring pvtag '%s', it has `git-describe` suffix '%s'!",
                     pvtag, mg['descid'])
 

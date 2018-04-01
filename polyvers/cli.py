@@ -317,8 +317,8 @@ class PolyversCmd(cmdlets.Cmd):
 
         if not has_template_project:
             template_project = self._autodiscover_versioning_scheme()
-            log.info("Auto-discovered versioning scheme: %s",
-                     template_project.pname)
+            self.log.info("Auto-discovered versioning scheme: %s",
+                          template_project.pname)
 
         has_subprojects = bool(self.projects)
         if not has_subprojects:
@@ -328,7 +328,7 @@ class PolyversCmd(cmdlets.Cmd):
                     "Cannot auto-discover (sub-)project path(s)!"
                     "\n  Please use `ìnit` cmd to specify sub-projects explicitly.")
 
-            log.info(
+            self.log.info(
                 "Auto-discovered %i sub-project(s) in git-root '%s': \n%s",
                 len(proj_paths), git_root.resolve(),
                 ydumps({k: str(v) for k, v in proj_paths.items()}))
