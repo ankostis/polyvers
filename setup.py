@@ -1,14 +1,13 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-"""The setup script."""
+"""Setup script *polyvers-cmd*."""
 
-#import sys
-
-from polyvers import polyversion
 import sys
 
 from setuptools import setup, find_packages
+
+from pvlib.polyversion import polyversion
 
 
 MIN_PYTHON = (3, 6)
@@ -38,7 +37,7 @@ requirements = [
 ]
 
 test_requirements = [
-    'pytest',
+    'pytest >= 3.5.0',  # caplog.clear() fixed (pytest-dev/pytest#3297)
     'pytest-runner',
     'pytest-cov',
     'flake8',
@@ -61,9 +60,10 @@ setup(
         'Source': 'https://github.com/jrcstu/polyvers',
         'Tracker': 'https://github.com/jrcstu/polyvers/issues',
     },
-    packages=find_packages(exclude=['tests', 'polyversion']),
+    packages=find_packages(where='pvcmd',
+                           exclude=['tests']),
     include_package_data=True,
-    #setup_requires=['polyversion'],
+    setup_requires=['polyversion'],
     install_requires=requirements,
     license='EUPL 1.2',
     zip_safe=True,

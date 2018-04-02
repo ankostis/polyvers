@@ -18,10 +18,10 @@ python:
 install:
   - pip install --upgrade setuptools pip
   - python setup.py build bdist_wheel
-  - pip install -e .[test]
+  - pip install -e ./pvlib[test] -e ./polyvers[test]
 
 script:
-  ## Test if `pip install .[test]` installs all deps.
+  ## Test if pip installs all deps.
   - |
     if [[ $TRAVIS_PYTHON_VERSION == '3.6' ]]; then
         pytest -v

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-"""The setup script."""
+"""Setup script *polyversion-lib*."""
 
 #import sys
 
@@ -44,8 +44,6 @@ setup(
         'Tracker': 'https://github.com/jrcstu/polyvers/issues',
     },
     packages=find_packages(exclude=['tests']),
-    include_package_data=True,
-    #setup_requires=['polyversion'],
     license='EUPL 1.2',
     zip_safe=True,
     platforms=['any'],
