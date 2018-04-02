@@ -9,12 +9,21 @@
 from polyvers.__main__ import main
 from polyvers.utils.oscmd import cmd
 import re
+import pytest
 
 import textwrap as tw
 
 from .conftest import (
     assert_in_text, clearlog,
     make_setup_py_without_version, make_setup_py)
+
+
+@pytest.fixture(autouse=True)
+def set_homedir(tmpdir_factory, monkeypatch):
+    import os
+
+    homedir = tmpdir_factory.mktemp('homedir')
+    monkeypatch.setitem(os.environ, 'HOME', str(homedir))
 
 
 def test_bump_cmd_bad(mutable_repo, caplog, capsys):
