@@ -16,11 +16,11 @@ from typing import (List, Optional, Match, Sequence, Union, Pattern)
 import logging
 import re
 
-from . import polyverslib as pvlib, cmdlets
+from . import polyverslib as pvlib, cmdlets, vermath
 from ._vendor.traitlets import traitlets as trt
 from ._vendor.traitlets.traitlets import (
-    Bool, Unicode, Instance,
-    List as ListTrait, Tuple as TupleTrait, Union as UnionTrait)  # @UnresolvedImport
+    List as ListTrait, Tuple as TupleTrait, Union as UnionTrait)
+from ._vendor.traitlets.traitlets import Bool, Unicode, Instance
 from .autoinstance_traitlet import AutoInstance
 from .oscmd import cmd
 from .slice_traitlet import Slice as SliceTrait
@@ -158,7 +158,7 @@ class Graft(cmdlets.Replaceable, cmdlets.Printable, cmdlets.Spec):
         return fbytes
 
 
-class Engrave(cmdlets.Replaceable, cmdlets.Spec):
+class Engrave(cmdlets.Replaceable, cmdlets.Printable, cmdlets.Spec):
     """File-patterns to search and replace with version-id patterns."""
 
     globs = ListTrait(
@@ -166,7 +166,7 @@ class Engrave(cmdlets.Replaceable, cmdlets.Spec):
         read_only=True,
         config=True,
         help="A list of POSIX file patterns (.gitgnore-like) to search and replace"
-    )
+    ).tag(printable=True)
 
     grafts = ListTrait(
         AutoInstance(Graft),
@@ -178,90 +178,6 @@ class Engrave(cmdlets.Replaceable, cmdlets.Spec):
         Use `{appname} config desc Graft` to see its syntax.
         """
     )
-
-
-## TODO: move version-math to separate module?
-class VersionError(cmdlets.CmdException):
-    pass
-
-
-def _is_version_id_relative(version_str: str):
-    return version_str.startswith(('+', '^'))
-
-
-def _calc_versions_op(op, v1, v2):
-    """
-    Example:
-
-    >>> from packaging.version import Version
-
-    >>> Version('1.2a3.post4.dev5+ab_cd.ef-16')._version
-    _Version(epoch=0, release=(1, 2), dev=('dev', 5), pre=('a', 3), post=('post', 4),
-             local=('ab', 'cd', 'ef', 16))
-    """
-    from packaging.version import Version, _cmpkey
-    from copy import copy
-    import itertools as itt
-
-    def add_pairs(part, p1, p2):
-        try:
-            ## TODO: smarted cycle 1st rel-pair part than 2nd win-over.
-            name1, num1 = p1
-            name2, num2 = p2
-            assert isinstance(name1, str) and isinstance(name2, str), (p1, p2)
-
-            if name1 == name2:
-                return (name1, num1 + num2)
-            elif name1 < name2:
-                return (name2, num2)
-            else:
-                raise VersionError("Cannot backtrack version \"%s\" part: "
-                                   "%s%s-->%s%s" % (part) + p1 + p2)
-
-        except TypeError:
-            ## One or both are `None`.
-            return p2 if p1 is None else p1
-
-    def add_locals(l1, l2):
-        try:
-            vv1.local + vv2.local
-        except TypeError:
-            ## One or both are `None`.
-            return l2 if l1 is None else l1
-
-    v1, v2 = [v if isinstance(v, Version) else Version(v)
-              for v in (v1, v2)]
-    vv1, vv2 = v1._version, v2._version
-    new_version = copy(v1)
-
-    if op == '+':
-        release = tuple(a + b
-                        for a, b in itt.zip_longest(vv1.release,
-                                                    vv2.release,
-                                                    fillvalue=0))
-        new_vv = vv1._replace(
-            epoch=vv1.epoch + vv2.epoch,
-            release=release,
-            dev=add_pairs('dev', vv1.dev, vv2.dev),
-            pre=add_pairs('pre', vv1.pre, vv2.pre),
-            post=add_pairs('post', vv1.post, vv2.post),
-            local=add_locals(vv1.local, vv2.local)
-        )
-        new_version._version = new_vv
-
-    else:
-        raise AssertionError("Version-op '%s' unknown or not implemented!" % op)
-
-    new_version._key = _cmpkey(
-        new_vv.epoch,
-        new_vv.release,
-        new_vv.pre,
-        new_vv.post,
-        new_vv.dev,
-        new_vv.local,
-    )
-
-    return new_version
 
 
 class Project(cmdlets.Replaceable, cmdlets.Printable, cmdlets.Spec):
@@ -285,12 +201,15 @@ class Project(cmdlets.Replaceable, cmdlets.Printable, cmdlets.Spec):
           """
     ).tag(printable=True)
 
-    current_version = Unicode(
-        config=True)
+    start_version_id = Unicode(
+        '0.0.0',
+        config=True,
+        help="""If no pvtag found, use this as the base for relative versions.""")
+
+    current_version = vermath.Pep440Version(help="The previous version, auto-discovered.")
 
     ## TODO: rename version-->new_version
-    version = Unicode(
-        config=True)
+    version = vermath.Pep440Version(help="The new absolute version to bump to.")
 
     amend = Bool(
         config=True,
@@ -301,18 +220,23 @@ class Project(cmdlets.Replaceable, cmdlets.Printable, cmdlets.Spec):
         try:
             self.current_version = self.pvtags_history[vtag_index]
         except IndexError:
-            self.log.debug("A vtag[%i] does not exit in history of %s",
+            self.log.debug("A vtag[%i] does not exist in history of %s",
                            vtag_index, self)
             self.current_version = self.start_version_id
 
-    def set_new_version(self, version_bump: str):
+    def set_new_version(self, version_bump: str = None):
         """
         :param version_bump:
             relative or absolute
         """
-        if _is_version_id_relative(version_bump):
-            op = version_bump[0]
-            self.version = _calc_versions_op(op, self.current_version, version_bump[1:])
+        if not version_bump:
+            version_bump = self.default_version_bump
+
+        if vermath._is_version_id_relative(version_bump):
+            op, v2 = version_bump[0], version_bump[1:]
+            self.version = vermath.calc_versions_op(op,
+                                                    self.current_version,
+                                                    v2)
         else:
             self.version = version_bump
 
@@ -405,7 +329,7 @@ class Project(cmdlets.Replaceable, cmdlets.Printable, cmdlets.Spec):
         """)
 
     message = Unicode(
-        "{pname}-{current_version} → {version}",
+        "{pname}-{current_version} -> {version}",
         config=True,
         help="""
             The message part regading the this project for release-commits & tags.
@@ -498,9 +422,8 @@ class Project(cmdlets.Replaceable, cmdlets.Printable, cmdlets.Spec):
            where ``--tags`` is needed to consider also non-annotated tags,
            as ``git tag`` does.
         """
-        from . import pvtags
+        from .import pvtags
 
-        pname = self.pname
         tag_pattern = self.tag_fnmatch(is_release)
 
         ## TODO: move to pvtags
@@ -508,7 +431,7 @@ class Project(cmdlets.Replaceable, cmdlets.Printable, cmdlets.Spec):
         if include_lightweight:
             acli._(tags=True)
 
-        with pvtags.git_errors_handled(pname):
+        with pvtags.git_project_errors_handled(self.pname):
             out = acli._(*git_args, **git_flags)(match=tag_pattern)
 
         version = out
@@ -544,14 +467,14 @@ class Project(cmdlets.Replaceable, cmdlets.Printable, cmdlets.Spec):
            where ``--tags`` is needed to consider also unannotated tags,
            as ``git tag`` does.
         """
-        from . import pvtags
+        from .import pvtags
 
-        with pvtags.git_errors_handled(self.pname):
+        with pvtags.git_project_errors_handled(self.pname):
             out = cmd.git.log(n=1, format='format:%cD')  # TODO: traitize log-date format
 
         return out
 
-    def tag_version_commit(self, is_release=False):
+    def tag_version_commit(self, bump_cmd, is_release=False):
         """
         Make a tag on current commit denoting a version-bump.
 
@@ -559,28 +482,40 @@ class Project(cmdlets.Replaceable, cmdlets.Printable, cmdlets.Spec):
             `False` for version-tags, `True` for release-tags
         """
         tag_name = self._format_vtag(self.version, is_release)
+        msg = bump_cmd._make_commit_message(self)
         ## TODO: move all git-cmds to pvtags?
         cmd.git.tag(tag_name,
-                    message=self.message,
-                    force=self.is_force('tag') or None,
-                    sign=self.sign_tags or None,
-                    local_self=self.sign_user or None,
+                    message=msg,
+                    force=self.is_forced('tag') or None,
+                    sign=bump_cmd.sign_tags or None,
+                    local_user=bump_cmd.sign_user or None,
                     )
 
     engraves = ListTrait(
         AutoInstance(Engrave),
         default_value=[{
-            'globs': ['setup.py', '__init__.py'],
-            'grafts': [
-                {
-                    'regex': r'''(?xm)
-                            \bversion
-                            (\ *=\ *)
-                            (.+)$
-                        ''',
-                    'subst': r"version\1'{version}'"
-                }
-            ],
+            'globs': ['setup.py'],
+            'grafts': [{
+                ## TODO: add `Graft.desc` field
+                ## version must be in its own line.
+                'regex': r'''(?xm)
+                        \bversion
+                        (\ *=\ *)
+                        .+?(,)?
+                        \ *[\n\r]+
+                    ''',
+                'subst': r"version\1'{version}'\2"
+            }],
+        }, {
+            'globs': ['__init__.py'],
+            'grafts': [{
+                'regex': r'''(?xm)
+                        \bversion
+                        (\ *=\ *)
+                        (.+)$
+                    ''',
+                'subst': r"version\1'{version}'"
+            }],
         }],
         config=True,
         help="""
@@ -594,7 +529,7 @@ class Project(cmdlets.Replaceable, cmdlets.Printable, cmdlets.Spec):
 
     @trt.validate('default_version_bump')
     def _require_relative_version(self, change):
-        if not _is_version_id_relative(change.new):
+        if not vermath._is_version_id_relative(change.new):
             raise trt.TraitError(
                 "Expected a relative version for '%s.%s', but got '%s'!"
                 "\n  Relative versions start either with '+' or '^'." %

@@ -107,7 +107,10 @@ def test_pvtag_Project_interpolations():
 
 
 def test_vtag_Project_interpolations():
-    proj = pvtags.make_vtag_project(version='1.2.3(-:')
+    with pytest.raises(trt.TraitError, match="Invalid version: '1.2.3"):
+        pvtags.make_vtag_project(version='1.2.3(-: ')
+
+    proj = pvtags.make_vtag_project(version='1.2.3')
 
     assert 'foo' not in proj.tag_fnmatch()
     assert proj.tag_fnmatch().endswith('v*')

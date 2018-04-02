@@ -6,7 +6,7 @@
 # You may not use this work except in compliance with the Licence.
 # You may obtain a copy of the Licence at: http://ec.europa.eu/idabc/eupl
 
-from polyvers import pvproject
+from polyvers import vermath
 
 import pytest
 
@@ -24,5 +24,5 @@ import pytest
 def test_versions_addition(v1, v2, exp):
     from packaging.version import Version
 
-    got = pvproject._calc_versions_op('+', v1, v2)
+    got = vermath.calc_versions_op('+', v1, v2)
     assert got == Version(exp)

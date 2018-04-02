@@ -368,7 +368,7 @@ def test_ErrLog_nested_forced(forceable, caplog):
           - while doing-2:
             delayed (force: 'BAD'): KeyError: 'Wrong-2'
           ignored (force: 'abc'): KeyError: 'Wrong-2'""")
-    print(exinfo.value)
+    #print(exinfo.value)
     assert exp in str(exinfo.value)
 
 

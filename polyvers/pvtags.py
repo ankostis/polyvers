@@ -47,7 +47,7 @@ class NoGitRepoError(GitError):
 
 
 @contextlib.contextmanager
-def git_errors_handled(pname):
+def git_project_errors_handled(pname):
     """Report `pname` involved to the user in case tags are missing."""
     try:
         yield
@@ -67,7 +67,7 @@ def _git_current_branch() -> Optional[str]:
     CUR_BRANCH_PREFIX = '* '
 
     branches = cmd.git.branch()
-    for br_line in branches:
+    for br_line in branches.split('\n'):
         if br_line.startswith(CUR_BRANCH_PREFIX):
             cur_branch = br_line.lstrip(CUR_BRANCH_PREFIX)
 
@@ -88,9 +88,9 @@ def git_restore_point(restore=False):
     ok = False
     try:
         yield  # TODO: provide for attaching tags into `with git_restore_point()`
-        ok = not restore
+        ok = True
     finally:
-        if not ok:
+        if not ok or restore:
             if cur_branch:
                 cmd.git.checkout(cur_branch, force=True)
             cmd.git.reset._(hard=True)(original_commit_id)
@@ -165,7 +165,7 @@ def _fetch_all_tags(acli, tag_patterns: List[str],
                     pnames_msg: str):
     acli.tag
 
-    with git_errors_handled(pnames_msg):
+    with git_project_errors_handled(pnames_msg):
         out = acli('--list', *tag_patterns)
 
     return out and out.split('\n') or ()
@@ -194,7 +194,7 @@ def _fetch_annotated_tags(acli, tag_patterns: Sequence[str],
     From https://stackoverflow.com/a/21032332/548792
     """
     tag_patterns = ['refs/tags/' + pat for pat in tag_patterns]
-    with git_errors_handled(pnames_msg):
+    with git_project_errors_handled(pnames_msg):
         out = acli.for_each_ref(*tag_patterns,
                                 format='%(objecttype) %(refname:short)')
 

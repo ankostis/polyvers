@@ -9,9 +9,8 @@
 
 from collections import OrderedDict, defaultdict, Mapping
 from pathlib import Path
-from typing import (
-    Dict, Sequence,
-    Tuple, Set, List)  # @UnusedImport, flake8 cannot see inside funcs
+from typing import Dict, Sequence
+from typing import Tuple, Set, List  # noqa: F401 @UnusedImport, flake8 blind in funcs
 import io
 import logging
 from boltons.setutils import IndexedSet as iset
@@ -22,8 +21,7 @@ from . import logconfutils as lcu
 from ._vendor import traitlets as trt
 from ._vendor.traitlets import config as trc
 from ._vendor.traitlets.traitlets import Bool, Unicode
-from ._vendor.traitlets.traitlets import List as ListTrait
-from ._vendor.traitlets.traitlets import Tuple as TupleTrait
+from ._vendor.traitlets.traitlets import List as ListTrait, Tuple as TupleTrait
 from .autoinstance_traitlet import AutoInstance
 
 
@@ -202,7 +200,7 @@ class PolyversCmd(cmdlets.Cmd):
         allow_none=True,
         config=True,
         help="""
-        Projects with glob-patterns/regexes to auto-discover sub-project basepath/names.
+        Two projects with glob-patterns/regexes autodiscovering sub-project basepath/names.
 
         - Needed when a) no configuration file is given (or has partial infos),
           and b) when constructing/updating the configuration file.
@@ -471,8 +469,6 @@ class BumpCmd(_SubCmd):
     """
     classes = [pvproject.Project, pvproject.Engrave, pvproject.Graft]  # type: ignore
 
-    start_version_id = '0.0.0'
-
     out_of_trunk_releases = Bool(
         True,
         config=True,
@@ -548,7 +544,7 @@ class BumpCmd(_SubCmd):
         ## TODO: move all git-cmds to pvtags?
         out = cmd.git.describe(dirty=True, all=True)
         if out.endswith('dirty'):
-            raise pvtags.GitError("Aborting bump, dirty working directory.")
+            raise pvtags.GitError("Dirty working directory, bump aborted.")
 
     def _filter_projects_by_pnames(self, projects, version, *pnames):
         """Separate `version` from `pnames`, scream if unknown pnames."""
@@ -566,17 +562,17 @@ class BumpCmd(_SubCmd):
 
         return version, projects
 
-    def _make_commit_message(self, projects: Sequence[pvproject.Project]):
-        subprj_msgs = [prj.interp(prj.message) for prj in projects]
+    def _make_commit_message(self, *projects: pvproject.Project):
+        subprj_msgs = ', '.join(prj.interp(prj.message) for prj in projects)
         msg = self.interp(self.message, subproject_msgs=subprj_msgs)
         return msg
 
     def _commit_new_release(self, projects: Sequence[pvproject.Project]):
         from .oscmd import cmd
 
-        msg = self._make_commit_message(projects)
+        msg = self._make_commit_message(*projects)
         ## TODO: move all git-cmds to pvtags?
-        out = cmd.git.commit(message=msg,
+        out = cmd.git.commit(message=msg,  # --message=fo bar FAILS!
                              all=True,
                              sign=self.sign_commmits or None,
                              dry_run=self.dry_run or None,
@@ -592,7 +588,9 @@ class BumpCmd(_SubCmd):
         if version_and_pnames:
             version_bump, projects = self._filter_projects_by_pnames(projects, *version_and_pnames)
         else:
-            version_bump = self.default_version_bump
+            version_bump = None
+
+        pvtags.populate_pvtags_history(*projects)
 
         ## TODO: Stop bump if version-bump fails pep440 validation.
 
@@ -602,20 +600,13 @@ class BumpCmd(_SubCmd):
 
         fproc = engrave.FileProcessor(parent=self)
         match_map = fproc.scan_projects(projects)
-        nmatches = len(match_map)
-        if nmatches == 0:
+        if fproc.nmatches() == 0:
             raise cmdlets.CmdException(
-                "No engraves found!"
-                "\n  Aborting before release-version")
+                "No version-engraving matched, bump aborted.")
 
         ## Finally stop before serious damage happens,
         #  (but only after havin run some validation to run, above).
         self._stop_if_git_dirty()
-
-        self.log.info('Bumping projects: %s',
-                      ', '.join('%s-%r --> %r' %
-                                (prj.pname, prj.current_version, prj.version)
-                                for prj in projects))
 
         with pvtags.git_restore_point(restore=self.dry_run):
             fproc.engrave_matches(match_map)
@@ -623,7 +614,7 @@ class BumpCmd(_SubCmd):
             ## TODO: move all git-cmds to pvtags?
             if self.out_of_trunk_releases:
                 for proj in projects:
-                    proj.tag_version_commit(is_release=False)
+                    proj.tag_version_commit(self, is_release=False)
                 ## TODO: append new tags to git-restore-point.__exit__
 
                 with pvtags.git_restore_point(restore=True):
@@ -635,15 +626,20 @@ class BumpCmd(_SubCmd):
                     self._commit_new_release(projects)
 
                     for proj in projects:
-                        proj.tag_version_commit(is_release=True)
+                        proj.tag_version_commit(self, is_release=True)
                     ## TODO: append new tags to git-restore-point.__exit__ if dry-run
 
             else:  # In-trunk plain *vtags* for mono-project repos.
                 self._commit_new_release(projects)
 
                 for proj in projects:
-                    proj.tag_version_commit(is_release=False)
+                    proj.tag_version_commit(self, is_release=False)
                 ## TODO: append new tags to git-restore-point.__exit__
+
+        self.log.info('Bumped projects: %s',
+                      ', '.join('%s-%s --> %s' %
+                                (prj.pname, prj.current_version, prj.version)
+                                for prj in projects))
 
     def start(self):
         with self.errlogged(doing="running cmd '%s'" % self.name,

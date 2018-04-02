@@ -344,7 +344,32 @@ def mutable_repo(untagged_repo, tmpdir_factory):
     return clone_repo(untagged_repo, mutable_repo)
 
 
+def _add_file_to_repo(fpath, text):
+    from polyvers.oscmd import cmd
+
+    fpath.write_text(text, encoding='utf-8', ensure=True)
+    with fpath.dirpath().as_cwd():
+        cmd.git.add(fpath.basename)
+        cmd.git.commit(message="added '%s'" % fpath.basename)
+
+
+def make_setup_py_without_version(setup_dir, pname):
+    fpath = (setup_dir / 'setup.py')
+    text = """setup(name='%s')""" % pname
+    _add_file_to_repo(fpath, text)
+
+    return fpath
+
+
 def make_setup_py(setup_dir, pname):
-    (setup_dir / 'setup.py').write_text(
-        """setup(name='%s')""" % pname,
-        encoding='utf-8', ensure=True)
+    fpath = (setup_dir / 'setup.py')
+    text = tw.dedent("""
+        setup(
+            name='%s',
+            version = a func('"something there'),
+            )
+
+        """ % pname)
+    _add_file_to_repo(fpath, text)
+
+    return fpath

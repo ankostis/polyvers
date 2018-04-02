@@ -20,7 +20,7 @@ from . import cmdlets
 from ._vendor import traitlets as trt
 from ._vendor.traitlets.traitlets import (
     List as ListTrait, Type as TypeTrait, Union as UnionTrait, Callable as CallableTrait
-)  # @UnresolvedImport
+)
 from ._vendor.traitlets.traitlets import Bool, CBool, Unicode, Instance
 
 
@@ -203,7 +203,7 @@ class ErrLog(cmdlets.Replaceable, trt.HasTraits):
         the exceptions to delay or forced; others are left to bubble immediately
         If none given, :class:`Exception` is assumed.
     :ivar token:
-        the :attr:`force` token to respect, like :meth:`Spec.is_force()`.
+        the :attr:`force` token to respect, like :meth:`Spec.is_forced()`.
         Resets on each new instance from :meth:`__call__()`.
         Possible values:
           - false: (default) completely ignore `force` trait

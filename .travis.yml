@@ -51,12 +51,14 @@ script:
 
   - |
     if [[ $TRAVIS_PYTHON_VERSION == '3.6' ]]; then
-        mypy -m polyvers.pvproject \
-             -m polyvers.engrave \
-             -m polyvers.pvtags \
-             -m polyvers.cmdlets \
-             -m polyvers.errlog \
-             -m polyvers.cli
+        mypy \
+            -m polyvers.vermath \
+            -m polyvers.cmdlets \
+            -m polyvers.errlog \
+            -m polyvers.pvproject \
+            -m polyvers.engrave \
+            -m polyvers.pvtags \
+            -m polyvers.cli
     fi
 
 after_success:
