@@ -22,8 +22,7 @@ from ._vendor import traitlets as trt
 from ._vendor.traitlets import config as trc
 from ._vendor.traitlets.traitlets import Bool, Unicode
 from ._vendor.traitlets.traitlets import List as ListTrait, Tuple as TupleTrait
-from .cmdlet import cmdlets
-from .cmdlet.autoinstance_traitlet import AutoInstance
+from .cmdlet import cmdlets, autotrait
 from .utils import logconfutils as lcu, fileutils as fu
 
 
@@ -124,7 +123,7 @@ class PolyversCmd(cmdlets.Cmd):
     classes = [pvproject.Project]
 
     projects = ListTrait(
-        AutoInstance(pvproject.Project),
+        autotrait.AutoInstance(pvproject.Project),
         config=True)
 
     @trt.default('subcommands')
@@ -186,7 +185,7 @@ class PolyversCmd(cmdlets.Cmd):
         return self._git_root
 
     autodiscover_subproject_projects = ListTrait(
-        AutoInstance(pvproject.Project),
+        autotrait.AutoInstance(pvproject.Project),
         default_value=[{
             'engraves': [{
                 'globs': ['**/setup.py'],
@@ -218,7 +217,7 @@ class PolyversCmd(cmdlets.Cmd):
         """)
 
     autodiscover_version_scheme_projects = TupleTrait(
-        AutoInstance(pvproject.Project), AutoInstance(pvproject.Project),
+        autotrait.AutoInstance(pvproject.Project), autotrait.AutoInstance(pvproject.Project),
         default_value=(
             pvtags.make_match_all_pvtags_project(),
             pvtags.make_match_all_vtags_project(),

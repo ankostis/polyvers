@@ -21,8 +21,7 @@ from ._vendor.traitlets import traitlets as trt
 from ._vendor.traitlets.traitlets import (
     List as ListTrait, Tuple as TupleTrait, Union as UnionTrait)
 from ._vendor.traitlets.traitlets import Bool, Unicode, Instance
-from .cmdlet import cmdlets
-from .cmdlet.autoinstance_traitlet import AutoInstance
+from .cmdlet import cmdlets, autotrait
 from .cmdlet.slice_traitlet import Slice as SliceTrait
 from .utils.oscmd import cmd
 
@@ -174,7 +173,7 @@ class Engrave(cmdlets.Replaceable, cmdlets.Printable, cmdlets.Spec):
     ).tag(printable=True)
 
     grafts = ListTrait(
-        AutoInstance(Graft),
+        autotrait.AutoInstance(Graft),
         read_only=True,
         config=True,
         help="""
@@ -520,7 +519,7 @@ class Project(cmdlets.Replaceable, cmdlets.Printable, cmdlets.Spec):
             raise
 
     engraves = ListTrait(
-        AutoInstance(Engrave),
+        autotrait.AutoInstance(Engrave),
         default_value=[{
             'globs': ['setup.py'],
             'grafts': [{

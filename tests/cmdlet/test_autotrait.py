@@ -8,9 +8,10 @@
 from polyvers._vendor.traitlets import default
 from polyvers._vendor.traitlets.config import Configurable, Config
 from polyvers._vendor.traitlets.traitlets import List, CInt, Int
-from polyvers.cmdlet.autoinstance_traitlet import AutoInstance
 
 import pytest
+
+from polyvers.cmdlet.autotrait import AutoInstance
 
 
 class C(Configurable):
