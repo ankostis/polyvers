@@ -7,11 +7,10 @@
 # You may obtain a copy of the Licence at: http://ec.europa.eu/idabc/eupl
 
 from os import pathsep as PS
-from polyvers import cmdlets
-from polyvers._vendor.traitlets import config as trc
-from polyvers._vendor.traitlets import traitlets as trt
+from polyvers._vendor.traitlets import traitlets as trt, config as trc
 from polyvers._vendor.traitlets.traitlets import Int
 from polyvers.cli import ydumps
+from polyvers.cmdlet import cmdlets
 from polyvers.logconfutils import init_logging
 from tests.conftest import touchpaths
 import logging

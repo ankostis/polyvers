@@ -59,13 +59,14 @@ from boltons.setutils import IndexedSet as iset
 
 import os.path as osp
 
-from . import fileutils as fu, interpctxt
-from ._vendor import traitlets as trt
-from ._vendor.traitlets import config as trc
-from ._vendor.traitlets.traitlets import (
+from . import interpctxt
+from .. import fileutils as fu
+from .._vendor import traitlets as trt
+from .._vendor.traitlets import config as trc
+from .._vendor.traitlets.traitlets import (
     List as ListTrait, Union as UnionTrait
 )  # @UnresolvedImport
-from ._vendor.traitlets.traitlets import Bool, Unicode, Instance
+from .._vendor.traitlets.traitlets import Bool, Unicode, Instance
 from .yamlconfloader import YAMLFileConfigLoader
 
 
@@ -378,7 +379,7 @@ class Replaceable:
         # hold trait notifications until after all config has been loaded
         with self.hold_trait_notifications():
             from copy import deepcopy
-            from ._vendor.traitlets.config.loader import _is_section_key
+            from .._vendor.traitlets.config.loader import _is_section_key
 
             for name, config_value in my_config.items():
                 if name in traits:

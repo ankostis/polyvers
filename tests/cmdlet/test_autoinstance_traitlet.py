@@ -5,12 +5,12 @@
 # You may not use this work except in compliance with the Licence.
 # You may obtain a copy of the Licence at: http://ec.europa.eu/idabc/eupl
 
-import pytest
-from polyvers._vendor.traitlets.traitlets import List, CInt, Int
-from polyvers._vendor.traitlets.config import Configurable, Config
 from polyvers._vendor.traitlets import default
+from polyvers._vendor.traitlets.config import Configurable, Config
+from polyvers._vendor.traitlets.traitlets import List, CInt, Int
+from polyvers.cmdlet.autoinstance_traitlet import AutoInstance
 
-from polyvers.autoinstance_traitlet import AutoInstance
+import pytest
 
 
 class C(Configurable):

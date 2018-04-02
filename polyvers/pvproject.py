@@ -16,14 +16,15 @@ from typing import List, Optional, Tuple, Match, Sequence, Union, Pattern
 import logging
 import re
 
-from . import polyverslib as pvlib, cmdlets, vermath
+from . import polyverslib as pvlib, vermath
 from ._vendor.traitlets import traitlets as trt
 from ._vendor.traitlets.traitlets import (
     List as ListTrait, Tuple as TupleTrait, Union as UnionTrait)
 from ._vendor.traitlets.traitlets import Bool, Unicode, Instance
-from .autoinstance_traitlet import AutoInstance
+from .cmdlet import cmdlets
+from .cmdlet.autoinstance_traitlet import AutoInstance
+from .cmdlet.slice_traitlet import Slice as SliceTrait
 from .oscmd import cmd
-from .slice_traitlet import Slice as SliceTrait
 
 
 log = logging.getLogger(__name__)

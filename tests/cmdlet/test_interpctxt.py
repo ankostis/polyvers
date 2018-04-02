@@ -5,9 +5,9 @@
 # You may not use this work except in compliance with the Licence.
 # You may obtain a copy of the Licence at: http://ec.europa.eu/idabc/eupl
 
-from polyvers import cmdlets
 from polyvers._vendor.traitlets import traitlets as trt
-from polyvers.interpctxt import (
+from polyvers.cmdlet import cmdlets
+from polyvers.cmdlet.interpctxt import (
     Now, InterpolationContext, _HasTraitObjectDict, _EscapedObjectDict, dictize_object)
 
 import pytest

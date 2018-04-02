@@ -6,9 +6,9 @@
 # You may not use this work except in compliance with the Licence.
 # You may obtain a copy of the Licence at: http://ec.europa.eu/idabc/eupl
 
-from polyvers import cmdlets, errlog
 from polyvers._vendor.traitlets import traitlets as trt
-from polyvers.errlog import _ErrNode, ErrLog
+from polyvers.cmdlet import cmdlets, errlog
+from polyvers.cmdlet.errlog import _ErrNode, ErrLog
 from tests.conftest import clearlog
 import logging
 import re

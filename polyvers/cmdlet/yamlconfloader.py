@@ -5,8 +5,9 @@
 # Distributed under the terms of the Modified BSD License.
 
 
-from ._vendor.traitlets import config as trc
 from ruamel.yaml import YAML  # @UnresolvedImport
+
+from .._vendor.traitlets import config as trc
 
 
 class YAMLFileConfigLoader(trc.loader.FileConfigLoader):

@@ -11,8 +11,8 @@ from typing import Union
 
 from packaging.version import Version
 
-from . import cmdlets
 from ._vendor.traitlets import traitlets as trt
+from .cmdlet import cmdlets
 
 
 VerLike = Union[str, Version]

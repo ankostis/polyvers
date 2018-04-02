@@ -13,16 +13,18 @@ from typing import Dict
 from typing import Tuple, Set, List  # noqa: F401 @UnusedImport, flake8 blind in funcs
 import io
 import logging
+
 from boltons.setutils import IndexedSet as iset
 
-from . import APPNAME, __version__, __updated__, cmdlets, pvtags, pvproject, \
+from . import APPNAME, __version__, __updated__, pvtags, pvproject, \
     polyverslib as pvlib, fileutils as fu
 from . import logconfutils as lcu
 from ._vendor import traitlets as trt
 from ._vendor.traitlets import config as trc
 from ._vendor.traitlets.traitlets import Bool, Unicode
 from ._vendor.traitlets.traitlets import List as ListTrait, Tuple as TupleTrait
-from .autoinstance_traitlet import AutoInstance
+from .cmdlet import cmdlets
+from .cmdlet.autoinstance_traitlet import AutoInstance
 
 
 # TODO: after pvlib split, move NOTICE level into package.
@@ -132,7 +134,7 @@ class PolyversCmd(cmdlets.Cmd):
                            "Increase or set (sub-)project version(s).")
         subcmds.update(cmdlets.build_sub_cmds(InitCmd, StatusCmd, LogconfCmd))
         subcmds['config'] = (
-            'polyvers.cfgcmd.ConfigCmd',
+            'polyvers.cmdlet.cfgcmd.ConfigCmd',
             "Commands to inspect configurations and other cli infos.")
 
         return subcmds

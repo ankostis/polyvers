@@ -17,11 +17,11 @@ import logging
 import textwrap as tw
 
 from . import cmdlets
-from ._vendor import traitlets as trt
-from ._vendor.traitlets.traitlets import (
+from .._vendor import traitlets as trt
+from .._vendor.traitlets.traitlets import (
     List as ListTrait, Type as TypeTrait, Union as UnionTrait, Callable as CallableTrait
 )
-from ._vendor.traitlets.traitlets import Bool, CBool, Unicode, Instance
+from .._vendor.traitlets.traitlets import Bool, CBool, Unicode, Instance
 
 
 log = logging.getLogger(__name__)

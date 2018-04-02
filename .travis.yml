@@ -53,8 +53,8 @@ script:
     if [[ $TRAVIS_PYTHON_VERSION == '3.6' ]]; then
         mypy \
             -m polyvers.vermath \
-            -m polyvers.cmdlets \
-            -m polyvers.errlog \
+            -m polyvers.cmdlet.cmdlets \
+            -m polyvers.cmdlet.errlog \
             -m polyvers.pvproject \
             -m polyvers.engrave \
             -m polyvers.pvtags \

@@ -13,10 +13,11 @@ from pathlib import Path
 from typing import List, Tuple, Sequence, Set, Match, Dict
 import logging
 
-from . import cmdlets, fileutils as fu, pvproject
+from . import fileutils as fu, pvproject
 from ._vendor.traitlets.traitlets import (
     Dict as DictTrait, Bool as BoolTrait, Tuple as TupleTrait)
 from ._vendor.traitlets.traitlets import Bytes, Instance
+from .cmdlet import cmdlets
 
 
 log = logging.getLogger(__name__)

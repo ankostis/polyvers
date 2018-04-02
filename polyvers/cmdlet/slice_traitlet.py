@@ -10,7 +10,7 @@ Enable Unicode-trait to pep3101-interpolate `{key}` patterns from "context" dict
 
 from typing import Text, Union
 
-from ._vendor.traitlets.traitlets import TraitError, Instance
+from .._vendor.traitlets.traitlets import TraitError, Instance
 
 
 def _parse_slice(v: Union[Text, int]):

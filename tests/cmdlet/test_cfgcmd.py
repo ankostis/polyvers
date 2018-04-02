@@ -6,10 +6,11 @@
 # You may not use this work except in compliance with the Licence.
 # You may obtain a copy of the Licence at: http://ec.europa.eu/idabc/eupl
 
-import logging
-from polyvers import cfgcmd, cmdlets, mainpump as mpu
-from polyvers.cfgcmd import ConfigCmd, all_configurables
+from polyvers import mainpump as mpu
+from polyvers.cmdlet import cfgcmd, cmdlets
+from polyvers.cmdlet.cfgcmd import ConfigCmd, all_configurables
 from polyvers.logconfutils import init_logging
+import logging
 
 import pytest
 

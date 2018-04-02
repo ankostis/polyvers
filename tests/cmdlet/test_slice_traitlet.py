@@ -6,7 +6,7 @@
 # You may obtain a copy of the Licence at: http://ec.europa.eu/idabc/eupl
 
 from polyvers._vendor.traitlets.traitlets import HasTraits, TraitError
-from polyvers.slice_traitlet import _parse_slice, Slice
+from polyvers.cmdlet.slice_traitlet import _parse_slice, Slice
 
 import pytest
 

@@ -55,7 +55,8 @@ def main(argv=None, cmd_consumer=None, **app_init_kwds):
     ## Imports in separate try-block due to CmdException.
     #
     try:
-        from . import cmdlets, mainpump as mpu
+        from .cmdlet import cmdlets
+        from . import mainpump as mpu
         from ._vendor.traitlets import TraitError
         from .cli import PolyversCmd
     except Exception as ex:

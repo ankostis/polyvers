@@ -18,9 +18,9 @@ import functools as fnt
 import os.path as osp
 
 from . import cmdlets
-from ._vendor import traitlets as trt
-from ._vendor.traitlets import config as trc
-from ._vendor.traitlets.traitlets import Dict, Bool, FuzzyEnum, Instance, Unicode
+from .._vendor import traitlets as trt
+from .._vendor.traitlets import config as trc
+from .._vendor.traitlets.traitlets import Dict, Bool, FuzzyEnum, Instance, Unicode
 
 
 def prepare_matcher(terms, is_regex):

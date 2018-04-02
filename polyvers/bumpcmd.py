@@ -8,10 +8,12 @@
 """The command that actually bumps versions."""
 from typing import Sequence
 from typing import Tuple, Set, List  # noqa: F401 @UnusedImport, flake8 blind in funcs
+
 from boltons.setutils import IndexedSet as iset
 
-from . import cmdlets, pvtags, pvproject, cli
+from . import pvtags, pvproject, cli
 from ._vendor.traitlets.traitlets import Bool, Unicode
+from .cmdlet import cmdlets
 
 
 class BumpCmd(cli._SubCmd):

@@ -13,7 +13,7 @@ import contextlib
 import logging
 import os
 
-from ._vendor.traitlets import traitlets as trt
+from .._vendor.traitlets import traitlets as trt
 
 
 log = logging.getLogger(__name__)

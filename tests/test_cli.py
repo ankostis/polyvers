@@ -7,8 +7,9 @@
 # You may obtain a copy of the Licence at: http://ec.europa.eu/idabc/eupl
 #
 from collections import OrderedDict, defaultdict
-from polyvers import cli, cmdlets, __version__, __updated__
+from polyvers import cli, __version__, __updated__
 from polyvers.__main__ import main
+from polyvers.cmdlet import cmdlets
 from polyvers.mainpump import ListConsumer
 from polyvers.oscmd import cmd
 

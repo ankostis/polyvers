@@ -17,14 +17,14 @@ There are 3 important methods/functions calling Git:
   project instances; certain pvtag-related Project methods would fail if
   this function has not been applies on a project instance.
 """
-
 from typing import List, Dict, Sequence, Optional
 import contextlib
 import logging
 
 import subprocess as sbp
 
-from . import polyverslib as pvlib, cmdlets, pvproject
+from . import polyverslib as pvlib, pvproject
+from .cmdlet import cmdlets
 from .oscmd import cmd
 
 
