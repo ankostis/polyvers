@@ -6,7 +6,6 @@
 # You may not use this work except in compliance with the Licence.
 # You may obtain a copy of the Licence at: http://ec.europa.eu/idabc/eupl
 
-from polyvers import polyverslib as pvlib
 import fnmatch
 import re
 import sys
@@ -14,6 +13,7 @@ import sys
 import pytest
 
 import os.path as osp
+import polyversion as pvlib
 import subprocess as sbp
 
 

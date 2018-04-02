@@ -6,9 +6,8 @@
 # You may obtain a copy of the Licence at: http://ec.europa.eu/idabc/eupl
 """Top-level package for *polyvers* version-configuration tool."""
 
-## TODO: Move to `polyversion` subproject.
-from polyvers.polyverslib import polyversion, polytime
-#from . import logconfutils as lcu
+from polyversion import polyversion, polytime  # @UnresolvedImport
+from .utils import logconfutils as lcu
 
 
 __all__ = ['polyversion', 'polytime']
@@ -33,5 +32,6 @@ __music__ = {
 
 
 # TODO: enable NOTICE level
-# lcu.patch_new_level_in_logging(25, 'NOTICE')
-# lcu.default_logging_level = 'NOTICE'
+NOTICE = 25
+lcu.patch_new_level_in_logging(NOTICE, 'NOTICE')
+lcu.default_logging_level = NOTICE

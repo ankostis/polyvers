@@ -2,12 +2,29 @@
 Reference
 =========
 
+
+..
+
+    ??!CANNOT REFER TO THEM!??
+    Polyversion Library
+    ===================
+    .. autosummary::
+
+       polyversion
+
+
+    Module: :mod:`polyversion`
+    ------------------------------------
+    .. automodule:: polyversion
+       :members:
+
+
 Main app
 ========
 .. autosummary::
 
    polyvers
-   polyvers.polyverslib
+   polyvers.pvproject
    polyvers.cli
    polyvers.pvtags
    polyvers.mainpump
@@ -15,14 +32,9 @@ Main app
    polyvers.cmdlets
    polyvers.cfgcmd
 
-Module: :mod:`polyvers.polyverslib`
-------------------------------------
-.. automodule:: polyvers.polyverslib
-   :members:
-
 Module: :mod:`polyvers.pvproject`
--------------------------------
-.. automodule:: polyvers.pvtags
+---------------------------------
+.. automodule:: polyvers.pvproject
    :members:
 
 Module: :mod:`polyvers.cli`
@@ -49,22 +61,22 @@ Module: :mod:`polyvers.vermath`
 Cmdlets
 =======
 Module: :mod:`polyvers.cmdlet.cmdlets`
--------------------------------
+--------------------------------------
 .. automodule:: polyvers.cmdlet.cmdlets
    :members:
 
 Module: :mod:`polyvers.cmdlet.errlog`
--------------------------------
+-------------------------------------
 .. automodule:: polyvers.cmdlet.errlog
    :members:
 
 Module: :mod:`polyvers.cmdlet.interpctxt`
--------------------------------
+-----------------------------------------
 .. automodule:: polyvers.cmdlet.interpctxt
    :members:
 
 Module: :mod:`polyvers.cmdlet.cfgcmd`
--------------------------------
+-------------------------------------
 .. automodule:: polyvers.cmdlet.cfgcmd
    :members:
 
@@ -72,21 +84,21 @@ Module: :mod:`polyvers.cmdlet.cfgcmd`
 Utilities
 =========
 Module: :mod:`polyvers.utils.mainpump`
--------------------------------
+--------------------------------------
 .. automodule:: polyvers.utils.mainpump
    :members:
 
 Module: :mod:`polyvers.utils.logconfutils`
--------------------------------------
+------------------------------------------
 .. automodule:: polyvers.utils.logconfutils
    :members:
 
 Module: :mod:`polyvers.utils.oscmd`
--------------------------------------
+-----------------------------------
 .. automodule:: polyvers.utils.oscmd
    :members:
 
 Module: :mod:`polyvers.utils.fileutil`
--------------------------------------
+--------------------------------------
 .. automodule:: polyvers.utils.fileutil
    :members:

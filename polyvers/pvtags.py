@@ -23,7 +23,7 @@ import logging
 
 import subprocess as sbp
 
-from . import polyverslib as pvlib, pvproject
+from . import polyversion as pvlib, pvproject
 from .cmdlet import cmdlets
 from .utils.oscmd import cmd
 

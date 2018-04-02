@@ -26,8 +26,8 @@ script:
     if [[ $TRAVIS_PYTHON_VERSION == '3.6' ]]; then
         pytest -v
     else
-        ## Only check *polyverslib* in older Pythons.
-        pytest -v tests/test_polyverslib.py
+        ## Only check *polyversion* lib in older Pythons.
+        pytest -v polyversion/tests/test_polyversion.py
     fi
 
   ## Re-test EXACT deps on WHEEL, with COVERAGE.

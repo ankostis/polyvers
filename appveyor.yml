@@ -32,6 +32,6 @@ test_script:
   -   IF "%PYTHON_VERSION%"=="3.6.x" (
         %CMD_IN_ENV% pytest --pyargs -v tests
     ) ELSE (
-        %CMD_IN_ENV% pytest -v tests/test_polyverslib.py
+        %CMD_IN_ENV% pytest -v polyversion/tests/test_polyversion.py
     )
 

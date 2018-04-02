@@ -17,19 +17,13 @@ import logging
 from boltons.setutils import IndexedSet as iset
 
 from . import APPNAME, __version__, __updated__, pvtags, pvproject, \
-    polyverslib as pvlib
+    polyversion as pvlib
 from ._vendor import traitlets as trt
 from ._vendor.traitlets import config as trc
 from ._vendor.traitlets.traitlets import Bool, Unicode
 from ._vendor.traitlets.traitlets import List as ListTrait, Tuple as TupleTrait
 from .cmdlet import cmdlets, autotrait
-from .utils import logconfutils as lcu, fileutil as fu
 
-
-# TODO: after pvlib split, move NOTICE level into package.
-NOTICE = 25
-lcu.patch_new_level_in_logging(NOTICE, 'NOTICE')
-lcu.default_logging_level = NOTICE
 
 log = logging.getLogger(__name__)
 

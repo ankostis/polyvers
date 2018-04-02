@@ -16,7 +16,7 @@ from typing import List, Optional, Tuple, Match, Sequence, Union, Pattern
 import logging
 import re
 
-from . import polyverslib as pvlib, vermath
+from . import polyversion as pvlib, vermath
 from ._vendor.traitlets import traitlets as trt
 from ._vendor.traitlets.traitlets import (
     List as ListTrait, Tuple as TupleTrait, Union as UnionTrait)

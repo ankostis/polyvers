@@ -115,7 +115,7 @@ def clearlog(caplog):
 def today():
     """A :rfc:`2822` formated timestamp: ``Thu, 01 Mar 2018 09:46:47 +0000`` """
 
-    from polyvers.polyverslib import rfc2822_tstamp
+    from polyversion import rfc2822_tstamp
 
     ## TCs may fail if run when day changes :-)
     #  Unfortunately cannot compare full-date (``[:12]   #till hour``)

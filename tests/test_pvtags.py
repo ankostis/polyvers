@@ -6,7 +6,7 @@
 # You may not use this work except in compliance with the Licence.
 # You may obtain a copy of the Licence at: http://ec.europa.eu/idabc/eupl
 
-from polyvers import pvtags, polyverslib as pvlib
+from polyvers import pvtags, polyversion as pvlib
 from polyvers._vendor import traitlets as trt
 from polyvers._vendor.traitlets import config as trc
 from polyvers.pvproject import Project

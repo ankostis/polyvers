@@ -63,7 +63,7 @@ When bumping the version of sub-project(s), *polyvers* does the following:
 
 Additional capabilities and utilities:
 
-- **polyverslib** library code to extract sub-project's version from past tags
+- **polyversion** library code to extract sub-project's version from past tags
   (provided a a separate subproject here);
 
 - (``pip install -e <project>``) all subprojects in "develop mode".
@@ -101,7 +101,7 @@ Quickstart
      There are actually two projects to install, depending on your needs:
 
      - **polyvers** tool, for developing python monorepos,
-     - **polyverslib**: a python library used by projects developed with *polyvers*
+     - **polyversion**: a python library used by projects developed with *polyvers*
        tool to discover their version on runtime from Git.
 
 
