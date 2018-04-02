@@ -58,7 +58,8 @@ script:
             -m polyvers.pvproject \
             -m polyvers.engrave \
             -m polyvers.pvtags \
-            -m polyvers.cli
+            -m polyvers.cli \
+            -m polyvers.bumpcmd
     fi
 
 after_success:
