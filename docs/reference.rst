@@ -71,13 +71,22 @@ Module: :mod:`polyvers.cmdlet.cfgcmd`
 
 Utilities
 =========
-Module: :mod:`polyvers.mainpump`
+Module: :mod:`polyvers.utils.mainpump`
 -------------------------------
-.. automodule:: polyvers.mainpump
+.. automodule:: polyvers.utils.mainpump
    :members:
 
-Module: :mod:`polyvers.logconfutils`
+Module: :mod:`polyvers.utils.logconfutils`
 -------------------------------------
-.. automodule:: polyvers.logconfutils
+.. automodule:: polyvers.utils.logconfutils
    :members:
 
+Module: :mod:`polyvers.utils.oscmd`
+-------------------------------------
+.. automodule:: polyvers.utils.oscmd
+   :members:
+
+Module: :mod:`polyvers.utils.fileutils`
+-------------------------------------
+.. automodule:: polyvers.utils.fileutils
+   :members:

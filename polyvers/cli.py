@@ -17,14 +17,14 @@ import logging
 from boltons.setutils import IndexedSet as iset
 
 from . import APPNAME, __version__, __updated__, pvtags, pvproject, \
-    polyverslib as pvlib, fileutils as fu
-from . import logconfutils as lcu
+    polyverslib as pvlib
 from ._vendor import traitlets as trt
 from ._vendor.traitlets import config as trc
 from ._vendor.traitlets.traitlets import Bool, Unicode
 from ._vendor.traitlets.traitlets import List as ListTrait, Tuple as TupleTrait
 from .cmdlet import cmdlets
 from .cmdlet.autoinstance_traitlet import AutoInstance
+from .utils import logconfutils as lcu, fileutils as fu
 
 
 # TODO: after pvlib split, move NOTICE level into package.

@@ -128,7 +128,7 @@ def exec_cmd(cmd,
 
             if "Not a git repository" in ex.stderr:
                 import os
-                from . import pvtags
+                from .. import pvtags
 
                 raise pvtags.NoGitRepoError(
                     "Current-dir '%s' is not within a git repository!" %

@@ -35,7 +35,7 @@ def main(argv=None, cmd_consumer=None, **app_init_kwds):
 
     ## At these early stages, any log cmd-line option
     #  enable DEBUG logging ; later will be set by `baseapp` traits.
-    from . import logconfutils as mlu
+    from .utils import logconfutils as mlu
     log_level, argv = mlu.log_level_from_argv(
         argv,
         start_level=25,  # 20=INFO, 25=NOTICE (when patched), 30=WARNING
@@ -56,7 +56,7 @@ def main(argv=None, cmd_consumer=None, **app_init_kwds):
     #
     try:
         from .cmdlet import cmdlets
-        from . import mainpump as mpu
+        from .utils import mainpump as mpu
         from ._vendor.traitlets import TraitError
         from .cli import PolyversCmd
     except Exception as ex:

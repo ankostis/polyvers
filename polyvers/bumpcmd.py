@@ -14,6 +14,7 @@ from boltons.setutils import IndexedSet as iset
 from . import pvtags, pvproject, cli
 from ._vendor.traitlets.traitlets import Bool, Unicode
 from .cmdlet import cmdlets
+from .utils.oscmd import cmd
 
 
 class BumpCmd(cli._SubCmd):
@@ -133,8 +134,6 @@ class BumpCmd(cli._SubCmd):
         from https://stackoverflow.com/a/2659808/548792
         give false positives!
         """
-        from .oscmd import cmd
-
         ## TODO: move all git-cmds to pvtags?
         out = cmd.git.describe(dirty=True, all=True)
         if out.endswith('dirty'):
@@ -174,8 +173,6 @@ class BumpCmd(cli._SubCmd):
         return '%s\n\n%s' % (summary, body)
 
     def _commit_new_release(self, projects: Sequence[pvproject.Project]):
-        from .oscmd import cmd
-
         msg = self._make_commit_message(*projects)
         ## TODO: move all git-cmds to pvtags?
         out = cmd.git.commit(message=msg,  # --message=fo bar FAILS!
@@ -188,7 +185,6 @@ class BumpCmd(cli._SubCmd):
 
     def run(self, *version_and_pnames):
         from . import engrave
-        from .oscmd import cmd
 
         projects = self.bootstrapp_projects()
         if version_and_pnames:

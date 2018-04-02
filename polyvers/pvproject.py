@@ -24,7 +24,7 @@ from ._vendor.traitlets.traitlets import Bool, Unicode, Instance
 from .cmdlet import cmdlets
 from .cmdlet.autoinstance_traitlet import AutoInstance
 from .cmdlet.slice_traitlet import Slice as SliceTrait
-from .oscmd import cmd
+from .utils.oscmd import cmd
 
 
 log = logging.getLogger(__name__)

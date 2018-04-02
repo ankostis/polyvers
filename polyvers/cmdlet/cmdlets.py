@@ -60,13 +60,13 @@ from boltons.setutils import IndexedSet as iset
 import os.path as osp
 
 from . import interpctxt
-from .. import fileutils as fu
 from .._vendor import traitlets as trt
 from .._vendor.traitlets import config as trc
 from .._vendor.traitlets.traitlets import (
     List as ListTrait, Union as UnionTrait
 )  # @UnresolvedImport
 from .._vendor.traitlets.traitlets import Bool, Unicode, Instance
+from ..utils import fileutils as fu
 from .yamlconfloader import YAMLFileConfigLoader
 
 

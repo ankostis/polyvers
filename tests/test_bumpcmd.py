@@ -7,7 +7,7 @@
 # You may obtain a copy of the Licence at: http://ec.europa.eu/idabc/eupl
 #
 from polyvers.__main__ import main
-from polyvers.oscmd import cmd
+from polyvers.utils.oscmd import cmd
 import re
 
 import textwrap as tw

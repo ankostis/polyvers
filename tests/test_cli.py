@@ -10,8 +10,8 @@ from collections import OrderedDict, defaultdict
 from polyvers import cli, __version__, __updated__
 from polyvers.__main__ import main
 from polyvers.cmdlet import cmdlets
-from polyvers.mainpump import ListConsumer
-from polyvers.oscmd import cmd
+from polyvers.utils.mainpump import ListConsumer
+from polyvers.utils.oscmd import cmd
 
 import pytest
 

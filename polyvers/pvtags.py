@@ -25,7 +25,7 @@ import subprocess as sbp
 
 from . import polyverslib as pvlib, pvproject
 from .cmdlet import cmdlets
-from .oscmd import cmd
+from .utils.oscmd import cmd
 
 
 log = logging.getLogger(__name__)

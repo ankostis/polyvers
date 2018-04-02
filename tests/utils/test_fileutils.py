@@ -7,7 +7,7 @@
 # You may obtain a copy of the Licence at: http://ec.europa.eu/idabc/eupl
 
 from pathlib import Path
-from polyvers import fileutils
+from polyvers.utils import fileutils
 import os
 
 import pytest

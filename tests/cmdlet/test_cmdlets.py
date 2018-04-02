@@ -11,7 +11,7 @@ from polyvers._vendor.traitlets import traitlets as trt, config as trc
 from polyvers._vendor.traitlets.traitlets import Int
 from polyvers.cli import ydumps
 from polyvers.cmdlet import cmdlets
-from polyvers.logconfutils import init_logging
+from polyvers.utils import logconfutils as lcu
 from tests.conftest import touchpaths
 import logging
 import os
@@ -24,7 +24,7 @@ import os.path as osp
 import textwrap as tw
 
 
-init_logging(level=logging.DEBUG, logconf_files=[])
+lcu.init_logging(level=logging.DEBUG, logconf_files=[])
 
 log = logging.getLogger(__name__)
 

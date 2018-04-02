@@ -6,16 +6,15 @@
 # You may not use this work except in compliance with the Licence.
 # You may obtain a copy of the Licence at: http://ec.europa.eu/idabc/eupl
 
-from polyvers import mainpump as mpu
 from polyvers.cmdlet import cfgcmd, cmdlets
 from polyvers.cmdlet.cfgcmd import ConfigCmd, all_configurables
-from polyvers.logconfutils import init_logging
+from polyvers.utils import logconfutils as lcu, mainpump as mpu
 import logging
 
 import pytest
 
 
-init_logging(level=logging.DEBUG)
+lcu.init_logging(level=logging.DEBUG)
 
 
 @pytest.mark.expected_failure()

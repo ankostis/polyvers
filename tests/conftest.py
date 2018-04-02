@@ -345,7 +345,7 @@ def mutable_repo(untagged_repo, tmpdir_factory):
 
 
 def _add_file_to_repo(fpath, text):
-    from polyvers.oscmd import cmd
+    from polyvers.utils.oscmd import cmd
 
     fpath.write_text(text, encoding='utf-8', ensure=True)
     with fpath.dirpath().as_cwd():
