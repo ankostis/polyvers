@@ -272,8 +272,8 @@ class InfosCmd(_ConfigBase):
             endpath = sep if path[-1] != sep else ''
             return '    - %s%s: %s' % (path, endpath, files or '')
 
-        app_name = self.name
-        app_path = inspect.getfile(type(self))
+        app_name = self.root_object().name
+        app_path = inspect.getfile(type(self.root_object()))
 
         # TODO: paths not valid YAML!  ...and renable TC.
         yield "APP:"
