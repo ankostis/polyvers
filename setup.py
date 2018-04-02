@@ -28,6 +28,7 @@ requirements = [
     'ipython_genutils',         # by vendorized `traitlets`
     'spectate',                 # by vendorized `traitlets`
     'ruamel.yaml>=0.15.37',     # fix PY3.7 ruamel/yaml#187
+    'packaging==17.1',
 ]
 
 test_requirements = [
