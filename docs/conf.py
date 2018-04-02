@@ -13,15 +13,16 @@
 # All configuration values have a default; values that are commented out
 # serve to show the default.
 
-import sys
 import os
+import polyvers
+import sys
+
 
 # If extensions (or modules to document with autodoc) are in another
 # directory, add these directories to sys.path here. If the directory is
 # relative to the documentation root, use os.path.abspath to make it
 # absolute, like shown here.
 #sys.path.insert(0, os.path.abspath('.'))
-
 # Get the project root dir, which is the parent dir of this
 cwd = os.getcwd()
 project_root = os.path.dirname(cwd)
@@ -31,7 +32,6 @@ project_root = os.path.dirname(cwd)
 # version is used.
 sys.path.insert(0, project_root)
 
-import polyvers
 
 # -- General configuration ---------------------------------------------
 
@@ -78,6 +78,7 @@ release = polyvers.__version__
 #today = ''
 # Else, today_fmt is used as the format for a strftime call.
 #today_fmt = '%B %d, %Y'
+today_fmt = '%d/%m/%Y %H:%M:%S'
 
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
