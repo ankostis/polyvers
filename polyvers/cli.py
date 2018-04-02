@@ -582,7 +582,7 @@ class BumpCmd(_SubCmd):
         text_lines: List[str] = []
         for prj in projects:
             if prj.message_body:
-                text_lines.append('- %s', prj.pname)
+                text_lines.append('- ' + prj.pname)
                 text_lines.append(indent(wrap_paragraphs(prj.message_body), 2))
 
         sub_body = '\n'.join(text_lines).strip()
