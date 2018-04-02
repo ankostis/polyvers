@@ -5,7 +5,7 @@ Polyvers: Bump independently sub-project versions in Git monorepos
 .. _opening-start:
 .. image:: https://img.shields.io/pypi/v/polyvers.svg
     :alt: Deployed in PyPi?
-    :target: https://pypi.python.org/pypi/polyvers
+    :target: https://pypi.org/pypi/polyvers
 
 .. image:: https://img.shields.io/travis/JRCSTU/polyvers.svg
     :alt: TravisCI (linux) build ok?
@@ -306,14 +306,14 @@ on Git tags (like ``git-describe``), so they are always up-to-date.
 
 Marking dependent versions across sub-projects
 ----------------------------------------------
-When bumping the version of a sub-project the `"local" part of PEP-440
+TODO: When bumping the version of a sub-project the `"local" part of PEP-440
 <https://www.python.org/dev/peps/pep-0440/#local-version-identifiers>`_
 on all other the *dependent* sub-projects in the monorepo  signify their relationship
 at the time of the bump.
 
 Lock release trains as "developmental"
 --------------------------------------
-Specific branches can be selected always to be published into *PyPi* only as
+TODO: Specific branches can be selected always to be published into *PyPi* only as
 `PEP-440's "Developmental" releases
 <https://www.python.org/dev/peps/pep-0440/#developmental-releases>`_, meanining that
 users need ``pip install --pre`` to install from such release-trains.
@@ -325,9 +325,26 @@ Other Features
   sensible defaults; it's possible to run without any config file in single-project repos.
 - Always accurate version reported on runtime when run from git repos
   (never again wonder with which version your experimental-data were produced).
-- Extensible with bump-version *hooks* (e.g. for validating doctests) TODO: implemented
-  as `setuptools plugins
-  <http://setuptools.readthedocs.io/en/latest/setuptools.html#dynamic-discovery-of-services-and-plugins>`_.
+
+.. NOTE::
+   TODO: Extensible with *pre/post release hooks* (e.g. for validating doctests)
+    implemented as `setuptools plugins
+    <http://setuptools.readthedocs.io/en/latest/setuptools.html#dynamic-discovery-of-services-and-plugins>`_.
+
+    This functionality would allow running this *shell scripts* before and
+    after every bump::
+
+        ## Pre-release hook
+        #
+        pytest tests
+
+
+        ## Post-release hook
+        #
+        rm -r dist/* build/*;
+        python setup.py sdist bdist_wheel
+        twine upload dist/*whl -s
+
 
 Drawbacks & Workarounds
 -----------------------
