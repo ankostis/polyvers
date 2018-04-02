@@ -21,6 +21,28 @@ import logging
 import subprocess as sbp
 
 
+#: Monkeypatch :class:`subprocess.CalledProcessError`
+#: to always print STDERR on errors.
+def err_includes_stderr(self):
+    import signal
+
+    stderr = ('\n  STDERR: ' + self.stderr) if self.stderr else ''
+
+    if self.returncode and self.returncode < 0:
+        try:
+            return "Command '%s' died with %r.%s" % (
+                self.cmd, signal.Signals(-self.returncode), stderr)
+        except ValueError:
+            return "Command '%s' died with unknown signal %d.%s" % (
+                self.cmd, -self.returncode, stderr)
+    else:
+        return "Command '%s' returned non-zero exit status %d.%s" % (
+            self.cmd, self.returncode, stderr)
+
+
+sbp.CalledProcessError.__str__ = err_includes_stderr
+
+
 def format_syscmd(cmd):
     if isinstance(cmd, (list, tuple)):
         cmd = ' '.join('"%s"' % s if ' ' in s else s
