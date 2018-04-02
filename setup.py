@@ -20,6 +20,11 @@ with open('README.rst') as readme_file:
 with open('HISTORY.rst') as history_file:
     history = history_file.read()
 
+## Remove 1st header-mark line or else,
+#  README.rst gets invalid header levels.
+history = '\n'.join(history.split('\n')[1:])
+
+
 requirements = [
     'boltons',                  # for IndexSet
     'toolz',
