@@ -43,7 +43,7 @@ test_requirements = [
 PROJECT = 'polyvers'
 setup(
     name=PROJECT,
-    version=polyversion(PROJECT, '0.0.0'),
+    version='0.0.1'
     description="Bump sub-project PEP-440 versions in Git monorepos independently.",
     long_description=readme + '\n\n' + history,
     author="Kostis Anagnostopoulos",
