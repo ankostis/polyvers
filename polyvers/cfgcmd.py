@@ -257,10 +257,6 @@ class InfosCmd(_ConfigBase):
                 for trait
                 in cls.class_own_traits(envvar=bool).values()]
 
-    def collect_app_infos(self):
-        """Overridde in ROOT-APP to provide app infos such as version, release-date, etc"""
-        return {}
-
     def run(self, *args):
         import inspect
 

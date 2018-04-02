@@ -7,7 +7,7 @@
 # You may obtain a copy of the Licence at: http://ec.europa.eu/idabc/eupl
 #
 from collections import OrderedDict, defaultdict
-from polyvers import cli, cmdlets
+from polyvers import cli, cmdlets, __version__, __updated__
 from polyvers.__main__ import main
 from polyvers.mainpump import ListConsumer
 from polyvers.oscmd import cmd
@@ -76,7 +76,8 @@ def test_all_cmds_help_version(cmd, capsys):
 
 
 @pytest.mark.parametrize('cmd, match, illegal', [
-    ('config infos', [], ['config_paths: null']),
+    ('config infos', ['version: %s' % __version__,
+                      'updated: %s' % __updated__], ['config_paths: null']),
     ('config desc', ['--Cmd.config_paths=', 'StatusCmd'], []),
     ('config desc bump -c', ['Increase or set the version of project', 'BumpCmd'], []),
     ('config show Project', ['Project(Replaceable'], []),

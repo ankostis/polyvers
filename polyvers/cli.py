@@ -398,14 +398,14 @@ class StatusCmd(_SubCmd):
 
     flags = {'all': ({'StatusCmd': {'all': True}}, _status_all_help)}
 
-    def _fetch_versions(self, projects):
-        def git_describe(proj):
+    def _describe_projects(self, projects):
+        def git_desc_without_screams(proj):
             try:
                 return proj.git_describe()
             except pvtags.GitVoidError as _:
                 return None
 
-        versions = {p.pname: {'version': git_describe(p)}
+        versions = {p.pname: {'version': git_desc_without_screams(p)}
                     for p in projects}
         return versions
 
@@ -426,7 +426,7 @@ class StatusCmd(_SubCmd):
             projects = [p for p in projects
                         if p.pname in pnames]
 
-        res = self._fetch_versions(projects)
+        res = self._describe_projects(projects)
 
         if self.all:
             merge_dict(res, self._fetch_all(projects))
