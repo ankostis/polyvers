@@ -7,6 +7,7 @@
 # You may obtain a copy of the Licence at: http://ec.europa.eu/idabc/eupl
 #
 "Cmd-line entrypoint to bump independently PEP-440 versions on multi-project Git repos."
+from subprocess import CalledProcessError
 import logging
 import sys
 
@@ -72,6 +73,10 @@ def main(argv=None, cmd_consumer=None, **app_init_kwds):
         if type(ex) is not cmdlets.CmdException:
             msg = '%s: %s' % (type(ex).__name__, ex)
         return mlu.exit_with_pride(msg, logger=log)
+    except CalledProcessError as ex:
+        if ex.stderr:
+            log.error("Command %s died with STDERR: \n  %s", ex.cmd, ex.stderr)
+        return mlu.exit_with_pride(ex, logger=log)
     except Exception as ex:
         ## Log in DEBUG not to see exception x2, but log it anyway,
         #  in case log has been redirected to a file.
