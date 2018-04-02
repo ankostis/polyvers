@@ -199,9 +199,10 @@ def _fetch_annotated_tags(acli, tag_patterns: Sequence[str],
 
     From https://stackoverflow.com/a/21032332/548792
     """
-    acli.for_each_ref._('refs/tags/', format='%(objecttype) %(refname:short)')
+    tag_patterns = ['refs/tags/' + pat for pat in tag_patterns]
     with git_errors_handled(pnames_msg):
-        out = acli(*tag_patterns)
+        out = acli.for_each_ref(*tag_patterns,
+                                format='%(objecttype) %(refname:short)')
 
     if not out:
         return []

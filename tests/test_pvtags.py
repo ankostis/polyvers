@@ -11,6 +11,7 @@ from polyvers._vendor import traitlets as trt
 from polyvers._vendor.traitlets import config as trc
 from polyvers.oscmd import cmd
 from polyvers.pvproject import Project
+from tests.conftest import clearlog
 import re
 import sys
 
@@ -191,14 +192,19 @@ def test_project_matching_all_pvtags(ok_repo, project1):
     assert all_vtags.pvtags_history == []
 
 
-def test_simple_project(monorepo, project2):
+def test_simple_project(monorepo, project2, caplog):
+    BAD_TAG = 'irrelevant_tag'
     monorepo.chdir()
+    caplog.set_level(0)
 
+    cmd.git.tag(BAD_TAG, m='ggg')
     cmd.git.tag('v123')
     cmd.git.tag('v12.0', m='hh')
     all_vtags = pvtags.make_match_all_vtags_project()
+    clearlog(caplog)
     pvtags.populate_pvtags_history(all_vtags)
     assert all_vtags.pvtags_history == ['v12.0']
+    assert BAD_TAG not in caplog.text
 
     pvtags.populate_pvtags_history(all_vtags, include_lightweight=True)
     assert all_vtags.pvtags_history == ['v12.0', 'v123']
