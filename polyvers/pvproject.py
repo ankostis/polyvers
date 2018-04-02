@@ -381,10 +381,6 @@ class Project(cmdlets.Replaceable, cmdlets.Printable, cmdlets.Spec):
         m = self.tag_regex().match(pvtag)
         if m:
             mg = m.groupdict()
-            # if mg['descid']:
-            #     self.log.warning(
-            #         "Ignoring pvtag '%s', it has `git-describe` suffix '%s'!",
-            #         pvtag, mg['descid'])
 
             return mg['version']
 
@@ -490,15 +486,25 @@ class Project(cmdlets.Replaceable, cmdlets.Printable, cmdlets.Spec):
         :param is_release:
             `False` for version-tags, `True` for release-tags
         """
+        import subprocess as sbp
+        from . import pvtags
+
         tag_name = self._format_vtag(self.version, is_release)
         msg = bump_cmd._make_commit_message(self)
         ## TODO: move all git-cmds to pvtags?
-        cmd.git.tag(tag_name,
-                    message=msg,
-                    force=self.is_forced('tag') or None,
-                    sign=bump_cmd.sign_tags or None,
-                    local_user=bump_cmd.sign_user or None,
-                    )
+        try:
+            cmd.git.tag(tag_name,
+                        message=msg,
+                        force=self.is_forced('tag') or None,
+                        sign=bump_cmd.sign_tags or None,
+                        local_user=bump_cmd.sign_user or None,
+                        )
+        except sbp.CalledProcessError as ex:
+            if "already exists" in str(ex.stderr):
+                raise pvtags.GitError(
+                    "Cannot bump, tag '%s' already exists!"
+                    "\n  Add `--force=tag` if you must." % tag_name)
+            raise
 
     engraves = ListTrait(
         AutoInstance(Engrave),
