@@ -9,7 +9,7 @@
 from pathlib import Path
 from polyvers import engrave
 from polyvers._vendor.traitlets.config import Config
-from polyvers.cmdlet.slice_traitlet import _parse_slice
+from polyvers.cmdlet.slicetrait import _parse_slice
 from polyvers.pvproject import Project, Graft, _slices_to_ids
 from polyvers.utils.logconfutils import init_logging
 from pprint import pformat  # noqa: F401  @UnusedImport

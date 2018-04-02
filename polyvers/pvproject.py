@@ -22,7 +22,7 @@ from ._vendor.traitlets.traitlets import (
     List as ListTrait, Tuple as TupleTrait, Union as UnionTrait)
 from ._vendor.traitlets.traitlets import Bool, Unicode, Instance
 from .cmdlet import cmdlets, autotrait
-from .cmdlet.slice_traitlet import Slice as SliceTrait
+from .cmdlet.slicetrait import Slice as SliceTrait
 from .utils.oscmd import cmd
 
 
