@@ -831,8 +831,9 @@ class Cmd(trc.Application, Spec):
             ## Need also classes bc flags/aliases may depend on them
             #
             if parent.classes:
-                self.classes.extend(parent.classes)
-                self.classes = list(set(self.classes))
+                classes = set(self.classes)
+                classes.update(parent.classes)
+                self.classes = list(classes)
 
     config_paths = PathList(
         help="""
