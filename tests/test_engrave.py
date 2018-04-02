@@ -22,7 +22,7 @@ import pytest
 import textwrap as tw
 
 
-init_logging(level=logging.DEBUG, logconf_files=[])
+init_logging(level=logging.DEBUG, logconf=[])
 
 
 def posixize(paths):

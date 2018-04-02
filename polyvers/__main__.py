@@ -50,7 +50,7 @@ def main(argv=None, cmd_consumer=None, **app_init_kwds):
 
     log = logging.getLogger('%s.main' % mypack.APPNAME)
     logconf_yaml = osp.join('~', '.%s-logconf.yaml' % mypack.APPNAME)
-    mlu.init_logging(level=log_level, logconf_files=logconf_yaml)
+    mlu.init_logging(level=log_level, logconf=logconf_yaml)
 
     ## Imports in separate try-block due to CmdException.
     #

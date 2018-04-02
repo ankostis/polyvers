@@ -24,7 +24,7 @@ import os.path as osp
 import textwrap as tw
 
 
-lcu.init_logging(level=logging.DEBUG, logconf_files=[])
+lcu.init_logging(level=logging.DEBUG, logconf=[])
 
 log = logging.getLogger(__name__)
 

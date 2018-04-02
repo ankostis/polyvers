@@ -12,9 +12,9 @@ import io
 import logging
 import sys
 
+from ruamel import yaml  # @UnresolvedImport
 import functools as fnt
 import os.path as osp
-from ruamel import yaml  # @UnresolvedImport
 
 
 default_logging_level = logging.INFO
@@ -173,21 +173,21 @@ def log_level_from_argv(args,
 
 def init_logging(
         level=default_logging_level,
-        logconf_files=None,
+        logconf=None,
         color=None,
         logger=None,
         **kwds):
     """
     :param level:
-        Root-logger's level; Overrides `logconf_files` if given, INFO otherwise.
-    :param logconf_files:
+        Root-logger's level; Overrides `logconf` if given, INFO otherwise.
+    :param logconf:
         File(s) to configure loggers; set `[]` to prohibit loading any logconf file.
         Allowed file-extensions:
           - '.conf' (implied if missing) .
           - '.yml'/'yaml'
         The `~` in the path expanded to $HOME.
         See https://docs.python.org/3/library/logging.config.html
-    :type logconf_files:
+    :type logconf:
         None, str, seq[str]
     :param color:
         Whether to color log-messages; if undefined, true only in consoles.
@@ -204,14 +204,14 @@ def init_logging(
     if not logger:
         logger = logging.getLogger(__name__)
 
-    if logconf_files and not isinstance(logconf_files, (list, tuple)):
-        logconf_files = [logconf_files]
-    if logconf_files:
-        yamls, confs, missing_logconfs = _classify_fpaths(logconf_files)
+    if logconf and not isinstance(logconf, (list, tuple)):
+        logconf = [logconf]
+    if logconf:
+        yamls, confs, missing_logconfs = _classify_fpaths(logconf)
         if bool(yamls) and bool(confs):
             raise ValueError(
                 "Cannot handle MIXED logconf-file extensions: %s\n"
-                "  Specify either '.yaml' or '.conf'" % (logconf_files, ))
+                "  Specify either '.yaml' or '.conf'" % (logconf, ))
 
         logconf_src = _load_logconfs(yamls, confs)
 
