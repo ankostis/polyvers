@@ -659,7 +659,7 @@ class BumpCmd(_SubCmd):
                     proj.tag_version_commit(self, is_release=False)
                 ## TODO: append new tags to git-restore-point.__exit__
 
-        self.log.info('Bumped projects: %s',
+        self.log.notice('Bumped projects: %s',
                       ', '.join('%s-%s --> %s' %
                                 (prj.pname, prj.current_version, prj.version)
                                 for prj in projects))
