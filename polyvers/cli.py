@@ -23,7 +23,7 @@ from ._vendor.traitlets import config as trc
 from ._vendor.traitlets.traitlets import Bool, Unicode
 from ._vendor.traitlets.traitlets import List as ListTrait, Tuple as TupleTrait
 from .cmdlet import cmdlets, autotrait
-from .utils import logconfutils as lcu, fileutils as fu
+from .utils import logconfutils as lcu, fileutil as fu
 
 
 # TODO: after pvlib split, move NOTICE level into package.

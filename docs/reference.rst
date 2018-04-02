@@ -86,7 +86,7 @@ Module: :mod:`polyvers.utils.oscmd`
 .. automodule:: polyvers.utils.oscmd
    :members:
 
-Module: :mod:`polyvers.utils.fileutils`
+Module: :mod:`polyvers.utils.fileutil`
 -------------------------------------
-.. automodule:: polyvers.utils.fileutils
+.. automodule:: polyvers.utils.fileutil
    :members:

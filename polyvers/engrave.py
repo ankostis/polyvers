@@ -18,7 +18,7 @@ from ._vendor.traitlets.traitlets import (
     Dict as DictTrait, Bool as BoolTrait, Tuple as TupleTrait)
 from ._vendor.traitlets.traitlets import Bytes, Instance
 from .cmdlet import cmdlets
-from .utils import fileutils as fu
+from .utils import fileutil as fu
 
 
 log = logging.getLogger(__name__)

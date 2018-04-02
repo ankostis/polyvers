@@ -66,7 +66,7 @@ from .._vendor.traitlets.traitlets import (
     List as ListTrait, Union as UnionTrait
 )  # @UnresolvedImport
 from .._vendor.traitlets.traitlets import Bool, Unicode, Instance
-from ..utils import fileutils as fu
+from ..utils import fileutil as fu
 from .yamlconfloader import YAMLFileConfigLoader
 
 
