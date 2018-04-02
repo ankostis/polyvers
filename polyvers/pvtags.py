@@ -57,7 +57,8 @@ def git_errors_handled(pname):
                for msg in [
                    "does not have any commits yet",
                    "No names found",
-                   "No annotated tags"]):
+                   "No annotated tags",
+                   "No tags can describe"]):
             raise GitVoidError("Project '%s': %s" % (pname, err)) from ex
 
         elif "Not a git repository" in err:
