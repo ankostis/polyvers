@@ -155,10 +155,11 @@ class _Cli:
 
             if v is None:
                 return ()
+
+            flag = '-' + k if len(k) == 1 else '--' + k
+
             if isinstance(v, bool):
-                if v:
-                    flag = '-' + k if len(k) == 1 else '--' + k
-                else:
+                if not v:
                     if nk == 1:
                         raise ValueError(
                             "Cannot negate single-letter flag '-%s'!"
@@ -167,7 +168,7 @@ class _Cli:
 
                 return (flag, )
 
-            return ('-%s' % k, str(v)) if nk == 1 else ('--%s=%s' % (k, v), )
+            return (flag, str(v)) if nk == 1 else (flag, v)
 
         arglist = self._cmdlist
         arglist.extend(args)
