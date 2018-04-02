@@ -208,6 +208,14 @@ class Project(cmdlets.Replaceable, cmdlets.Printable, cmdlets.Spec):
 
     current_version = vermath.Pep440Version(help="The previous version, auto-discovered.")
 
+    release_date = Unicode(help="The automatic release date, to interpolate it.")
+
+    @trt.default('release_date')
+    def _get_now(self):
+        from datetime import datetime
+
+        return datetime.now().isoformat()
+
     ## TODO: rename version-->new_version
     version = vermath.Pep440Version(help="The new absolute version to bump to.")
 
@@ -530,6 +538,15 @@ class Project(cmdlets.Replaceable, cmdlets.Printable, cmdlets.Spec):
                         (.+)$
                     ''',
                 'subst': r"version\1'{version}'"
+            }],
+        }, {
+            'globs': ['README.rst'],
+            'grafts': [{
+                'regex': r'\|version\|',
+                'subst': "{version}"
+            }, {
+                'regex': r'\|today\|',
+                'subst': "{release_date}"
             }],
         }],
         config=True,
