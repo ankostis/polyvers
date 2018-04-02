@@ -26,18 +26,19 @@ import subprocess as sbp
 def err_includes_stderr(self):
     import signal
 
-    stderr = ('\n  STDERR: ' + self.stderr) if self.stderr else ''
+    tail = ('\n  STDERR: ' + self.stderr) if self.stderr else ''
+    tail += ('\n  STDOUT: ' + self.stdout) if self.stdout else ''
 
     if self.returncode and self.returncode < 0:
         try:
             return "Command '%s' died with %r.%s" % (
-                self.cmd, signal.Signals(-self.returncode), stderr)
+                self.cmd, signal.Signals(-self.returncode), tail)
         except ValueError:
             return "Command '%s' died with unknown signal %d.%s" % (
-                self.cmd, -self.returncode, stderr)
+                self.cmd, -self.returncode, tail)
     else:
         return "Command '%s' returned non-zero exit status %d.%s" % (
-            self.cmd, self.returncode, stderr)
+            self.cmd, self.returncode, tail)
 
 
 sbp.CalledProcessError.__str__ = err_includes_stderr
