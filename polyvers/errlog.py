@@ -252,7 +252,7 @@ class ErrLog(cmdlets.Replaceable, trt.HasTraits):
 
     Example of using this method for multiple actions in a loop::
 
-        with ErrLog(enforeceable, IOError,
+        with ErrLog(enforeceable, OSError,
                     doing="loading X-files",
                     token='fread') as erl1:
             for fpath in file_paths:

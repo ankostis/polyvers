@@ -167,13 +167,13 @@ def test_ErrLog_properties(forceable, logcollector):
     assert erl.exceptions == [Exception]
     assert erl.is_root and not erl.is_armed
 
-    erl = ErrLog(forceable, IOError, ValueError, info_log=logcollector)
+    erl = ErrLog(forceable, OSError, ValueError, info_log=logcollector)
     assert erl.token is erl.doing is None
-    assert erl.exceptions == [IOError, ValueError]
+    assert erl.exceptions == [OSError, ValueError]
     assert erl.is_root and not erl.is_armed
 
     erl2 = erl(token='water', doing='something')
-    assert erl.exceptions == [IOError, ValueError]
+    assert erl.exceptions == [OSError, ValueError]
     assert erl2.exceptions == [Exception]
     assert erl2.token == 'water'
     assert erl2.doing == 'something'

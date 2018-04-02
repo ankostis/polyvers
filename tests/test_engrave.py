@@ -10,15 +10,15 @@ from pathlib import Path
 from polyvers import engrave
 from polyvers._vendor.traitlets.config import Config
 from polyvers.logconfutils import init_logging
-from polyvers.pvproject import Engrave, Graft, _slices_to_ids
+from polyvers.pvproject import Project, Graft, _slices_to_ids
 from polyvers.slice_traitlet import _parse_slice
+from pprint import pformat  # noqa: F401  @UnusedImport
 from tests import conftest
 import logging
 import re
 
 import pytest
 
-import itertools as itt
 import textwrap as tw
 
 
@@ -151,83 +151,137 @@ def test_slices_to_ids(slices, listlen, exp):
 
 @pytest.mark.parametrize('slices, listlen, exp', slices_test_data)
 def test_MatchSpec_slicing(slices, listlen, exp):
-    m = re.match('.*', '')  # Get hold of some re.match object.
-    hits = list(itt.repeat(m, listlen))
+    matches = list(re.match('.', str(i)) for i in range(listlen))
 
-    gs = Graft.new(hits=hits, slices=slices, regex='')
-    hits_indices = gs._get_hits_indices()
-    assert hits_indices == exp
+    gs = Graft.new(slices=slices, regex='')
 
-    gs = gs.replace(hits_indices=hits_indices)
-    hits = gs.valid_hits()
-    assert len(hits_indices) == len(hits)
+    matches = gs.sliced_matches(matches)
+    assert len(exp) == len(matches)
+    assert [h.group() for h in matches] == [str(i) for i in exp]
 
 
-def test_engrave(fileset_mutable, ok_files, f1_graft, f2_graft):
-    fileset_mutable.chdir()
-    cfg = Config()
-    cfg.Engrave.globs = ['/a/f*', 'b/f1', '/b/f2', 'b/?3']
-    cfg.Engrave.grafts = [f1_graft, f2_graft]
+def test_overlapped_matches():
+    from unittest.mock import Mock
 
-    e = Engrave(config=cfg)
-    subs_map = e.scan_and_engrave()
-    nhits = sum(fspec.nhits for fspec in subs_map.values())
-    nsubs = sum(fspec.nsubs for fspec in subs_map.values())
-    assert nhits == nsubs == 4
+    def match(span):
+        return Mock(**{'span.return_value': span})
 
-    for fpath, text in ok_files.items():
-        ftxt = (fileset_mutable / fpath).read_text('utf-8')
-        assert ftxt == tw.dedent(text)
-
-
-def test_engrave_subs_None(fileset_mutable, f1_graft, f2_graft):
-    fileset_mutable.chdir()
-
-    f1_graft['subst'] = None
-
-    cfg = Config()
-    cfg.Engrave.globs = ['/a/f*', 'b/f1', '/b/f2', 'b/?3']
-    cfg.Engrave.grafts = [f1_graft, f2_graft]
-
-    e = Engrave(config=cfg)
-
-    hits_map = e.scan_hits()
-    nhits = sum(fspec.nhits for fspec in hits_map.values())
-    assert nhits == 4
-
-    subs_map = e.scan_and_engrave()
-    nhits2 = sum(fspec.nhits for fspec in subs_map.values())
-    nsubs = sum(fspec.nsubs for fspec in subs_map.values())
-    assert nhits2 == 4
-    assert nsubs == 2
-
-    ok_files = {
-        'a/f1': conftest.f1,
-        'a/f2': conftest.f22,
-        'a/f3': conftest.f3,
-
-        'b/f1': conftest.f1,
-        'b/f2': conftest.f22,
-        'b/f3': conftest.f3,
+    ranges = [
+        (3, 5),
+        (1, 2),
+        (1, 3),  # Gone
+        (2, 3),
+        (2, 4),  # Gone
+        (5, 7),
+        (3, 3),
+        (3, 4),  # Gone
+        (1, 1),
+        (7, 7),
+    ]
+    res = engrave.overlapped_matches([match(r) for r in ranges])
+    #print('\n'.join(str(s) for s in res))
+    assert {r.span() for r in res} == {
+        (1, 3),
+        (2, 4),
+        (3, 4),
     }
 
+    res = engrave.overlapped_matches([match(r) for r in ranges],
+                                     no_touch=True)
+    print('\n'.join(str(s) for s in res))
+    assert {r.span() for r in res} == {
+        (1, 3),
+        (2, 3),
+        (2, 4),
+        (5, 7),
+        (3, 3),
+        (3, 4),
+        (1, 1),
+    }
+
+
+def test_scan(fileset_mutable, orig_files, f1_graft, f2_graft, caplog):
+    caplog.set_level(0)
+    fileset_mutable.chdir()
+    cfg = Config()
+    cfg.Project.pname = 'prj1'
+    cfg.Project.engraves = [{
+        'globs': ['/a/f*', 'b/f1', '/b/f2', 'b/?3'],
+        'grafts': [f1_graft, f2_graft],
+    }]
+
+    prj = Project(config=cfg)
+    fproc = engrave.FileProcessor()
+    match_map = fproc.scan_projects([prj])
+    #print(pformat(match_map))
+    nmatches = sum(len(matches)
+                   for qruple in match_map.values()
+                   for _prj, _eng, _graft, matches in qruple)
+    assert nmatches == 4
+
+    for fpath, text in orig_files.items():
+        ftxt = (fileset_mutable / fpath).read_text('utf-8')
+        assert ftxt == tw.dedent(text)
+
+
+def test_engrave(fileset_mutable, ok_files, f1_graft, f2_graft, caplog):
+    caplog.set_level(0)
+    fileset_mutable.chdir()
+    cfg = Config()
+    cfg.Project.pname = 'prj1'
+    cfg.Project.current_version = '0.0.0'
+    cfg.Project.version = '0.0.1'
+    cfg.Project.engraves = [{
+        'globs': ['/a/f*', 'b/f1', '/b/f2', 'b/?3'],
+        'grafts': [f1_graft, f2_graft],
+    }]
+
+    prj = Project(config=cfg)
+    fproc = engrave.FileProcessor()
+    match_map = fproc.scan_projects([prj])
+    fproc.engrave_matches(match_map)
+    #print(pformat(match_map))
+    nmatches = sum(len(matches)
+                   for qruple in match_map.values()
+                   for _prj, _eng, _graft, matches in qruple)
+    assert nmatches == 4
+
     for fpath, text in ok_files.items():
         ftxt = (fileset_mutable / fpath).read_text('utf-8')
         assert ftxt == tw.dedent(text)
 
 
-def test_scan_engrave(fileset_mutable, f1_graft, f2_graft):
+def test_engrave_duped_scans(fileset_mutable, ok_files, f1_graft, f2_graft, caplog):
+    caplog.set_level(0)
     fileset_mutable.chdir()
     cfg = Config()
-    globs = ['/a/f*', 'b/f1', '/b/f2', 'b/?3']
-    cfg.Engrave.grafts = [f1_graft, f2_graft]
+    cfg.Project.pname = 'prj1'
+    cfg.Project.current_version = '0.0.0'
+    cfg.Project.version = '0.0.1'
+    cfg.Project.engraves = [{
+        'globs': ['/a/f*'],
+        'grafts': [f1_graft, f1_graft, f2_graft, f2_graft],
+    }, {
+        'globs': ['b/f1', 'b/?3'],
+        'grafts': [f1_graft, f2_graft],
+    }, ]
+    prj1 = Project(config=cfg)
 
-    e1 = Engrave.new(globs=globs, grafts=[f1_graft])
-    e2 = Engrave.new(globs=globs, grafts=[f2_graft])
+    cfg.Project.engraves = [{
+        'globs': ['/a/f*', '/b/f2', 'b/?3'],
+        'grafts': [f1_graft, f2_graft],
+    }]
+    prj2 = Project(config=cfg)
 
-    hits_map = engrave.scan_engraves([e1, e2])
-    assert isinstance(hits_map, dict)
-    nhits = sum(fspec.nhits for fspec in hits_map.values())
+    fproc = engrave.FileProcessor()
+    match_map = fproc.scan_projects([prj1, prj2])
+    fproc.engrave_matches(match_map)
+    #print(pformat(match_map))
+    nmatches = sum(len(matches)
+                   for qruple in match_map.values()
+                   for _prj, _eng, _graft, matches in qruple)
+    assert nmatches == 4
 
-    assert nhits == 4
-    assert len(hits_map) == 6
+    for fpath, text in ok_files.items():
+        ftxt = (fileset_mutable / fpath).read_text('utf-8')
+        assert ftxt == tw.dedent(text)

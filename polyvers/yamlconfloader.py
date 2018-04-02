@@ -32,7 +32,7 @@ class YAMLFileConfigLoader(trc.loader.FileConfigLoader):
         self.clear()
         try:
             self._find_file()
-        except IOError as e:
+        except OSError as e:
             raise trc.ConfigFileNotFound(str(e))
         dct = self._read_file_as_dict()
         self.config = self._convert_to_config(dct)

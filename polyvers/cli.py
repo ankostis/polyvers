@@ -9,16 +9,20 @@
 
 from collections import OrderedDict, defaultdict, Mapping
 from pathlib import Path
-from typing import Dict, Set  # noqa: F401, @UnusedImport  flake not seeing Set usage
+from typing import (
+    Dict, Sequence,
+    Tuple, Set, List)  # @UnusedImport, flake8 cannot see inside funcs
 import io
 import logging
+from boltons.setutils import IndexedSet as iset
 
-from . import APPNAME, __version__, __updated__, cmdlets, pvproject, pvtags, \
+from . import APPNAME, __version__, __updated__, cmdlets, pvtags, pvproject, \
     polyverslib as pvlib, fileutils as fu
 from . import logconfutils as lcu
 from ._vendor import traitlets as trt
 from ._vendor.traitlets import config as trc
-from ._vendor.traitlets.traitlets import List, Bool, Unicode
+from ._vendor.traitlets.traitlets import Bool, Unicode
+from ._vendor.traitlets.traitlets import List as ListTrait
 from ._vendor.traitlets.traitlets import Tuple as TupleTrait
 from .autoinstance_traitlet import AutoInstance
 
@@ -119,36 +123,9 @@ class PolyversCmd(cmdlets.Cmd):
     """)
     classes = [pvproject.Project]
 
-    projects = List(
+    projects = ListTrait(
         AutoInstance(pvproject.Project),
         config=True)
-
-    no_release_tag = Bool(
-        False,
-        config=True,
-        help="""
-            Version-ids statically engraved in-trunk when true, otherwise in "leaf" commits.
-
-            - Limit branches considered as "in-trunk" using `in_trunk_branches` param.
-            - Select the name of the Leaf branch with `leaf_branch` param.
-
-            Leaf release-commits avoid frequent merge-conflicts in files containing
-            the version-ids.
-    """)
-
-    amend = Bool(
-        config=True,
-        help="Amend the last bump-version commit, if any.")
-
-    commit = Bool(
-        config=True,
-        help="""
-            Commit after engraving with a commit-message describing version bump.
-
-            - If false, no commit created, just search'n replace version-ids.
-              Related params: out_of_trunk, message.
-            - False make sense only if `use_leaf_releases=False`
-        """)
 
     @trt.default('subcommands')
     def _subcommands(self):
@@ -206,30 +183,36 @@ class PolyversCmd(cmdlets.Cmd):
 
         return self._git_root
 
-    projects_scan = AutoInstance(
-        pvproject.Engrave,
-        default_value={
-            'globs': ['**/setup.py'],
-            'grafts': [
-                {'regex': r'''(?xm)
-                    \b(name|PROJECT|APPNAME|APPLICATION)
-                    \ *=\ *
-                    (['"])
-                        (?P<pname>[\w\-.]+)
-                    \2
-                '''}
-            ]
-        },
+    autodiscover_subproject_projects = ListTrait(
+        AutoInstance(pvproject.Project),
+        default_value=[{
+            'engraves': [{
+                'globs': ['**/setup.py'],
+                'grafts': [
+                    {'regex': r'''(?xm)
+                        \b(name|PROJECT|APPNAME|APPLICATION)
+                        \ *=\ *
+                        (['"])
+                            (?P<pname>[\w\-.]+)
+                        \2
+                    '''}
+                ]
+            }]
+        }],
+        allow_none=True,
         config=True,
         help="""
-        Glob-patterns and regexes to auto-discover project basepaths and names.
+        Projects with glob-patterns/regexes to auto-discover sub-project basepath/names.
 
-        - The glob-patterns are used to locate files in project roots.
-          For every file collected, its dirname becomes as "project-root.
-        - Regex(es) to extract project-name.
-          If none, or more than one, match, project detection fails.
-        - Used when auto-discovering projects, to construct the configuration file,
-          or when no configuration file exists.
+        - Needed when a) no configuration file is given (or has partial infos),
+          and b) when constructing/updating the configuration file.
+        - The glob-patterns contained in this `Project[Engrave[Graft]]`
+          should match files in the root dir of auto-discovered-projects
+          (`Graft.subst` are unused here).
+        - `Project.basepath` must be a relative
+        - Regex(es) may extract the project-name from globbed files.
+          If none (or different ones) match, project detection fails.
+        - A Project is identified only if file(s) are globbed AND regexp(s) matched.
         """)
 
     autodiscover_version_scheme_projects = TupleTrait(
@@ -242,9 +225,9 @@ class PolyversCmd(cmdlets.Cmd):
         help="""
         A pair of Projects with patterns/regexps matching *pvtags* or *vtags*, respectively.
 
-        - Used when auto-discovering projects, to construct new or update
-          a configuration file.
-        - Screams if discovered samek project-name with conflicting basepaths.
+        - Needed when a) no configuration file is given (or has partial infos),
+          and b) when constructing/updating the configuration file.
+        - Screams if discovered same project-name with conflicting basepaths.
         """)
 
     def _autodiscover_project_basepaths(self) -> Dict[str, Path]:
@@ -254,18 +237,35 @@ class PolyversCmd(cmdlets.Cmd):
         :return:
             a mapping of {pnames: basepaths}
         """
-        file_hits = self.projects_scan.scan_hits(mybase=self.git_root)
+        from . import engrave
 
-        project_paths = {
-            (fspec.grafts[0].hits[0].groupdict()['pname'], fpath.parent)
-            for fpath, fspec in file_hits.items()
-            if fspec.nhits == 1}
+        if not self.autodiscover_subproject_projects:
+            raise cmdlets.CmdException(
+                "No `Polyvers.autodiscover_subproject_projects` param given!")
+
+        fproc = engrave.FileProcessor(parent=self)
+        with self.errlogged(doing='discovering project paths',
+                            info_log=self.log.info):
+            scan_projects = self.autodiscover_subproject_projects
+            #: Dict[Path,
+            #: List[Tuple[pvproject.Project, Engrave, Graft, List[Match]]]]
+            match_map = fproc.scan_projects(scan_projects)
+
+        ## Accept projects only if one, and only one,
+        #  pair (pname <--> path) matched.
+        #
+        pname_path_pairs: List[Tuple[str, Path]] = [
+            (m.groupdict()['pname'], fpath.parent)
+            for fpath, mqruples in match_map.items()
+            for _prj, _eng, _graft, matches in mqruples
+            for m in matches]
+        unique_pname_paths = iset(pname_path_pairs)
 
         ## check basepath conflicts.
         #
         projects: Dict[str, Path] = {}
         dupe_projects: Dict[str, Set[Path]] = defaultdict(set)
-        for pname, basepath in project_paths:
+        for pname, basepath in unique_pname_paths:
             dupe_basepath = projects.get(pname)
             if dupe_basepath and dupe_basepath != basepath:
                 dupe_projects[pname].add(basepath)
@@ -422,6 +422,7 @@ class StatusCmd(_SubCmd):
         projects = self.bootstrapp_projects()
 
         if pnames:
+            ## TODO: use _filter_projects_by_name()
             projects = [p for p in projects
                         if p.pname in pnames]
 
@@ -468,8 +469,186 @@ class BumpCmd(_SubCmd):
       use --force if you might.
     - The 'v' prefix is not needed!
     """
-    def run(self, *args):
-        self.check_project_configs_exist(self._cfgfiles_registry)
+    classes = [pvproject.Project, pvproject.Engrave, pvproject.Graft]  # type: ignore
+
+    start_version_id = '0.0.0'
+
+    out_of_trunk_releases = Bool(
+        True,
+        config=True,
+        help="""
+            Version-ids statically engraved in-trunk when true, otherwise in "leaf" commits.
+
+            - Limit branches considered as "in-trunk" using `in_trunk_branches` param.
+            - Select the name of the Leaf branch with `leaf_branch` param.
+
+            Leaf release-commits avoid frequent merge-conflicts in files containing
+            the version-ids.
+    """)
+
+    release_branch = Unicode(
+        'latest',
+        config=True,
+        help="""
+        Branch-name where the release-tags must be created under.
+
+        - The branch will be hard-reset to the *out-of-trunk* commit
+          on each bump-version.
+        - If not given, no special branch used for *rtags*.
+        """
+    )
+
+    commit = Bool(
+        config=True,
+        help="""
+            Commit after engraving with a commit-message describing version bump.
+
+            - If false, no commit created, just search'n replace version-ids.
+              Related params: out_of_trunk, message.
+            - False make sense only if `use_leaf_releases=False`
+        """)
+
+    message = Unicode(
+        "chore(ver): bump {subproject_msgs}",
+        config=True,
+        help="""
+            The general message for a release-commit.
+
+            - Additional interpolation: `subproject_msgs`
+            - Others interpolations (apart from env-vars prefixed with '$'):
+              {ikeys}
+        """)
+
+    sign_tags = Bool(
+        allow_none=True,
+        config=True,
+        help="Enable PGP-signing of tags (see also `sign_user`)."
+    )
+
+    sign_commmits = Bool(
+        allow_none=True,
+        config=True,
+        help="Enable PGP-signing of *rtag* commits (see also `sign_user`)."
+    )
+
+    sign_user = Unicode(
+        allow_none=True,
+        config=True,
+        help="The signing PGP user (email, key-id)."
+    )
+
+    def _stop_if_git_dirty(self):
+        """
+        Note: ``git diff-index --quiet HEAD --``
+        from https://stackoverflow.com/a/2659808/548792
+        give false positives!
+        """
+        from .oscmd import cmd
+
+        ## TODO: move all git-cmds to pvtags?
+        out = cmd.git.describe(dirty=True, all=True)
+        if out.endswith('dirty'):
+            raise pvtags.GitError("Aborting bump, dirty working directory.")
+
+    def _filter_projects_by_pnames(self, projects, version, *pnames):
+        """Separate `version` from `pnames`, scream if unknown pnames."""
+        if pnames:
+            all_pnames = [prj.pname for prj in projects]
+            pnames = iset(pnames)
+            unknown_projects = (pnames - iset(all_pnames))
+            if unknown_projects:
+                raise cmdlets.CmdException(
+                    "Unknown project(s): %s\n  Choose from existing one(s): %s" %
+                    (', '.join(unknown_projects), ', '.join(all_pnames)))
+
+            projects = [p for p in projects
+                        if p.pname in pnames]
+
+        return version, projects
+
+    def _make_commit_message(self, projects: Sequence[pvproject.Project]):
+        subprj_msgs = [prj.interp(prj.message) for prj in projects]
+        msg = self.interp(self.message, subproject_msgs=subprj_msgs)
+        return msg
+
+    def _commit_new_release(self, projects: Sequence[pvproject.Project]):
+        from .oscmd import cmd
+
+        msg = self._make_commit_message(projects)
+        ## TODO: move all git-cmds to pvtags?
+        out = cmd.git.commit(message=msg,
+                             all=True,
+                             sign=self.sign_commmits or None,
+                             dry_run=self.dry_run or None,
+                             )
+        if self.dry_run:
+            self.log.warning('PRETEND commit: %s' % out)
+
+    def run(self, *version_and_pnames):
+        from . import engrave
+        from .oscmd import cmd
+
+        projects = self.bootstrapp_projects()
+        if version_and_pnames:
+            version_bump, projects = self._filter_projects_by_pnames(projects, *version_and_pnames)
+        else:
+            version_bump = self.default_version_bump
+
+        ## TODO: Stop bump if version-bump fails pep440 validation.
+
+        for prj in projects:
+            prj.load_current_version_from_history()
+            prj.set_new_version(version_bump)
+
+        fproc = engrave.FileProcessor(parent=self)
+        match_map = fproc.scan_projects(projects)
+        nmatches = len(match_map)
+        if nmatches == 0:
+            raise cmdlets.CmdException(
+                "No engraves found!"
+                "\n  Aborting before release-version")
+
+        ## Finally stop before serious damage happens,
+        #  (but only after havin run some validation to run, above).
+        self._stop_if_git_dirty()
+
+        self.log.info('Bumping projects: %s',
+                      ', '.join('%s-%r --> %r' %
+                                (prj.pname, prj.current_version, prj.version)
+                                for prj in projects))
+
+        with pvtags.git_restore_point(restore=self.dry_run):
+            fproc.engrave_matches(match_map)
+
+            ## TODO: move all git-cmds to pvtags?
+            if self.out_of_trunk_releases:
+                for proj in projects:
+                    proj.tag_version_commit(is_release=False)
+                ## TODO: append new tags to git-restore-point.__exit__
+
+                with pvtags.git_restore_point(restore=True):
+                    if self.release_branch:
+                        cmd.git.checkout._(B=True)(self.release_branch)
+                    else:
+                        cmd.git.checkout('HEAD')
+
+                    self._commit_new_release(projects)
+
+                    for proj in projects:
+                        proj.tag_version_commit(is_release=True)
+                    ## TODO: append new tags to git-restore-point.__exit__ if dry-run
+
+            else:  # In-trunk plain *vtags* for mono-project repos.
+                self._commit_new_release(projects)
+
+                for proj in projects:
+                    proj.tag_version_commit(is_release=False)
+                ## TODO: append new tags to git-restore-point.__exit__
+
+    def start(self):
+        with self.errlogged(doing="running cmd '%s'" % self.name,
+                            info_log=self.log.info):
+            return super().start()
 
 
 class LogconfCmd(_SubCmd):
@@ -518,21 +697,13 @@ PolyversCmd.flags = {  # type: ignore
         cmdlets.Spec.debug.help
     ),
 
-    ('c', 'commit'): (
-        {},
-        PolyversCmd.commit.help
-    ),
     ('a', 'amend'): (
-        {'Polyvers': {'amend': True}},
-        PolyversCmd.amend.help
+        {'pvproject.Project': {'amend': True}},
+        pvproject.Project.amend.help
     ),
     ('t', 'tag'): (
         {'Project': {'tag': True}},
         pvproject.Project.tag.help
-    ),
-    ('s', 'sign-tags'): (
-        {'Project': {'sign_tags': True}},
-        pvproject.Project.sign_tags.help
     ),
 
     'monorepo': (
@@ -552,7 +723,29 @@ PolyversCmd.flags = {  # type: ignore
 }
 
 PolyversCmd.aliases = {  # type: ignore
-    ('m', 'message'): 'Project.message',
-    ('u', 'sign-user'): 'Project.sign_user',
     ('f', 'force'): 'Spec.force',
 }
+
+BumpCmd.flags = {  # type: ignore
+    ('c', 'commit'): (
+        {'BumpCmd': {'commit': True}},
+        BumpCmd.commit.help
+    ),
+    ('s', 'sign-tags'): (
+        {'BumpCmd': {'sign_tags': True}},
+        BumpCmd.sign_tags.help
+    ),
+}
+BumpCmd.aliases = {  # type: ignore
+    ('m', 'message'): 'BumpCmd.message',
+    ('u', 'sign-user'): 'BumpCmd.sign_user',
+}
+
+cmdlets.Spec.force.help += """
+Supported tokens:
+  'fread'     : don't stop engraving on file-reading errors.
+  'fwrite'    : don't stop engraving on file-writting errors.
+  'foverwrite': overwrite existing file.
+  'glob'      : keep-going even if glob-patterns are invalid.
+  'tag'       : replace existing tag.
+"""

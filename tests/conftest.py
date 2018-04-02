@@ -148,11 +148,13 @@ def f1_graft():
 
 
 f2 = """
+leave
 CHANGE
 THESE
 leave
 """
 f22 = """
+leave
 changed them
 leave
 """
@@ -160,7 +162,7 @@ leave
 
 @pytest.fixture
 def f2_graft():
-    return {'regex': r'(?m)^CHANGE\s+THESE$',
+    return {'regex': r'(?m)^CHANGE\s+THESE',
             'subst': 'changed them'}
 
 

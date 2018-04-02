@@ -137,7 +137,7 @@ def ensure_dir_exists(path, mode=0o755):
             if e.errno != errno.EEXIST:
                 raise
     elif not os.path.isdir(path):
-        raise IOError("%r exists but is not a directory" % path)
+        raise OSError("%r exists but is not a directory" % path)
 
 
 def find_git_root() -> Optional[Path]:

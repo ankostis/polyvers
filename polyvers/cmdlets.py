@@ -512,7 +512,7 @@ class Forceable(metaclass=trt.MetaHasTraits):
 
     @contextlib.contextmanager
     def errlogged(self,
-                  *exceptions: Exception,
+                  *exceptions,
                   token: Union[bool, str] = None,
                   doing=None,
                   raise_immediately=None,
@@ -531,7 +531,7 @@ class Forceable(metaclass=trt.MetaHasTraits):
           this enforceable.
         - Example of using this method for multiple actions in a loop::
 
-              with self.errlogged(IOError,
+              with self.errlogged(OSError,
                                doing="loading X-files",
                                token='fread'):
                   for fpath in file_paths:

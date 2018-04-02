@@ -7,7 +7,7 @@
 # You may obtain a copy of the Licence at: http://ec.europa.eu/idabc/eupl
 #
 """
-Make/inspect sub-project "pvtags" and respective commits in Git monorepos.
+Git code to make/inspect sub-project "(p)vtags" and respective commits in (mono)repos.
 
 There are 3 important methods/functions calling Git:
 - :method:`Project.git_describe()` that fetches the same version-id
@@ -18,11 +18,10 @@ There are 3 important methods/functions calling Git:
   this function has not been applies on a project instance.
 """
 
-from typing import List, Dict, Sequence
+from typing import List, Dict, Sequence, Optional
 import contextlib
 import logging
 import os
-
 
 import subprocess as sbp
 
@@ -69,6 +68,17 @@ def git_errors_handled(pname):
             raise
 
 
+def _git_current_branch() -> Optional[str]:
+    CUR_BRANCH_PREFIX = '* '
+
+    branches = cmd.git.branch()
+    for br_line in branches:
+        if br_line.startswith(CUR_BRANCH_PREFIX):
+            cur_branch = br_line.lstrip(CUR_BRANCH_PREFIX)
+
+            return cur_branch
+
+
 @contextlib.contextmanager
 def git_restore_point(restore=False):
     """
@@ -77,14 +87,18 @@ def git_restore_point(restore=False):
     :param restore:
         if true, force restore at exit, otherwise, restore only on errors
     """
+
+    cur_branch = _git_current_branch()
+    original_commit_id = cmd.git.rev_parse.HEAD()
     ok = False
-    original_point = cmd.git.rev_parse.HEAD()
     try:
-        yield
+        yield  # TODO: provide for attaching tags into `with git_restore_point()`
         ok = not restore
     finally:
         if not ok:
-            cmd.git.reset._(hard=True)(original_point)
+            if cur_branch:
+                cmd.git.checkout(cur_branch, force=True)
+            cmd.git.reset._(hard=True)(original_commit_id)
 
 
 def make_pvtag_project(pname: str = '<monorepo-project>',

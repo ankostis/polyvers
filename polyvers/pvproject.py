@@ -11,16 +11,15 @@ The main structures of *polyvers*::
 
     Project 1-->* Engrave 1-->* Graft
 """
-from collections import OrderedDict as odict
 from pathlib import Path
-from typing import List, Dict, Optional, Union, Match, Tuple
+from typing import (List, Optional, Match, Sequence, Union, Pattern)
 import logging
 import re
 
 from . import polyverslib as pvlib, cmdlets
 from ._vendor.traitlets import traitlets as trt
 from ._vendor.traitlets.traitlets import (
-    Bool, Unicode, Int, Instance,
+    Bool, Unicode, Instance,
     List as ListTrait, Tuple as TupleTrait, Union as UnionTrait)  # @UnresolvedImport
 from .autoinstance_traitlet import AutoInstance
 from .oscmd import cmd
@@ -30,12 +29,241 @@ from .slice_traitlet import Slice as SliceTrait
 log = logging.getLogger(__name__)
 
 
+PatternClass = type(re.compile('.*'))  # For traitlets
+MatchClass = type(re.match('.*', ''))  # For traitlets
+
 FPaths = List[Path]
 FLike = Union[str, Path]
-FLikeList = List[FLike]
+FLikeList = Sequence[FLike]
 
 
-## TODO: Make Project printable.
+def _slices_to_ids(slices, thelist):
+    from boltons.setutils import IndexedSet as iset
+
+    all_ids = list(range(len(thelist)))
+    mask_ids = iset()
+    for aslice in slices:
+        mask_ids.update(all_ids[aslice])
+
+    return list(mask_ids)
+
+
+class Graft(cmdlets.Replaceable, cmdlets.Printable, cmdlets.Spec):
+    regex = Unicode(
+        read_only=True,
+        config=True,
+        help="The regular-expressions to search within the byte-contents of files."
+    )
+
+    @trt.validate('regex')
+    def _is_valid_regex(self, proposal):
+        value = proposal.value
+        try:
+            v = self.interp(value,
+                            _stub_keys=lambda k: '<%s>' % k,  # real values from project
+                            _escaped_for='regex')
+            re.compile(v.encode(self.encoding))
+        except Exception as ex:
+            proposal.trait.error(None, value, ex)
+        return value
+
+    def regex_resolved(self, project: 'Project') -> Pattern:
+        v = project.interp(self.regex, _escaped_for='regex')
+        return re.compile(v.encode(self.encoding))
+
+    subst = Unicode(
+        allow_none=True, default_value='',
+        help="""
+        What to replace with; if `None`, no substitution happens.
+
+        Inside them, supported extensions are:
+        - captured groups with '\\1 or '\g<foo>' expressions
+          (see Python's regex documentation)
+        - interpolation variables; Keys available (apart from env-vars prefixed with '$'):
+          {ikeys}
+        - WARN: put x2 all '{' and '}' chars like this: `\\w{{1,5}}` or else,
+          interpolation will scream.
+        """
+    )
+
+    def subst_resolved(self, project: 'Project') -> bytes:
+        v = project.interp(self.subst)
+        return v.encode(self.encoding)
+
+    slices = UnionTrait(
+        (SliceTrait(), ListTrait(SliceTrait())),
+        read_only=True,
+        config=True,
+        help="""
+        Which of the `hits` to substitute, in "slice" notation(s); all if not given.
+
+        Example::
+
+            gs = Graft()
+            gs.slices = 0                ## Only the 1st match.
+            gs.slices = '1:'             ## Everything except the 1st match
+            gs.slices = ['1:3', '-1:']   ## Only 2nd, 3rd and the last match.
+                "
+
+        """
+    )
+
+    encoding = Unicode(
+        'utf-8',
+        config=True,
+        help="""How to encode regex into bytes for matching file contents.""")
+
+    def collect_matches(self, fbytes: bytes, project: 'Project') -> List[Match]:
+        """
+        :return:
+            all `hits`; use :meth:`sliced_matches` to apply any slices
+        """
+        with self.errlogged(token='scan',
+                            doing="scanning %s" % self):
+            regex = self.regex_resolved(project)
+            matches = list(regex.finditer(fbytes))
+
+        return matches
+
+    def sliced_matches(self, matches: List[Match]) -> List[Match]:
+        slices = self.slices
+        if not slices or not matches:
+            return matches
+        else:
+            if not isinstance(slices, list):
+                slices = [slices]
+
+            match_indices = _slices_to_ids(slices, matches)
+            return [matches[i] for i in match_indices]
+
+    def substitute_matches(self,
+                           fbytes: bytes,
+                           matches: List[Match],
+                           project: 'Project',
+                           ) -> bytes:
+        """
+        :return:
+            the substituted fbytes
+        """
+        if self.subst:
+            subst = self.subst_resolved(project)
+            for m in matches:
+                if subst is not None:
+                    with self.errlogged(token='subst',
+                                        doing="substituting %s --> %s" %
+                                        (subst, m)):
+                        new_text = m.expand(subst)
+                        fbytes = fbytes[:m.start()] + new_text + fbytes[m.end():]
+
+        return fbytes
+
+
+class Engrave(cmdlets.Replaceable, cmdlets.Spec):
+    """File-patterns to search and replace with version-id patterns."""
+
+    globs = ListTrait(
+        Unicode(),
+        read_only=True,
+        config=True,
+        help="A list of POSIX file patterns (.gitgnore-like) to search and replace"
+    )
+
+    grafts = ListTrait(
+        AutoInstance(Graft),
+        read_only=True,
+        config=True,
+        help="""
+        A list of `Graft` for engraving (search & replace) version-ids or other infos.
+
+        Use `{appname} config desc Graft` to see its syntax.
+        """
+    )
+
+
+## TODO: move version-math to separate module?
+class VersionError(cmdlets.CmdException):
+    pass
+
+
+def _is_version_id_relative(version_str: str):
+    return version_str.startswith(('+', '^'))
+
+
+def _calc_versions_op(op, v1, v2):
+    """
+    Example:
+
+    >>> from packaging.version import Version
+
+    >>> Version('1.2a3.post4.dev5+ab_cd.ef-16')._version
+    _Version(epoch=0, release=(1, 2), dev=('dev', 5), pre=('a', 3), post=('post', 4),
+             local=('ab', 'cd', 'ef', 16))
+    """
+    from packaging.version import Version, _cmpkey
+    from copy import copy
+    import itertools as itt
+
+    def add_pairs(part, p1, p2):
+        try:
+            ## TODO: smarted cycle 1st rel-pair part than 2nd win-over.
+            name1, num1 = p1
+            name2, num2 = p2
+            assert isinstance(name1, str) and isinstance(name2, str), (p1, p2)
+
+            if name1 == name2:
+                return (name1, num1 + num2)
+            elif name1 < name2:
+                return (name2, num2)
+            else:
+                raise VersionError("Cannot backtrack version \"%s\" part: "
+                                   "%s%s-->%s%s" % (part) + p1 + p2)
+
+        except TypeError:
+            ## One or both are `None`.
+            return p2 if p1 is None else p1
+
+    def add_locals(l1, l2):
+        try:
+            vv1.local + vv2.local
+        except TypeError:
+            ## One or both are `None`.
+            return l2 if l1 is None else l1
+
+    v1, v2 = [v if isinstance(v, Version) else Version(v)
+              for v in (v1, v2)]
+    vv1, vv2 = v1._version, v2._version
+    new_version = copy(v1)
+
+    if op == '+':
+        release = tuple(a + b
+                        for a, b in itt.zip_longest(vv1.release,
+                                                    vv2.release,
+                                                    fillvalue=0))
+        new_vv = vv1._replace(
+            epoch=vv1.epoch + vv2.epoch,
+            release=release,
+            dev=add_pairs('dev', vv1.dev, vv2.dev),
+            pre=add_pairs('pre', vv1.pre, vv2.pre),
+            post=add_pairs('post', vv1.post, vv2.post),
+            local=add_locals(vv1.local, vv2.local)
+        )
+        new_version._version = new_vv
+
+    else:
+        raise AssertionError("Version-op '%s' unknown or not implemented!" % op)
+
+    new_version._key = _cmpkey(
+        new_vv.epoch,
+        new_vv.release,
+        new_vv.pre,
+        new_vv.post,
+        new_vv.dev,
+        new_vv.local,
+    )
+
+    return new_version
+
+
 class Project(cmdlets.Replaceable, cmdlets.Printable, cmdlets.Spec):
     pname = Unicode(
         config=True,
@@ -56,6 +284,37 @@ class Project(cmdlets.Replaceable, cmdlets.Printable, cmdlets.Spec):
           the basepath of other projects.
           """
     ).tag(printable=True)
+
+    current_version = Unicode(
+        config=True)
+
+    ## TODO: rename version-->new_version
+    version = Unicode(
+        config=True)
+
+    amend = Bool(
+        config=True,
+        help="Amend the last version tag of the project, don't bump.")
+
+    def load_current_version_from_history(self):
+        vtag_index = -2 if self.amend else -1
+        try:
+            self.current_version = self.pvtags_history[vtag_index]
+        except IndexError:
+            self.log.debug("A vtag[%i] does not exit in history of %s",
+                           vtag_index, self)
+            self.current_version = self.start_version_id
+
+    def set_new_version(self, version_bump: str):
+        """
+        :param version_bump:
+            relative or absolute
+        """
+        if _is_version_id_relative(version_bump):
+            op = version_bump[0]
+            self.version = _calc_versions_op(op, self.current_version, version_bump[1:])
+        else:
+            self.version = version_bump
 
     tag_vprefixes = TupleTrait(
         Unicode(), Unicode(),
@@ -80,12 +339,10 @@ class Project(cmdlets.Replaceable, cmdlets.Printable, cmdlets.Spec):
            in `pvtag_frmt` kw-arg.
     """).tag(config=True)
 
-    @trt.default('pvtag_frmt')
-    def _tag_frmt_from_template(self):
-        template_project = getattr(self.active_subcmd(), 'template_project', None)
-        if template_project and template_project is not self:
-            return template_project.pvtag_frmt
-        return ''
+    def _format_vtag(self, version, is_release=False):
+        return self.interp(self.pvtag_frmt,
+                           version=version,
+                           vprefix=self.tag_vprefixes[int(is_release)])
 
     def tag_fnmatch(self, is_release=False):
         """
@@ -130,7 +387,10 @@ class Project(cmdlets.Replaceable, cmdlets.Printable, cmdlets.Spec):
         value = proposal.value
         try:
             for vprefix in self.tag_vprefixes:
-                re.compile(value.format(pname='<pname>', vprefix=vprefix))
+                v = self.interpolations.interp(
+                    value,
+                    pname='<pname>', vprefix=vprefix)
+                re.compile(v)
         except Exception as ex:
             proposal.trait.error(None, value, ex)
         return value
@@ -143,27 +403,18 @@ class Project(cmdlets.Replaceable, cmdlets.Printable, cmdlets.Spec):
         Adds a signed tag with name/msg from `tag_name`/`message` (commit implied).
 
         """)
-    sign_tags = Bool(
-        config=True,
-        help="Enable PGP-signing of tags (see also `sign_user`)."
-    )
-
-    sign_user = Unicode(
-        config=True,
-        help="The signing PGP user (email, key-id)."
-    )
 
     message = Unicode(
-        "chore(ver): bump {current_version} → {version}",
+        "{pname}-{current_version} → {version}",
         config=True,
         help="""
-            The message for commits and per-project tags.
+            The message part regading the this project for release-commits & tags.
 
             Available interpolations (apart from env-vars prefixed with '$'):
             {ikeys}
         """)
 
-    def tag_regex(self, is_release=False):
+    def tag_regex(self, is_release=False) -> Pattern:
         """
         Interpolate and compile as regex.
 
@@ -252,6 +503,7 @@ class Project(cmdlets.Replaceable, cmdlets.Printable, cmdlets.Spec):
         pname = self.pname
         tag_pattern = self.tag_fnmatch(is_release)
 
+        ## TODO: move to pvtags
         acli = cmd.git.describe
         if include_lightweight:
             acli._(tags=True)
@@ -299,321 +551,51 @@ class Project(cmdlets.Replaceable, cmdlets.Printable, cmdlets.Spec):
 
         return out
 
-
-PatternClass = type(re.compile('.*'))  # For traitlets
-MatchClass = type(re.match('.*', ''))  # For traitlets
-
-
-def _slices_to_ids(slices, thelist):
-    from boltons.setutils import IndexedSet as iset
-
-    all_ids = list(range(len(thelist)))
-    mask_ids = iset()
-    for aslice in slices:
-        mask_ids.update(all_ids[aslice])
-
-    return list(mask_ids)
-
-
-class Graft(cmdlets.Replaceable, cmdlets.Printable, cmdlets.Spec):
-    regex = Unicode(
-        read_only=True,
-        config=True,
-        help="What to search"
-    )
-
-    @trt.validate('regex')
-    def _is_valid_regex(self, proposal):
-        value = proposal.value
-        try:
-            v = self.interpolations.interp(value,
-                                           self,
-                                           _stub_keys=lambda k: '<%s>' % k)
-            re.compile(v)
-        except Exception as ex:
-            proposal.trait.error(None, value, ex)
-        return value
-
-    @property
-    def regex_resolved(self):
-            v = self.interpolations.interp(self.regex, self)
-            return re.compile(v)
-
-    subst = Unicode(
-        allow_none=True, default_value='',
-        help="""
-        What to replace with; if `None`, no substitution happens.
-
-        Inside them, supported extensions are:
-        - captured groups with '\\1 or '\g<foo>' expressions
-          (see Python's regex documentation)
-        - interpolation variables; Keys available (apart from env-vars prefixed with '$'):
-          {ikeys}
+    def tag_version_commit(self, is_release=False):
         """
-    )
+        Make a tag on current commit denoting a version-bump.
 
-    slices = UnionTrait(
-        (SliceTrait(), ListTrait(SliceTrait())),
-        read_only=True,
+        :param is_release:
+            `False` for version-tags, `True` for release-tags
+        """
+        tag_name = self._format_vtag(self.version, is_release)
+        ## TODO: move all git-cmds to pvtags?
+        cmd.git.tag(tag_name,
+                    message=self.message,
+                    force=self.is_force('tag') or None,
+                    sign=self.sign_tags or None,
+                    local_self=self.sign_user or None,
+                    )
+
+    engraves = ListTrait(
+        AutoInstance(Engrave),
+        default_value=[{
+            'globs': ['setup.py', '__init__.py'],
+            'grafts': [
+                {
+                    'regex': r'''(?xm)
+                            \bversion
+                            (\ *=\ *)
+                            (.+)$
+                        ''',
+                    'subst': r"version\1'{version}'"
+                }
+            ],
+        }],
         config=True,
         help="""
-        Which of the `hits` to substitute, in "slice" notation(s); all if not given.
+        """)
 
-        Example::
-
-            gs = Graft()
-            gs.slices = 0                ## Only the 1st match.
-            gs.slices = '1:'             ## Everything except the 1st match
-            gs.slices = ['1:3', '-1:']   ## Only 2nd, 3rd and the last match.
-                "
-
-        """
-    )
-
-    hits = ListTrait(Instance(MatchClass), read_only=True)
-    hits_indices = ListTrait(Int(),
-                             allow_none=True,
-                             default_value=None, read_only=True)
-    nsubs = Int(allow_none=True)
-
-    def collect_graft_hits(self, ftext: str) -> 'Graft':
-        """
-        :return:
-            a clone with updated `hits`
-        """
-        regex = self.regex_resolved
-        hits: List[Match] = list(regex.finditer(ftext))
-        return self.replace(hits=hits)
-
-    def _get_hits_indices(self) -> Optional[List[int]]:
-        """
-        :return:
-            A list with the list-indices of hits kept, or None if no `slices` given.
-        """
-        slices: Union[slice, List[slice]] = self.slices
-        if slices:
-            if not isinstance(slices, list):
-                slices = [slices]
-
-            hits_indices = _slices_to_ids(slices, self.hits)
-
-            return hits_indices
-
-    def valid_hits(self) -> List[Match]:
-        hits = self.hits
-        hits_indices = self.hits_indices
-        if hits_indices is None:
-            return hits
-        else:
-            return [hits[i] for i in hits_indices]
-
-    def substitute_graft_hits(self, fpath: Path, ftext: str) -> Tuple[str, 'Graft']:
-        """
-        :return:
-            A 2-TUPLE ``(<substituted-ftext>, <updated-graft>)``, where
-            ``<updated-graft>`` is a *possibly* clone with updated
-            `hits_indices` (if one used), or the same if no idices used,
-            or None if no hits remained. after hits-slices filtering
-        """
-        if not self.hits:
-            return (ftext, self)
-
-        orig_ftext = ftext
-
-        hits_indices = self._get_hits_indices()
-        if hits_indices:
-            clone = self.replace(hits_indices=hits_indices)
-            log.debug(
-                "Replacing %i out of %i matches in file '%s' of pattern '%s': %s",
-                len(hits_indices), len(self.hits), fpath, self.regex, hits_indices)
-        elif self.hits:
-            clone = self.replace()
-
-        ## NOTE: Bad programming style to update state (hits_indices)
-        #  and then rely on that inside the same method.
-
-        nsubs = 0
-        for m in clone.valid_hits():
-            if clone.subst is not None:
-                ftext = ftext[:m.start()] + m.expand(clone.subst) + ftext[m.end():]
-                nsubs += 1
-        clone.nsubs = nsubs
-
-        if not nsubs:
-            assert ftext == orig_ftext, (ftext, orig_ftext)
-
-        return (ftext, clone)
-
-
-class Engrave(cmdlets.Replaceable, cmdlets.Spec):
-    """File-patterns to search and replace with version-id patterns."""
-
-    globs = ListTrait(
-        Unicode(),
-        read_only=True,
+    default_version_bump = Unicode(
+        '^1',
         config=True,
-        help="A list of POSIX file patterns (.gitgnore-like) to search and replace"
+        help="Which relative version to imply if not given in the cmd-line."
     )
 
-    grafts = ListTrait(
-        AutoInstance(Graft),
-        read_only=True,
-        config=True,
-        help="""
-        A list of `Graft` for engraving (search & replace) version-ids or other infos.
-
-        Use `{appname} config desc Graft` to see its syntax.
-        """
-    )
-
-    encoding = Unicode(
-        'utf-8',
-        read_only=True,
-        config=True,
-        help="Open files with this encoding."
-    )
-
-    encoding_errors = Unicode(
-        'surrogateescape',
-        read_only=True,
-        config=True,
-        help="""
-        Open files with this encoding-error handling.
-
-        See https://docs.python.org/3/library/codecs.html#codecs.register_error
-        """
-    )
-
-    fpath = Instance(Path, allow_none=True, read_only=True)
-    ftext = Unicode(allow_none=True, read_only=True)
-
-    def _fread(self, fpath: Path):
-        return fpath.read_text(
-            encoding=self.encoding, errors=self.encoding_errors)
-
-    def _fwrite(self, fpath: Path, text: str):
-        fpath.write_text(
-            text, encoding=self.encoding, errors=self.encoding_errors)
-
-    def read_files(self, files: FPaths) -> 'PathEngraves':
-        pathengs: 'PathEngraves' = odict()
-
-        for fpath in files:
-            ## TODO: try-catch file-reading.
-            ftext = self._fread(fpath)
-
-            pathengs[fpath] = self.replace(fpath=fpath, ftext=ftext)
-
-        return pathengs
-
-    def collect_glob_files(self,
-                           mybase: FLike = '.',
-                           other_bases: Union[FLikeList, None] = None) -> FPaths:
-        from . import engrave
-        return engrave.glob_files(self.globs, mybase, other_bases)
-
-    def collect_file_hits(self) -> 'Engrave':
-        """
-        :return:
-            a clone with `grafts` updated
-        """
-        new_grafts: List[Graft] = []
-        ftext = self.ftext
-        for vg in self.grafts:
-            nvgraft = vg.collect_graft_hits(ftext)
-            new_grafts.append(nvgraft)
-
-        return self.replace(grafts=new_grafts)
-
-    def substitute_file_hits(self) -> Optional['Engrave']:
-        """
-        :return:
-            a clone with substituted `grafts` updated, or none if nothing substituted
-        """
-        new_grafts: List[Graft] = []
-        ftext = self.ftext
-        fpath = self.fpath
-        for vg in self.grafts:
-            subst_res = vg.substitute_graft_hits(fpath, ftext)
-            if subst_res:
-                ftext, nvgraft = subst_res
-                new_grafts.append(nvgraft)
-
-        if new_grafts:
-            return self.replace(ftext=ftext, grafts=new_grafts)
-        else:
-            assert self.ftext == ftext, (self.ftext, ftext)
-
-    @property
-    def nhits(self):
-        return sum(len(vg.valid_hits()) for vg in self.grafts)
-
-    @property
-    def nsubs(self):
-        return sum(vg.nsubs for vg in self.grafts)
-
-    ####################
-    ## PathEngs maps ##
-    ####################
-
-    def collect_all_hits(self, pathengs: 'PathEngraves') -> 'PathEngraves':
-        hits: 'PathEngraves' = odict()
-        for fpath, eng in pathengs.items():
-            ## TODO: try-catch regex matching.
-            neng = eng.collect_file_hits()
-            hits[fpath] = neng
-
-        return hits
-
-    def substitute_hits(self, hits: 'PathEngraves') -> 'PathEngraves':
-        substs: 'PathEngraves' = odict()
-        for fpath, eng in hits.items():
-            ## TODO: try-catch regex substitution.
-            neng = eng.substitute_file_hits()
-            if neng:
-                substs[fpath] = neng
-
-        return substs
-
-    def write_engraves(self, substs: 'PathEngraves') -> None:
-        if not self.dry_run:
-            for fpath, eng in substs.items():
-                ## TODO: try-catch regex matching.
-                self._fwrite(fpath, eng.ftext)
-
-    def _log_action(self, pathengs: 'PathEngraves', action: str):
-        file_lines = '\n  '.join('%s: %i %s' % (fpath, eng.nhits, action)
-                                 for fpath, eng in pathengs.items())
-        ntotal = sum(eng.nhits for eng in pathengs.values())
-        log.info("%sed %i files: %s", action.capitalize(), ntotal, file_lines)
-
-    def scan_hits(self,
-                  mybase: FLike = '.',
-                  other_bases: Union[FLikeList, None] = None
-                  ) -> 'PathEngraves':
-        files: FPaths = self.collect_glob_files(mybase=mybase,
-                                                other_bases=other_bases)
-        log.info("Globbed %i files in '%s': %s",
-                 len(files), Path(mybase).resolve(), ', '.join(str(f) for f in files))
-
-        pathengs: 'PathEngraves' = self.read_files(files)
-
-        file_hits: 'PathEngraves' = self.collect_all_hits(pathengs)
-        self._log_action(file_hits, 'match')
-
-        return file_hits
-
-    def engrave_hits(self, hits: 'PathEngraves') -> 'PathEngraves':
-        substs: 'PathEngraves' = self.substitute_hits(hits)
-        self._log_action(substs, 'graft')
-
-        self.write_engraves(substs)
-
-        return substs
-
-    def scan_and_engrave(self) -> 'PathEngraves':
-        hits = self.scan_hits()
-        return self.engrave_hits(hits)
-
-
-PathEngraves = Dict[Path, Engrave]
+    @trt.validate('default_version_bump')
+    def _require_relative_version(self, change):
+        if not _is_version_id_relative(change.new):
+            raise trt.TraitError(
+                "Expected a relative version for '%s.%s', but got '%s'!"
+                "\n  Relative versions start either with '+' or '^'." %
+                change.owner, change.trait.name, change.new)

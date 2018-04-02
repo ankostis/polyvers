@@ -8,12 +8,15 @@
 #
 """Search and replace version-ids in files."""
 
-from collections import OrderedDict as odict
+from collections import defaultdict
 from pathlib import Path
-from typing import List, Tuple, Sequence
+from typing import List, Tuple, Sequence, Set, Match, Dict
 import logging
 
-from . import fileutils as fu, pvproject
+from . import cmdlets, fileutils as fu, pvproject
+from ._vendor.traitlets.traitlets import (
+    Dict as DictTrait, Bool as BoolTrait, Tuple as TupleTrait)
+from ._vendor.traitlets.traitlets import Bytes, Instance
 
 
 log = logging.getLogger(__name__)
@@ -131,19 +134,206 @@ def glob_files(patterns: List[str],
     return files
 
 
-def scan_engraves(engraves: Sequence[pvproject.Engrave]) -> pvproject.PathEngraves:
-    hits = [(engpaths, enghits)
-            for eng in engraves
-            for engpaths, enghits in eng.scan_hits().items()]
+Range = Tuple[int, int]
 
-    ## Consolidate grafts-per-file in a single map.
-    #
-    hits_map: pvproject.PathEngraves = odict()
-    for fpath, fspec in hits:
-        prev_fspec = hits_map.get(fpath)
-        if prev_fspec:
-            prev_fspec.grafts.extend(fspec.grafts)
+
+def overlapped_matches(matches: Sequence[Match],
+                       no_touch=False,
+                       ) -> Set[Match]:
+    """
+    :param no_touch:
+        if true, all three (0,1), (1,2) (2,3) overlap on 1 and 2.
+    """
+    import itertools as itt
+    import operator
+
+    op = operator.le if no_touch else operator.lt
+
+    def overlap(a, b) -> Set[Match]:
+        # from https://stackoverflow.com/a/3269471/548792
+        return op(a[0], b[1]) and op(b[0], a[1])
+
+    all_pairs = itt.combinations(matches, 2)
+    overlapped: Set[Match] = set()
+    for m1, m2 in all_pairs:
+        if m1 not in overlapped and overlap(m1.span(), m2.span()):
+            overlapped.add(m2)
+
+    return overlapped
+
+
+GlobTruples = List[Tuple[pvproject.Project, pvproject.Engrave, Path]]
+GraftsMap = Dict[Path, List[Tuple[pvproject.Project,
+                                  pvproject.Engrave,
+                                  pvproject.Graft]]]
+MatchQruple = Tuple[pvproject.Project,
+                    pvproject.Engrave,
+                    pvproject.Graft,
+                    List[Match]]
+MatchMap = Dict[Path, List[MatchQruple]]
+
+
+class FileProcessor(cmdlets.Spec):
+
+    _fpath_bytes: Dict[Path, Tuple[bytes, bool]] = DictTrait(  # type: ignore
+        key_trait=Instance(Path),
+        value_trait=TupleTrait(Bytes(),
+                               BoolTrait()))
+## TODO: FileProcessor.match_map = match_map
+#     match_map: MatchMap = DictTrait((Instance(Path),
+#                                      TupleTrait((Instance(pvproject.Project),
+#                                                  Instance(Engrave),
+#                                                  Instance(Graft),
+#                                                  ListTrait(Instance(Match))))))
+
+    def _set_file_bytes(self, fpath: Path, fbytes: bytes) -> bytes:
+        key = fpath.resolve(strict=True)
+        if key in self._fpath_bytes:
+            orig_fbytes, _changed = self._fpath_bytes[key]
+            changed = fbytes != orig_fbytes
         else:
-            hits_map[fpath] = fspec
+            ## Just read file.
+            changed = False
+        self._fpath_bytes[key] = (fbytes, changed)
 
-    return hits_map
+        return fbytes
+
+    def _read_file(self, fpath: Path) -> bytes:
+        key = fpath.resolve(strict=True)
+        fbytes, _changed = self._fpath_bytes.get(key, (None, None))
+        if fbytes is None:
+            with self.errlogged(OSError,
+                                token='fread',
+                                doing="reading file '%s'" % fpath):
+                fbytes = self._set_file_bytes(fpath, fpath.read_bytes())
+                self.log.debug("Read %i-bytes from file-to-engrave '%s'.",
+                               len(fbytes), fpath)
+
+        return fbytes
+
+    def _write_all_files(self):
+        for fpath, (fbytes, changed) in self._fpath_bytes.items():
+            if not changed:
+                self.log.debug("Skipped untouched file '%s'.", fpath)
+                continue
+
+            with self.errlogged(OSError,
+                                token='fwrite',
+                                doing="writing file '%s'" % fpath):
+                fpath.write_bytes(fbytes)
+
+                self.log.info("Written %i-bytes in engraved file '%s'.",
+                              len(fbytes), fpath)
+
+    def _glob_project(self,
+                      project: pvproject.Project,
+                      other_bases: pvproject.FLikeList = ()
+                      ) -> GlobTruples:
+        mybase = project.basepath
+        glob_truples: GlobTruples = []
+        for eng in project.engraves:
+            with self.errlogged(
+                token='glob',
+                doing="globbing %.21s%s" % (eng, eng.globs)
+            ):
+                globs = [project.interp(gs, _escaped_for='glob')
+                         for gs in eng.globs]
+                hit_fpaths = glob_files(
+                    globs, mybase=mybase or '.', other_bases=other_bases)
+                glob_truples.extend((project, eng, fp)
+                                    for fp in hit_fpaths)
+
+        return glob_truples
+
+    def _reindex_glob_results_on_fpaths(self, gtruples: GlobTruples
+                                        ) -> GraftsMap:
+        igtruples: GraftsMap = defaultdict(list)
+        for prj, eng, fpath in gtruples:
+            igtruples[fpath].extend((prj, eng, graft)
+                                    for graft in eng.grafts)
+        return igtruples or {}
+
+    def _glob_all_projects(self, projects: Sequence[pvproject.Project]):
+        other_bases = [prj.basepath for prj in projects if prj.basepath]
+        glob_truples = []
+        for prj in projects:
+            with self.errlogged(token='glob',
+                                doing="globbing %.21s" % prj):
+                glob_truples.extend(self._glob_project(prj, other_bases))
+
+        return self._reindex_glob_results_on_fpaths(glob_truples)
+
+    def _scan_all_grafts(self, grafts_map: GraftsMap) -> MatchMap:
+        match_map: MatchMap = defaultdict(list)
+        ## TODO: FileProcessor.match_map = match_map
+        for fpath, graft_truple in grafts_map.items():
+            fbytes = self._read_file(fpath)
+            for prj, eng, graft in graft_truple:
+                with self.errlogged(token='scan',
+                                    doing="scanning '%s' for %.21s.%.21s" %
+                                    (fpath, prj, eng)):
+                    matches = graft.collect_matches(fbytes, prj)
+                    self.log.debug("Scanned %i matches in %i-bytes text of file '%s': "
+                                   "\n  %s\n  %s\n  %s \n  %s",
+                                   len(matches), len(fbytes), fpath,
+                                   matches, graft, eng, prj)
+
+                    sliced_matches = graft.sliced_matches(matches)
+                    if len(sliced_matches) != len(matches):
+                        self.log.debug(
+                            "Sliced %i out of %i matches in file '%s' for %s.",
+                            len(sliced_matches), len(matches), fpath, graft)
+
+                match_map[fpath].append((prj, eng, graft, matches))
+
+        return match_map or {}
+
+    def _drop_overlapping_matches(self, match_map: MatchMap) -> MatchMap:
+        good_match_map = {}
+        for fpath, mqruples in match_map.items():
+            all_file_matches = [m
+                                for _prj, _eng, _graft, matches in mqruples
+                                for m in matches]
+
+            bad_matches = overlapped_matches(all_file_matches, no_touch=True)
+            if bad_matches:
+                self.log.debug(
+                    "Found %i out of %i overlapping matches for file '%s'."
+                    "\n  Overlaps: %s",
+                    len(bad_matches), len(all_file_matches), fpath,
+                    ', '.join(str(s) for s in bad_matches))
+
+            for prj, eng, graft, matches in mqruples:
+                good_match_map[fpath] = [(prj, eng, graft,
+                                          [m for m in matches
+                                           if m not in bad_matches])
+                                         for prj, eng, graft, matches in mqruples]
+
+        return good_match_map
+
+    def scan_projects(
+            self, projects: Sequence[pvproject.Project]
+    ) -> MatchMap:
+        grafts_map = self._glob_all_projects(projects)
+        match_map = self._scan_all_grafts(grafts_map)
+        match_map = self._drop_overlapping_matches(match_map)
+
+        return match_map
+
+    def engrave_matches(self, match_map: MatchMap):
+        for fpath, match_qruple in match_map.items():
+            fbytes = self._read_file(fpath)
+            for prj, eng, graft, matches in match_qruple:
+                with self.errlogged(token='subst',
+                                    doing="subst '%s' with %.21s.%.21s.%.21s" %
+                                    (fpath, prj, eng, graft)):
+
+                    fbytes = graft.substitute_matches(fbytes, matches, prj)
+                    self.log.debug("Substituted %i matches in %i-bytes text of file '%s': "
+                                   "\n  %s\n  %s\n  %s \n  %s",
+                                   len(matches), len(fbytes), fpath,
+                                   matches, graft, eng, prj)
+
+            self._set_file_bytes(fpath, fbytes)
+
+        self._write_all_files()
