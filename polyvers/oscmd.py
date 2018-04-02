@@ -118,7 +118,21 @@ def exec_cmd(cmd,
                   cmd_label, cmd_str, res.stdout, res.stderr)
 
     if check_returncode:
-        res.check_returncode()
+        try:
+            res.check_returncode()
+        except sbp.CalledProcessError as ex:
+            #
+            #  A hackish wedge to report to the user
+            ## the CWD when not in Git-repo.
+
+            if "Not a git repository" in ex.stderr:
+                import os
+                from . import pvtags
+
+                raise pvtags.NoGitRepoError(
+                    "Current-dir '%s' is not within a git repository!" %
+                    os.curdir) from ex
+            raise
 
     return res
 

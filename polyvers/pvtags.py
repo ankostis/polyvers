@@ -21,7 +21,6 @@ There are 3 important methods/functions calling Git:
 from typing import List, Dict, Sequence, Optional
 import contextlib
 import logging
-import os
 
 import subprocess as sbp
 
@@ -49,6 +48,7 @@ class NoGitRepoError(GitError):
 
 @contextlib.contextmanager
 def git_errors_handled(pname):
+    """Report `pname` involved to the user in case tags are missing."""
     try:
         yield
     except sbp.CalledProcessError as ex:
@@ -60,13 +60,7 @@ def git_errors_handled(pname):
                    "No annotated tags",
                    "No tags can describe"]):
             raise GitVoidError("Project '%s': %s" % (pname, err)) from ex
-
-        elif "Not a git repository" in err:
-            raise NoGitRepoError(
-                "Current-dir '%s' is not within a git repository!" %
-                os.curdir) from ex
-        else:
-            raise
+        raise
 
 
 def _git_current_branch() -> Optional[str]:
