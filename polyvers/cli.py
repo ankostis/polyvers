@@ -592,7 +592,9 @@ class BumpCmd(_SubCmd):
         if version_and_pnames:
             version_bump, projects = self._filter_projects_by_pnames(projects, *version_and_pnames)
         else:
-            version_bump = self.default_version_bump
+            version_bump = None
+
+        pvtags.populate_pvtags_history(*projects)
 
         ## TODO: Stop bump if version-bump fails pep440 validation.
 
@@ -623,7 +625,7 @@ class BumpCmd(_SubCmd):
             ## TODO: move all git-cmds to pvtags?
             if self.out_of_trunk_releases:
                 for proj in projects:
-                    proj.tag_version_commit(is_release=False)
+                    proj.tag_version_commit(self, is_release=False)
                 ## TODO: append new tags to git-restore-point.__exit__
 
                 with pvtags.git_restore_point(restore=True):
@@ -635,14 +637,14 @@ class BumpCmd(_SubCmd):
                     self._commit_new_release(projects)
 
                     for proj in projects:
-                        proj.tag_version_commit(is_release=True)
+                        proj.tag_version_commit(self, is_release=True)
                     ## TODO: append new tags to git-restore-point.__exit__ if dry-run
 
             else:  # In-trunk plain *vtags* for mono-project repos.
                 self._commit_new_release(projects)
 
                 for proj in projects:
-                    proj.tag_version_commit(is_release=False)
+                    proj.tag_version_commit(self, is_release=False)
                 ## TODO: append new tags to git-restore-point.__exit__
 
     def start(self):

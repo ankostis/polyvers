@@ -305,11 +305,14 @@ class Project(cmdlets.Replaceable, cmdlets.Printable, cmdlets.Spec):
                            vtag_index, self)
             self.current_version = self.start_version_id
 
-    def set_new_version(self, version_bump: str):
+    def set_new_version(self, version_bump: str = None):
         """
         :param version_bump:
             relative or absolute
         """
+        if not version_bump:
+            version_bump = self.default_version_bump
+
         if _is_version_id_relative(version_bump):
             op = version_bump[0]
             self.version = _calc_versions_op(op, self.current_version, version_bump[1:])
@@ -551,7 +554,7 @@ class Project(cmdlets.Replaceable, cmdlets.Printable, cmdlets.Spec):
 
         return out
 
-    def tag_version_commit(self, is_release=False):
+    def tag_version_commit(self, bump_cmd, is_release=False):
         """
         Make a tag on current commit denoting a version-bump.
 
@@ -562,9 +565,9 @@ class Project(cmdlets.Replaceable, cmdlets.Printable, cmdlets.Spec):
         ## TODO: move all git-cmds to pvtags?
         cmd.git.tag(tag_name,
                     message=self.message,
-                    force=self.is_force('tag') or None,
-                    sign=self.sign_tags or None,
-                    local_self=self.sign_user or None,
+                    force=self.is_forced('tag') or None,
+                    sign=bump_cmd.sign_tags or None,
+                    local_user=bump_cmd.sign_user or None,
                     )
 
     engraves = ListTrait(
