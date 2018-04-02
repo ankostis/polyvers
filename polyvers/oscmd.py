@@ -171,7 +171,7 @@ class _Cli:
             return ('-%s' % k, str(v)) if nk == 1 else ('--%s=%s' % (k, v), )
 
         arglist = self._cmdlist
-        arglist.extend(args)
+        arglist.extend(str(a) for a in args)
         arglist.extend(arg
                        for kv in kw.items()
                        for arg in kv2args(*kv))
