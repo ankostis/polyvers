@@ -329,12 +329,15 @@ class FileProcessor(cmdlets.Spec):
     def engrave_matches(self, match_map: MatchMap):
         for fpath, match_qruple in match_map.items():
             fbytes = self._read_file(fpath)
+            offset = 0  # File growth/shrink as substituted?
             for prj, eng, graft, matches in match_qruple:
                 with self.errlogged(token='subst',
                                     doing="subst '%s' with %.21s.%.21s.%.21s" %
                                     (fpath, prj, eng, graft)):
 
-                    fbytes = graft.substitute_matches(fbytes, matches, prj)
+                    fbytes, graft_offset = graft.substitute_matches(
+                        fbytes, matches, offset, prj)
+                    offset += graft_offset
                     self.log.debug("Substituted %i matches in %i-bytes text of file '%s': "
                                    "\n  %s\n  %s\n  %s \n  %s",
                                    len(matches), len(fbytes), fpath,
