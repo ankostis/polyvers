@@ -660,7 +660,7 @@ class BumpCmd(_SubCmd):
                 ## TODO: append new tags to git-restore-point.__exit__
 
         self.log.notice('Bumped projects: %s',
-                      ', '.join('%s-%s --> %s' %
+                        ', '.join('%s-%s --> %s' %
                                 (prj.pname, prj.current_version, prj.version)
                                 for prj in projects))
 
