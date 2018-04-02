@@ -328,11 +328,20 @@ class Project(cmdlets.Replaceable, cmdlets.Printable, cmdlets.Spec):
 
         """)
 
-    message = Unicode(
+    message_summary = Unicode(
         "{pname}-{current_version} -> {version}",
         config=True,
         help="""
-            The message part regading the this project for release-commits & tags.
+            The commit & tag message's summary-line part for this project.
+
+            Available interpolations (apart from env-vars prefixed with '$'):
+            {ikeys}
+        """)
+
+    message_body = Unicode(
+        config=True,
+        help="""
+            The commit & tag message-body part for this project.
 
             Available interpolations (apart from env-vars prefixed with '$'):
             {ikeys}

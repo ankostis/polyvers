@@ -504,13 +504,24 @@ class BumpCmd(_SubCmd):
             - False make sense only if `use_leaf_releases=False`
         """)
 
-    message = Unicode(
-        "chore(ver): bump {subproject_msgs}",
+    message_summary = Unicode(
+        "chore(ver): bump {sub_summary}",
         config=True,
         help="""
-            The general message for a release-commit.
+            The commit & tag message's summary-line.
 
-            - Additional interpolation: `subproject_msgs`
+            - Additional interpolation: `sub_summary`
+            - Others interpolations (apart from env-vars prefixed with '$'):
+              {ikeys}
+        """)
+
+    message_body = Unicode(
+        "{sub_body}",
+        config=True,
+        help="""
+            The commit & tag message's body.
+
+            - Additional interpolation: `sub_body`
             - Others interpolations (apart from env-vars prefixed with '$'):
               {ikeys}
         """)
@@ -563,9 +574,21 @@ class BumpCmd(_SubCmd):
         return version, projects
 
     def _make_commit_message(self, *projects: pvproject.Project):
-        subprj_msgs = ', '.join(prj.interp(prj.message) for prj in projects)
-        msg = self.interp(self.message, subproject_msgs=subprj_msgs)
-        return msg
+        from ipython_genutils.text import indent, wrap_paragraphs
+
+        sub_summary = ', '.join(prj.interp(prj.message_summary) for prj in projects)
+        summary = self.interp(self.message_summary, sub_summary=sub_summary)
+
+        text_lines: List[str] = []
+        for prj in projects:
+            if prj.message_body:
+                text_lines.append('- %s', prj.pname)
+                text_lines.append(indent(wrap_paragraphs(prj.message_body), 2))
+
+        sub_body = '\n'.join(text_lines).strip()
+        body = self.interp(self.message_body, sub_body=sub_body)
+
+        return '%s\n\n%s' % (summary, body)
 
     def _commit_new_release(self, projects: Sequence[pvproject.Project]):
         from .oscmd import cmd
@@ -733,7 +756,7 @@ BumpCmd.flags = {  # type: ignore
     ),
 }
 BumpCmd.aliases = {  # type: ignore
-    ('m', 'message'): 'BumpCmd.message',
+    ('m', 'message'): 'BumpCmd.message_body',
     ('u', 'sign-user'): 'BumpCmd.sign_user',
 }
 
