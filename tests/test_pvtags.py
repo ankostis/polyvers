@@ -67,10 +67,9 @@ def test_Project_regex_check():
         Project(pvtag_regex="(")
 
 
-def test_Project_version_from_pvtag(foo, caplog):
+def test_Project_version_from_pvtag(foo):
     v = foo.version_from_pvtag('foo-v1.0.0-2-gbaba0')
     assert v == '1.0.0'
-    assert "`git-describe` suffix" in caplog.text
 
 
 def test_new_Project_raises_pvtags_unpopulated(project1):

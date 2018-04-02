@@ -381,10 +381,10 @@ class Project(cmdlets.Replaceable, cmdlets.Printable, cmdlets.Spec):
         m = self.tag_regex().match(pvtag)
         if m:
             mg = m.groupdict()
-            if mg['descid']:
-                self.log.warning(
-                    "Ignoring pvtag '%s', it has `git-describe` suffix '%s'!",
-                    pvtag, mg['descid'])
+            # if mg['descid']:
+            #     self.log.warning(
+            #         "Ignoring pvtag '%s', it has `git-describe` suffix '%s'!",
+            #         pvtag, mg['descid'])
 
             return mg['version']
 
