@@ -237,8 +237,7 @@ def polyversion(project, default=None, repo_path=None,
     try:
         cmd = 'git describe'.split()
         cmd.extend(git_options)
-        cmd.append('--match')
-        cmd.append(tag_pattern)
+        cmd.append('--match=' + tag_pattern)
         pvtag = _my_run(cmd, cwd=repo_path)
         matched_project, version, descid = split_pvtag(pvtag, tag_regex)
         if matched_project and matched_project != project:
