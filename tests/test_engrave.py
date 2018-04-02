@@ -213,11 +213,9 @@ def test_scan(fileset_mutable, orig_files, f1_graft, f2_graft, caplog):
     prj = Project(config=cfg)
     fproc = engrave.FileProcessor()
     match_map = fproc.scan_projects([prj])
+    assert len(match_map) == 6  # nfiles
     #print(pformat(match_map))
-    nmatches = sum(len(matches)
-                   for qruple in match_map.values()
-                   for _prj, _eng, _graft, matches in qruple)
-    assert nmatches == 4
+    assert fproc.nmatches() == 4
 
     for fpath, text in orig_files.items():
         ftxt = (fileset_mutable / fpath).read_text('utf-8')
@@ -241,10 +239,7 @@ def test_engrave(fileset_mutable, ok_files, f1_graft, f2_graft, caplog):
     match_map = fproc.scan_projects([prj])
     fproc.engrave_matches(match_map)
     #print(pformat(match_map))
-    nmatches = sum(len(matches)
-                   for qruple in match_map.values()
-                   for _prj, _eng, _graft, matches in qruple)
-    assert nmatches == 4
+    assert fproc.nmatches() == 4
 
     for fpath, text in ok_files.items():
         ftxt = (fileset_mutable / fpath).read_text('utf-8')
@@ -277,10 +272,7 @@ def test_engrave_duped_scans(fileset_mutable, ok_files, f1_graft, f2_graft, capl
     match_map = fproc.scan_projects([prj1, prj2])
     fproc.engrave_matches(match_map)
     #print(pformat(match_map))
-    nmatches = sum(len(matches)
-                   for qruple in match_map.values()
-                   for _prj, _eng, _graft, matches in qruple)
-    assert nmatches == 4
+    assert fproc.nmatches() == 4
 
     for fpath, text in ok_files.items():
         ftxt = (fileset_mutable / fpath).read_text('utf-8')

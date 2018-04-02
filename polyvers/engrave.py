@@ -179,12 +179,6 @@ class FileProcessor(cmdlets.Spec):
         key_trait=Instance(Path),
         value_trait=TupleTrait(Bytes(),
                                BoolTrait()))
-## TODO: FileProcessor.match_map = match_map
-#     match_map: MatchMap = DictTrait((Instance(Path),
-#                                      TupleTrait((Instance(pvproject.Project),
-#                                                  Instance(Engrave),
-#                                                  Instance(Graft),
-#                                                  ListTrait(Instance(Match))))))
 
     def _set_file_bytes(self, fpath: Path, fbytes: bytes) -> bytes:
         key = fpath.resolve(strict=True)
@@ -224,6 +218,17 @@ class FileProcessor(cmdlets.Spec):
 
                 self.log.info("Written %i-bytes in engraved file '%s'.",
                               len(fbytes), fpath)
+
+    match_map: MatchMap = DictTrait(key_trait=Instance(Path))  # type: ignore
+#                                     TupleTrait((Instance(pvproject.Project),
+#                                                 Instance(Engrave),
+#                                                 Instance(Graft),
+#                                                 ListTrait(Instance(Match))))))
+
+    def nmatches(self):
+        return sum(len(matches)
+                   for qruple in self.match_map.values()
+                   for _prj, _eng, _graft, matches in qruple)
 
     def _glob_project(self,
                       project: pvproject.Project,
@@ -265,7 +270,6 @@ class FileProcessor(cmdlets.Spec):
 
     def _scan_all_grafts(self, grafts_map: GraftsMap) -> MatchMap:
         match_map: MatchMap = defaultdict(list)
-        ## TODO: FileProcessor.match_map = match_map
         for fpath, graft_truple in grafts_map.items():
             fbytes = self._read_file(fpath)
             for prj, eng, graft in graft_truple:
@@ -317,6 +321,8 @@ class FileProcessor(cmdlets.Spec):
         grafts_map = self._glob_all_projects(projects)
         match_map = self._scan_all_grafts(grafts_map)
         match_map = self._drop_overlapping_matches(match_map)
+
+        self.match_map = match_map
 
         return match_map
 
