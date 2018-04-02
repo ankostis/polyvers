@@ -125,7 +125,7 @@ class BumpCmd(cli._SubCmd):
     sign_user = Unicode(
         allow_none=True,
         config=True,
-        help="The signing PGP user (email, key-id)."
+        help="The signing PGP user identity (email, key-id)."
     )
 
     def _stop_if_git_dirty(self):
@@ -261,5 +261,5 @@ BumpCmd.flags = {  # type: ignore
 }
 BumpCmd.aliases = {  # type: ignore
     ('m', 'message'): 'BumpCmd.message_body',
-    ('u', 'sign-user'): 'BumpCmd.sign_user',
+    ('i', 'sign-user'): 'BumpCmd.sign_user',
 }
