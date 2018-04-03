@@ -269,7 +269,6 @@ def polytime(no_raise=False, repo_path=None):
     :return:
         the commit-date if in git repo, or now; :rfc:`2822` formatted
     """
-    # TODO: Move main from `pvlib` --> `polyvers.pvtgs`
     cdate = None
     if not repo_path:
         repo_path = _caller_fpath()
@@ -297,7 +296,7 @@ def main(*args):
         if o in args:
             doc = main.__doc__.split('\n')[1].strip()
             cmdname = osp.basename(sys.argv[0])
-            print("%s\n\nUsage: %s [-v|--verbose] [PROJ-1]..." %
+            print("%s\n\nUsage: %s [PROJ-1]..." %
                   (doc, cmdname))
             exit(0)
 

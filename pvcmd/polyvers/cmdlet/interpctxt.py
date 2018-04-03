@@ -31,7 +31,7 @@ class Now:  # TODO: privatize
         return now.__format__(format_spec)
 
 
-class Keys:  # TODO: privatize
+class _KeysDumper:  # TODO: privatize
     def __init__(self, mydict):
         self.mydict = mydict
 
@@ -150,7 +150,7 @@ class InterpolationContext(ChainMap):
         self.time_map = {
             'now': Now(),
             'utcnow': Now(is_utc=True),
-            'ikeys': Keys(self),
+            'ikeys': _KeysDumper(self),
         }
         self.env_map = {}
         self.maps.extend([self.time_map, self.env_map])

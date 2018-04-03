@@ -202,7 +202,6 @@ def test_polytime_BAD_no_git_cmd(ok_repo, monkeypatch, today):
 ##############
 ##   MAIN   ##
 ##############
-# TODO: Move main from `pvlib` --> `polyvers.pvtgs`
 
 def test_MAIN_polyversions(ok_repo, untagged_repo, no_repo, capsys):
     ok_repo.chdir()

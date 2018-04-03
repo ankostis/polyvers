@@ -194,9 +194,9 @@ class BumpCmd(cli._SubCmd):
 
         pvtags.populate_pvtags_history(*projects)
 
-        ## TODO: Stop bump if version-bump fails pep440 validation.
-
         for prj in projects:
+            ## Scream if version-bump fails pep440 validation.
+            #
             prj.load_current_version_from_history()
             prj.set_new_version(version_bump)
 

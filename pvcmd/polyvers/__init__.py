@@ -31,7 +31,6 @@ __music__ = {
 }
 
 
-# TODO: enable NOTICE level
 NOTICE = 25
 lcu.patch_new_level_in_logging(NOTICE, 'NOTICE')
 lcu.default_logging_level = NOTICE

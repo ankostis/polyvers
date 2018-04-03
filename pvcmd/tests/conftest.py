@@ -49,7 +49,7 @@ def _re_match(subtext, text):
         subtext = re.compile(subtext)
     except Exception as ex:
         raise ValueError("Bad regex '%s' due to: %s" %
-                         (subtext, ex))  # from None  # TODO: when pvlib split
+                         (subtext, ex)) from None
     else:
         return subtext.search(text)
 

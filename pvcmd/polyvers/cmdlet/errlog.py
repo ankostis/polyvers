@@ -82,7 +82,6 @@ class _ErrNode(trt.HasTraits):
         return child
 
     def node_coordinates(self, node):
-        ## TODO: FIX node coordinates!
         coords = []
         self._cnode_coords_recurse(node, coords)
 
@@ -361,7 +360,6 @@ class ErrLog(cmdlets.Replaceable, trt.HasTraits):
             raise ErrLog.ErrLogException('Cannot re-use faulted %r!' % self)
 
     def __call__(self,
-                 ##TODO: use **kwds to allow reseting errlog props with `None`
                  *exceptions: Exception,
                  parent=_no_value,
                  token=_no_value,
@@ -502,7 +500,6 @@ class ErrLog(cmdlets.Replaceable, trt.HasTraits):
         if is_all_forced:
             count_msg = "ignored %i errors" % nerrors
         elif nforced > 0:
-            # FIXME: never reached!
             count_msg = "collected %i errors (%i ignored)" % (nerrors, nforced)
         else:
             count_msg = "collected %i errors" % nerrors

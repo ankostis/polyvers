@@ -18,7 +18,6 @@ from .cmdlet import cmdlets
 VerLike = Union[str, Version]
 
 
-## TODO: move version-math to separate module?
 class VersionError(cmdlets.CmdException):
     pass
 
