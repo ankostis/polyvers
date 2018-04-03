@@ -528,7 +528,7 @@ class Project(cmdlets.Replaceable, cmdlets.Printable, cmdlets.Spec):
                 'regex': r'''(?xm)
                         \bversion
                         (\ *=\ *)
-                        .+?(,?
+                        .+?(,
                         \ *[\n\r])+
                     ''',
                 'subst': r"version\1'{version}'\2"
