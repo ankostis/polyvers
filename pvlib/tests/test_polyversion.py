@@ -7,6 +7,7 @@
 # You may obtain a copy of the Licence at: http://ec.europa.eu/idabc/eupl
 
 import fnmatch
+import os
 import re
 import sys
 
@@ -66,7 +67,9 @@ def test_caller_fpath():
 
     caller_dir = pvlib._caller_fpath(0)
     exp = osp.join(osp.dirname(__file__), '..')
-    assert osp.samefile(exp, caller_dir)
+    ## Windows misses `osp.samefile()`,
+    # see https://stackoverflow.com/questions/8892831/
+    assert os.stat(caller_dir) == os.stat(exp)
 
 
 ##############

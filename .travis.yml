@@ -17,13 +17,13 @@ python:
 
 install:
   - pip install --upgrade setuptools pip
-  - pip install -q -r requirements_dev.txt
+  - pip install -r requirements_dev.txt
 
   - pip install -e pvlib[test]
 
   - |
     if [ $TRAVIS_PYTHON_VERSION \> '3.5' ]; then
-        pip install -q -r requirements.txt
+        pip install -r requirements.txt
         pip install -e .[test]
     fi
 
@@ -45,12 +45,12 @@ script:
   - |
     if [ $TRAVIS_PYTHON_VERSION \> '3.5' ]; then
         pip uninstall polyvers -y
-        pip install -q dist/*.whl
+        pip install dist/*.whl
     fi
 
   - |
     if [ $TRAVIS_PYTHON_VERSION \> '3.5' ]; then
-        pytest -q --cov=polyvers --cov-report=term-missing
+        pytest --cov=polyvers --cov-report=term-missing
     fi
 
   - |

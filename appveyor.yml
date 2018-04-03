@@ -1,3 +1,6 @@
+## TIP: multiLines in Appveoyr:
+#  https://stackoverflow.com/questions/37627248/how-to-split-a-command-over
+#
 build: false
 version: '0.0.0+build.{build}'
 clone_depth: 20
@@ -6,36 +9,41 @@ environment:
 
   matrix:
    - PYTHON: "C:\\Python36-x64"
-     PYTHON_VERSION: "3.6.x"
+     PYTHON_VERSION: "3.6"
      PYTHON_ARCH: "64"
    - PYTHON: "C:\\Python35-x64"
-     PYTHON_VERSION: "3.5.x"
+     PYTHON_VERSION: "3.5"
      PYTHON_ARCH: "64"
    - PYTHON: "C:\\Python34-x64"
-     PYTHON_VERSION: "3.4.x"
+     PYTHON_VERSION: "3.4"
      PYTHON_ARCH: "64"
    - PYTHON: "C:\\Python27-x64"
-     PYTHON_VERSION: "2.7.x"
+     PYTHON_VERSION: "2.7"
      PYTHON_ARCH: "64"
 
 init:
-  - "SET PATH=%PYTHON%;%PYTHON%\\Scripts;%GIT_PATH%;%PATH%"
-  - "ECHO %PYTHON% %PYTHON_VERSION% %PYTHON_ARCH%"
-  - "ECHO %PATH%"
+  - SET PATH=%PYTHON%;%PYTHON%\\Scripts;%GIT_PATH%;%PATH%
+  - ECHO %PYTHON% %PYTHON_VERSION% %PYTHON_ARCH%
+  - ECHO %PATH%
+  - python --version
 
 install:
-  - "%CMD_IN_ENV%  python -m pip install -U pip"
-  - "%CMD_IN_ENV%  pip install --upgrade setuptools pip"
+  - python -m pip install -U pip
+  - pip install --upgrade setuptools pip
+  - pip install -q -r requirements_dev.txt
 
-  - "%CMD_IN_ENV%  pip install -e ./polyversion[test]"
-  - "%CMD_IN_ENV%  python pvlib/setup.py build bdist_wheel"
+  - pip install -e pvlib[test]
 
-  - "%CMD_IN_ENV%  pip install -e .[test]"
-  - "%CMD_IN_ENV%  python setup.py build bdist_wheel"
+  - IF "%PYTHON_VERSION%" == "3.6" (
+      pip install -q -r requirements.txt  &&
+      pip install -e .[test]
+    )
 
 test_script:
-  - "%CMD_IN_ENV% pytest -v pvlib"
-  - IF "%PYTHON_VERSION%"=="3.6.x" (
-        "%CMD_IN_ENV% pytest -v pvcmd"
+  - python pvlib/setup.py build bdist_wheel
+  - pytest -v pvlib
+  - IF "%PYTHON_VERSION%" == "3.6" (
+      python setup.py build bdist_wheel  &&
+      pytest -v pvcmd
     )
 
