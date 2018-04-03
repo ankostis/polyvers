@@ -539,11 +539,18 @@ class Project(cmdlets.Replaceable, cmdlets.Printable, cmdlets.Spec):
             'globs': ['__init__.py'],
             'grafts': [{
                 'regex': r'''(?xm)
-                        \bversion
+                        \b__version__
                         (\ *=\ *)
-                        (.+)$
+                        (.+[\r\n])
                     ''',
-                'subst': r"version\1'{version}'"
+                'subst': r"__version__\1'{version}'"
+            }, {
+                'regex': r'''(?xm)
+                        \b__updated__
+                        (\ *=\ *)
+                        (.+[\r\n])
+                    ''',
+                'subst': r"__updated__\1'{release_date}'"
             }],
         }, {
             'globs': ['README.rst'],
