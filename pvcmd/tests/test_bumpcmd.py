@@ -6,11 +6,12 @@
 # You may not use this work except in compliance with the Licence.
 # You may obtain a copy of the Licence at: http://ec.europa.eu/idabc/eupl
 #
-from polyvers.__main__ import main
-from polyvers.utils.oscmd import cmd
 import re
+
 import pytest
 
+from polyvers.__main__ import main
+from polyvers.utils.oscmd import cmd
 import textwrap as tw
 
 from .conftest import (
@@ -106,7 +107,7 @@ def test_bump_cmd_mono_project(mutable_repo, caplog, capsys):
 
     cmd.git.checkout('latest')  # Branch-name from BumpCmd.release_branch.
     setuppy_text = setupy_fpath.read_text(encoding='utf-8')
-    assert re.search("version *= *'0.0.1',", setuppy_text)
+    assert re.search("version *= *'0.0.1',", setuppy_text), setuppy_text
 
 
 def test_bump_cmd_monorepo(mutable_repo, caplog, capsys):
@@ -144,4 +145,4 @@ def test_bump_cmd_monorepo(mutable_repo, caplog, capsys):
 
     cmd.git.checkout('latest')  # Branch-name from BumpCmd.release_branch.
     setuppy_text = setupy_fpath.read_text(encoding='utf-8')
-    assert re.search("version *= *'0.0.1',", setuppy_text)
+    assert re.search("version *= *'0.0.1',", setuppy_text), setuppy_text

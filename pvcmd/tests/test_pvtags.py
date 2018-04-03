@@ -6,16 +6,18 @@
 # You may not use this work except in compliance with the Licence.
 # You may obtain a copy of the Licence at: http://ec.europa.eu/idabc/eupl
 
-from polyvers import pvtags, polyversion as pvlib
-from polyvers._vendor import traitlets as trt
-from polyvers._vendor.traitlets import config as trc
-from polyvers.pvproject import Project
-from polyvers.utils.oscmd import cmd
 from tests.conftest import clearlog
 import re
 import sys
 
 import pytest
+
+from polyvers import pvtags
+from polyvers._vendor import traitlets as trt
+from polyvers._vendor.traitlets import config as trc
+from polyvers.pvproject import Project
+from polyvers.utils.oscmd import cmd
+import polyversion as pvlib
 
 
 pname1 = 'proj1'

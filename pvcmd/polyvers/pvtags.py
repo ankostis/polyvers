@@ -21,9 +21,10 @@ from typing import List, Dict, Sequence, Optional
 import contextlib
 import logging
 
+import polyversion as pvlib
 import subprocess as sbp
 
-from . import polyversion as pvlib, pvproject
+from . import pvproject
 from .cmdlet import cmdlets
 from .utils.oscmd import cmd
 

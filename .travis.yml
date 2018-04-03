@@ -17,51 +17,60 @@ python:
 
 install:
   - pip install --upgrade setuptools pip
-  - python setup.py build bdist_wheel
-  - pip install -e ./pvlib[test] -e ./polyvers[test]
+  - pip install -q -r requirements_dev.txt
+
+  - pip install -e pvlib[test]
+
+  - |
+    if [ $TRAVIS_PYTHON_VERSION \> '3.5' ]; then
+        pip install -q -r requirements.txt
+        pip install -e .[test]
+    fi
 
 script:
-  ## Test if pip installs all deps.
+  ## Check *polyversion* lib in older Pythons.
+  - python pvlib/setup.py build bdist_wheel
+  - pytest -v pvlib
+
+  ## Check *polyvers* cmd in newer python only.
+  #
   - |
-    if [[ $TRAVIS_PYTHON_VERSION == '3.6' ]]; then
-        pytest -v
-    else
-        ## Only check *polyversion* lib in older Pythons.
-        pytest -v polyversion/tests/test_polyversion.py
+    if [ $TRAVIS_PYTHON_VERSION \> '3.5' ]; then
+        python setup.py build bdist_wheel
+        pytest -v pvcmd
     fi
 
   ## Re-test EXACT deps on WHEEL, with COVERAGE.
   #
   - |
-    if [[ $TRAVIS_PYTHON_VERSION == '3.6' ]]; then
-        pip install -q -r requirements.txt -r requirements_dev.txt
+    if [ $TRAVIS_PYTHON_VERSION \> '3.5' ]; then
         pip uninstall polyvers -y
         pip install -q dist/*.whl
     fi
 
   - |
-    if [[ $TRAVIS_PYTHON_VERSION == '3.6' ]]; then
+    if [ $TRAVIS_PYTHON_VERSION \> '3.5' ]; then
         pytest -q --cov=polyvers --cov-report=term-missing
     fi
 
   - |
-    if [[ $TRAVIS_PYTHON_VERSION == '3.6' ]]; then
+    if [ $TRAVIS_PYTHON_VERSION \> '3.5' ]; then
         flake8 --show-source
     fi
 
   - |
-    if [[ $TRAVIS_PYTHON_VERSION == '3.6' ]]; then
+    if [ $TRAVIS_PYTHON_VERSION \> '3.5' ]; then
         mypy \
-            -m polyvers.vermath \
-            -m polyvers.cmdlet.cmdlets \
-            -m polyvers.cmdlet.errlog \
-            -m polyvers.pvproject \
-            -m polyvers.engrave \
-            -m polyvers.pvtags \
-            -m polyvers.cli \
-            -m polyvers.bumpcmd
+            pvcmd/polyvers/vermath.py \
+            pvcmd/polyvers/cmdlet/cmdlets.py \
+            pvcmd/polyvers/cmdlet/errlog.py \
+            pvcmd/polyvers/pvproject.py \
+            pvcmd/polyvers/engrave.py \
+            pvcmd/polyvers/pvtags.py \
+            pvcmd/polyvers/cli.py \
+            pvcmd/polyvers/bumpcmd.py
     fi
 
 after_success:
   - pip install python-coveralls
-  - if [[ $TRAVIS_PYTHON_VERSION == '3.6' ]]; then coveralls; fi
+  - if [ $TRAVIS_PYTHON_VERSION \> '3.5' ]; then coveralls; fi

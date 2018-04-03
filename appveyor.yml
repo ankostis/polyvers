@@ -26,11 +26,16 @@ init:
 install:
   - "%CMD_IN_ENV%  python -m pip install -U pip"
   - "%CMD_IN_ENV%  pip install --upgrade setuptools pip"
-  - "%CMD_IN_ENV%  pip install -e ./polyversion[test] -e ./polyvers[test]"
+
+  - "%CMD_IN_ENV%  pip install -e ./polyversion[test]"
+  - "%CMD_IN_ENV%  python pvlib/setup.py build bdist_wheel"
+
+  - "%CMD_IN_ENV%  pip install -e .[test]"
+  - "%CMD_IN_ENV%  python setup.py build bdist_wheel"
 
 test_script:
-  - "%CMD_IN_ENV% pytest -v polyversion/tests"
+  - "%CMD_IN_ENV% pytest -v pvlib"
   - IF "%PYTHON_VERSION%"=="3.6.x" (
-        "%CMD_IN_ENV% pytest --pyargs -v polyvers/tests"
+        "%CMD_IN_ENV% pytest -v pvcmd"
     )
 
