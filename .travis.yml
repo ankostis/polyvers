@@ -11,65 +11,52 @@ python:
   - 3.6
   - 3.7-dev
 
+install: skip
+script: skip
+
 # matrix:
 #   allow_failures:
 #     - python: 3.7-dev
 
-install:
-  - pip install --upgrade setuptools pip
+jobs:
+  include:
+    - stage: pvlib
+      script: |
+              pip install --upgrade setuptools pip
+              pip install -q -r requirements_dev.txt
+              pip install -e ./pvlib[test]
+              python pvlib/setup.py build bdist_wheel
+              pytest -v pvlib
+    - stage: pvlib
+      script: pip install flake8
+      script: flake8 --show-source
 
-  - pip install -e ./pvlib[test]
-  - python pvlib/setup.py build bdist_wheel
+#     - stage: pvcmd
+#       python: 3.6
+#       script: |
+#               pip install -q -r requirements.txt -r requirements_dev.txt
+#               pip install -e ./pvlib[test]
+#               pip install -e .[test]
+#               pytest -v pvcmd
+#       script: |
+#               pip uninstall polyvers -y
+#               python setup.py build bdist_wheel
+#               pip install -q dist/*.whl
+#               pytest -v pvcmd --cov=polyvers --cov-report=term-missing
+#       scipt: flake8 --show-source
+#
+#     - stage: pvcmd
+#       script: >
+#             mypy
+#               pvcmd/polyvers/vermath.py
+#               pvcmd/polyvers/cmdlet/cmdlets.py
+#               pvcmd/polyvers/cmdlet/errlog.py
+#               pvcmd/polyvers/pvproject.py
+#               pvcmd/polyvers/engrave.py
+#               pvcmd/polyvers/pvtags.py
+#               pvcmd/polyvers/cli.py
+#               pvcmd/polyvers/bumpcmd.py
 
-  - |
-    if [ $TRAVIS_PYTHON_VERSION \> '3.5' ]; then
-        pip install -e .[test]
-        python setup.py build bdist_wheel
-    fi
-
-script:
-  ## Check *polyversion* lib in older Pythons.
-  - pytest -v pvlib
-
-  ## Check *polyvers* cmd in newer python only.
-  #
-  - |
-    if [ $TRAVIS_PYTHON_VERSION \> '3.5' ]; then
-        pytest -v pvcmd
-    fi
-
-  ## Re-test EXACT deps on WHEEL, with COVERAGE.
-  #
-  - |
-    if [ $TRAVIS_PYTHON_VERSION \> '3.5' ]; then
-        pip install -q -r requirements.txt -r requirements_dev.txt
-        pip uninstall polyvers -y
-        pip install -q dist/*.whl
-    fi
-
-  - |
-    if [ $TRAVIS_PYTHON_VERSION \> '3.5' ]; then
-        pytest -q --cov=polyvers --cov-report=term-missing
-    fi
-
-  - |
-    if [ $TRAVIS_PYTHON_VERSION \> '3.5' ]; then
-        flake8 --show-source
-    fi
-
-  - |
-    if [ $TRAVIS_PYTHON_VERSION \> '3.5' ]; then
-        mypy \
-            pvcmd/polyvers/vermath.py \
-            pvcmd/polyvers/cmdlet/cmdlets.py \
-            pvcmd/polyvers/cmdlet/errlog.py \
-            pvcmd/polyvers/pvproject.py \
-            pvcmd/polyvers/engrave.py \
-            pvcmd/polyvers/pvtags.py \
-            pvcmd/polyvers/cli.py \
-            pvcmd/polyvers/bumpcmd.py
-    fi
-
-after_success:
-  - pip install python-coveralls
-  - if [ $TRAVIS_PYTHON_VERSION \> '3.5' ]; then coveralls; fi
+# after_success:
+#   - pip install python-coveralls
+#   - if [ $TRAVIS_PYTHON_VERSION \> '3.5' ]; then coveralls; fi
