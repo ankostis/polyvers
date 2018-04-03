@@ -9,20 +9,22 @@
 
 from collections import OrderedDict, defaultdict, Mapping
 from pathlib import Path
-from typing import Dict
+from typing import Dict, Optional
 from typing import Tuple, Set, List  # noqa: F401 @UnusedImport, flake8 blind in funcs
 import io
 import logging
 
 from boltons.setutils import IndexedSet as iset
 
-from . import APPNAME, __version__, __updated__, pvtags, pvproject, \
-    polyversion as pvlib
+import polyversion as pvlib
+
+from . import APPNAME, __version__, __updated__, pvtags, pvproject
 from ._vendor import traitlets as trt
 from ._vendor.traitlets import config as trc
 from ._vendor.traitlets.traitlets import Bool, Unicode
 from ._vendor.traitlets.traitlets import List as ListTrait, Tuple as TupleTrait
 from .cmdlet import cmdlets, autotrait
+from .utils import fileutil as fu
 
 
 log = logging.getLogger(__name__)
@@ -345,7 +347,7 @@ class _SubCmd(PolyversCmd):
 class InitCmd(_SubCmd):
     """Generate configurations based on directory contents."""
 
-    def _find_config_file_path(self, rootapp) -> Path:
+    def _find_config_file_path(self, rootapp) -> Optional[Path]:
         """
         Log if no config-file has been loaded.
         """

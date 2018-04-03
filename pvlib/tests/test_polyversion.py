@@ -65,8 +65,8 @@ def test_caller_fpath():
     assert caller_dir == osp.dirname(__file__)
 
     caller_dir = pvlib._caller_fpath(0)
-    exp = osp.join(osp.dirname(__file__), '..', 'polyvers')
-    assert osp.realpath(exp) == caller_dir
+    exp = osp.join(osp.dirname(__file__), '..')
+    assert osp.samefile(exp, caller_dir)
 
 
 ##############
