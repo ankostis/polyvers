@@ -54,7 +54,7 @@ def _re_match(subtext, text):
         return subtext.search(text)
 
 
-def assert_in_text(text, require=None, forbid=None, is_regex=False):
+def assert_in_text(text, require=(), forbid=(), is_regex=False):
     """
     Checks strings are (not) contained in text.
 
@@ -69,10 +69,16 @@ def assert_in_text(text, require=None, forbid=None, is_regex=False):
     """
     __tracebackhide__ = True
 
+    if not require and not forbid:
+        raise pytest.UsageError("Both `require` and `forbid` lists empty!")
+
     if is_regex:
         match_func = _re_match
     else:
         match_func = lambda subtext, text: subtext in text
+
+    if text is None:
+        text = ''
 
     if isinstance(text, str):
         text = text.split('\n')
