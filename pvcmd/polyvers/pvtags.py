@@ -19,7 +19,6 @@ There are 3 important methods/functions calling Git:
 """
 from typing import List, Dict, Sequence, Optional
 import contextlib
-import logging
 
 import polyversion as pvlib
 import subprocess as sbp
@@ -27,9 +26,6 @@ import subprocess as sbp
 from . import pvproject
 from .cmdlet import cmdlets
 from .utils.oscmd import cmd
-
-
-log = logging.getLogger(__name__)
 
 
 MONOREPO = '<monorepo>'
