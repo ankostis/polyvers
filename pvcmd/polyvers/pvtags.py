@@ -32,6 +32,10 @@ from .utils.oscmd import cmd
 log = logging.getLogger(__name__)
 
 
+MONOREPO = '<monorepo>'
+MONO_PROJECT = '<mono-project>'
+
+
 class GitError(cmdlets.CmdException):
     "A (maybe benign) git-related error"
     pass
@@ -97,7 +101,7 @@ def git_restore_point(restore=False):
             cmd.git.reset._(hard=True)(original_commit_id)
 
 
-def make_pvtag_project(pname: str = '<monorepo>',
+def make_pvtag_project(pname: str = MONOREPO,
                        **project_kw) -> pvproject.Project:
     """
     Make a :class:`Project` for a subprojects hosted at git monorepos.
@@ -133,7 +137,7 @@ def make_match_all_pvtags_project(**project_kw) -> pvproject.Project:
         **project_kw)
 
 
-def make_vtag_project(pname: str = '<mono-project>',
+def make_vtag_project(pname: str = MONO_PROJECT,
                       **project_kw) -> pvproject.Project:
     """
     Make a :class:`Project` for a single project hosted at git repos root (not "monorepos").

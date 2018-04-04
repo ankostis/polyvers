@@ -341,6 +341,12 @@ class PolyversCmd(cmdlets.Cmd):
                                                       _pvtags_collected=None)
                              for name, basepath in proj_paths.items()]
 
+        if len(self.projects) > 1 and template_project.pname == pvtags.MONO_PROJECT:
+            self.log.warning(
+                "Incompatible *vtags* version-scheme with %s sub-projects!"
+                "  You may switch to *pvtags* (see `--monorepo`) or "
+                "\n  specify projects explictely (see `--pdata`).",
+                len(self.projects))
         return self.projects
 
 

@@ -201,12 +201,16 @@ def check_bootstrapp_projects_autodiscover(myrepo, caplog, vscheme):
 
 
 def test_bootstrapp_projects_autodiscover_mono_project(mutable_vtags_repo, caplog):
-    check_bootstrapp_projects_autodiscover(mutable_vtags_repo, caplog, '<mono-project>')
-    #assert "Incompatible *vtags* version-scheme with 2 sub-projects" in caplog.text
+    check_bootstrapp_projects_autodiscover(mutable_vtags_repo, caplog,
+                                           pvtags.MONO_PROJECT)
+    assert_in_text(
+        caplog.text,
+        require=["Incompatible *vtags* version-scheme with 2 sub-projects"])
 
 
 def test_bootstrapp_projects_autodiscover_monorepo(mutable_pvtags_repo, caplog):
-    check_bootstrapp_projects_autodiscover(mutable_pvtags_repo, caplog, '<monorepo>')
+    check_bootstrapp_projects_autodiscover(mutable_pvtags_repo, caplog,
+                                           pvtags.MONOREPO)
 
 
 def test_status_cmd_vtags(mutable_repo, caplog, capsys):
