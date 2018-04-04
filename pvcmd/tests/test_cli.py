@@ -102,7 +102,7 @@ def test_config_cmd(cmd, match, illegal):
     #print('\n'.join(lc.items))
 
 
-def test_bootstrapp_projects(no_repo, empty_repo, caplog):
+def test_bootstrapp_projects_explicit(no_repo, empty_repo, caplog):
     no_repo.chdir()
 
     cmd = PolyversCmd()
@@ -112,6 +112,7 @@ def test_bootstrapp_projects(no_repo, empty_repo, caplog):
     empty_repo.chdir()
 
     cmd = PolyversCmd()
+    clearlog(caplog)
     with pytest.raises(cmdlets.CmdException,
                        match="Cannot auto-discover versioning scheme"):
         cmd.bootstrapp_projects()
@@ -123,6 +124,7 @@ def test_bootstrapp_projects(no_repo, empty_repo, caplog):
     cfg = trc.Config()
     cfg.Project.pvtag_frmt = cfg.Project.pvtag_regex = 'some'
     cmd = PolyversCmd(config=cfg)
+    clearlog(caplog)
     with pytest.raises(cmdlets.CmdException,
                        match="Cannot auto-discover \(sub-\)project"):
         cmd.bootstrapp_projects()
@@ -133,11 +135,78 @@ def test_bootstrapp_projects(no_repo, empty_repo, caplog):
 
     cfg.PolyversCmd.projects = [pvproject.Project()]
     cmd = PolyversCmd(config=cfg)
+    clearlog(caplog)
     cmd.bootstrapp_projects()
     assert all(t not in caplog.text for t in [
         "Auto-discovered 2 sub-project(s)",
         "Auto-discovered versioning scheme",
     ])
+
+
+def check_bootstrapp_projects_autodiscover(myrepo, caplog, vscheme):
+    myrepo.chdir()
+    caplog.set_level(0)
+
+    cmd = PolyversCmd()
+    clearlog(caplog)
+    with pytest.raises(cmdlets.CmdException,
+                       match="Cannot auto-discover \(sub-\)project"):
+        cmd.bootstrapp_projects()
+    assert_in_text(
+        caplog.text,
+        require=[
+            r" Auto-discovered versioning scheme: %s" % vscheme,
+        ], forbid=[
+            r"Auto-discovered \d+ sub-project\(s\)",
+            r"Cannot auto-discover versioning scheme"
+        ],
+        is_regex=True)
+
+    make_setup_py(myrepo, 'simple')
+    cmd = PolyversCmd()
+    clearlog(caplog)
+    clearlog(caplog)
+    cmd.bootstrapp_projects()
+    assert len(cmd.projects) == 1
+    assert cmd.projects[0].basepath.samefile(str(myrepo))
+    assert_in_text(
+        caplog.text,
+        require=[
+            r" Auto-discovered versioning scheme: %s" % vscheme,
+            r"Auto-discovered 1 sub-project\(s\)",
+        ], forbid=[
+            r"Cannot auto-discover versioning scheme"
+            r"Cannot auto-discover \(sub-\)project",
+        ],
+        is_regex=True)
+
+    prj2_basepath = myrepo / 'extra' / 'project'
+    make_setup_py(prj2_basepath, 'extra')
+    cmd = PolyversCmd()
+    clearlog(caplog)
+    cmd.bootstrapp_projects()
+    assert len(cmd.projects) == 2
+    assert cmd.projects[0].basepath.samefile(str(myrepo))
+    assert cmd.projects[1].basepath.samefile(str(prj2_basepath))
+    assert_in_text(
+        caplog.text,
+        require=[
+            r" Auto-discovered versioning scheme: %s" % vscheme,
+            r"Auto-discovered 2 sub-project\(s\)",
+        ], forbid=[
+            r"Cannot auto-discover versioning scheme"
+            r"Cannot auto-discover \(sub-\)project",
+        ],
+        is_regex=True)
+
+
+def test_bootstrapp_projects_autodiscover_mono_project(mutable_vtags_repo, caplog):
+    check_bootstrapp_projects_autodiscover(mutable_vtags_repo, caplog, '<mono-project>')
+    #assert "Incompatible *vtags* version-scheme with 2 sub-projects" in caplog.text
+
+
+def test_bootstrapp_projects_autodiscover_monorepo(mutable_pvtags_repo, caplog):
+    check_bootstrapp_projects_autodiscover(mutable_pvtags_repo, caplog, '<monorepo>')
 
 
 def test_status_cmd_vtags(mutable_repo, caplog, capsys):

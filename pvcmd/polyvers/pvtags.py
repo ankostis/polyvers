@@ -97,7 +97,7 @@ def git_restore_point(restore=False):
             cmd.git.reset._(hard=True)(original_commit_id)
 
 
-def make_pvtag_project(pname: str = '<monorepo-project>',
+def make_pvtag_project(pname: str = '<monorepo>',
                        **project_kw) -> pvproject.Project:
     """
     Make a :class:`Project` for a subprojects hosted at git monorepos.

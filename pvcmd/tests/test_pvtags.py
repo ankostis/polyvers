@@ -196,9 +196,9 @@ def test_project_matching_all_pvtags(ok_repo, project1):
     assert all_vtags.pvtags_history == []
 
 
-def test_simple_project(monorepo, project2, caplog):
+def test_simple_project(mutable_pvtags_repo, project2, caplog):
     BAD_TAG = 'irrelevant_tag'
-    monorepo.chdir()
+    mutable_pvtags_repo.chdir()
     caplog.set_level(0)
 
     cmd.git.tag(BAD_TAG, m='ggg')

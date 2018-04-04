@@ -333,15 +333,21 @@ def clone_repo(orig_repo, clone_path):
 
 
 @pytest.fixture()
-def monorepo(ok_repo, tmpdir_factory):
-    mutable_repo = tmpdir_factory.mktemp('monorepo')
-    return clone_repo(ok_repo, mutable_repo)
-
-
-@pytest.fixture()
 def mutable_repo(untagged_repo, tmpdir_factory):
     mutable_repo = tmpdir_factory.mktemp('mutable_repo')
     return clone_repo(untagged_repo, mutable_repo)
+
+
+@pytest.fixture()
+def mutable_vtags_repo(vtags_repo, tmpdir_factory):
+    mutable_repo = tmpdir_factory.mktemp('mutable_mono_project')
+    return clone_repo(vtags_repo, mutable_repo)
+
+
+@pytest.fixture()
+def mutable_pvtags_repo(ok_repo, tmpdir_factory):
+    mutable_repo = tmpdir_factory.mktemp('mutable_monorepo')
+    return clone_repo(ok_repo, mutable_repo)
 
 
 def _add_file_to_repo(fpath, text):
