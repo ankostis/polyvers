@@ -217,45 +217,6 @@ def test_status_cmd_vtags(mutable_repo, caplog, capsys):
     mutable_repo.chdir()
 
     ##############
-    ## No flag/setup.py
-    #  Both auto-discoveries fail
-    #
-    rc = main('status -v'.split())
-    assert rc != 0
-    assert_in_text(
-        caplog.text,
-        require=[
-            r"Cannot auto-discover versioning scheme,"
-        ], forbid=[
-            r"Auto-discovered versioning scheme",
-            r"Auto-discovered \d+ sub-project\(s\)",
-            r"Cannot auto-discover \(sub-\)project",
-        ],
-        is_regex=True)
-    out, err = capsys.readouterr()
-    assert not err and not out
-
-    ##############
-    ## --monorepo
-    #
-    clearlog(caplog)
-
-    rc = main('status --mono-project -v'.split())
-    assert rc != 0
-    assert_in_text(
-        caplog.text,
-        require=[
-            r"Cannot auto-discover \(sub-\)project",
-        ], forbid=[
-            r"Auto-discovered versioning scheme",
-            r"Auto-discovered \d+ sub-project\(s\)",
-            r"Cannot auto-discover versioning scheme,"
-        ],
-        is_regex=True)
-    out, err = capsys.readouterr()
-    assert not err and not out
-
-    ##############
     ## setup.py + --monorepo
     #
     clearlog(caplog)
@@ -331,45 +292,6 @@ def test_status_cmd_vtags(mutable_repo, caplog, capsys):
 
 def test_status_cmd_pvtags(mutable_repo, caplog, capsys):
     mutable_repo.chdir()
-
-    ##############
-    ## No flag/setup.py
-    #  Both auto-discoveries fail
-    #
-    rc = main('status -v'.split())
-    assert rc != 0
-    assert_in_text(
-        caplog.text,
-        require=[
-            r"Cannot auto-discover versioning scheme,"
-        ], forbid=[
-            r"Auto-discovered versioning scheme",
-            r"Auto-discovered \d+ sub-project\(s\)",
-            r"Cannot auto-discover \(sub-\)project",
-        ],
-        is_regex=True)
-    out, err = capsys.readouterr()
-    assert not err and not out
-
-    ##############
-    ## --monorepo
-    #
-    clearlog(caplog)
-
-    rc = main('status --monorepo -v'.split())
-    assert rc != 0
-    assert_in_text(
-        caplog.text,
-        require=[
-            r"Cannot auto-discover \(sub-\)project",
-        ], forbid=[
-            r"Auto-discovered versioning scheme",
-            r"Auto-discovered \d+ sub-project\(s\)",
-            r"Cannot auto-discover versioning scheme,"
-        ],
-        is_regex=True)
-    out, err = capsys.readouterr()
-    assert not err and not out
 
     ##############
     ## setup.py + --monorepo
