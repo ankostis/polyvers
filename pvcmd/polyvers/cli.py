@@ -504,14 +504,24 @@ PolyversCmd.flags = {  # type: ignore
             'pvtag_frmt': pvlib.pvtag_frmt,
             'pvtag_regex': pvlib.pvtag_regex,
         }},
-        "Use *pvtags* for versioning sub-projects in this git monorepo."
+        """
+        Select *pvtags* version-scheme, suitable for monorepos hosting multiple sub-projects.
+        """
+        ## TODO: Conflicting vscheme flags possible!
     ),
     'mono-project': (
         {'Project': {
             'pvtag_frmt': pvlib.vtag_frmt,
             'pvtag_regex': pvlib.vtag_regex,
         }},
-        "Use plain *vtags* for versioning a single project in this git repo."
+        """
+        Select *vtags* version-scheme, suitable for repos hosting a single project.
+
+        - Flag may be required if autodiscovery of version-scheme fails because
+          none (or both) vatgs/pvatgs exist in git repo.
+        - Use `init` cmd not to give this flag on every command run.
+        """
+        ## TODO: Conflicting vscheme flags possible!
     ),
 }
 
