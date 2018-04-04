@@ -11,8 +11,10 @@ import io
 
 import pytest
 
-from polyvers import cli, __version__, __updated__
+from polyvers import cli, __version__, __updated__, pvproject, pvtags
 from polyvers.__main__ import main
+from polyvers._vendor.traitlets import config as trc
+from polyvers.cli import PolyversCmd
 from polyvers.cmdlet import cmdlets
 from polyvers.utils.mainpump import ListConsumer
 from polyvers.utils.oscmd import cmd
@@ -98,6 +100,44 @@ def test_config_cmd(cmd, match, illegal):
     assert rc == 0
     assert_in_text(lc.items, match, illegal)
     #print('\n'.join(lc.items))
+
+
+def test_bootstrapp_projects(no_repo, empty_repo, caplog):
+    no_repo.chdir()
+
+    cmd = PolyversCmd()
+    with pytest.raises(pvtags.NoGitRepoError):
+        cmd.bootstrapp_projects()
+
+    empty_repo.chdir()
+
+    cmd = PolyversCmd()
+    with pytest.raises(cmdlets.CmdException,
+                       match="Cannot auto-discover versioning scheme"):
+        cmd.bootstrapp_projects()
+    assert all(t not in caplog.text for t in [
+        "Auto-discovered 2 sub-project(s)",
+        "Auto-discovered versioning scheme",
+    ])
+
+    cfg = trc.Config()
+    cfg.Project.pvtag_frmt = cfg.Project.pvtag_regex = 'some'
+    cmd = PolyversCmd(config=cfg)
+    with pytest.raises(cmdlets.CmdException,
+                       match="Cannot auto-discover \(sub-\)project"):
+        cmd.bootstrapp_projects()
+    assert all(t not in caplog.text for t in [
+        "Auto-discovered 2 sub-project(s)",
+        "Auto-discovered versioning scheme",
+    ])
+
+    cfg.PolyversCmd.projects = [pvproject.Project()]
+    cmd = PolyversCmd(config=cfg)
+    cmd.bootstrapp_projects()
+    assert all(t not in caplog.text for t in [
+        "Auto-discovered 2 sub-project(s)",
+        "Auto-discovered versioning scheme",
+    ])
 
 
 def test_status_cmd_vtags(mutable_repo, caplog, capsys):
