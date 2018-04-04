@@ -15,7 +15,7 @@ from polyvers.utils.oscmd import cmd
 import textwrap as tw
 
 from .conftest import (
-    assert_in_text, clearlog,
+    check_text, clearlog,
     make_setup_py_without_version, make_setup_py)
 
 
@@ -36,7 +36,7 @@ def test_bump_cmd_bad(mutable_repo, caplog, capsys):
     #
     rc = main('bump -v 0.0.1'.split())
     assert rc != 0
-    assert_in_text(
+    check_text(
         caplog.text,
         require=[
             r"Cannot auto-discover versioning scheme,"
@@ -58,7 +58,7 @@ def test_bump_cmd_bad(mutable_repo, caplog, capsys):
 
     rc = main('bump --mono-project -v 1.1.1'.split())
     assert rc != 0
-    assert_in_text(
+    check_text(
         caplog.text,
         require=[
             r"Auto-discovered \d+ sub-project\(s\)",
@@ -85,7 +85,7 @@ def test_bump_cmd_mono_project(mutable_repo, caplog, capsys):
     # with capsys.disabled():
     #     print(caplog.text)
     assert rc == 0
-    assert_in_text(
+    check_text(
         caplog.text,
         require=[
             r" Bumped projects: simple-0.0.0 --> 0.0.1",
@@ -123,7 +123,7 @@ def test_bump_cmd_monorepo(mutable_repo, caplog, capsys):
     # with capsys.disabled():
     #     print(caplog.text)
     assert rc == 0
-    assert_in_text(
+    check_text(
         caplog.text,
         require=[
             r" Bumped projects: simple-0.0.0 --> 0.0.1",

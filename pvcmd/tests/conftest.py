@@ -54,7 +54,27 @@ def _re_match(subtext, text):
         return subtext.search(text)
 
 
-def assert_in_text(text, require=(), forbid=(), is_regex=False):
+def _check_text(text, require, forbid, match_func):
+    matches = set()
+    illegals = {}
+    for i, l in enumerate(text):
+        for mterm in require:
+            if mterm not in matches and match_func(mterm, l):
+                matches.add(mterm)
+
+        for iterm in forbid:
+            if iterm and match_func(iterm, l):
+                illegals[iterm] = i
+
+    missed = set(require) - matches
+    err1 = missed and "\n  - MISSES: \n    - %s" % '\n    - '.join(missed) or ''
+    err2 = illegals and "\n  - ILLEGALS: \n    - %s" % '\n    - '.join(
+        "%r in line(%i): %s" % (k, v + 1, text[v]) for k, v in illegals.items()) or ''
+
+    return err1, err2
+
+
+def check_text(text, require=(), forbid=(), is_regex=False):
     """
     Checks strings are (not) contained in text.
 
@@ -88,21 +108,7 @@ def assert_in_text(text, require=(), forbid=(), is_regex=False):
     if isinstance(forbid, str):
         forbid = [forbid]
 
-    matches = set()
-    illegals = {}
-    for i, l in enumerate(text):
-        for mterm in require:
-            if mterm not in matches and match_func(mterm, l):
-                matches.add(mterm)
-
-        for iterm in forbid:
-            if iterm and match_func(iterm, l):
-                illegals[iterm] = i
-
-    missed = set(require) - matches
-    err1 = missed and "\n  - MISSES: \n    - %s" % '\n    - '.join(missed) or ''
-    err2 = illegals and "\n  - ILLEGALS: \n    - %s" % '\n    - '.join(
-        "%r in line(%i): %s" % (k, v + 1, text[v]) for k, v in illegals.items()) or ''
+    err1, err2 = _check_text(text, require, forbid, match_func)
 
     if err1 or err2:
         pytest.fail("Text errors: %s %s\n  text: %s" %

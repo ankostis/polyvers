@@ -20,7 +20,7 @@ from polyvers.utils.mainpump import ListConsumer
 from polyvers.utils.oscmd import cmd
 
 from .conftest import (
-    assert_in_text, clearlog, dict_eq,
+    check_text, clearlog, dict_eq,
     make_setup_py)
 
 
@@ -98,7 +98,7 @@ def test_config_cmd(cmd, match, illegal):
     lc = ListConsumer()
     rc = main(cmd.split(), cmd_consumer=lc)
     assert rc == 0
-    assert_in_text(lc.items, match, illegal)
+    check_text(lc.items, match, illegal)
     #print('\n'.join(lc.items))
 
 
@@ -152,7 +152,7 @@ def check_bootstrapp_projects_autodiscover(myrepo, caplog, vscheme):
     with pytest.raises(cmdlets.CmdException,
                        match="Cannot auto-discover \(sub-\)project"):
         cmd.bootstrapp_projects()
-    assert_in_text(
+    check_text(
         caplog.text,
         require=[
             r" Auto-discovered versioning scheme: %s" % vscheme,
@@ -169,7 +169,7 @@ def check_bootstrapp_projects_autodiscover(myrepo, caplog, vscheme):
     cmd.bootstrapp_projects()
     assert len(cmd.projects) == 1
     assert cmd.projects[0].basepath.samefile(str(myrepo))
-    assert_in_text(
+    check_text(
         caplog.text,
         require=[
             r" Auto-discovered versioning scheme: %s" % vscheme,
@@ -188,7 +188,7 @@ def check_bootstrapp_projects_autodiscover(myrepo, caplog, vscheme):
     assert len(cmd.projects) == 2
     assert cmd.projects[0].basepath.samefile(str(myrepo))
     assert cmd.projects[1].basepath.samefile(str(prj2_basepath))
-    assert_in_text(
+    check_text(
         caplog.text,
         require=[
             r" Auto-discovered versioning scheme: %s" % vscheme,
@@ -203,7 +203,7 @@ def check_bootstrapp_projects_autodiscover(myrepo, caplog, vscheme):
 def test_bootstrapp_projects_autodiscover_mono_project(mutable_vtags_repo, caplog):
     check_bootstrapp_projects_autodiscover(mutable_vtags_repo, caplog,
                                            pvtags.MONO_PROJECT)
-    assert_in_text(
+    check_text(
         caplog.text,
         require=["Incompatible *vtags* version-scheme with 2 sub-projects"])
 
@@ -224,7 +224,7 @@ def test_status_cmd_vtags(mutable_repo, caplog, capsys):
 
     rc = main('status --mono-project -v'.split())
     assert rc == 0
-    assert_in_text(
+    check_text(
         caplog.text,
         require=[
             "Auto-discovered 1 sub-project(s)",
@@ -249,7 +249,7 @@ def test_status_cmd_vtags(mutable_repo, caplog, capsys):
     cmd.git.tag('v0.1.0', m='annotate!')
     rc = main('status -v'.split())
     assert rc == 0
-    assert_in_text(
+    check_text(
         caplog.text,
         require=[
             "Auto-discovered 1 sub-project(s)",
@@ -302,7 +302,7 @@ def test_status_cmd_pvtags(mutable_repo, caplog, capsys):
 
     rc = main('status --monorepo -v'.split())
     assert rc == 0
-    assert_in_text(
+    check_text(
         caplog.text,
         require=[
             "Auto-discovered 2 sub-project(s)",
@@ -329,7 +329,7 @@ def test_status_cmd_pvtags(mutable_repo, caplog, capsys):
     cmd.git.tag('base-v0.1.0', m='annotate!')
     rc = main('status -v'.split())
     assert rc == 0
-    assert_in_text(
+    check_text(
         caplog.text,
         require=[
             "Auto-discovered 2 sub-project(s)",
