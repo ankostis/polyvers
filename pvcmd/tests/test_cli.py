@@ -7,13 +7,15 @@
 # You may obtain a copy of the Licence at: http://ec.europa.eu/idabc/eupl
 #
 from collections import OrderedDict, defaultdict
+import io
+
+import pytest
+
 from polyvers import cli, __version__, __updated__
 from polyvers.__main__ import main
 from polyvers.cmdlet import cmdlets
 from polyvers.utils.mainpump import ListConsumer
 from polyvers.utils.oscmd import cmd
-
-import pytest
 
 from .conftest import (
     assert_in_text, clearlog, dict_eq,
@@ -21,7 +23,7 @@ from .conftest import (
 
 
 @pytest.mark.parametrize('inp, exp', [
-    (None, None),
+    (None, ''),
     ({}, ''),
     ([], ''),
     (OrderedDict(a=1), "a: 1"),
@@ -31,6 +33,11 @@ from .conftest import (
 def test_yaml_dump(inp, exp):
     got = cli.ydumps(inp)
     assert got == exp
+
+    sio = io.StringIO()
+    cli.ydumps(inp, sio)
+    got = sio.getvalue()
+    assert got.strip() == exp
 
 
 all_cmds = [c

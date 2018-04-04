@@ -56,17 +56,23 @@ def _get_yamel():
     return _Y
 
 
-def ydumps(obj):
+def ydumps(obj, sink=None) -> Optional[str]:
     "Dump any false objects as empty string, None as nothing, or as YAML. "
 
-    if obj is None:
-        return
     if not obj:
+        if sink:
+            sink.write('')
+            return  # type: ignore
         return ''
 
-    sio = io.StringIO()
-    _get_yamel().dump(obj, sio)
-    return sio.getvalue().strip()
+    dump_to_str = not bool(sink)
+    if dump_to_str:
+        sink = io.StringIO()
+
+    _get_yamel().dump(obj, sink)
+
+    if dump_to_str:
+        return sink.getvalue().strip()
 
 
 def yloads(text):
