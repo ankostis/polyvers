@@ -105,12 +105,16 @@ def test_config_cmd(cmd, match, illegal):
 def test_bootstrapp_projects_explicit(no_repo, empty_repo, caplog):
     no_repo.chdir()
 
+    ## No GIT
+    #
     cmd = PolyversCmd()
     with pytest.raises(pvtags.NoGitRepoError):
         cmd.bootstrapp_projects()
 
     empty_repo.chdir()
 
+    ## Specify: nothing
+    #
     cmd = PolyversCmd()
     clearlog(caplog)
     with pytest.raises(cmdlets.CmdException,
@@ -121,6 +125,8 @@ def test_bootstrapp_projects_explicit(no_repo, empty_repo, caplog):
         "Auto-discovered versioning scheme",
     ])
 
+    ## Specify: VScheme
+    #
     cfg = trc.Config()
     cfg.Project.pvtag_frmt = cfg.Project.pvtag_regex = 'some'
     cmd = PolyversCmd(config=cfg)
@@ -133,6 +139,8 @@ def test_bootstrapp_projects_explicit(no_repo, empty_repo, caplog):
         "Auto-discovered versioning scheme",
     ])
 
+    ## Specify: VScheme + 1xPRojects
+    #
     cfg.PolyversCmd.projects = [pvproject.Project()]
     cmd = PolyversCmd(config=cfg)
     clearlog(caplog)
@@ -141,6 +149,44 @@ def test_bootstrapp_projects_explicit(no_repo, empty_repo, caplog):
         "Auto-discovered 2 sub-project(s)",
         "Auto-discovered versioning scheme",
     ])
+
+    ## Specify: VScheme + 1xPRojects
+    #
+    cfg.PolyversCmd.projects = [pvproject.Project(), pvproject.Project()]
+    cmd = PolyversCmd(config=cfg)
+    clearlog(caplog)
+    cmd.bootstrapp_projects()
+    check_text(
+        caplog.text,
+        require=[
+        ], forbid=[
+            r" Auto-discovered versioning scheme",
+            r"Auto-discovered \d+ sub-project",
+            r"Cannot auto-discover versioning scheme"
+            r"Cannot auto-discover \(sub-\)project",
+            r"Incompatible \*vtags\* version-scheme",
+        ],
+        is_regex=True)
+
+    ## Specify: VScheme + 1+PData
+    #
+    del cfg.PolyversCmd['projects']
+    cfg.PolyversCmd.pdata = {'foo': 'foo_path', 'bar': 'bar_path'}
+    cmd = PolyversCmd(config=cfg)
+    clearlog(caplog)
+    cmd.bootstrapp_projects()
+    assert len(cmd.projects) == 2
+    check_text(
+        caplog.text,
+        require=[
+        ], forbid=[
+            r" Auto-discovered versioning scheme",
+            r"Auto-discovered \d+ sub-project",
+            r"Cannot auto-discover versioning scheme"
+            r"Cannot auto-discover \(sub-\)project",
+            r"Incompatible \*vtags\* version-scheme",
+        ],
+        is_regex=True)
 
 
 def check_bootstrapp_projects_autodiscover(myrepo, caplog, vscheme):

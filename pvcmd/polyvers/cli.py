@@ -21,8 +21,9 @@ import polyversion as pvlib
 from . import APPNAME, __version__, __updated__, pvtags, pvproject
 from ._vendor import traitlets as trt
 from ._vendor.traitlets import config as trc
+from ._vendor.traitlets.traitlets import (
+    List as ListTrait, Tuple as TupleTrait, Dict as DictTrait)
 from ._vendor.traitlets.traitlets import Bool, Unicode
-from ._vendor.traitlets.traitlets import List as ListTrait, Tuple as TupleTrait
 from .cmdlet import cmdlets, autotrait
 from .utils import fileutil as fu
 
@@ -186,6 +187,18 @@ class PolyversCmd(cmdlets.Cmd):
 
         return self._git_root
 
+    pdata = DictTrait(
+        key_trait=Unicode(),
+        value_trait=Unicode(),
+        config=True,
+        help="""
+        Pairs of (pname: basepath) for the projects in the repo.
+
+        - This param exists only when specifying those data from cmdline; otherwise,
+          in configuration files prefer to specify directly `PolyversCmd.projects`.
+        -- sample: --pdata foo=foo/fpath
+        """)
+
     autodiscover_subproject_projects = ListTrait(
         autotrait.AutoInstance(pvproject.Project),
         default_value=[{
@@ -325,21 +338,26 @@ class PolyversCmd(cmdlets.Cmd):
 
         has_subprojects = bool(self.projects)
         if not has_subprojects:
-            proj_paths: Dict[str, Path] = self._autodiscover_project_basepaths()
-            if not proj_paths:
-                raise cmdlets.CmdException(
-                    "Cannot auto-discover (sub-)project path(s)!"
-                    "\n  Please use `ìnit` cmd to specify sub-projects explicitly.")
+            pdata: Dict[str, Path] = {pname: Path(basepath)
+                                      for pname, basepath in self.pdata.items()}
 
-            self.log.info(
-                "Auto-discovered %i sub-project(s) in git-root '%s': \n%s",
-                len(proj_paths), git_root.resolve(),
-                ydumps({k: str(v) for k, v in proj_paths.items()}))
+            if not pdata:
+                pdata = self._autodiscover_project_basepaths()
 
-            self.projects = [template_project.replace(pname=name,
+                if not pdata:
+                    raise cmdlets.CmdException(
+                        "Cannot auto-discover (sub-)project path(s)!"
+                        "\n  Please use `ìnit` cmd to specify sub-projects explicitly.")
+
+                self.log.info(
+                    "Auto-discovered %i sub-project(s) in git-root '%s': \n%s",
+                    len(pdata), git_root.resolve(),
+                    ydumps({k: str(v) for k, v in pdata.items()}))
+
+            self.projects = [template_project.replace(pname=pname,
                                                       basepath=basepath,
                                                       _pvtags_collected=None)
-                             for name, basepath in proj_paths.items()]
+                             for pname, basepath in pdata.items()]
 
         if len(self.projects) > 1 and template_project.pname == pvtags.MONO_PROJECT:
             self.log.warning(
@@ -527,6 +545,7 @@ PolyversCmd.flags = {  # type: ignore
 
 PolyversCmd.aliases = {  # type: ignore
     ('f', 'force'): 'Spec.force',
+    ('p', 'pdata'): 'PolyversCmd.pdata',
 }
 
 
