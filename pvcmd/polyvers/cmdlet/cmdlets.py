@@ -28,7 +28,7 @@ Of course you can mix'n match.
 0. The configuration of :class:`HasTraits` instance gets stored in its ``config`` attribute.
 1. A :class:`HasTraits` instance receives its configuration from 3 sources, in this order:
 
-  a. code specifying class-attributes or running on constructors;
+  a. code specifying class-properties or running on constructors;
   b. configuration files (*json* or ``.py`` files);
   c. command-line arguments.
 
@@ -37,7 +37,7 @@ Of course you can mix'n match.
 
 3. Some utility code depends on trait-defaults (i.e. construction of help-messages),
    so for certain properties (e.g. description), it is preferable to set them
-   as traits-with-defaults on class-attributes.
+   as traits-with-defaults on class-properties.
 
 4. Listen `Good Bait <https://www.youtube.com/watch?v=CE4bl5rk5OQ>`_ after 1:43.
 
@@ -47,7 +47,7 @@ Of course you can mix'n match.
 from collections import OrderedDict
 from os import PathLike
 from typing import (
-    Union, Optional, ContextManager,
+    Union, Optional, ContextManager, Tuple, Any, Sequence,
     Callable, )  # @UnusedImport
 import contextlib
 import io
@@ -295,7 +295,7 @@ class CfgFilesRegistry(contextlib.ContextDecorator):
 
             return loaded_any
 
-        def _derive_config_fpaths(path):  # -> List[Text]:
+        def _derive_config_fpaths(path):  # -> List[Text]:  TODO: enable cmdlet typing comments
             """Return multiple *existent* fpaths for each config-file path (folder/file)."""
 
             p = fu.convpath(path)
@@ -418,35 +418,72 @@ class Printable(metaclass=trt.MetaHasTraits):
 
     Which traits to print are decided in this order:
 
-    1. Print traits with their names specified in :attr:`printable_traits`
-       list, or ALL traits if it's equal to '*', and if empty,
-    3. print traits marked with ``printable`` metadata,
-       and if none found,
-    4. prints all :class:`Printable` owned traits in ``mro()``,
-       and if no traits found,
+    1. Print ``class-name(trait-name=value, ...)`` pairs for all traits contained
+       in the class-property ``printable_traits`` list.
+       Special values:
+         - `None`/missing: ignored, visit baseclass;
+         - <empty>`: shortcut to rule 5 (print classname only), below.
+         - '*': print ALL traits in mro();
+         - '-' alone or contained in the list: print ALL classe's OWN traits
+           in addition to any other traits contained in the list;
+
+       But if `printable_traits` class-property is missing from all baseclasses...
+
+    3. print any traits in mro() marked with ``printable`` metadata,
+       and if none found...
+
+    4. print all :class:`Printable` owned traits in ``mro()``,
+       and if no traits found, ...
+
     5. don't print any traits, just the class-name.
     """
-    printable_traits = UnionTrait(
-        (Unicode(), ListTrait(Unicode())),
-        #allow_none=True, default_value=None,
-        help="Trait-names to include in ``__str__()``")
 
-    def _decide_printable_traits(self):
-        tnames_to_print = self.printable_traits
+    def _find_baseclass_with_class_property(self) -> Optional[Tuple[type, Any]]:
+        cls = type(self)
+        for cls in cls.mro():
+            ptraits = vars(cls).get('printable_traits')
+            if ptraits is not None:
+                return cls, ptraits
+
+    def _decide_printable_traits_from_class_property(self, cls, tnames_to_print):
+        if not tnames_to_print:
+            return ()
+
         if tnames_to_print == '*':
-            tnames_to_print = self.class_traits()
-        else:
-            if not tnames_to_print:
-                tnames_to_print = self.traits(printable=True)
-            if not tnames_to_print:
-                ## Print all traits for subclasses after(above) Printable in mro().
-                #
-                strable_subclasses = [cls for cls in type(self).mro()
-                                      if issubclass(cls, Printable) and
-                                      cls is not Printable]
-                tnames_to_print = [tname
-                                   for cls in strable_subclasses
-                                   for tname in cls.class_own_traits()]
+            return self.class_traits()
+
+        if not isinstance(tnames_to_print, (list, tuple)):  # TODO: isinstance([], (). SET)
+            tnames_to_print = [tnames_to_print]
+
+        if '-' in tnames_to_print:
+            tnames_to_print = [tn for tn in tnames_to_print
+                               if tn != '-'] + list(cls.class_own_traits())
+
+        bads = set(tnames_to_print) - set(self.traits())
+        if bads:
+            raise AssertionError(
+                "Class-property `%s.printable_traits` contains unknown trait-names: %s" %
+                (cls.__name__, ', '.join(bads)))
+
+        return tnames_to_print
+
+    def _decide_printable_traits(self) -> Optional[Sequence[str]]:
+        res = self._find_baseclass_with_class_property()
+        if res:
+            return self._decide_printable_traits_from_class_property(*res)
+
+        tnames_to_print = self.traits(printable=True)  # type: ignore
+
+        if not tnames_to_print:
+            ## Print all traits for subclasses after(above) Printable in mro().
+            #
+            strable_subclasses = [cls for cls in type(self).mro()
+                                  if issubclass(cls, Printable) and
+                                  cls is not Printable]
+            tnames_to_print = [tname
+                               for cls in strable_subclasses
+                               for tname in cls.class_own_traits()]  # type: ignore
+
         return tnames_to_print
 
     def __str__(self):

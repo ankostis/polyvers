@@ -11,6 +11,7 @@ from polyvers._vendor.traitlets import traitlets as trt, config as trc
 from polyvers._vendor.traitlets.traitlets import Int
 from polyvers.cmdlet import cmdlets
 from polyvers.utils import logconfutils as lcu
+from polyvers.utils.yamlutil import ydumps
 from tests.conftest import touchpaths
 import logging
 import os
@@ -18,7 +19,6 @@ import os
 from ruamel.yaml.comments import CommentedMap
 import pytest
 
-from polyvers.utils.yamlutil import ydumps
 from py.path import local as P  # @UnresolvedImport
 import os.path as osp
 import textwrap as tw
@@ -77,19 +77,91 @@ def test_Printable():
     assert set(D()._decide_printable_traits()) == {'d'}
     del D.d.metadata['printable']
 
-    D.printable_traits = '*'
-    assert set(D()._decide_printable_traits()) == {'c', 'd'}
 
-    D.printable_traits = ('c', )
-    assert set(D()._decide_printable_traits()) == {'c'}
-    D.printable_traits = ('d', )
-    assert set(D()._decide_printable_traits()) == {'d'}
+def check_decide_traits(C, D, c_ptraits, d_ptraits, c_exp, d_exp):
+    def check(cls, exp):
+        if isinstance(exp, Exception):
+            with pytest.raises(type(exp), match=str(exp)):
+                cls()._decide_printable_traits()
+        else:
+            assert set(cls()._decide_printable_traits()) == set(exp)
 
-    ## Mention in superclass subclass trait to print!
+    if c_ptraits is not None:
+        C.printable_traits = c_ptraits
+    if d_ptraits is not None:
+        D.printable_traits = d_ptraits
+    if c_exp is not None:
+        check(C, c_exp)
+    if d_exp is not None:
+        check(D, d_exp)
 
-    D.printable_traits = ()
-    C.printable_traits = ('c', 'd')
-    assert set(D()._decide_printable_traits()) == {'c', 'd'}
+
+@pytest.mark.parametrize('c_ptraits, d_ptraits, c_exp, d_exp', [
+    (list('cd'), None,
+     AssertionError("C.printable_traits` contains unknown trait-names"), 'cd'),
+    (None, 'x', 'c', AssertionError("D.printable_traits` contains unknown trait-names")),
+
+    (None, None, 'c', 'cd'),
+    ('*', None, 'c', 'cd'),
+    (None, '*', 'c', 'cd'),
+
+    ((), None, (), ()),
+    (None, (), 'c', ()),
+    ((), '*', (), 'cd'),
+    ('*', (), 'c', ()),
+
+    ('-', None, 'c', 'c'),
+    (None, '-', 'c', 'd'),
+    (['-'], '-', 'c', 'd'),
+    ('*', ['-'], 'c', 'd'),
+    ('-', '*', 'c', 'cd'),
+
+    ('c', 'd', 'c', 'd'),
+    ('c', list('-d'), 'c', 'd'),
+])
+def test_Printable_with_class_property_1(c_ptraits, d_ptraits, c_exp, d_exp):
+    class C(trt.HasTraits, cmdlets.Printable):
+        c = Int()
+
+    class D(C):
+        d = Int()
+
+    check_decide_traits(C, D, c_ptraits, d_ptraits, c_exp, d_exp)
+
+
+@pytest.mark.parametrize('c_ptraits, d_ptraits, c_exp, d_exp', [
+    (list('cd'), None,
+     AssertionError("C.printable_traits` contains unknown trait-names"), 'cd'),
+    (None, 'x', 'a', AssertionError("D.printable_traits` contains unknown trait-names")),
+
+    (None, None, 'a', 'ab'),
+    ('*', None, 'ac', 'abcd'),
+    (None, '*', 'a', 'abcd'),
+
+    ((), None, (), ()),
+    (None, (), 'a', ()),
+    ((), '*', (), 'abcd'),
+    ('*', (), 'ac', ()),
+
+    ('-', None, 'ac', 'ac'),
+    (None, '-', 'a', 'bd'),
+    (['-'], '-', 'ac', 'bd'),
+    ('*', ['-'], 'ac', 'bd'),
+    ('-', '*', 'ac', 'abcd'),
+
+    ('c', 'd', 'c', 'd'),
+    ('c', list('-d'), 'c', 'bd'),
+])
+def test_Printable_with_class_property_2(c_ptraits, d_ptraits, c_exp, d_exp):
+    class C(trt.HasTraits, cmdlets.Printable):
+        a = Int().tag(printable=True)
+        c = Int()
+
+    class D(C):
+        b = Int().tag(printable=True)
+        d = Int()
+
+    check_decide_traits(C, D, c_ptraits, d_ptraits, c_exp, d_exp)
 
 
 @pytest.mark.parametrize('force, token, exp', [
