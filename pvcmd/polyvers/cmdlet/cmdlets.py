@@ -449,9 +449,6 @@ class Printable(metaclass=trt.MetaHasTraits):
         if not tnames_to_print:
             return ()
 
-        if tnames_to_print == '*':
-            return self.class_traits()
-
         if not isinstance(tnames_to_print, (list, tuple)):  # TODO: isinstance([], (). SET)
             tnames_to_print = [tnames_to_print]
 
@@ -468,6 +465,9 @@ class Printable(metaclass=trt.MetaHasTraits):
         return tnames_to_print
 
     def _decide_printable_traits(self) -> Optional[Sequence[str]]:
+        if getattr(self, 'printable_traits', None) == '*':
+            return self.traits()  # type: ignore
+
         res = self._find_baseclass_with_class_property()
         if res:
             return self._decide_printable_traits_from_class_property(*res)
