@@ -6,15 +6,14 @@
 # You may not use this work except in compliance with the Licence.
 # You may obtain a copy of the Licence at: http://ec.europa.eu/idabc/eupl
 
-from polyvers._vendor.traitlets import traitlets as trt
-from polyvers.cmdlet import cmdlets, errlog
-from polyvers.cmdlet.errlog import _ErrNode, ErrLog
-from tests.conftest import clearlog
 import logging
 import re
 
 import pytest
 
+from polyvers._vendor.traitlets import traitlets as trt
+from polyvers.cmdlet import cmdlets, errlog
+from polyvers.cmdlet.errlog import _ErrNode, ErrLog
 import textwrap as tw
 
 
@@ -204,7 +203,7 @@ def test_ErrLog_no_errors(caplog, forceable, logcollector):
 
     erl = ErrLog(forceable, ValueError, ValueError)
 
-    clearlog(caplog)
+    caplog.clear()
     with erl:
         pass
     assert not caplog.text
@@ -213,7 +212,7 @@ def test_ErrLog_no_errors(caplog, forceable, logcollector):
 
     ## Check re-use clean errlogs.
     #
-    clearlog(caplog)
+    caplog.clear()
     with erl(doing='0', info_log=logcollector) as erl2:
         with erl2(doing='01'):
             pass
@@ -274,7 +273,7 @@ def test_ErrLog_nested_all_captured_and_info(caplog, logcollector, forceable):
     forceable.force.append(True)
     erl = ErrLog(forceable, info_log=logcollector)
 
-    clearlog(caplog)
+    caplog.clear()
     with erl(doing="starting") as erl2:
         with erl2(doing="notting"):
             pass
@@ -313,7 +312,7 @@ def test_ErrLog_nested_reuse(caplog, forceable):
         with erl(KeyError):
             raise ValueError()
 
-    clearlog(caplog)
+    caplog.clear()
     with erl(ValueError, doing="starting"):
         raise ValueError("HiHi")
     assert "HiHi" in caplog.text
@@ -324,7 +323,7 @@ def test_ErrLog_nested_warn_while_raising(caplog, forceable):
     erl = ErrLog(forceable, ValueError, token=True)
     ## Re-use non-failed errlog, and fail it.
     #
-    clearlog(caplog)
+    caplog.clear()
     with pytest.raises(KeyError):
         with erl(ValueError, doing="starting") as erl2:
             with erl2(ValueError, doing="doing-1"):
@@ -388,12 +387,12 @@ def test_ErrLog_decorator(caplog):
     assert "Collecting KeyError" in caplog.text
     assert "Ignored 1 errors while ??" in caplog.text
 
-    clearlog(caplog)
+    caplog.clear()
     with pytest.raises(cmdlets.CmdException, match='Collected 1 error'):
         C().f_log()
 
     obj = C(force=[True])
-    clearlog(caplog)
+    caplog.clear()
     obj.f_log()
     assert "Ignored 1 error" in caplog.text
 

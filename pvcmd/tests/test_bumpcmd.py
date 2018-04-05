@@ -15,8 +15,7 @@ from polyvers.utils.oscmd import cmd
 import textwrap as tw
 
 from .conftest import (
-    check_text, clearlog,
-    make_setup_py_without_version, make_setup_py)
+    check_text, make_setup_py_without_version, make_setup_py)
 
 
 @pytest.fixture(autouse=True)
@@ -53,7 +52,7 @@ def test_bump_cmd_bad(mutable_repo, caplog, capsys):
     ## --mono-project
     #  no-current version
     #
-    clearlog(caplog)
+    caplog.clear()
     make_setup_py_without_version(mutable_repo, 'base')
 
     rc = main('bump --mono-project -v 1.1.1'.split())
@@ -78,7 +77,7 @@ def test_bump_cmd_mono_project(mutable_repo, caplog, capsys):
     ##############
     ## --mono-project
     #
-    clearlog(caplog)
+    caplog.clear()
     setupy_fpath = make_setup_py(mutable_repo, 'simple')
 
     rc = main('bump  -v --mono-project 0.0.1'.split())
@@ -116,7 +115,7 @@ def test_bump_cmd_monorepo(mutable_repo, caplog, capsys):
     ##############
     ## --monorepo
     #
-    clearlog(caplog)
+    caplog.clear()
     setupy_fpath = make_setup_py(mutable_repo, 'simple')
 
     rc = main('bump  -v --monorepo 0.0.1'.split())

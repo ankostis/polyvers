@@ -115,14 +115,6 @@ def check_text(text, require=(), forbid=(), is_regex=False):
                     (err1, err2, '\n    '.join(text)))
 
 
-def clearlog(caplog):
-    "Workaround not clearing text: https://github.com/pytest-dev/pytest/issues/3297"
-    import io
-
-    caplog.clear()
-    caplog.handler.stream = io.StringIO()
-
-
 @pytest.fixture()
 def today():
     """A :rfc:`2822` formated timestamp: ``Thu, 01 Mar 2018 09:46:47 +0000`` """

@@ -7,10 +7,6 @@
 # You may obtain a copy of the Licence at: http://ec.europa.eu/idabc/eupl
 #
 from collections import OrderedDict, defaultdict
-import io
-
-import pytest
-
 from polyvers import cli, __version__, __updated__, pvproject, pvtags
 from polyvers.__main__ import main
 from polyvers._vendor.traitlets import config as trc
@@ -18,10 +14,11 @@ from polyvers.cli import PolyversCmd
 from polyvers.cmdlet import cmdlets
 from polyvers.utils.mainpump import ListConsumer
 from polyvers.utils.oscmd import cmd
+import io
 
-from .conftest import (
-    check_text, clearlog, dict_eq,
-    make_setup_py)
+import pytest
+
+from .conftest import check_text, dict_eq, make_setup_py
 
 
 @pytest.mark.parametrize('inp, exp', [
@@ -116,7 +113,7 @@ def test_bootstrapp_projects_explicit(no_repo, empty_repo, caplog):
     ## Specify: nothing
     #
     cmd = PolyversCmd()
-    clearlog(caplog)
+    caplog.clear()
     with pytest.raises(cmdlets.CmdException,
                        match="Cannot auto-discover versioning scheme"):
         cmd.bootstrapp_projects()
@@ -130,7 +127,7 @@ def test_bootstrapp_projects_explicit(no_repo, empty_repo, caplog):
     cfg = trc.Config()
     cfg.Project.pvtag_frmt = cfg.Project.pvtag_regex = 'some'
     cmd = PolyversCmd(config=cfg)
-    clearlog(caplog)
+    caplog.clear()
     with pytest.raises(cmdlets.CmdException,
                        match="Cannot auto-discover \(sub-\)project"):
         cmd.bootstrapp_projects()
@@ -143,7 +140,7 @@ def test_bootstrapp_projects_explicit(no_repo, empty_repo, caplog):
     #
     cfg.PolyversCmd.projects = [pvproject.Project()]
     cmd = PolyversCmd(config=cfg)
-    clearlog(caplog)
+    caplog.clear()
     cmd.bootstrapp_projects()
     assert all(t not in caplog.text for t in [
         "Auto-discovered 2 sub-project(s)",
@@ -154,7 +151,7 @@ def test_bootstrapp_projects_explicit(no_repo, empty_repo, caplog):
     #
     cfg.PolyversCmd.projects = [pvproject.Project(), pvproject.Project()]
     cmd = PolyversCmd(config=cfg)
-    clearlog(caplog)
+    caplog.clear()
     cmd.bootstrapp_projects()
     check_text(
         caplog.text,
@@ -173,7 +170,7 @@ def test_bootstrapp_projects_explicit(no_repo, empty_repo, caplog):
     del cfg.PolyversCmd['projects']
     cfg.PolyversCmd.pdata = {'foo': 'foo_path', 'bar': 'bar_path'}
     cmd = PolyversCmd(config=cfg)
-    clearlog(caplog)
+    caplog.clear()
     cmd.bootstrapp_projects()
     assert len(cmd.projects) == 2
     check_text(
@@ -194,7 +191,7 @@ def check_bootstrapp_projects_autodiscover(myrepo, caplog, vscheme):
     caplog.set_level(0)
 
     cmd = PolyversCmd()
-    clearlog(caplog)
+    caplog.clear()
     with pytest.raises(cmdlets.CmdException,
                        match="Cannot auto-discover \(sub-\)project"):
         cmd.bootstrapp_projects()
@@ -210,8 +207,8 @@ def check_bootstrapp_projects_autodiscover(myrepo, caplog, vscheme):
 
     make_setup_py(myrepo, 'simple')
     cmd = PolyversCmd()
-    clearlog(caplog)
-    clearlog(caplog)
+    caplog.clear()
+    caplog.clear()
     cmd.bootstrapp_projects()
     assert len(cmd.projects) == 1
     assert cmd.projects[0].basepath.samefile(str(myrepo))
@@ -229,7 +226,7 @@ def check_bootstrapp_projects_autodiscover(myrepo, caplog, vscheme):
     prj2_basepath = myrepo / 'extra' / 'project'
     make_setup_py(prj2_basepath, 'extra')
     cmd = PolyversCmd()
-    clearlog(caplog)
+    caplog.clear()
     cmd.bootstrapp_projects()
     assert len(cmd.projects) == 2
     assert cmd.projects[0].basepath.samefile(str(myrepo))
@@ -265,7 +262,7 @@ def test_status_cmd_vtags(mutable_repo, caplog, capsys):
     ##############
     ## setup.py + --monorepo
     #
-    clearlog(caplog)
+    caplog.clear()
     make_setup_py(mutable_repo, 'simple')
 
     rc = main('status --mono-project -v'.split())
@@ -290,7 +287,7 @@ def test_status_cmd_vtags(mutable_repo, caplog, capsys):
     ##############
     ## TAG REPO
     #
-    clearlog(caplog)
+    caplog.clear()
 
     cmd.git.tag('v0.1.0', m='annotate!')
     rc = main('status -v'.split())
@@ -342,7 +339,7 @@ def test_status_cmd_pvtags(mutable_repo, caplog, capsys):
     ##############
     ## setup.py + --monorepo
     #
-    clearlog(caplog)
+    caplog.clear()
     make_setup_py(mutable_repo, 'base')
     make_setup_py(mutable_repo / 'foo_project', 'foo')
 
@@ -370,7 +367,7 @@ def test_status_cmd_pvtags(mutable_repo, caplog, capsys):
     ##############
     ## TAG REPO
     #
-    clearlog(caplog)
+    caplog.clear()
 
     cmd.git.tag('base-v0.1.0', m='annotate!')
     rc = main('status -v'.split())

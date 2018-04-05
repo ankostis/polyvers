@@ -6,17 +6,16 @@
 # You may not use this work except in compliance with the Licence.
 # You may obtain a copy of the Licence at: http://ec.europa.eu/idabc/eupl
 
-from tests.conftest import clearlog
-import re
-import sys
-
-import pytest
-
 from polyvers import pvtags
 from polyvers._vendor import traitlets as trt
 from polyvers._vendor.traitlets import config as trc
 from polyvers.pvproject import Project
 from polyvers.utils.oscmd import cmd
+import re
+import sys
+
+import pytest
+
 import polyversion as pvlib
 
 
@@ -205,7 +204,7 @@ def test_simple_project(mutable_pvtags_repo, project2, caplog):
     cmd.git.tag('v123')
     cmd.git.tag('v12.0', m='hh')
     all_vtags = pvtags.make_match_all_vtags_project()
-    clearlog(caplog)
+    caplog.clear()
     pvtags.populate_pvtags_history(all_vtags)
     assert all_vtags.pvtags_history == ['v12.0']
     assert BAD_TAG not in caplog.text
