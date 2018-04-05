@@ -9,7 +9,6 @@
 from os import pathsep as PS
 from polyvers._vendor.traitlets import traitlets as trt, config as trc
 from polyvers._vendor.traitlets.traitlets import Int
-from polyvers.cli import ydumps
 from polyvers.cmdlet import cmdlets
 from polyvers.utils import logconfutils as lcu
 from tests.conftest import touchpaths
@@ -19,6 +18,7 @@ import os
 from ruamel.yaml.comments import CommentedMap
 import pytest
 
+from polyvers.utils.yamlutil import ydumps
 from py.path import local as P  # @UnresolvedImport
 import os.path as osp
 import textwrap as tw

@@ -11,7 +11,6 @@ from collections import OrderedDict, defaultdict, Mapping
 from pathlib import Path
 from typing import Dict, Optional
 from typing import Tuple, Set, List  # noqa: F401 @UnusedImport, flake8 blind in funcs
-import io
 import logging
 
 from boltons.setutils import IndexedSet as iset
@@ -25,7 +24,7 @@ from ._vendor.traitlets.traitlets import (
     List as ListTrait, Tuple as TupleTrait, Dict as DictTrait)
 from ._vendor.traitlets.traitlets import Bool, Unicode
 from .cmdlet import cmdlets, autotrait
-from .utils import fileutil as fu
+from .utils import fileutil as fu, yamlutil as yu
 
 
 log = logging.getLogger(__name__)
@@ -36,53 +35,6 @@ log = logging.getLogger(__name__)
 ####################
 CONFIG_VAR_NAME = '%s_CONFIG_PATHS' % APPNAME.upper()
 #######################
-
-
-#: YAML dumper used to serialize command's outputs.
-_Y = None
-
-
-def _get_yamel():
-    global _Y
-
-    if not _Y:
-        from ruamel import yaml
-        from ruamel.yaml.representer import RoundTripRepresenter
-
-        for d in [OrderedDict, defaultdict]:
-            RoundTripRepresenter.add_representer(
-                d, RoundTripRepresenter.represent_dict)
-        _Y = yaml.YAML()
-
-    return _Y
-
-
-def ydumps(obj, sink=None) -> Optional[str]:
-    "Dump any false objects as empty string, None as nothing, or as YAML. "
-
-    if not obj:
-        if sink:
-            sink.write('')
-            return  # type: ignore
-        return ''
-
-    dump_to_str = not bool(sink)
-    if dump_to_str:
-        sink = io.StringIO()
-
-    _get_yamel().dump(obj, sink)
-
-    if dump_to_str:
-        return sink.getvalue().strip()
-
-
-def yloads(text):
-    "Dump any false objects as empty string, None as nothing, or as YAML. "
-
-    if not text:
-        return
-
-    return _get_yamel().load(text)
 
 
 def merge_dict(dct, merge_dct):
@@ -291,7 +243,7 @@ class PolyversCmd(cmdlets.Cmd):
         if dupe_projects:
             raise cmdlets.CmdException(
                 "Discovered conflicting project-basepaths: %s" %
-                ydumps(dupe_basepath))
+                yu.ydumps(dupe_basepath))
 
         return projects
 
@@ -314,8 +266,8 @@ class PolyversCmd(cmdlets.Cmd):
                 "Cannot auto-discover versioning scheme, "
                 "missing or contradictive versioning-tags:\n%s"
                 "\n\n  Try --monorepo/--mono-project flags." %
-                ydumps({'pvtags': pvtag_proj.pvtags_history,
-                        'vtags': vtag_proj.pvtags_history}))
+                yu.ydumps({'pvtags': pvtag_proj.pvtags_history,
+                          'vtags': vtag_proj.pvtags_history}))
 
     def bootstrapp_projects(self) -> None:
         """
@@ -352,7 +304,7 @@ class PolyversCmd(cmdlets.Cmd):
                 self.log.info(
                     "Auto-discovered %i sub-project(s) in git-root '%s': \n%s",
                     len(pdata), git_root.resolve(),
-                    ydumps({k: str(v) for k, v in pdata.items()}))
+                    yu.ydumps({k: str(v) for k, v in pdata.items()}))
 
             self.projects = [template_project.replace(pname=pname,
                                                       basepath=basepath,
@@ -362,8 +314,9 @@ class PolyversCmd(cmdlets.Cmd):
         if len(self.projects) > 1 and template_project.pname == pvtags.MONO_PROJECT:
             self.log.warning(
                 "Incompatible *vtags* version-scheme with %s sub-projects!"
-                "  You may switch to *pvtags* (see `--monorepo`) or "
-                "\n  specify projects explictely (see `--pdata`).",
+                "\n  You may ether switch to *pvtags* (see `--monorepo`) or "
+                "\n  override projects to a single one (see `--pdata`). "
+                "\n\n  You can then make the choice permanent using `init` cmd.",
                 len(self.projects))
         return self.projects
 
@@ -459,7 +412,7 @@ class StatusCmd(_SubCmd):
             merge_dict(res, self._fetch_all(projects))
 
         if res:
-            return ydumps(res)
+            return yu.ydumps(res)
 
 
 class LogconfCmd(_SubCmd):

@@ -6,37 +6,18 @@
 # You may not use this work except in compliance with the Licence.
 # You may obtain a copy of the Licence at: http://ec.europa.eu/idabc/eupl
 #
-from collections import OrderedDict, defaultdict
 from polyvers import cli, __version__, __updated__, pvproject, pvtags
 from polyvers.__main__ import main
 from polyvers._vendor.traitlets import config as trc
 from polyvers.cli import PolyversCmd
 from polyvers.cmdlet import cmdlets
+from polyvers.utils import yamlutil as yu
 from polyvers.utils.mainpump import ListConsumer
 from polyvers.utils.oscmd import cmd
-import io
 
 import pytest
 
 from .conftest import check_text, dict_eq, make_setup_py
-
-
-@pytest.mark.parametrize('inp, exp', [
-    (None, ''),
-    ({}, ''),
-    ([], ''),
-    (OrderedDict(a=1), "a: 1"),
-    (defaultdict(list, a='1'), "a: '1'"),
-
-])
-def test_yaml_dump(inp, exp):
-    got = cli.ydumps(inp)
-    assert got == exp
-
-    sio = io.StringIO()
-    cli.ydumps(inp, sio)
-    got = sio.getvalue()
-    assert got.strip() == exp
 
 
 all_cmds = [c
@@ -303,34 +284,34 @@ def test_status_cmd_vtags(mutable_repo, caplog, capsys):
         ])
     out, err = capsys.readouterr()
     assert not err
-    assert {'simple': {'version': 'v0.1.0'}} == cli.yloads(out)
+    assert {'simple': {'version': 'v0.1.0'}} == yu.yloads(out)
 
     rc = main('status --all'.split())
     assert rc == 0
     out, err = capsys.readouterr()
-    exp = cli.yloads("""
+    exp = yu.yloads("""
         simple:
           version: v0.1.0
           history:
           - v0.1.0
           basepath: .
     """)
-    assert dict_eq(exp, cli.yloads(out))
+    assert dict_eq(exp, yu.yloads(out))
 
     rc = main('status --all simple'.split())
     assert rc == 0
     out, err = capsys.readouterr()
-    assert dict_eq(exp, cli.yloads(out))
+    assert dict_eq(exp, yu.yloads(out))
 
     rc = main('status --all simple foobar'.split())
     assert rc == 0
     out, err = capsys.readouterr()
-    assert dict_eq(exp, cli.yloads(out))
+    assert dict_eq(exp, yu.yloads(out))
 
     rc = main('status --all foobar'.split())
     assert rc == 0
     out, err = capsys.readouterr()
-    assert not cli.yloads(out)
+    assert not yu.yloads(out)
 
 
 def test_status_cmd_pvtags(mutable_repo, caplog, capsys):
@@ -355,14 +336,14 @@ def test_status_cmd_pvtags(mutable_repo, caplog, capsys):
         ])
     out, err = capsys.readouterr()
     assert not err
-    assert {'base': {'version': None}, 'foo': {'version': None}} == cli.yloads(out)
+    assert {'base': {'version': None}, 'foo': {'version': None}} == yu.yloads(out)
 
     rc = main('status --monorepo --all'.split())
     assert rc == 0
     out, err = capsys.readouterr()
-    exp = cli.yloads('base:\n  version:\n  history: []\n  basepath: .\n'
-                     'foo:\n  version:\n  history: []\n  basepath: foo_project\n')
-    assert dict_eq(exp, cli.yloads(out))
+    exp = yu.yloads('base:\n  version:\n  history: []\n  basepath: .\n'
+                    'foo:\n  version:\n  history: []\n  basepath: foo_project\n')
+    assert dict_eq(exp, yu.yloads(out))
 
     ##############
     ## TAG REPO
@@ -383,13 +364,13 @@ def test_status_cmd_pvtags(mutable_repo, caplog, capsys):
         ])
     out, err = capsys.readouterr()
     assert not err
-    exp = cli.yloads("base:\n  version: base-v0.1.0\nfoo:\n  version:\n")
-    assert dict_eq(exp, cli.yloads(out))
+    exp = yu.yloads("base:\n  version: base-v0.1.0\nfoo:\n  version:\n")
+    assert dict_eq(exp, yu.yloads(out))
 
     rc = main('status --all'.split())
     assert rc == 0
     out, err = capsys.readouterr()
-    exp = cli.yloads("""
+    exp = yu.yloads("""
     base:
       version: base-v0.1.0
       history:
@@ -400,17 +381,17 @@ def test_status_cmd_pvtags(mutable_repo, caplog, capsys):
       history: []
       basepath: foo_project
     """)
-    assert dict_eq(exp, cli.yloads(out))
+    assert dict_eq(exp, yu.yloads(out))
 
     rc = main('status --all base foo'.split())
     assert rc == 0
     out, err = capsys.readouterr()
-    assert dict_eq(exp, cli.yloads(out))
+    assert dict_eq(exp, yu.yloads(out))
 
     rc = main('status --all base foo BAD'.split())
     assert rc == 0
     out, err = capsys.readouterr()
-    assert dict_eq(exp, cli.yloads(out))
+    assert dict_eq(exp, yu.yloads(out))
 
     rc = main('status --all BAD'.split())
     assert rc == 0
@@ -419,11 +400,11 @@ def test_status_cmd_pvtags(mutable_repo, caplog, capsys):
 
     rc = main('status --all foo BAD'.split())
     assert rc == 0
-    exp = cli.yloads("""
+    exp = yu.yloads("""
     foo:
       version:
       history: []
       basepath: foo_project
     """)
     out, err = capsys.readouterr()
-    assert dict_eq(exp, cli.yloads(out))
+    assert dict_eq(exp, yu.yloads(out))
