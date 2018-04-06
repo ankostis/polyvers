@@ -9,7 +9,7 @@
 from os import pathsep as PS
 from polyvers._vendor.traitlets import traitlets as trt, config as trc
 from polyvers._vendor.traitlets.traitlets import Int
-from polyvers.cmdlet import cmdlets
+from polyvers.cmdlet import cmdlets, traitquery
 from polyvers.utils import logconfutils as lcu
 from polyvers.utils.yamlutil import ydumps
 from tests.conftest import touchpaths
@@ -65,19 +65,19 @@ def test_Printable_smoketest():
         c = Int()
 
     c = C(c=1)
-    assert c._trait_selector.select_traits(c) == ['c']
+    assert traitquery.select_traits(c, cmdlets.Printable) == ['c']
     assert str(c) == 'C(c=1)'
 
     class D(C):
         d = Int()
 
     d = D()
-    assert set(d._trait_selector.select_traits(d)) == {'c', 'd'}
+    assert set(traitquery.select_traits(d, cmdlets.Printable)) == {'c', 'd'}
     assert str(D()) == 'D(d=0, c=0)'  # mro trait definition
 
     D.d.metadata['printable'] = True
     d = D()
-    assert set(d._trait_selector.select_traits(d)) == {'d'}
+    assert set(traitquery.select_traits(d, cmdlets.Printable)) == {'d'}
     del D.d.metadata['printable']
 
 
@@ -86,9 +86,9 @@ def check_select_traits(classprop, C, D, c_ptraits, d_ptraits, c_exp, d_exp):
         c = cls()
         if isinstance(exp, Exception):
             with pytest.raises(type(exp), match=str(exp)):
-                c._trait_selector.select_traits(c)
+                traitquery.select_traits(c, cmdlets.Printable)
         else:
-            assert set(c._trait_selector.select_traits(c)) == set(exp)
+            assert set(traitquery.select_traits(c, cmdlets.Printable)) == set(exp)
 
     if c_ptraits is not None:
         setattr(C, classprop, c_ptraits)
