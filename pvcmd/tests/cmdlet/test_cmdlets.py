@@ -60,36 +60,40 @@ def test_Replaceable_Configurable():
     assert c2.b == 2
 
 
-def test_Printable():
+def test_Printable_smoketest():
     class C(trt.HasTraits, cmdlets.Printable):
         c = Int()
 
     c = C(c=1)
-    assert c._decide_printable_traits() == ['c']
+    assert c._trait_selector.select_traits(c) == ['c']
     assert str(c) == 'C(c=1)'
 
     class D(C):
         d = Int()
-    assert set(D()._decide_printable_traits()) == {'c', 'd'}
+
+    d = D()
+    assert set(d._trait_selector.select_traits(d)) == {'c', 'd'}
     assert str(D()) == 'D(d=0, c=0)'  # mro trait definition
 
     D.d.metadata['printable'] = True
-    assert set(D()._decide_printable_traits()) == {'d'}
+    d = D()
+    assert set(d._trait_selector.select_traits(d)) == {'d'}
     del D.d.metadata['printable']
 
 
-def check_decide_traits(C, D, c_ptraits, d_ptraits, c_exp, d_exp):
+def check_select_traits(classprop, C, D, c_ptraits, d_ptraits, c_exp, d_exp):
     def check(cls, exp):
+        c = cls()
         if isinstance(exp, Exception):
             with pytest.raises(type(exp), match=str(exp)):
-                cls()._decide_printable_traits()
+                c._trait_selector.select_traits(c)
         else:
-            assert set(cls()._decide_printable_traits()) == set(exp)
+            assert set(c._trait_selector.select_traits(c)) == set(exp)
 
     if c_ptraits is not None:
-        C.printable_traits = c_ptraits
+        setattr(C, classprop, c_ptraits)
     if d_ptraits is not None:
-        D.printable_traits = d_ptraits
+        setattr(D, classprop, d_ptraits)
     if c_exp is not None:
         check(C, c_exp)
     if d_exp is not None:
@@ -119,14 +123,14 @@ def check_decide_traits(C, D, c_ptraits, d_ptraits, c_exp, d_exp):
     ('c', 'd', 'c', 'd'),
     ('c', list('-d'), 'c', 'd'),
 ])
-def test_Printable_with_class_property_1(c_ptraits, d_ptraits, c_exp, d_exp):
+def test_TraitSelector_with_class_property_1(c_ptraits, d_ptraits, c_exp, d_exp):
     class C(trt.HasTraits, cmdlets.Printable):
         c = Int()
 
     class D(C):
         d = Int()
 
-    check_decide_traits(C, D, c_ptraits, d_ptraits, c_exp, d_exp)
+    check_select_traits('printable_traits', C, D, c_ptraits, d_ptraits, c_exp, d_exp)
 
 
 @pytest.mark.parametrize('c_ptraits, d_ptraits, c_exp, d_exp', [
@@ -152,7 +156,7 @@ def test_Printable_with_class_property_1(c_ptraits, d_ptraits, c_exp, d_exp):
     ('c', 'd', 'c', 'd'),
     ('c', list('-d'), 'c', 'bd'),
 ])
-def test_Printable_with_class_property_2(c_ptraits, d_ptraits, c_exp, d_exp):
+def test_TraitSelector_with_class_property_2(c_ptraits, d_ptraits, c_exp, d_exp):
     class C(trt.HasTraits, cmdlets.Printable):
         a = Int().tag(printable=True)
         c = Int()
@@ -161,7 +165,7 @@ def test_Printable_with_class_property_2(c_ptraits, d_ptraits, c_exp, d_exp):
         b = Int().tag(printable=True)
         d = Int()
 
-    check_decide_traits(C, D, c_ptraits, d_ptraits, c_exp, d_exp)
+    check_select_traits('printable_traits', C, D, c_ptraits, d_ptraits, c_exp, d_exp)
 
 
 @pytest.mark.parametrize('force, token, exp', [
