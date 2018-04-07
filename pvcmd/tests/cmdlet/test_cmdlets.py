@@ -84,15 +84,18 @@ def test_Printable_smoketest():
     del D.d.metadata['printable']
 
 
-def check_select_traits(classprop, C, D, c_ptraits, d_ptraits, c_exp, d_exp):
+def check_select_traits(classprop, C, D, c_ptraits, d_ptraits, c_exp, d_exp,
+                        append_tags=False):
     def check(cls, exp):
         c = cls()
         if isinstance(exp, Exception):
             with pytest.raises(type(exp), match=str(exp)):
                 traitquery.select_traits(c, cmdlets.Printable,
+                                         append_tags=append_tags,
                                          printable=True)
         else:
             assert set(traitquery.select_traits(c, cmdlets.Printable,
+                                                append_tags=append_tags,
                                                 printable=True)) == set(exp)
 
     if c_ptraits is not None:
@@ -116,6 +119,7 @@ def check_select_traits(classprop, C, D, c_ptraits, d_ptraits, c_exp, d_exp):
 
     ((), None, (), ()),
     (None, (), 'c', ()),
+    ('', (), (), ()),
     ((), '*', (), 'cd'),
     ('*', (), 'c', ()),
 
@@ -131,7 +135,7 @@ def check_select_traits(classprop, C, D, c_ptraits, d_ptraits, c_exp, d_exp):
     ('c', '', 'c', ()),
     ('', 'd', (), 'd'),
 ])
-def test_TraitSelector_with_class_property_1(c_ptraits, d_ptraits, c_exp, d_exp):
+def test_TraitSelector_clsprop(c_ptraits, d_ptraits, c_exp, d_exp):
     class C(trt.HasTraits, cmdlets.Printable):
         c = Int()
 
@@ -152,8 +156,10 @@ def test_TraitSelector_with_class_property_1(c_ptraits, d_ptraits, c_exp, d_exp)
 
     ((), None, (), ()),
     (None, (), 'a', ()),
+    ('', (), (), ()),
     ((), '*', (), 'abcd'),
     ('*', (), 'ac', ()),
+    ('*', '', 'ac', ()),
 
     ('-', None, 'ac', 'ac'),
     (None, '-', 'a', 'bd'),
@@ -164,7 +170,7 @@ def test_TraitSelector_with_class_property_1(c_ptraits, d_ptraits, c_exp, d_exp)
     ('c', 'd', 'c', 'd'),
     ('c', list('-d'), 'c', 'bd'),
 ])
-def test_TraitSelector_with_class_property_2(c_ptraits, d_ptraits, c_exp, d_exp):
+def test_TraitSelector_clsprop_tags(c_ptraits, d_ptraits, c_exp, d_exp):
     class C(trt.HasTraits, cmdlets.Printable):
         a = Int().tag(printable=True)
         c = Int()
@@ -174,6 +180,29 @@ def test_TraitSelector_with_class_property_2(c_ptraits, d_ptraits, c_exp, d_exp)
         d = Int()
 
     check_select_traits('printable_traits', C, D, c_ptraits, d_ptraits, c_exp, d_exp)
+
+
+@pytest.mark.parametrize('c_ptraits, d_ptraits, c_exp, d_exp', [
+    ((), None, (), ()),
+    (None, (), 'a', ()),
+    ('', (), (), ()),
+
+    ('-', None, 'ac', 'abc'),
+    
+    ('c', 'd', 'ac', 'abd'),
+    ('', list('-d'), (), 'abd'),
+])
+def test_TraitSelector_clsprop_tags_appended(c_ptraits, d_ptraits, c_exp, d_exp):
+    class C(trt.HasTraits, cmdlets.Printable):
+        a = Int().tag(printable=True)
+        c = Int()
+
+    class D(C):
+        b = Int().tag(printable=True)
+        d = Int()
+
+    check_select_traits('printable_traits', C, D, c_ptraits, d_ptraits, c_exp, d_exp,
+                        append_tags=True)
 
 
 @pytest.mark.parametrize('force, token, exp', [
