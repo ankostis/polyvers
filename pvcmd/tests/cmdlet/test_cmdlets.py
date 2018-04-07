@@ -65,19 +65,22 @@ def test_Printable_smoketest():
         c = Int()
 
     c = C(c=1)
-    assert traitquery.select_traits(c, cmdlets.Printable) == ['c']
+    assert traitquery.select_traits(c, cmdlets.Printable,
+                                    printable=True) == ['c']
     assert str(c) == 'C(c=1)'
 
     class D(C):
         d = Int()
 
     d = D()
-    assert set(traitquery.select_traits(d, cmdlets.Printable)) == {'c', 'd'}
-    assert str(D()) == 'D(d=0, c=0)'  # mro trait definition
+    assert set(traitquery.select_traits(d, cmdlets.Printable,
+                                        printable=True)) == {'c', 'd'}
+    assert str(D()) == 'D(c=0, d=0)'  # mro trait definition
 
     D.d.metadata['printable'] = True
     d = D()
-    assert set(traitquery.select_traits(d, cmdlets.Printable)) == {'d'}
+    assert set(traitquery.select_traits(d, cmdlets.Printable,
+                                        printable=True)) == {'d'}
     del D.d.metadata['printable']
 
 
@@ -86,9 +89,11 @@ def check_select_traits(classprop, C, D, c_ptraits, d_ptraits, c_exp, d_exp):
         c = cls()
         if isinstance(exp, Exception):
             with pytest.raises(type(exp), match=str(exp)):
-                traitquery.select_traits(c, cmdlets.Printable)
+                traitquery.select_traits(c, cmdlets.Printable,
+                                         printable=True)
         else:
-            assert set(traitquery.select_traits(c, cmdlets.Printable)) == set(exp)
+            assert set(traitquery.select_traits(c, cmdlets.Printable,
+                                                printable=True)) == set(exp)
 
     if c_ptraits is not None:
         setattr(C, classprop, c_ptraits)
@@ -102,8 +107,8 @@ def check_select_traits(classprop, C, D, c_ptraits, d_ptraits, c_exp, d_exp):
 
 @pytest.mark.parametrize('c_ptraits, d_ptraits, c_exp, d_exp', [
     (list('cd'), None,
-     AssertionError("C.printable_traits` contains unknown trait-names"), 'cd'),
-    (None, 'x', 'c', AssertionError("D.printable_traits` contains unknown trait-names")),
+     ValueError("C.printable_traits` contains unknown trait-names"), 'cd'),
+    (None, 'x', 'c', ValueError("D.printable_traits` contains unknown trait-names")),
 
     (None, None, 'c', 'cd'),
     ('*', None, 'c', 'cd'),
@@ -122,6 +127,9 @@ def check_select_traits(classprop, C, D, c_ptraits, d_ptraits, c_exp, d_exp):
 
     ('c', 'd', 'c', 'd'),
     ('c', list('-d'), 'c', 'd'),
+
+    ('c', '', 'c', ()),
+    ('', 'd', (), 'd'),
 ])
 def test_TraitSelector_with_class_property_1(c_ptraits, d_ptraits, c_exp, d_exp):
     class C(trt.HasTraits, cmdlets.Printable):
@@ -135,8 +143,8 @@ def test_TraitSelector_with_class_property_1(c_ptraits, d_ptraits, c_exp, d_exp)
 
 @pytest.mark.parametrize('c_ptraits, d_ptraits, c_exp, d_exp', [
     (list('cd'), None,
-     AssertionError("C.printable_traits` contains unknown trait-names"), 'cd'),
-    (None, 'x', 'a', AssertionError("D.printable_traits` contains unknown trait-names")),
+     ValueError("C.printable_traits` contains unknown trait-names"), 'cd'),
+    (None, 'x', 'a', ValueError("D.printable_traits` contains unknown trait-names")),
 
     (None, None, 'a', 'ab'),
     ('*', None, 'ac', 'abcd'),

@@ -11,19 +11,18 @@ Utility to query traits of :class:`HasTraits` and build classes like `Printable`
 
 See query reus on :func:`select_traits()`
 """
-from typing import Union, Optional, Tuple, Any, Sequence
+from typing import Union, Optional, Sequence
 
 from .._vendor import traitlets as trt
 
 
 def _find_1st_mro_with_classprop(has_traits: trt.HasTraits,
                                  classprop_selector: str,
-                                 ) -> Optional[Tuple[trt.MetaHasTraits, Any]]:
-    classprop = classprop_selector
+                                 ) -> Optional[trt.MetaHasTraits]:
     for cls in type(has_traits).mro():
-        ptraits = vars(cls).get(classprop)
+        ptraits = vars(cls).get(classprop_selector)
         if ptraits is not None:
-            return cls, ptraits  # type: ignore
+            return cls
 
 
 def _select_traits_from_classprop(has_traits: trt.HasTraits,
@@ -32,18 +31,18 @@ def _select_traits_from_classprop(has_traits: trt.HasTraits,
                                   tnames: Union[str, Sequence, None]):
     """
     :param has_traits:
-        the instance for which it is invokced
+        see :meth:`select_traits()`
+    :param classprop_selector:
+        see :meth:`select_traits()`
     :param first_mro_class:
         the 1st baseclass of :attr:`has_traits` in `mro()` where
-        the class-prop named :attr:`classprop_selector` is defined;
-        practically, :meth:`_find_1st_mro_with_classprop()` results,
-        when not none.
+        a non-None class-prop named :attr:`classprop_selector` is found;
+        practically, :meth:`_find_1st_mro_with_classprop()` result.
     :param tnames:
         its contents
+    :raise ValueError:
+        when unknown trait-names in `classprop_selector` class-property found.
     """
-    if not tnames:
-        return ()
-
     if not isinstance(tnames, (list, tuple)):  # TODO: isinstance([], (). SET)
         tnames = [tnames]
 
@@ -53,7 +52,7 @@ def _select_traits_from_classprop(has_traits: trt.HasTraits,
 
     bads = set(tnames) - set(has_traits.traits())
     if bads:
-        raise AssertionError(
+        raise ValueError(
             "Class-property `%s.%s` contains unknown trait-names: %s" %
             (first_mro_class.__name__,
              classprop_selector, ', '.join(bads)))
@@ -62,77 +61,93 @@ def _select_traits_from_classprop(has_traits: trt.HasTraits,
 
 
 def select_traits(has_traits: trt.HasTraits,
-                  marker_baseclass: type,
+                  mixin: type = None,
                   classprop_selector: str = None,
-                  tag_selector: str = None,
+                  **tag_selectors
                   ) -> Optional[Sequence[str]]:
     """
-    Follow elaborate rules to select certain traits of a :class:`HasTrait` class.
+    Follow elaborate rules to select certain traits of a :class:`HasTraits` class.
 
-    :param has_trait:
-        the instance for which it is invokced
-    :param marker_baseclass:
-        a mixn-class denoting that all traits contained in classes above it
+    :param has_traits:
+        the instance to query it's traits
+    :param mixin:
+        a marker-class denoting that all traits contained in classes above it
         in reverse `mro()` order must be selected.
-        The remaining 2 string-params receive defaults formed out of the name
-        of the class given in this param.
+        The default value for `classprop_selector` is formed out of
+        the name of this mixin.
     :param classprop_selector:
-        The name of a class-property on the `HasTrait` class that participates
-        is considered when deciding which traits to select.
-        If not given, it's '<subclass-name>_traits'.
+        The name of a class-property on the `HasTraits` class to consult
+        when querying traits.
+        If not given but `mixin` given, it defaults to '<subclass-name>_traits'
+        in lower-case,  Otherwise, or if empty-string, rule 1 bypassed.
         See "selection rules" below
-    :param tag_selector:
-        The tag-name used as trait-filter for selecting traits on the `HasTrait` class.
-        If not given, defaults to '<subclass-name>'.
+    :param tag_selectors:
+        Any tag-names to convey as metadata filters in :meth:`HasTraits.traits()`.
         See "selection rules" below
+    :return:
+        the trait-names found, or empty
 
     Selection rules:
 
-    1. Scan the ``HasTraits.mro()`` for a class-property named :attr:`classprop_selector`
-       and select traits according to its contents:
-         - `None`/missing: ignored, visit new `mro()`;
-         - <empty>`: shortcut to rule 4, "no traits selected", below.
+    1. Scan the :attr:`classprop_selector` in ``has_traits.mro()`` and select
+       class-traits according to its contents:
+         - `None`/missing: ignored, visit next in `mro()`;
+         - <empty-str>/<empty-seq>`: shortcut to rule 4, "no traits selected",
+           below.
          - <list of trait-names>: selects them, checking for unknowns,
-         - <'-' alone or contained in the list>: print ALL class's OWN traits
+         - <'-' alone or contained in the list>: select ALL class's OWN traits
            in addition to any other traits contained in the list;
-         - '*': print ALL traits in mro().
+         - '*': select ALL traits in mro().
 
-       But a :attr:`classprop_selector`-named class-property is missing/`None` on
-       all baseclasses...
+       But if a :attr:`classprop_selector`-named class-property is missing/`None` on
+       all baseclasses, or `classprop_selector` was the empty-string...
 
-    2. select any traits in mro() marked with :attr:`tag_selector` metadata.
+    2. select any traits in mro() marked with :attr:`tag_selectors` metadata.
 
        And if none found...
 
     3. select all traits owned by classes contained in revese `mro()` order
-       from the 1st baseclass inheriting :attr:`marker_baseclass`  and uppwards.
+       from the 1st baseclass inheriting :attr:`mixin`  and uppwards.
 
        And if no traits found, ...
 
     4. don't select any traits.
     """
-    assert has_traits and marker_baseclass, (has_traits, marker_baseclass)
+    if mixin:
+        if not isinstance(has_traits, mixin):
+            raise ValueError(
+                "Mixin '%s' is not a subclass of queried '%s'!" %
+                (mixin, has_traits))
 
-    sbcname = marker_baseclass.__name__.lower()
-    classprop_selector = classprop_selector or '%s_traits' % sbcname
+        sbcname = mixin.__name__.lower()
+        if classprop_selector is None:
+            classprop_selector = '%s_traits' % sbcname
 
-    if getattr(has_traits, classprop_selector, None) == '*':
-        return has_traits.traits()
+    ## rule 1: select based on traitnames in class-property.
+    #
+    if classprop_selector:
+        class_tnames = getattr(has_traits, classprop_selector, None)
+        if class_tnames == '*':
+            return has_traits.traits()
+        elif class_tnames:
+            subclass = _find_1st_mro_with_classprop(has_traits, classprop_selector)
+            assert subclass, (subclass, has_traits, classprop_selector)
+            return _select_traits_from_classprop(has_traits, classprop_selector,
+                                                 subclass, class_tnames)
+        elif not class_tnames and class_tnames is not None:
+            ## If empty, shortcut to "no traits selected".
+            return ()
 
-    res = _find_1st_mro_with_classprop(has_traits, classprop_selector)
-    if res:
-        return _select_traits_from_classprop(has_traits, classprop_selector, *res)
+    ## rule 2: select based on trait-tags
+    tnames = has_traits.traits(**tag_selectors)
 
-    tag_selector = tag_selector or sbcname
-    tnames = has_traits.traits(**{tag_selector: True})
-
-    if not tnames:
-        ## rule 3: Select all traits for subclasses
-        #  after(above) `marker_baseclass` in mro().
-        #
+    ## rule 3: Select all traits for subclasses
+    #  after(above) `mixin` in mro().
+    #
+    if not tnames and mixin:
         subclasses = [cls for cls in type(has_traits).mro()  # type: ignore
-                      if issubclass(cls, marker_baseclass) and
-                      cls is not marker_baseclass]
+                      if issubclass(cls, mixin) and
+                      cls is not mixin]
         tnames = [tname
                   for cls in subclasses
                   for tname in cls.class_own_traits()]  # type: ignore
