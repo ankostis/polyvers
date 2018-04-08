@@ -157,12 +157,13 @@ class PolyversCmd(cmdlets.Cmd):
             'engraves': [{
                 'globs': ['**/setup.py'],
                 'grafts': [
-                    {'regex': r'''(?xm)
-                        \b(name|PROJECT|APPNAME|APPLICATION)
-                        \ *=\ *
-                        (['"])
-                            (?P<pname>[\w\-.]+)
-                        \2
+                    {'regex': r'''
+                        (?xm)
+                            \b(name|PROJECT|APPNAME|APPLICATION)
+                            \ *=\ *
+                            (['"])
+                                (?P<pname>[\w\-.]+)
+                            \2
                     '''}
                 ]
             }]
@@ -185,10 +186,22 @@ class PolyversCmd(cmdlets.Cmd):
 
     autodiscover_version_scheme_projects = TupleTrait(
         autotrait.AutoInstance(pvproject.Project), autotrait.AutoInstance(pvproject.Project),
-        default_value=(
-            pvtags.make_match_all_pvtags_project(),
-            pvtags.make_match_all_vtags_project(),
-        ),
+        default_value=({
+            'pname': '<PVTAG>',
+            'tag_vprefixes': pvlib.tag_vprefixes,
+            'pvtag_frmt': '*-v*',
+            'pvtag_regex': r"""
+                (?xmi)
+                    ^(?P<pname>[A-Z0-9]|[A-Z0-9][A-Z0-9._-]*?[A-Z0-9])
+                    -
+                    v(?P<version>\d[^-]*)
+                    (?:-(?P<descid>\d+-g[a-f\d]+))?$
+            """}, {
+            'pname': '<VTAG>',
+            'tag_vprefixes': pvlib.tag_vprefixes,
+            'pvtag_frmt': pvlib.vtag_frmt,
+            'pvtag_regex': pvlib.vtag_regex,
+        }),
         config=True,
         help="""
         A pair of Projects with patterns/regexps matching *pvtags* or *vtags*, respectively.
@@ -351,13 +364,22 @@ class InitCmd(_SubCmd):
                 "Cmd %r takes no arguments, received %d: %r!"
                 % (self.name, len(args), args))
 
+        from pprint import pformat
+        import io
+
         self.bootstrapp_projects()
         cfgpath = self._find_config_file_path(self)
         if cfgpath:
             yield "TODO: update config-file '%s'...." % cfgpath
         else:
             cfgpath = Path(self.git_root) / ('%s.yaml' % self.config_basename)
-            yield "TODO: create new config-file in '%s'." % cfgpath
+            cfg = self.generate_config_file_yaml()
+            self.log.debug("Writing config to yaml file '%s': \n%s",
+                           cfgpath, pformat(cfg))
+            with io.open(cfgpath, 'wt', encoding='utf-8') as fout:
+                yu.ydumps(cfg, fout)
+
+            yield "Created new config-file '%s'." % cfgpath
 
 
 _status_all_help = """

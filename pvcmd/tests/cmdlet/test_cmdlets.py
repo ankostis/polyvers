@@ -160,30 +160,30 @@ def test_TraitSelector_clsprop(c_ptraits, d_ptraits, c_exp, d_exp):
 
 
 @pytest.mark.parametrize('c_ptraits, d_ptraits, c_exp, d_exp', [
-#     (list('cd'), None,
-#      ValueError("C.printable_traits` contains unknown trait-names"), 'cd'),
-#     (None, 'x', 'a', ValueError("D.printable_traits` contains unknown trait-names")),
-#
-#     (None, None, 'a', 'ab'),
-#     ('*', None, 'ac', 'abcd'),
-#     (None, '*', 'a', 'abcd'),
-#
-#     ((), None, (), ()),
-#     (None, (), 'a', ()),
-#     ('', (), (), ()),
-#     ((), '*', (), 'abcd'),
-#     ('*', (), 'ac', ()),
-#     ('*', '', 'ac', ()),
-#
-#     ('-', None, 'ac', 'ac'),
-#     (None, '-', 'a', 'bd'),
-#     (['-'], '-', 'ac', 'bd'),
-#     ('*', ['-'], 'ac', 'bd'),
-#     ('-', '*', 'ac', 'abcd'),
-#
-#     ('c', 'd', 'c', 'd'),
-#     ('c', list('-d'), 'c', 'bd'),
-#
+    (list('cd'), None,
+     ValueError("C.printable_traits` contains unknown trait-names"), 'cd'),
+    (None, 'x', 'a', ValueError("D.printable_traits` contains unknown trait-names")),
+
+    (None, None, 'a', 'ab'),
+    ('*', None, 'ac', 'abcd'),
+    (None, '*', 'a', 'abcd'),
+
+    ((), None, (), ()),
+    (None, (), 'a', ()),
+    ('', (), (), ()),
+    ((), '*', (), 'abcd'),
+    ('*', (), 'ac', ()),
+    ('*', '', 'ac', ()),
+
+    ('-', None, 'ac', 'ac'),
+    (None, '-', 'a', 'bd'),
+    (['-'], '-', 'ac', 'bd'),
+    ('*', ['-'], 'ac', 'bd'),
+    ('-', '*', 'ac', 'abcd'),
+
+    ('c', 'd', 'c', 'd'),
+    ('c', list('-d'), 'c', 'bd'),
+
     ## refer to a trait in mro above mixin.
     ('wc', 'yb', 'cw', 'by'),
 ])

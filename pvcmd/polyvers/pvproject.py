@@ -25,6 +25,7 @@ from ._vendor.traitlets.traitlets import (
 from ._vendor.traitlets.traitlets import Bool, Unicode, Instance
 from .cmdlet import cmdlets, autotrait
 from .cmdlet.slicetrait import Slice as SliceTrait
+from .utils import yamlutil as yu
 from .utils.oscmd import cmd
 
 
@@ -50,7 +51,7 @@ def _slices_to_ids(slices, thelist):
     return list(mask_ids)
 
 
-class Graft(cmdlets.Replaceable, cmdlets.Printable, cmdlets.Spec):
+class Graft(cmdlets.Replaceable, cmdlets.Printable, yu.YAMLable, cmdlets.Spec):
     regex = Unicode(
         read_only=True,
         config=True,
@@ -164,7 +165,7 @@ class Graft(cmdlets.Replaceable, cmdlets.Printable, cmdlets.Spec):
         return fbytes, offset
 
 
-class Engrave(cmdlets.Replaceable, cmdlets.Printable, cmdlets.Spec):
+class Engrave(cmdlets.Replaceable, cmdlets.Printable, yu.YAMLable, cmdlets.Spec):
     """File-patterns to search and replace with version-id patterns."""
 
     globs = ListTrait(
@@ -186,7 +187,7 @@ class Engrave(cmdlets.Replaceable, cmdlets.Printable, cmdlets.Spec):
     )
 
 
-class Project(cmdlets.Replaceable, cmdlets.Printable, cmdlets.Spec):
+class Project(cmdlets.Replaceable, cmdlets.Printable, yu.YAMLable, cmdlets.Spec):
     pname = Unicode(
         config=True,
         help="""The name of the project, used in interpolations and pvtags, among others."""
@@ -212,9 +213,12 @@ class Project(cmdlets.Replaceable, cmdlets.Printable, cmdlets.Spec):
         config=True,
         help="""If no pvtag found, use this as the base for relative versions.""")
 
-    current_version = vermath.Pep440Version(help="The previous version, auto-discovered.")
+    current_version = vermath.Pep440Version(
+        None, allow_none=True,
+        help="The previous version, auto-discovered.")
 
-    release_date = Unicode(help="The automatic release date, to interpolate it.")
+    release_date = Unicode(
+        help="The automatic release date, to interpolate it.")
 
     @trt.default('release_date')
     def _get_now(self):
@@ -223,7 +227,9 @@ class Project(cmdlets.Replaceable, cmdlets.Printable, cmdlets.Spec):
         return datetime.now().isoformat()
 
     ## TODO: rename version-->new_version
-    version = vermath.Pep440Version(help="The new absolute version to bump to.")
+    version = vermath.Pep440Version(
+        None, allow_none=True,
+        help="The new absolute version to bump to.")
 
     amend = Bool(
         config=True,
@@ -527,7 +533,8 @@ class Project(cmdlets.Replaceable, cmdlets.Printable, cmdlets.Spec):
             'grafts': [{
                 ## TODO: add `Graft.desc` field
                 ## version must be in its own line.
-                'regex': r'''(?xm)
+                'regex': r'''
+                    (?xm)
                         \bversion
                         (\ *=\ *)
                         .+?(,
@@ -538,14 +545,16 @@ class Project(cmdlets.Replaceable, cmdlets.Printable, cmdlets.Spec):
         }, {
             'globs': ['__init__.py'],
             'grafts': [{
-                'regex': r'''(?xm)
+                'regex': r'''
+                    (?xm)
                         \b__version__
                         (\ *=\ *)
                         (.+[\r\n])
                     ''',
                 'subst': r"__version__\1'{version}'"
             }, {
-                'regex': r'''(?xm)
+                'regex': r'''
+                    (?xm)
                         \b__updated__
                         (\ *=\ *)
                         (.+[\r\n])

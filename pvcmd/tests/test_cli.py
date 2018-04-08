@@ -9,7 +9,6 @@
 from polyvers import cli, __version__, __updated__, pvproject, pvtags
 from polyvers.__main__ import main
 from polyvers._vendor.traitlets import config as trc
-from polyvers.cli import PolyversCmd
 from polyvers.cmdlet import cmdlets
 from polyvers.utils import yamlutil as yu
 from polyvers.utils.mainpump import ListConsumer
@@ -85,7 +84,7 @@ def test_bootstrapp_projects_explicit(no_repo, empty_repo, caplog):
 
     ## No GIT
     #
-    cmd = PolyversCmd()
+    cmd = cli.PolyversCmd()
     with pytest.raises(pvtags.NoGitRepoError):
         cmd.bootstrapp_projects()
 
@@ -93,7 +92,7 @@ def test_bootstrapp_projects_explicit(no_repo, empty_repo, caplog):
 
     ## Specify: nothing
     #
-    cmd = PolyversCmd()
+    cmd = cli.PolyversCmd()
     caplog.clear()
     with pytest.raises(cmdlets.CmdException,
                        match="Cannot auto-discover versioning scheme"):
@@ -107,7 +106,7 @@ def test_bootstrapp_projects_explicit(no_repo, empty_repo, caplog):
     #
     cfg = trc.Config()
     cfg.Project.pvtag_frmt = cfg.Project.pvtag_regex = 'some'
-    cmd = PolyversCmd(config=cfg)
+    cmd = cli.PolyversCmd(config=cfg)
     caplog.clear()
     with pytest.raises(cmdlets.CmdException,
                        match="Cannot auto-discover \(sub-\)project"):
@@ -120,7 +119,7 @@ def test_bootstrapp_projects_explicit(no_repo, empty_repo, caplog):
     ## Specify: VScheme + 1xPRojects
     #
     cfg.PolyversCmd.projects = [pvproject.Project()]
-    cmd = PolyversCmd(config=cfg)
+    cmd = cli.PolyversCmd(config=cfg)
     caplog.clear()
     cmd.bootstrapp_projects()
     assert all(t not in caplog.text for t in [
@@ -131,7 +130,7 @@ def test_bootstrapp_projects_explicit(no_repo, empty_repo, caplog):
     ## Specify: VScheme + 1xPRojects
     #
     cfg.PolyversCmd.projects = [pvproject.Project(), pvproject.Project()]
-    cmd = PolyversCmd(config=cfg)
+    cmd = cli.PolyversCmd(config=cfg)
     caplog.clear()
     cmd.bootstrapp_projects()
     check_text(
@@ -150,7 +149,7 @@ def test_bootstrapp_projects_explicit(no_repo, empty_repo, caplog):
     #
     del cfg.PolyversCmd['projects']
     cfg.PolyversCmd.pdata = {'foo': 'foo_path', 'bar': 'bar_path'}
-    cmd = PolyversCmd(config=cfg)
+    cmd = cli.PolyversCmd(config=cfg)
     caplog.clear()
     cmd.bootstrapp_projects()
     assert len(cmd.projects) == 2
@@ -171,7 +170,7 @@ def check_bootstrapp_projects_autodiscover(myrepo, caplog, vscheme):
     myrepo.chdir()
     caplog.set_level(0)
 
-    cmd = PolyversCmd()
+    cmd = cli.PolyversCmd()
     caplog.clear()
     with pytest.raises(cmdlets.CmdException,
                        match="Cannot auto-discover \(sub-\)project"):
@@ -187,7 +186,7 @@ def check_bootstrapp_projects_autodiscover(myrepo, caplog, vscheme):
         is_regex=True)
 
     make_setup_py(myrepo, 'simple')
-    cmd = PolyversCmd()
+    cmd = cli.PolyversCmd()
     caplog.clear()
     caplog.clear()
     cmd.bootstrapp_projects()
@@ -206,7 +205,7 @@ def check_bootstrapp_projects_autodiscover(myrepo, caplog, vscheme):
 
     prj2_basepath = myrepo / 'extra' / 'project'
     make_setup_py(prj2_basepath, 'extra')
-    cmd = PolyversCmd()
+    cmd = cli.PolyversCmd()
     caplog.clear()
     cmd.bootstrapp_projects()
     assert len(cmd.projects) == 2
@@ -235,6 +234,27 @@ def test_bootstrapp_projects_autodiscover_mono_project(mutable_vtags_repo, caplo
 def test_bootstrapp_projects_autodiscover_monorepo(mutable_pvtags_repo, caplog):
     check_bootstrapp_projects_autodiscover(mutable_pvtags_repo, caplog,
                                            pvtags.MONOREPO)
+
+
+def test_init_cmd_mono_project(mutable_vtags_repo, caplog):
+    mutable_vtags_repo.chdir()
+
+    rc = main('init --mono-project --pdata f=g -v'.split())
+    assert rc == 0
+
+    cfg = trc.Config()
+    cfg.Project.pvtag_frmt = cfg.Project.pvtag_regex = 'some'
+    cfg.PolyversCmd.pdata = {'foo': 'foo_path'}
+    cmd = cli.InitCmd(config=cfg)
+    cmd.run()
+
+    exp_fpath = (mutable_vtags_repo / '.polyvers.yaml')
+    exp_text = '# Spec(LoggingConfigurable) configuration'
+    assert exp_text in exp_fpath.read_text('utf-8')
+
+
+def test_init_cmd_monorepo(mutable_repo, caplog):
+    mutable_repo.chdir()
 
 
 def test_status_cmd_vtags(mutable_repo, caplog, capsys):

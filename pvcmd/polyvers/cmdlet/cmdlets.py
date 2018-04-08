@@ -1124,7 +1124,7 @@ class Cmd(trc.Application, Spec):
 ##################
 
 def class_config_yaml(cls, outer_cfg, classes=None):
-    """Get the config section for this class.
+    """Get the config section for this Configurable.
 
     Parameters
     ----------
@@ -1132,8 +1132,10 @@ def class_config_yaml(cls, outer_cfg, classes=None):
         The list of other classes in the config file.
         Used to reduce redundant information.
     """
+    from ..utils import yamlutil
     from ruamel.yaml.comments import CommentedMap  # @UnresolvedImport
     from ipython_genutils.text import wrap_paragraphs
+    import textwrap as tw
 
     def comment(s):
         """return a commented, wrapped block."""
@@ -1164,7 +1166,10 @@ def class_config_yaml(cls, outer_cfg, classes=None):
     for name, trait in sorted(cls.class_traits(config=True).items()):
         cfg[name] = trait.default()
         trait_lines = []
-        default_repr = trait.default_value_repr()
+        default_value = trait.default()
+        default_repr = yamlutil.ydumps(default_value)
+        if default_repr and default_repr.count('\n') > 1 and default_repr[0] != '\n':
+            default_repr = tw.indent('\n' + default_repr, ' ' * 9)
 
         if classes:
             defining_class = cls._defining_class(trait, classes)
