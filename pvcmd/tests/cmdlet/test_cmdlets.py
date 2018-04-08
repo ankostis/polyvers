@@ -81,7 +81,12 @@ def test_Printable_smoketest():
     d = D()
     assert set(traitquery.select_traits(d, cmdlets.Printable,
                                         printable=True)) == {'d'}
+
+    ## Check no mixin.
+    #
+    assert set(traitquery.select_traits(d, printable=True)) == {'d'}
     del D.d.metadata['printable']
+    assert not traitquery.select_traits(d, printable=True)
 
 
 def check_select_traits(classprop, C, D, c_ptraits, d_ptraits, c_exp, d_exp,
@@ -99,11 +104,20 @@ def check_select_traits(classprop, C, D, c_ptraits, d_ptraits, c_exp, d_exp,
                                                 printable=True)) == set(exp)
 
     if c_ptraits is not None:
-        setattr(C, classprop, c_ptraits)
+        p = c_ptraits
+        if len(p) > 1:
+            p = list(p)
+        setattr(C, classprop, p)
+
     if d_ptraits is not None:
-        setattr(D, classprop, d_ptraits)
+        p = d_ptraits
+        if len(p) > 1:
+            p = list(p)
+        setattr(D, classprop, p)
+
     if c_exp is not None:
         check(C, c_exp)
+
     if d_exp is not None:
         check(D, d_exp)
 
@@ -146,32 +160,40 @@ def test_TraitSelector_clsprop(c_ptraits, d_ptraits, c_exp, d_exp):
 
 
 @pytest.mark.parametrize('c_ptraits, d_ptraits, c_exp, d_exp', [
-    (list('cd'), None,
-     ValueError("C.printable_traits` contains unknown trait-names"), 'cd'),
-    (None, 'x', 'a', ValueError("D.printable_traits` contains unknown trait-names")),
-
-    (None, None, 'a', 'ab'),
-    ('*', None, 'ac', 'abcd'),
-    (None, '*', 'a', 'abcd'),
-
-    ((), None, (), ()),
-    (None, (), 'a', ()),
-    ('', (), (), ()),
-    ((), '*', (), 'abcd'),
-    ('*', (), 'ac', ()),
-    ('*', '', 'ac', ()),
-
-    ('-', None, 'ac', 'ac'),
-    (None, '-', 'a', 'bd'),
-    (['-'], '-', 'ac', 'bd'),
-    ('*', ['-'], 'ac', 'bd'),
-    ('-', '*', 'ac', 'abcd'),
-
-    ('c', 'd', 'c', 'd'),
-    ('c', list('-d'), 'c', 'bd'),
+#     (list('cd'), None,
+#      ValueError("C.printable_traits` contains unknown trait-names"), 'cd'),
+#     (None, 'x', 'a', ValueError("D.printable_traits` contains unknown trait-names")),
+#
+#     (None, None, 'a', 'ab'),
+#     ('*', None, 'ac', 'abcd'),
+#     (None, '*', 'a', 'abcd'),
+#
+#     ((), None, (), ()),
+#     (None, (), 'a', ()),
+#     ('', (), (), ()),
+#     ((), '*', (), 'abcd'),
+#     ('*', (), 'ac', ()),
+#     ('*', '', 'ac', ()),
+#
+#     ('-', None, 'ac', 'ac'),
+#     (None, '-', 'a', 'bd'),
+#     (['-'], '-', 'ac', 'bd'),
+#     ('*', ['-'], 'ac', 'bd'),
+#     ('-', '*', 'ac', 'abcd'),
+#
+#     ('c', 'd', 'c', 'd'),
+#     ('c', list('-d'), 'c', 'bd'),
+#
+    ## refer to a trait in mro above mixin.
+    ('wc', 'yb', 'cw', 'by'),
 ])
 def test_TraitSelector_clsprop_tags(c_ptraits, d_ptraits, c_exp, d_exp):
-    class C(trt.HasTraits, cmdlets.Printable):
+    class B(trt.HasTraits):
+        w = Int().tag(printable=True)
+        y = Int()
+        pass
+
+    class C(B, cmdlets.Printable):
         a = Int().tag(printable=True)
         c = Int()
 
@@ -188,7 +210,7 @@ def test_TraitSelector_clsprop_tags(c_ptraits, d_ptraits, c_exp, d_exp):
     ('', (), (), ()),
 
     ('-', None, 'ac', 'abc'),
-    
+
     ('c', 'd', 'ac', 'abd'),
     ('', list('-d'), (), 'abd'),
 ])

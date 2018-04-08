@@ -53,6 +53,8 @@ def _select_traits_from_classprop(has_traits: trt.HasTraits,
         tnames = [tn for tn in tnames
                   if tn != '-'] + list(first_mro_class.class_own_traits())  # type: ignore
 
+    ## Here allow explicit trait-names from all traits,
+    #  including above `mixin`` in mro.
     bads = set(tnames) - set(has_traits.traits())
     if bads:
         raise ValueError(
@@ -61,6 +63,13 @@ def _select_traits_from_classprop(has_traits: trt.HasTraits,
              classprop_selector, ', '.join(bads)))
 
     return tnames
+
+
+def _tnames_till_mro(traits, mixin):
+    if mixin:
+        traits = [tn for tn, t in traits.items()
+                  if issubclass(t.this_class, mixin)]
+    return traits
 
 
 def select_traits(has_traits: trt.HasTraits,
@@ -139,7 +148,7 @@ def select_traits(has_traits: trt.HasTraits,
         if class_tnames is None:
             pass
         elif class_tnames == '*':
-            return has_traits.traits()
+            return _tnames_till_mro(has_traits.traits(), mixin)
         elif class_tnames:
             class_tnames = _select_traits_from_classprop(
                 has_traits, classprop_selector, class_tnames)
@@ -151,7 +160,7 @@ def select_traits(has_traits: trt.HasTraits,
 
     ## rule 2: select based on trait-tags.
     #
-    tnames = has_traits.traits(**tag_selectors)
+    tnames = _tnames_till_mro(has_traits.traits(**tag_selectors), mixin)
     if class_tnames:
         tnames = list(class_tnames) + list(tnames)
 
