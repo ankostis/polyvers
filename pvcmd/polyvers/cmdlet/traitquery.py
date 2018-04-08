@@ -72,6 +72,61 @@ def _tnames_till_mro(traits, mixin):
     return traits
 
 
+def _select_traits(has_traits: trt.HasTraits,
+                   mixin: type = None,
+                   classprop_selector: str = None,
+                   append_tags=None,
+                   **tag_selectors
+                   ) -> Optional[Sequence[str]]:
+    """the real workhorse, unsorted """
+    if mixin:
+        if not isinstance(has_traits, mixin):
+            raise ValueError(
+                "Mixin '%s' is not a subclass of queried '%s'!" %
+                (mixin, has_traits))
+
+        sbcname = mixin.__name__.lower()
+        if classprop_selector is None:
+            classprop_selector = '%s_traits' % sbcname
+
+    ## rule 1: select based on traitnames in class-property.
+    #
+    class_tnames = None
+    if classprop_selector:
+        class_tnames = getattr(has_traits, classprop_selector, None)
+        if class_tnames is None:
+            pass
+        elif class_tnames == '*':
+            return _tnames_till_mro(has_traits.traits(), mixin)
+        elif class_tnames:
+            class_tnames = _select_traits_from_classprop(
+                has_traits, classprop_selector, class_tnames)
+            if not append_tags:
+                return class_tnames
+        else:
+            ## If empty, shortcut to "no traits selected" (rule 4).
+            return ()
+
+    ## rule 2: select based on trait-tags.
+    #
+    tnames = _tnames_till_mro(has_traits.traits(**tag_selectors), mixin)
+    if class_tnames:
+        tnames = list(class_tnames) + list(tnames)
+
+    ## rule 3: Select all traits for subclasses
+    #  after(above) `mixin` in mro().
+    #
+    if not tnames and mixin:
+        subclasses = [cls for cls in type(has_traits).mro()  # type: ignore
+                      if issubclass(cls, mixin) and
+                      cls is not mixin]
+        tnames = [tname
+                  for cls in subclasses
+                  for tname in cls.class_own_traits()]  # type: ignore
+
+    return tnames or ()
+
+
 def select_traits(has_traits: trt.HasTraits,
                   mixin: type = None,
                   classprop_selector: str = None,
@@ -130,49 +185,5 @@ def select_traits(has_traits: trt.HasTraits,
 
     4. don't select any traits.
     """
-    if mixin:
-        if not isinstance(has_traits, mixin):
-            raise ValueError(
-                "Mixin '%s' is not a subclass of queried '%s'!" %
-                (mixin, has_traits))
-
-        sbcname = mixin.__name__.lower()
-        if classprop_selector is None:
-            classprop_selector = '%s_traits' % sbcname
-
-    ## rule 1: select based on traitnames in class-property.
-    #
-    class_tnames = None
-    if classprop_selector:
-        class_tnames = getattr(has_traits, classprop_selector, None)
-        if class_tnames is None:
-            pass
-        elif class_tnames == '*':
-            return _tnames_till_mro(has_traits.traits(), mixin)
-        elif class_tnames:
-            class_tnames = _select_traits_from_classprop(
-                has_traits, classprop_selector, class_tnames)
-            if not append_tags:
-                return class_tnames
-        else:
-            ## If empty, shortcut to "no traits selected" (rule 4).
-            return ()
-
-    ## rule 2: select based on trait-tags.
-    #
-    tnames = _tnames_till_mro(has_traits.traits(**tag_selectors), mixin)
-    if class_tnames:
-        tnames = list(class_tnames) + list(tnames)
-
-    ## rule 3: Select all traits for subclasses
-    #  after(above) `mixin` in mro().
-    #
-    if not tnames and mixin:
-        subclasses = [cls for cls in type(has_traits).mro()  # type: ignore
-                      if issubclass(cls, mixin) and
-                      cls is not mixin]
-        tnames = [tname
-                  for cls in subclasses
-                  for tname in cls.class_own_traits()]  # type: ignore
-
-    return tnames or ()
+    return sorted(_select_traits(
+        has_traits, mixin, classprop_selector, append_tags, **tag_selectors))
