@@ -65,26 +65,34 @@ def test_Printable_smoketest():
         c = Int()
 
     c = C(c=1)
-    assert traitquery.select_traits(c, cmdlets.Printable,
-                                    printable=True) == ['c']
+    got = traitquery.select_traits(c, cmdlets.Printable,
+                                   printable=True)
+    assert isinstance(got, dict)
+    assert list(got) == ['c']
     assert str(c) == 'C(c=1)'
 
     class D(C):
         d = Int()
 
     d = D()
-    assert set(traitquery.select_traits(d, cmdlets.Printable,
-                                        printable=True)) == {'c', 'd'}
+    got = traitquery.select_traits(d, cmdlets.Printable,
+                                   printable=True)
+    assert isinstance(got, dict)
+    assert set(got) == {'c', 'd'}
     assert str(D()) == 'D(c=0, d=0)'  # mro trait definition
 
     D.d.metadata['printable'] = True
     d = D()
-    assert set(traitquery.select_traits(d, cmdlets.Printable,
-                                        printable=True)) == {'d'}
+    got = traitquery.select_traits(d, cmdlets.Printable,
+                                   printable=True)
+    assert isinstance(got, dict)
+    assert set(got) == {'d'}
 
     ## Check no mixin.
     #
-    assert set(traitquery.select_traits(d, printable=True)) == {'d'}
+    got = traitquery.select_traits(d, printable=True)
+    assert set(got) == {'d'}
+    assert isinstance(got, dict)
     del D.d.metadata['printable']
     assert not traitquery.select_traits(d, printable=True)
 
@@ -99,9 +107,11 @@ def check_select_traits(classprop, C, D, c_ptraits, d_ptraits, c_exp, d_exp,
                                          append_tags=append_tags,
                                          printable=True)
         else:
-            assert set(traitquery.select_traits(c, cmdlets.Printable,
-                                                append_tags=append_tags,
-                                                printable=True)) == set(exp)
+            got = traitquery.select_traits(c, cmdlets.Printable,
+                                           append_tags=append_tags,
+                                           printable=True)
+            assert isinstance(got, dict)
+            assert set(got) == set(exp)
 
     if c_ptraits is not None:
         p = c_ptraits

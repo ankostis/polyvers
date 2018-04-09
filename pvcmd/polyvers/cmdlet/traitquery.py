@@ -11,7 +11,7 @@ Utility to query traits of :class:`HasTraits` and build classes like `Printable`
 
 See query reus on :func:`select_traits()`
 """
-from typing import Union, Optional, Sequence
+from typing import Union, Optional, Sequence, Dict, Any
 
 from .._vendor import traitlets as trt
 
@@ -32,7 +32,8 @@ def _find_1st_mro_with_classprop(has_traits: trt.HasTraits,
 
 def _select_traits_from_classprop(has_traits: trt.HasTraits,
                                   classprop_selector: str,
-                                  tnames: Union[str, Sequence, None]):
+                                  tnames: Union[str, Sequence, None]
+                                  ) -> Dict[str, Any]:
     """
     :param has_traits:
         see :meth:`select_traits()`
@@ -49,26 +50,34 @@ def _select_traits_from_classprop(has_traits: trt.HasTraits,
     if not isinstance(tnames, (list, tuple)):  # TODO: isinstance([], (). SET)
         tnames = [tnames]
 
-    if '-' in tnames:
+    fetch_own_traits = '-' in tnames
+    if fetch_own_traits:
         tnames = [tn for tn in tnames
-                  if tn != '-'] + list(first_mro_class.class_own_traits())  # type: ignore
+                  if tn != '-']
+
+    all_traits = has_traits.traits()
 
     ## Here allow explicit trait-names from all traits,
     #  including above `mixin`` in mro.
-    bads = set(tnames) - set(has_traits.traits())
+    bads = set(tnames) - set(all_traits)
     if bads:
         raise ValueError(
             "Class-property `%s.%s` contains unknown trait-names: %s" %
             (first_mro_class.__name__,
              classprop_selector, ', '.join(bads)))
 
-    return tnames
+    traits = {tn: all_traits[tn] for tn in tnames}
+
+    if fetch_own_traits:
+        traits.update(first_mro_class.class_own_traits())
+
+    return traits
 
 
-def _tnames_till_mro(traits, mixin):
+def _traits_till_mro(traits, mixin) -> Dict[str, Any]:
     if mixin:
-        traits = [tn for tn, t in traits.items()
-                  if issubclass(t.this_class, mixin)]
+        traits = {tn: t for tn, t in traits.items()
+                  if issubclass(t.this_class, mixin)}
     return traits
 
 
@@ -77,7 +86,7 @@ def _select_traits(has_traits: trt.HasTraits,
                    classprop_selector: str = None,
                    append_tags=None,
                    **tag_selectors
-                   ) -> Optional[Sequence[str]]:
+                   ) -> Dict[str, Any]:
     """the real workhorse, unsorted """
     if mixin:
         if not isinstance(has_traits, mixin):
@@ -91,40 +100,40 @@ def _select_traits(has_traits: trt.HasTraits,
 
     ## rule 1: select based on traitnames in class-property.
     #
-    class_tnames = None
+    cp_traits = None
     if classprop_selector:
         class_tnames = getattr(has_traits, classprop_selector, None)
         if class_tnames is None:
             pass
         elif class_tnames == '*':
-            return _tnames_till_mro(has_traits.traits(), mixin)
+            return _traits_till_mro(has_traits.traits(), mixin)
         elif class_tnames:
-            class_tnames = _select_traits_from_classprop(
+            cp_traits = _select_traits_from_classprop(
                 has_traits, classprop_selector, class_tnames)
             if not append_tags:
-                return class_tnames
+                return cp_traits
         else:
             ## If empty, shortcut to "no traits selected" (rule 4).
-            return ()
+            return {}
 
     ## rule 2: select based on trait-tags.
     #
-    tnames = _tnames_till_mro(has_traits.traits(**tag_selectors), mixin)
-    if class_tnames:
-        tnames = list(class_tnames) + list(tnames)
+    traits = _traits_till_mro(has_traits.traits(**tag_selectors), mixin)
+    if cp_traits:
+        traits.update(cp_traits)
 
     ## rule 3: Select all traits for subclasses
     #  after(above) `mixin` in mro().
     #
-    if not tnames and mixin:
-        subclasses = [cls for cls in type(has_traits).mro()  # type: ignore
+    if not traits and mixin:
+        subclasses = [cls for cls in type(has_traits).mro()
                       if issubclass(cls, mixin) and
                       cls is not mixin]
-        tnames = [tname
+        traits = {tname: trait
                   for cls in subclasses
-                  for tname in cls.class_own_traits()]  # type: ignore
+                  for tname, trait in cls.class_own_traits().items()}
 
-    return tnames or ()
+    return traits
 
 
 def select_traits(has_traits: trt.HasTraits,
@@ -132,7 +141,7 @@ def select_traits(has_traits: trt.HasTraits,
                   classprop_selector: str = None,
                   append_tags=None,
                   **tag_selectors
-                  ) -> Optional[Sequence[str]]:
+                  ) -> Dict[str, Any]:
     """
     Follow elaborate rules to select certain traits of a :class:`HasTraits` class.
 
@@ -185,5 +194,7 @@ def select_traits(has_traits: trt.HasTraits,
 
     4. don't select any traits.
     """
-    return sorted(_select_traits(
-        has_traits, mixin, classprop_selector, append_tags, **tag_selectors))
+    traits = _select_traits(has_traits, mixin, classprop_selector,
+                            append_tags, **tag_selectors)
+    #return sorted(traits.items(), key=lambda k, v: k)
+    return traits
