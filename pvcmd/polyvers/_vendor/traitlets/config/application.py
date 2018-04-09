@@ -180,84 +180,16 @@ class Application(SingletonConfigurable):
     raise_config_file_errors = Bool(TRAITLETS_APPLICATION_RAISE_CONFIG_FILE_ERROR,
                                     config=True)
 
-    # The log level for the application
-    log_level = Enum((0,10,20,30,40,50,'DEBUG','INFO','WARN','ERROR','CRITICAL'),
-                    default_value=logging.WARN,
-                    help="Set the log level by value or name.").tag(config=True)
-
-    @observe('log_level')
-    @observe_compat
-    def _log_level_changed(self, change):
-        """Adjust the log level when log_level is set."""
-        new = change.new
-        if isinstance(new, six.string_types):
-            new = getattr(logging, new)
-            self.log_level = new
-        self.log.setLevel(new)
-
-    _log_formatter_cls = LevelFormatter
-
-    log_datefmt = Unicode("%Y-%m-%d %H:%M:%S",
-        help="The date format used by logging formatters for %(asctime)s"
-    ).tag(config=True)
-
-    log_format = Unicode("[%(name)s]%(highlevel)s %(message)s",
-        help="The Logging format template",
-    ).tag(config=True)
-
-    @observe('log_datefmt', 'log_format')
-    @observe_compat
-    def _log_format_changed(self, change):
-        """Change the log formatter when log_format is set."""
-        _log_handler = self.log.handlers[0]
-        _log_formatter = self._log_formatter_cls(fmt=self.log_format, datefmt=self.log_datefmt)
-        _log_handler.setFormatter(_log_formatter)
-
-    @default('log')
-    def _log_default(self):
-        """Start logging for this application.
-
-        The default is to log to stderr using a StreamHandler, if no default
-        handler already exists.  The log level starts at logging.WARN, but this
-        can be adjusted by setting the ``log_level`` attribute.
-        """
-        log = logging.getLogger(self.__class__.__name__)
-        log.setLevel(self.log_level)
-        log.propagate = False
-        _log = log # copied from Logger.hasHandlers() (new in Python 3.2)
-        while _log:
-            if _log.handlers:
-                return log
-            if not _log.propagate:
-                break
-            else:
-                _log = _log.parent
-        if sys.executable and sys.executable.endswith('pythonw.exe'):
-            # this should really go to a file, but file-logging is only
-            # hooked up in parallel applications
-            _log_handler = logging.StreamHandler(open(os.devnull, 'w'))
-        else:
-            _log_handler = logging.StreamHandler()
-        _log_formatter = self._log_formatter_cls(fmt=self.log_format, datefmt=self.log_datefmt)
-        _log_handler.setFormatter(_log_formatter)
-        log.addHandler(_log_handler)
-        return log
-
     #: the alias map for configurables
     #: Keys might strings or tuples for additional options; single-letter alias accessed like `-v`.
     #: Values might be like "Class.trait" strings of two-tuples: (Class.trait, help-text).
-    aliases = {'log-level' : 'Application.log_level'}
+    aliases = {}
 
     # flags for loading Configurables or store_const style flags
     # flags are loaded from this dict by '--key' flags
     # this must be a dict of two-tuples, the first element being the Config/dict
     # and the second being the help string for the flag
     flags = {
-        'debug': ({
-            'Application': {
-                'log_level': logging.DEBUG,
-            },
-        }, "Set log-level to debug, for the most verbose logging."),
         'show-config': ({
             'Application': {
                 'show_config': True,

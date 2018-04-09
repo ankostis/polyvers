@@ -65,7 +65,8 @@ def test_all_cmds_help_version(cmd, capsys):
 @pytest.mark.parametrize('cmd, match, illegal', [
     ('config infos', ['version: %s' % __version__,
                       'updated: %s' % __updated__], ['config_paths: null']),
-    ('config desc', ['--Cmd.config_paths=', 'StatusCmd'], []),
+    ('config desc', ['--Cmd.config_paths=', 'StatusCmd'],
+     'log_format log_level log_datefmt'.split()),
     ('config desc bump -c', ['Increase or set the version of project', 'BumpCmd'], []),
     ('config show Project', ['Project(Replaceable'], []),
     ('config show Project.tag', ["tag_vprefixes = ('v', 'r')"], []),
