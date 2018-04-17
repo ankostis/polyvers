@@ -40,7 +40,10 @@ def _add_versions(v1: VerLike, v2: VerLike):
     from copy import copy
     import itertools as itt
 
-    def add_pairs(part, p1, p2):
+    def add_pair_parts(part, p1, p2):
+        """
+        A "pair" part is a 2-tuple like ``('dev', 1)``.
+        """
         try:
             ## TODO: smarted cycle 1st rel-pair part than 2nd win-over.
             name1, num1 = p1
@@ -59,9 +62,12 @@ def _add_versions(v1: VerLike, v2: VerLike):
             ## One or both are `None`.
             return p2 if p1 is None else p1
 
-    def add_locals(l1, l2):
+    def add_local_parts(l1, l2):
+        """
+        The "local" is any part following "main" version, separated by '+'.
+        """
         try:
-            vv1.local + vv2.local
+            vv1.local + '+' + vv2.local
         except TypeError:
             ## One or both are `None`.
             return l2 if l1 is None else l1
@@ -78,10 +84,10 @@ def _add_versions(v1: VerLike, v2: VerLike):
     new_vv = vv1._replace(
         epoch=vv1.epoch + vv2.epoch,
         release=release,
-        dev=add_pairs('dev', vv1.dev, vv2.dev),
-        pre=add_pairs('pre', vv1.pre, vv2.pre),
-        post=add_pairs('post', vv1.post, vv2.post),
-        local=add_locals(vv1.local, vv2.local)
+        dev=add_pair_parts('dev', vv1.dev, vv2.dev),
+        pre=add_pair_parts('pre', vv1.pre, vv2.pre),
+        post=add_pair_parts('post', vv1.post, vv2.post),
+        local=add_local_parts(vv1.local, vv2.local)
     )
     new_version._version = new_vv
 
