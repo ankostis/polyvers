@@ -67,7 +67,6 @@ from .._vendor.traitlets.traitlets import (
 )  # @UnresolvedImport
 from .._vendor.traitlets.traitlets import Bool, Unicode, Instance
 from ..utils import fileutil as fu
-from .yamlconfloader import YAMLFileConfigLoader
 
 
 log = logging.getLogger(__name__)
@@ -607,6 +606,7 @@ trc.Configurable.active_subcmd = _travel_parents_untill_active_cmd  # type: igno
 
 
 class Spec(Forceable, trc.LoggingConfigurable):
+    """Common properties for all configurables."""
     @classmethod
     def class_get_trait_help(cls, trait, inst=None, helptext=None):
         text = super().class_get_trait_help(trait, inst=inst, helptext=helptext)
@@ -627,7 +627,7 @@ class Spec(Forceable, trc.LoggingConfigurable):
     debug = Bool(
         allow_none=True,
         config=True,
-        help="Change certain actions, to discover possible problems.")
+        help="Stricter actions, to discover possible problems.")
 
     dry_run = Bool(
         allow_none=True,
@@ -860,6 +860,8 @@ class Cmd(trc.Application, Spec):
         :param str cfpath:
             The absolute config-file path with either ``.py`` or ``.json`` ext.
         """
+        from .yamlconfloader import YAMLFileConfigLoader
+
         log = self.log
         loaders = {
             '.py': trc.PyFileConfigLoader,
