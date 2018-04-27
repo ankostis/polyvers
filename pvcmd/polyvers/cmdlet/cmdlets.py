@@ -1125,15 +1125,16 @@ class Cmd(trc.Application, Spec):
 ## patch traits ##
 ##################
 
-def _dumpable_trait_value(trait, config):
+def _dumpable_trait_value(cls, trait, config):
     owner_class = trait.this_class
-    owner_classname = owner_class.__name__
-    trait_name = trait.name
-    if '%s.%s' % (owner_classname, trait_name) in config:
-        cfg_value = config[owner_classname][trait_name]
-        default_value = trait.default()
-        if cfg_value != default_value:
-            return cfg_value, default_value
+    if owner_class is cls:
+        owner_classname = owner_class.__name__
+        trait_name = trait.name
+        if '%s.%s' % (owner_classname, trait_name) in config:
+            cfg_value = config[owner_classname][trait_name]
+            default_value = trait.default()
+            if cfg_value != default_value:
+                return cfg_value, default_value
 
 
 def class_config_yaml(cls, outer_cfg,
@@ -1180,7 +1181,7 @@ def class_config_yaml(cls, outer_cfg,
         if config is None:
             cfg[name] = default_value = trait.default()
         else:
-            dumpables = _dumpable_trait_value(trait, config)
+            dumpables = _dumpable_trait_value(cls, trait, config)
             if dumpables:
                 cfg[name], default_value = dumpables
             else:
