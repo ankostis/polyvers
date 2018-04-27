@@ -58,7 +58,7 @@ def _make_trait_help(has_traits, trait):
     return '\n'.join(help_lines)
 
 
-def _preserve_any_literals(v):
+def preserve_yaml_literals(v):
     from ruamel.yaml import scalarstring as scs
 
     if isinstance(v, str) and '\n' in v:
@@ -78,7 +78,7 @@ class YAMLable(metaclass=trt.MetaHasTraits):
         traits = traitquery.select_traits(has_traits, YAMLable,
                                           config=True)
         #cls_name = getattr(has_traits, 'name', type(has_traits).__name__)
-        ddict = {tname: _preserve_any_literals(getattr(has_traits, tname))
+        ddict = {tname: preserve_yaml_literals(getattr(has_traits, tname))
                  for tname, trait in traits.items()}
 
         if _dump_trait_help.get():

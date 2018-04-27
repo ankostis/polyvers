@@ -294,8 +294,13 @@ def test_init_cmd_mono_project(mutable_vtags_repo):
         #""")
     assert exp_help in got
 
-    exp_value = r'''pvtag_regex: "(?xmi)\n    ^(?P<pname>)\n    {vprefix}(?P<version>\\d[^-]*)\n'''
-    assert exp_value in got
+    exp_value = tw.dedent(r'''
+        |-
+            (?xmi)
+                ^(?P<pname>)
+                {vprefix}(?P<version>\d[^-]*)
+                (?:-(?P<descid>\d+-g[a-f\d]+))?$''')
+    assert exp_value[1:] in got
 
 
 # def test_init_cmd_monorepo(mutable_repo):

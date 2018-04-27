@@ -1179,11 +1179,13 @@ def class_config_yaml(cls, outer_cfg,
 
     for name, trait in sorted(cls.class_traits(config=True).items()):
         if config is None:
-            cfg[name] = default_value = trait.default()
+            default_value = trait.default()
+            cfg[name] = yu.preserve_yaml_literals(default_value)
         else:
             dumpables = _dumpable_trait_value(cls, trait, config)
             if dumpables:
-                cfg[name], default_value = dumpables
+                value, default_value = dumpables
+                cfg[name] = yu.preserve_yaml_literals(value)
             else:
                 continue
 
