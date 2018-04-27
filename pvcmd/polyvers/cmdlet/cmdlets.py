@@ -1281,12 +1281,6 @@ def generate_config_file_yaml(self, classes=None, config: trc.Config = None):
 
     classes = self.classes if classes is None else classes
 
-    def mro_till_specs(cls):
-        return [sub for sub in cls.mro() if issubclass(sub, Spec)]
-
-    def mro_till_configurables(cls):
-        return [sub for sub in cls.mro() if issubclass(sub, trc.Configurable)]
-
     config_classes = set(self._classes_with_config_traits(classes))
     ## Order: subclass at the top.
     #  Filtering needed because `order_class_hierarchy()` brings full mro().
