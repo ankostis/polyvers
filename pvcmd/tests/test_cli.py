@@ -13,8 +13,11 @@ from polyvers.cmdlet import cmdlets
 from polyvers.utils import yamlutil as yu
 from polyvers.utils.mainpump import ListConsumer
 from polyvers.utils.oscmd import cmd
+import re
 
 import pytest
+
+import textwrap as tw
 
 from .conftest import check_text, dict_eq, make_setup_py
 
@@ -237,7 +240,7 @@ def test_bootstrapp_projects_autodiscover_monorepo(mutable_pvtags_repo, caplog):
                                            pvtags.MONOREPO)
 
 
-def test_init_cmd_mono_project(mutable_vtags_repo, caplog):
+def test_init_cmd_mono_project(mutable_vtags_repo):
     mutable_vtags_repo.chdir()
 
     rc = main('init --mono-project --pdata f=g -v'.split())
@@ -250,12 +253,76 @@ def test_init_cmd_mono_project(mutable_vtags_repo, caplog):
     cmd.run()
 
     exp_fpath = (mutable_vtags_repo / '.polyvers.yaml')
+    got = exp_fpath.read_text('utf-8')
     exp_text = '# Spec(LoggingConfigurable) configuration'
-    assert exp_text in exp_fpath.read_text('utf-8')
+    print(got)
+    assert exp_text in got
+
+    exp_hierarchy = tw.dedent("""\
+        # ############################################################################
+        # Configuration hierarchy for `polyvers`:
+        #   InitCmd     --> _SubCmd
+        #   Project     --> Spec
+        #   StatusCmd   --> _SubCmd
+        #   BumpCmd     --> _SubCmd
+        #   LogconfCmd  --> _SubCmd
+        #   _SubCmd     --> PolyversCmd
+        #   PolyversCmd --> Cmd
+        #   Cmd         --> Application, Spec
+        #   Application\\s*
+        #   Engrave     --> Spec
+        #   Graft       --> Spec
+        #   Spec\\s*
+        # ############################################################################
+        #""")
+    assert re.search(exp_hierarchy, got)
+
+    exp_headers = tw.dedent("""\
+        # ############################################################################
+        # Spec(LoggingConfigurable) configuration
+        # ############################################################################
+        # Common properties for all configurables.""")
+    assert exp_headers in got
+
+    exp_help = tw.dedent("""\
+        # ############################################################################
+        # BumpCmd(_SubCmd) configuration
+        # ############################################################################
+        # Increase or set the version of project(s) to the (relative/absolute) version.
+        # SYNTAX:
+        #     {cmd_chain} [OPTIONS] [<version>] [<project>]...
+        # - A version specifier, either ABSOLUTE, or RELATIVE to current version:
+        #   - *ABSOLUTE* PEP-440 version samples:
+        #     - Pre-releases: when working on new features:
+        #         X.YbN               # Beta release
+        #         X.YrcN  or  X.YcN   # Release Candidate
+        #         X.Y                 # Final release
+        #     - Post-release:
+        #         X.YaN.postM         # Post-release of an alpha release
+        #         X.YrcN.postM        # Post-release of a release candidate
+        #     - Dev-release:
+        #         X.YaN.devM          # Developmental release of an alpha release
+        #         X.Y.postN.devM      # Developmental release of a post-release
+        #   - *RELATIVE* samples:
+        #     - +0.1          # For instance:
+        #                     #   1.2.3    --> 1.3.0
+        #     - ^2            # Increases the last non-zero part of current version:
+        #                     #   1.2.3    --> 1.2.5
+        #                     #   0.1.0b0  --> 0.1.0b2
+        # - If no <version> specified, '^1' assumed.
+        # - If no project(s) specified, increase the versions on all projects.
+        # - Denied if version for some projects is backward-in-time (or has jumped parts?);
+        #   use --force if you might.
+        # - The 'v' prefix is not needed!
+        #""")
+    assert exp_help in got
+
+    exp_value = r'''pvtag_regex: "(?xmi)\n    ^(?P<pname>)\n    {vprefix}(?P<version>\\d[^-]*)\n'''
+    assert exp_value in got
 
 
-def test_init_cmd_monorepo(mutable_repo, caplog):
-    mutable_repo.chdir()
+# def test_init_cmd_monorepo(mutable_repo):
+#     mutable_repo.chdir()
 
 
 def test_status_cmd_vtags(mutable_repo, caplog, capsys):

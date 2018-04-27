@@ -53,6 +53,7 @@ def _slices_to_ids(slices, thelist):
 
 
 class Graft(cmdlets.Replaceable, cmdlets.Printable, yu.YAMLable, cmdlets.Spec):
+    """Instructions on how to search'n replace some text."""
     regex = Unicode(
         read_only=True,
         config=True,
@@ -167,7 +168,7 @@ class Graft(cmdlets.Replaceable, cmdlets.Printable, yu.YAMLable, cmdlets.Spec):
 
 
 class Engrave(cmdlets.Replaceable, cmdlets.Printable, yu.YAMLable, cmdlets.Spec):
-    """File-patterns to search and replace with version-id patterns."""
+    """Muliple file-patterns to search'n replace."""
 
     globs = ListTrait(
         Unicode(),
@@ -189,6 +190,7 @@ class Engrave(cmdlets.Replaceable, cmdlets.Printable, yu.YAMLable, cmdlets.Spec)
 
 
 class Project(cmdlets.Replaceable, cmdlets.Printable, yu.YAMLable, cmdlets.Spec):
+    """Configurations for projects, in general, and specifically for each one."""
     pname = Unicode(
         config=True,
         help="""The name of the project, used in interpolations and pvtags, among others."""

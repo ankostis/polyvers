@@ -54,10 +54,10 @@ def _re_match(subtext, text):
         return subtext.search(text)
 
 
-def _check_text(text, require, forbid, match_func):
+def _check_text(lines, require, forbid, match_func):
     matches = set()
     illegals = {}
-    for i, l in enumerate(text):
+    for i, l in enumerate(lines):
         for mterm in require:
             if mterm not in matches and match_func(mterm, l):
                 matches.add(mterm)
@@ -69,7 +69,7 @@ def _check_text(text, require, forbid, match_func):
     missed = set(require) - matches
     err1 = missed and "\n  - MISSES: \n    - %s" % '\n    - '.join(missed) or ''
     err2 = illegals and "\n  - ILLEGALS: \n    - %s" % '\n    - '.join(
-        "%r in line(%i): %s" % (k, v + 1, text[v]) for k, v in illegals.items()) or ''
+        "%r in line(%i): %s" % (k, v + 1, lines[v]) for k, v in illegals.items()) or ''
 
     return err1, err2
 
