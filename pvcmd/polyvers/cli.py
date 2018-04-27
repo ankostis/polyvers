@@ -239,7 +239,7 @@ class PolyversCmd(cmdlets.Cmd, yu.YAMLable):
         #  pair (pname <--> path) matched.
         #
         pname_path_pairs: List[Tuple[str, Path]] = [
-            (m.groupdict()['pname'], fpath.parent)
+            (m.groupdict()['pname'].decode('utf-8'), fpath.parent)
             for fpath, mqruples in match_map.items()
             for _prj, _eng, _graft, matches in mqruples
             for m in matches]
