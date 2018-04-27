@@ -326,6 +326,11 @@ class PolyversCmd(cmdlets.Cmd, yu.YAMLable):
                                                       basepath=basepath,
                                                       _pvtags_collected=None)
                              for pname, basepath in pdata.items()]
+            ## Set discovered projects also in `config`, so
+            #  InitCmd can write it in the generated YAML.
+            self.config.PolyversCmd.projects = [
+                {'pname': pname, 'basepath': basepath}
+                for pname, basepath in pdata.items()]
 
         if len(self.projects) > 1 and template_project.pname == pvtags.MONO_PROJECT:
             self.log.warning(
