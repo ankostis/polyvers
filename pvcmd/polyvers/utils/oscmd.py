@@ -126,7 +126,7 @@ def exec_cmd(cmd,
             #  A hackish wedge to report to the user
             ## the CWD when not in Git-repo.
 
-            if "Not a git repository" in ex.stderr:
+            if "ot a git repository" in ex.stderr:
                 import os
                 from .. import pvtags
 
