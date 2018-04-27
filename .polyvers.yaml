@@ -1,0 +1,77 @@
+#
+# ############################################################################
+# Configuration hierarchy for `polyvers`:
+#   InitCmd     --> _SubCmd
+#   Project     --> Spec
+#   StatusCmd   --> _SubCmd
+#   BumpCmd     --> _SubCmd
+#   LogconfCmd  --> _SubCmd
+#   _SubCmd     --> PolyversCmd
+#   PolyversCmd --> Cmd
+#   Cmd         --> Application, Spec
+#   Application
+#   Engrave     --> Spec
+#   Graft       --> Spec
+#   Spec
+# ############################################################################
+#
+
+
+# ############################################################################
+# PolyversCmd(Cmd) configuration
+# ############################################################################
+# Bump independently PEP-440 versions of sub-project in Git monorepos.
+# SYNTAX:
+#   {cmd_chain} <sub-cmd> ...
+#
+PolyversCmd:
+  # Default:
+  projects:
+  - pname: polyvers
+    basepath: .
+  - pname: polyversion
+    basepath: pvlib
+
+
+# ############################################################################
+# Project(Spec) configuration
+# ############################################################################
+# Configurations for projects, in general, and specifically for each one.
+#
+Project:
+
+  # The pattern to generate new *pvtags*.
+  #
+  #  It is interpolated with this class's traits as :pep:`3101` parameters; among
+  # others ``{pname}`` and ``{version}``; use ``{ikeys}`` to receive all available
+  # keys.
+  #
+  #  .. WARNING::
+  #    If you change this, ensure the :func:`polyversion.polyversion()`
+  #    gets invoked from project's sources with the same value
+  #    in `pvtag_frmt` kw-arg.
+  # Default:
+  pvtag_frmt: '{pname}-{vprefix}{version}'
+
+  # The regex pattern breaking *pvtags* and/or ``git-describe`` output
+  # into 3 named capturing groups:
+  # - ``pname``,
+  # - ``version`` (without the 'v'),
+  # - ``descid`` (optional) anything following the dash('-') after
+  #   the version in ``git-describe`` result.
+  #
+  #  It is interpolated with this class's traits as :pep:`3101` parameters; among
+  # others ``{pname}``, and **maybe** ``{version}``; use ``{ikeys}`` to receive
+  # all available keys. See :pep:`0426` for project-name characters and format.
+  #
+  #  .. WARNING::
+  #    If you change this, ensure the :func:`polyversion.polyversion()`
+  #    gets invoked from project's sources with the same value
+  #    in `pvtag_regex` kw-arg.
+  # Default:
+  pvtag_regex: |-
+    (?xmi)
+        ^(?P<pname>{pname})
+        -
+        {vprefix}(?P<version>\d[^-]*)
+        (?:-(?P<descid>\d+-g[a-f\d]+))?$
