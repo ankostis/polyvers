@@ -286,34 +286,11 @@ def test_init_cmd_mono_project(mutable_vtags_repo):
 
     exp_help = tw.dedent("""\
         # ############################################################################
-        # BumpCmd(_SubCmd) configuration
+        # PolyversCmd(Cmd) configuration
         # ############################################################################
-        # Increase or set the version of project(s) to the (relative/absolute) version.
+        # Bump independently PEP-440 versions of sub-project in Git monorepos.
         # SYNTAX:
-        #     {cmd_chain} [OPTIONS] [<version>] [<project>]...
-        # - A version specifier, either ABSOLUTE, or RELATIVE to current version:
-        #   - *ABSOLUTE* PEP-440 version samples:
-        #     - Pre-releases: when working on new features:
-        #         X.YbN               # Beta release
-        #         X.YrcN  or  X.YcN   # Release Candidate
-        #         X.Y                 # Final release
-        #     - Post-release:
-        #         X.YaN.postM         # Post-release of an alpha release
-        #         X.YrcN.postM        # Post-release of a release candidate
-        #     - Dev-release:
-        #         X.YaN.devM          # Developmental release of an alpha release
-        #         X.Y.postN.devM      # Developmental release of a post-release
-        #   - *RELATIVE* samples:
-        #     - +0.1          # For instance:
-        #                     #   1.2.3    --> 1.3.0
-        #     - ^2            # Increases the last non-zero part of current version:
-        #                     #   1.2.3    --> 1.2.5
-        #                     #   0.1.0b0  --> 0.1.0b2
-        # - If no <version> specified, '^1' assumed.
-        # - If no project(s) specified, increase the versions on all projects.
-        # - Denied if version for some projects is backward-in-time (or has jumped parts?);
-        #   use --force if you might.
-        # - The 'v' prefix is not needed!
+        #   {cmd_chain} <sub-cmd> ...
         #""")
     assert exp_help in got
 

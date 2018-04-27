@@ -9,7 +9,7 @@
 
 from collections import OrderedDict, defaultdict, Mapping
 from pathlib import Path
-from typing import Dict, Optional
+from typing import Dict
 from typing import Tuple, Set, List  # noqa: F401 @UnusedImport, flake8 blind in funcs
 import logging
 
@@ -351,20 +351,29 @@ class _SubCmd(PolyversCmd):
 class InitCmd(_SubCmd):
     """Generate configurations based on directory contents."""
 
-    def _find_config_file_path(self, rootapp) -> Optional[Path]:
-        """
-        Log if no config-file has been loaded.
-        """
-        git_root = rootapp.git_root
+    @trc.catch_config_error
+    def initialize(self, argv=None):
+        ## Overridden not to load configs.
 
-        for p in self._cfgfiles_registry.collected_paths:
-            p = Path(p)
-            try:
-                if p.relative_to(git_root):
-                    return p
-            except ValueError as _:
-                ## Ignored, probably program defaults.
-                pass
+        self.parse_command_line(argv)
+        if self.subapp is None and (
+                self.show_config or self.show_config_json):
+            self._dump_config()
+
+#     def _find_config_file_path(self, rootapp) -> Optional[Path]:
+#         """
+#         Log if no config-file has been loaded.
+#         """
+#         git_root = rootapp.git_root
+#
+#         for p in self._collect_static_fpaths():
+#             p = Path(p)
+#             try:
+#                 if p.exists() and p.relative_to(git_root):
+#                     return p
+#             except ValueError as _:
+#                 ## Ignored, probably program defaults.
+#                 pass
 
     def run(self, *args):
         if len(args) > 0:
@@ -376,18 +385,18 @@ class InitCmd(_SubCmd):
         import io
 
         self.bootstrapp_projects()
-        cfgpath = self._find_config_file_path(self)
-        if cfgpath:
-            yield "TODO: update config-file '%s'...." % cfgpath
-        else:
-            cfgpath = Path(self.git_root) / ('%s.yaml' % self.config_basename)
-            cfg = self.generate_config_file_yaml(self.all_app_configurables, self.config)
-            self.log.debug("Writing config to yaml file '%s': \n%s",
-                           cfgpath, pformat(cfg))
-            with io.open(cfgpath, 'wt', encoding='utf-8') as fout:
-                yu.ydumps(cfg, fout)
+#         cfgpath = self._find_config_file_path(self)
+#         if cfgpath:
+#             yield "TODO: update config-file '%s'...." % cfgpath
+#         else:
+        cfgpath = Path(self.git_root) / ('%s.yaml' % self.config_basename)
+        cfg = self.generate_config_file_yaml(self.all_app_configurables, self.config)
+        self.log.debug("Writing config to yaml file '%s': \n%s",
+                       cfgpath, pformat(cfg))
+        with io.open(cfgpath, 'wt', encoding='utf-8') as fout:
+            yu.ydumps(cfg, fout)
 
-            yield "Created new config-file '%s'." % cfgpath
+        yield "Created new config-file '%s'." % cfgpath
 
 
 _status_all_help = """
