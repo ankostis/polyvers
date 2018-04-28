@@ -348,32 +348,60 @@ class _SubCmd(PolyversCmd):
         super().__init__(*args, **kw)
 
 
+_init_update_help = \
+    "Update existing configs, excluding user's home folder and those overriden by cmd-line options"
+
+
 class InitCmd(_SubCmd):
     """Generate configurations based on directory contents."""
 
+    update = Bool(
+        config=True,
+        help=_init_update_help)
+
+    flags = {('u', 'update'):    # type: ignore
+             ({'InitCmd': {'update': True}}, _init_update_help)}
+
+    def _read_non_user_configs(self) -> trc.Config:
+        config_paths = [p for p in self.config_paths
+                        if not p.startswith('~')]
+        return self.read_config_files(config_paths)
+
     @trc.catch_config_error
     def initialize(self, argv=None):
-        ## Overridden not to load configs.
+        ## Overridden, to skip configs-loading unless --update given.
 
+        self.update_interp_context()
         self.parse_command_line(argv)
-        if self.subapp is None and (
-                self.show_config or self.show_config_json):
-            self._dump_config()
 
-#     def _find_config_file_path(self, rootapp) -> Optional[Path]:
-#         """
-#         Log if no config-file has been loaded.
-#         """
-#         git_root = rootapp.git_root
-#
-#         for p in self._collect_static_fpaths():
-#             p = Path(p)
-#             try:
-#                 if p.exists() and p.relative_to(git_root):
-#                     return p
-#             except ValueError as _:
-#                 ## Ignored, probably program defaults.
-#                 pass
+        if self.update:
+            config = self._read_non_user_configs()
+            config.merge(self.cli_config)
+
+            if self.show_config or self.show_config_json:
+                self._dump_config()
+
+            while self:
+                self.update_config(config)
+                self = self.parent
+
+    def _cleaned_config(self):
+        config = self.config
+        clean_keys = [
+            'InitCmd.update',
+            'Spec.*',
+        ]
+        for path in clean_keys:
+            sec, tname = path.split('.')
+            if sec in config:
+                if tname == '*':
+                    del config[sec]
+                else:
+                    sec = config[sec]
+                    if tname in sec:
+                        del sec[tname]
+
+        return config
 
     def run(self, *args):
         if len(args) > 0:
@@ -381,20 +409,22 @@ class InitCmd(_SubCmd):
                 "Cmd %r takes no arguments, received %d: %r!"
                 % (self.name, len(args), args))
 
-        from pprint import pformat
         import io
 
         self.bootstrapp_projects()
-#         cfgpath = self._find_config_file_path(self)
-#         if cfgpath:
-#             yield "TODO: update config-file '%s'...." % cfgpath
-#         else:
+
+        old_config = self._cleaned_config()
+        new_config = self.generate_config_file_yaml(self.all_app_configurables, old_config)
+
         cfgpath = Path(self.git_root) / ('%s.yaml' % self.config_basename)
-        cfg = self.generate_config_file_yaml(self.all_app_configurables, self.config)
-        self.log.debug("Writing config to yaml file '%s': \n%s",
-                       cfgpath, pformat(cfg))
+
+        if self.log.isEnabledFor(logging.DEBUG):
+            from pprint import pformat
+            self.log.debug("Writing config to yaml file '%s': \n%s",
+                           cfgpath, pformat(new_config))
+
         with io.open(cfgpath, 'wt', encoding='utf-8') as fout:
-            yu.ydumps(cfg, fout)
+            yu.ydumps(new_config, fout)
 
         yield "Created new config-file '%s'." % cfgpath
 

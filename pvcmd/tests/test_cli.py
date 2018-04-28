@@ -254,9 +254,9 @@ def test_init_cmd_mono_project(mutable_vtags_repo):
 
     exp_fpath = (mutable_vtags_repo / '.polyvers.yaml')
     got = exp_fpath.read_text('utf-8')
-    exp_text = '# Spec(LoggingConfigurable) configuration'
     print(got)
-    assert exp_text in got
+    cleaned_text = '# Spec(LoggingConfigurable) configuration'
+    assert cleaned_text not in got
 
     exp_hierarchy = tw.dedent("""\
         # ############################################################################
@@ -279,9 +279,9 @@ def test_init_cmd_mono_project(mutable_vtags_repo):
 
     exp_headers = tw.dedent("""\
         # ############################################################################
-        # Spec(LoggingConfigurable) configuration
+        # Project(Spec) configuration
         # ############################################################################
-        # Common properties for all configurables.""")
+        # Configurations for projects, in general, and specifically for each one.""")
     assert exp_headers in got
 
     exp_help = tw.dedent("""\

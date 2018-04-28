@@ -847,9 +847,11 @@ class Cmd(trc.Application, Spec):
     def _config_basename(self):
         return '.' + self.root_object().name
 
-    def _collect_static_fpaths(self):
-        """Return fully-normalized paths, with ext."""
-        config_paths = self.config_paths
+    def _collect_static_fpaths(self, config_paths=None):
+        """
+        Return fully-normalized paths, with ext.
+        """
+        config_paths = self.config_paths if config_paths is None else config_paths
         self._cfgfiles_registry = CfgFilesRegistry('.json .yaml .py'.split())
         fpaths = self._cfgfiles_registry.collect_fpaths(config_paths)
 
@@ -888,12 +890,13 @@ class Cmd(trc.Application, Spec):
 
         return config
 
-    def read_config_files(self):  # -> trc.Config
+    def read_config_files(self, config_paths=None):  # -> trc.Config
         """
         Load :attr:`config_paths` and maintain :attr:`config_registry`.
 
         :param config_paths:
-            full normalized paths (descending order, 1st overrides the rest)
+            optional paths to override those in `config_paths`trait,
+            in descending order (1st overrides the rest).
         :return:
             the static_config loaded
 
@@ -901,7 +904,7 @@ class Cmd(trc.Application, Spec):
           in :attribute:`config_paths`.
         """
         ## Adapted from :meth:`load_config_file()` & :meth:`_load_config_files()`.
-        config_paths = self._collect_static_fpaths()
+        config_paths = self._collect_static_fpaths(config_paths)
 
         new_config = trc.Config()
         ## Registry to detect collisions.
