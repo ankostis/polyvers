@@ -390,10 +390,14 @@ class InitCmd(_SubCmd):
         clean_keys = [
             'InitCmd.update',
             'Spec.*',
+            '*.verbose',
+            '*.debug',
+            '*.dry_run',
+            '*.force',
         ]
         for path in clean_keys:
             sec, tname = path.split('.')
-            if sec in config:
+            if sec == '*' or sec in config:
                 if tname == '*':
                     del config[sec]
                 else:
