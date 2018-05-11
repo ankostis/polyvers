@@ -10,7 +10,7 @@
 from collections import OrderedDict, defaultdict, Mapping
 from pathlib import Path
 from typing import Dict
-from typing import Tuple, Set, List  # noqa: F401 @UnusedImport, flake8 blind in funcs
+from typing import Tuple, Set, List, Optional  # noqa: F401 @UnusedImport, flake8 blind in funcs
 import logging
 
 from boltons.setutils import IndexedSet as iset
@@ -126,7 +126,7 @@ class PolyversCmd(cmdlets.Cmd, yu.YAMLable):
 
         return paths
 
-    _git_root: Path = None
+    _git_root: Optional[Path] = None
 
     @property
     def git_root(self) -> Path:
