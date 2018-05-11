@@ -149,7 +149,7 @@ class PolyversCmd(cmdlets.Cmd, yu.YAMLable):
 
         - This param exists only when specifying those data from cmdline; otherwise,
           in configuration files prefer to specify directly `PolyversCmd.projects`.
-        -- sample: --pdata foo=foo/fpath
+        - example:: --pdata foo=foo/fpath
         """)
 
     ## TODO: rename to autodiscovery_...
@@ -532,15 +532,6 @@ PolyversCmd.flags = {  # type: ignore
             'raise_config_file_errors': True,
         }},
         cmdlets.Spec.debug.help
-    ),
-
-    ('a', 'amend'): (
-        {'pvproject.Project': {'amend': True}},
-        pvproject.Project.amend.help
-    ),
-    ('t', 'tag'): (
-        {'Project': {'tag': True}},
-        pvproject.Project.tag.help
     ),
 
     'monorepo': (

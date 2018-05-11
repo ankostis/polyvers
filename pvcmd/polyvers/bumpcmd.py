@@ -258,6 +258,14 @@ BumpCmd.flags = {  # type: ignore
         {'BumpCmd': {'sign_tags': True}},
         BumpCmd.sign_tags.help
     ),
+    ('a', 'amend'): (
+        {'pvproject.Project': {'amend': True}},
+        pvproject.Project.amend.help
+    ),
+    ('t', 'tag'): (
+        {'Project': {'tag': True}},
+        pvproject.Project.tag.help
+    ),
 }
 BumpCmd.aliases = {  # type: ignore
     ('m', 'message'): 'BumpCmd.message_body',
