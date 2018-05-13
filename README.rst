@@ -82,76 +82,90 @@ Additional capabilities and utilities:
 
 Quickstart
 ==========
-1. Installing the tool, and you get the ``polyvers`` command:
+1. Install the tool
+-------------------
+And you get the ``polyvers`` command:
 
-   .. code-block:: console
+.. code-block:: console
 
-      $ pip install polyvers
-      ...
-      $ polyvers --version
-      0.0.0
-      $ polyvers --help
-      ...
+    $ pip install polyvers
+    ...
+    $ polyvers --version
+    0.0.0
+    $ polyvers --help
+    ...
 
-      $ polyvers status
-      polyvers: Neither `setup.py` nor `.polyvers(.json|.py|.salt)` config-files found!
+    $ polyvers status
+    polyvers: Neither `setup.py` nor `.polyvers(.json|.py|.salt)` config-files found!
 
-   .. Note::
+.. Note::
 
-     There are actually two projects to install, depending on your needs:
+  Actually two projects are installed:
 
-     - **polyvers** tool, for developing python monorepos,
-     - **polyversion**: a python library used by projects developed with *polyvers*
-       tool to discover their version on runtime from Git.
+  - **polyvers** tool, for developing python monorepos,
+  - **polyversion**: the base python library used by projects developed
+    with *polyvers* tool, so that their sources can discover their subproject-version
+    on runtime from Git.
 
 
-2. Assuming our *monorepo* project ``/monorepo.git/`` contains two sub-projects::
+2. Initialize project
+---------------------
+Assuming our *monorepo* project ``/monorepo.git/`` contains two sub-projects::
 
     /monorepo.git/
-        +--base_project/
-        |   +--setup.py:  setup(name='baseproj', ...)
-        |   +--baseproj/__init__.py
-        |   +--...
+        +--setup.py:  setup(name='baseproj', ...)
+        +--baseproj/__init__.py
+        +--...
         +--core/
             +--setup.py: setup(name='core', ...)
             +--core/__init__.py
             +--...
 
-   ...we have to map the *project folders ↔ project-names* using a `traitlets configuration
-   file <https://traitlets.readthedocs.io>`_ named as
-   ``/monorepo.git/.polyvers.py``:
+...we let the tool auto-discover the mapping of *project folders ↔ project-names*
+and create a `traitlets configuration YAML-file <https://traitlets.readthedocs.io>`_
+named as  ``/monorepo.git/.polyvers.py``:
 
-   .. code-block:: python
+.. code-block:: console
 
-        c.Polyvers.projects = [
-            {'path': 'base_project'},  # If no 'name' given, extracted from `setup.py`.
-            {'name': 'core'}           # If no `path`, same as `project_name` implied.
-        ]
+    $ cd monorepo.git
 
+    $ polyvers init --monorepo
+    Created new config-file '.polyvers.yaml'.
 
-3. We then set each sub-project to derive its version *on runtime* from latest tag(s),
-   using this code in e.g. ``/monorepo.git/base_project/baseproj/__init__.py:``:
+    $ cat .polyvers.yaml
+    ...
+    PolyversCmd:
+      projects:
+      - pname: baseproj     # name extracted from `setup.py`.
+        basepath: .         # path discovered by the location of `setup.py`
+      - pname: core
+        basepath: core
+    ...
 
-   .. code-block:: python
+    $ git add .polyvers.yaml
+    $ git commit -m 'add polyvers config-gile'
 
-        import polyvers
+And now we can use the ``polyvers`` command to inspect the versions of all
+sub-projects:
 
-        __title__ = "baseproj"
-        __version__ = polyvers.version('baseproj')
-        ...
+.. code-block:: console
 
+    $ polyvers status
+    baseproj:
+      version:
+    core:
+      version:
 
-4. We can now use the ``polyvers`` command to inspect & set the same version to all
-   sub-projects:
+Indeed there are no tags in in git-history for the tool to derive and display
+project-versions.
 
-   .. code-block:: console
+3. Bump versions
+----------------
+We can now use tool to set the same version to all sub-projects:
 
-    $ cd /monorepo.git
-    $ polyvers status           # No sub-project versions yet.
-    base_project: null
-    core: null
+.. code-block:: console
 
-    $ polyvers setver 0.0.0
+    $ polyvers bump 0.0.0    # all projects implied, if no project-name given
     ...
     base_project: 0.0.0
     core: 0.0.0
@@ -190,9 +204,25 @@ Quickstart
     $ git checkout  -  # to return to master.
 
 
-5. Now let's add another commit and then bump ONLY ONE sub-project:
+4. Engrave version in thw sources
+---------------------------------
+We may then set each sub-project to derive its version *on runtime* from latest tag(s),
+using this code in e.g. ``/monorepo.git/base_project/baseproj/__init__.py:``:
 
-   .. code-block:: console
+.. code-block:: python
+
+    import polyvers
+
+    __title__ = "baseproj"
+    __version__ = polyvers.version('baseproj')
+    ...
+
+
+5. Bump sub-projects selectively
+--------------------------------
+Now let's add another commit and then bump ONLY ONE sub-project:
+
+.. code-block:: console
 
     $ git commit  --allow-empty  -m "some head work"
     $ polyvers bump 0.0.1.dev  baseproj
@@ -229,11 +259,11 @@ Quickstart
     ...
     $ git checkout -
 
-   Notice how the the `"local" part of PEP-440
-   <https://www.python.org/dev/peps/pep-0440/#local-version-identifiers>`_ (statring with ``+...``)
-   is used by the engraved version of the **un-bumped** ``core`` project to signify
-   the correlated version of the **bumped** ``baseproj``.  This trick is uneccesary
-   for tags because they apply repo-wide, to all sub-projects.
+Notice how the the `"local" part of PEP-440
+<https://www.python.org/dev/peps/pep-0440/#local-version-identifiers>`_ (statring with ``+...``)
+is used by the engraved version of the **un-bumped** ``core`` project to signify
+the correlated version of the **bumped** ``baseproj``.  This trick is uneccesary
+for tags because they apply repo-wide, to all sub-projects.
 
 
 .. _features:
