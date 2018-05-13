@@ -257,11 +257,8 @@ class Project(cmdlets.Replaceable, cmdlets.Printable, yu.YAMLable, cmdlets.Spec)
         if not version_bump:
             version_bump = self.default_version_bump
 
-        if vermath._is_version_id_relative(version_bump):
-            op, v2 = version_bump[0], version_bump[1:]
-            self.version = vermath.calc_versions_op(op,
-                                                    self.current_version,
-                                                    v2)
+        if vermath.is_version_id_relative(version_bump):
+            self.version = vermath.add_versions(self.current_version, version_bump)
         else:
             self.version = version_bump
 
@@ -588,7 +585,7 @@ class Project(cmdlets.Replaceable, cmdlets.Printable, yu.YAMLable, cmdlets.Spec)
 
     @trt.validate('default_version_bump')
     def _require_relative_version(self, change):
-        if not vermath._is_version_id_relative(change.new):
+        if not vermath.is_version_id_relative(change.new):
             raise trt.TraitError(
                 "Expected a relative version for '%s.%s', but got '%s'!"
                 "\n  Relative versions start either with '+' or '^'." %

@@ -8,8 +8,11 @@
 #
 """Validate and do algebra operations on Version-ids."""
 from typing import Union
+import re
 
-from packaging.version import Version
+from packaging.version import Version, _parse_letter_version
+
+import itertools as itt
 
 from ._vendor.traitlets import traitlets as trt
 from .cmdlet import cmdlets
@@ -28,103 +31,122 @@ class Pep440Version(trt.Instance):
     _cast_types = str  # type: ignore
 
     def cast(self, value):
-        return Version(value)
+        return Version(str(value))
 
 
-def _is_version_id_relative(version_str: VerLike):
-    return str(version_str).startswith(('+', '^'))
-
-
-def _add_versions(v1: VerLike, v2: VerLike):
-    from packaging.version import _cmpkey
-    from copy import copy
-    import itertools as itt
-
-    def add_pair_parts(part, p1, p2):
-        """
-        A "pair" part is a 2-tuple like ``('dev', 1)``.
-        """
-        try:
-            ## TODO: smarted cycle 1st rel-pair part than 2nd win-over.
-            name1, num1 = p1
-            name2, num2 = p2
-            assert isinstance(name1, str) and isinstance(name2, str), (p1, p2)
-
-            if name1 == name2:
-                return (name1, num1 + num2)
-            elif name1 < name2:
-                return (name2, num2)
-            else:
-                raise VersionError("Cannot backtrack version \"%s\" part: "
-                                   "%s%s-->%s%s" % (part) + p1 + p2)
-
-        except TypeError:
-            ## One or both are `None`.
-            return p2 if p1 is None else p1
-
-    def add_local_parts(l1, l2):
-        """
-        The "local" is any part following "main" version, separated by '+'.
-        """
-        try:
-            vv1.local + '+' + vv2.local
-        except TypeError:
-            ## One or both are `None`.
-            return l2 if l1 is None else l1
-
-    v1, v2 = [v if isinstance(v, Version) else Version(v)
-              for v in (v1, v2)]
-    vv1, vv2 = v1._version, v2._version
-    new_version = copy(v1)
-
-    release = tuple(a + b
-                    for a, b in itt.zip_longest(vv1.release,
-                                                vv2.release,
-                                                fillvalue=0))
-    new_vv = vv1._replace(
-        epoch=vv1.epoch + vv2.epoch,
-        release=release,
-        dev=add_pair_parts('dev', vv1.dev, vv2.dev),
-        pre=add_pair_parts('pre', vv1.pre, vv2.pre),
-        post=add_pair_parts('post', vv1.post, vv2.post),
-        local=add_local_parts(vv1.local, vv2.local)
+#: Possible to skip release-numbers, no local-part.
+#: Adapted from :data:`packaging.VERSION_PATTERN`.
+_relative_ver_regex = re.compile(r"""(?ix)
+    (?:
+        (?P<op>[+^])                                      # relative operator
+        (?P<freeze>=?)                                    # freeze marker
+        (?P<release>[0-9]+(?:\.[0-9]+)*)?                 # release segment
+        (?P<pre>                                          # pre-release
+            [-_\.]?
+            (?P<pre_l>(a|b|c|rc|alpha|beta|pre|preview))
+            [-_\.]?
+            (?P<pre_n>[0-9]+)?
+        )?
+        (?P<post>                                         # post release
+            (?:-(?P<post_n1>[0-9]+))
+            |
+            (?:
+                [-_\.]?
+                (?P<post_l>post|rev|r)
+                [-_\.]?
+                (?P<post_n2>[0-9]+)?
+            )
+        )?
+        (?P<dev>                                          # dev release
+            [-_\.]?
+            (?P<dev_l>dev)
+            [-_\.]?
+            (?P<dev_n>[0-9]+)?
+        )?
     )
-    new_version._version = new_vv
-
-    ## When transplanting `_version`, this point to the old one;
-    #  special hash/eq functions rely on this.
-    #
-    new_version._key = _cmpkey(
-        new_vv.epoch,
-        new_vv.release,
-        new_vv.pre,
-        new_vv.post,
-        new_vv.dev,
-        new_vv.local,
-    )
-
-    return new_version
+    """)
 
 
-def _find_caret_anchor_version(v: VerLike):
-    raise NotImplementedError()
+def is_version_id_relative(version_str: VerLike):
+    return _relative_ver_regex.match(str(version_str)) is not None
 
 
-def calc_versions_op(op: str, v1: VerLike, v2: VerLike):
-    """return the "sum" of the the given two versions."""
-    ## Version parsing sample::
-    #
-    #      >>> Version('1.2a3.post4.dev5+ab_cd.ef-16')._version
-    #      _Version(epoch=0, release=(1, 2), dev=('dev', 5), pre=('a', 3),
-    #               post=('post', 4), local=('ab', 'cd', 'ef', 16))
+def _add_pre(base_tuple, rel_label, rel_num):
+    assert base_tuple is not None or rel_label is not None, (
+        base_tuple, rel_label, rel_num)
+    if not rel_label:
+        return base_tuple
 
-    if op == '+':
-        new_version = _add_versions(v1, v2)
-    elif op == '^':
-        v1 = _find_caret_anchor_version(v1)
-        new_version = _add_versions(v1, v2)
+    blabel, bnum = base_tuple or (None, 0)
+    rlabel, rnum = _parse_letter_version(rel_label, rel_num)
 
+    if blabel == rlabel:
+        return blabel, bnum + rnum
     else:
-        raise AssertionError("Version-op '%s' unknown or not implemented!" % op)
+        return rlabel, rnum
 
+
+def _add_versions(base_ver: VerLike, relative_ver):
+    bver = base_ver if isinstance(base_ver, Version) else Version(base_ver)
+    m = _relative_ver_regex.match(str(relative_ver))
+    if not m:
+        raise VersionError("Invalid relative version: {}".format(relative_ver))
+
+    op = m.group('op')
+    freeze = m.group('freeze')
+
+    ver_nums = list(bver.release)
+    rel_release = m.group('release')
+    if rel_release:
+        #
+        ## Caret(^) makes a difference only for release-digits.
+
+        rel_nums = [int(d) for d in rel_release.split('.')]
+        if op == '^':
+            ##  Extend caret version from base-version's last digit.
+            #
+            ver_nums[-1] += rel_nums[0]
+            ver_nums.extend(rel_nums[1:])
+        elif op == '+':
+            ver_nums = [a + b
+                        for a, b in itt.zip_longest(ver_nums, rel_nums, fillvalue=0)]
+        else:
+            raise AssertionError(op)
+
+    parts = ['.'.join(str(i) for i in ver_nums)]
+
+    ## Clear base pre/post/dev parts if release-tuple bumped
+    ## and relative-version is not "freezed" (like '+=1').
+    keep_bparts = freeze or not rel_release
+
+    if m.group('pre') or keep_bparts and bver.pre:
+        parts.append('%s%s' % _add_pre(bver.pre,
+                                       m.group('pre_l'),
+                                       m.group('pre_n')))
+
+    if m.group('post') or keep_bparts and bver.post:
+        rel_post = m.group('post_n1') or m.group('post_n2') or 0
+        new_post = (bver.post or 0) + int(rel_post)
+        parts.append(".post%s" % new_post)
+
+    if m.group('dev') or keep_bparts and bver.dev:
+        new_dev = (bver.dev or 0) + int(m.group('dev_n') or 0)
+        parts.append(".dev%s" % new_dev)
+
+    if bver.local:
+        parts.append('+' + bver.local)
+
+    new_version = ''.join(parts)
+
+    return Version(new_version)
+
+
+def add_versions(v1: VerLike, v2: VerLike) -> Version:
+    """return the "sum" of the the given two versions."""
+    new_version = _add_versions(v1, v2)
+
+    v1 = Version(v1)
+    if new_version < v1:
+        raise VersionError("Backward bump is forbidden: %s -/-> %s" %
+                           (v1, new_version))
     return new_version

@@ -39,11 +39,27 @@ class BumpCmd(cli._SubCmd):
             X.Y.postN.devM      # Developmental release of a post-release
 
       - *RELATIVE* samples:
-        - +0.1          # For instance:
-                        #   1.2.3    --> 1.3.0
-        - ^2            # Increases the last non-zero part of current version:
-                        #   1.2.3    --> 1.2.5
-                        #   0.1.0b0  --> 0.1.0b2
+        - +0.1          #       1.2.3     --> 1.3.0
+        - +0.0.3a2      #       1.2.3a3   --> 1.2.6a5
+        - +3b1.dev2     #       1.2.3a3   --> 4.2.3b1.dev2
+        - +b1.dev2      #       <VersioError:  relver missing release-tuple prefix>
+
+        - ^2            ## Increases by +2 the last part of current version,
+                        #  in that order: release-tuple, pre, post, dev
+                        #  Example::
+                        #       0.2       --> 0.4
+                        #       0.0.0     --> 0.0.2
+                        #       1.2.3     --> 1.2.5
+                        #       0.1.0b0   --> 0.1.0b2
+        - ^0            #       0.2b2     --> 0.2
+        - ^1.2          #       0.5.0     --> 0.5.1.2
+                        #       1.2a0     --> 1.2a1.post2
+        - ^1.2.3        #       1.2a0     --> 1.2a1.post2.dev3
+        - ^1.2          #       1.2.post1 --> 1.2.post2.dev2
+        - ^1.2.3        #       1.2.post1 --> <VersionError: parts exhausted>
+
+        - ^+a_b-cd      ## Increased by a "local" identifier::
+                        #       1.2.3     --> 1.2.3+a.b.cd
 
     - If no <version> specified, '^1' assumed.
     - If no project(s) specified, increase the versions on all projects.
