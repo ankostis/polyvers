@@ -26,18 +26,31 @@ def _check_addition(v1, v2, exp):
 @pytest.mark.parametrize('v1, v2, exp', [
     ('1.1.1', '+0.1.2', '1.2.3'),
     ('0.0', '+1.1.1', '1.1.1'),
-    ('1.1.1', '+0.0', '1.1.1'),
+    ('1.1.1', ' +0.0 ', '1.1.1'),
 
-    ('0.0.dev1', '+0.0.dev2', '0.0.dev3'),
-    ('1.1.dev2', '+0.0.0.dev2', '1.1.0.dev4'),
     ('0.dev', '+0dev', '0.dev0'),
     ('0.dev', '+0dev1', '0.dev1'),
-    ('0.dev1', '+0dev', '0.dev1'),
-    ('1.1a1', '+0.2.0a0', '1.3a1'),
-    ('1.1.post3', '+2.2.2.post1', '3.3.2.post4'),
+    ('0.dev1', '+0dev', VersionError('ackward bump')),
+    ('0.dev1', '+0dev2', '0.dev2'),
+    ('0.dev1', '+=0dev', '0.dev1'),
+
+    ('0.0.post0', '+0.0.post2', '0.0.post2'),
+    ('0.0.post0', '+=0.0.post2', '0.0.post2'),
+    ('1.1.post2', '+0.0.0.post2', '1.1.0.post2'),
+    ('1.1.post2', '+=0.0.0.post2', '1.1.0.post4'),
+    ('1.1.post3', '+2.2.2.post1', '3.3.2.post1'),
+    ('1.1.post3', '+=2.2.2.post', '3.3.2.post3'),
+    ('1.1.post3', '+=2.2.2.post1', '3.3.2.post4'),
+
+    ('1.1a1', '+0.2.0a0', '1.3.0a0'),
+    ('1.1a1', '+=0.2.0a0', '1.3.0a1'),
+    ('1.1a1', '+0.2.0a1', '1.3.0a1'),
+    ('1.1a1', '+=0.2.0a1', '1.3.0a2'),
 
     ('1.2.3a3', '+3b1.dev2', '4.2.3b1.dev2'),
-    ('1.2.3a3', '+0.0.3a2', '1.2.6a5'),
+    ('1.2.3a3', '+=0.1.3a2', '1.3.6a5'),
+    ('1.2.3a3', '+=0.1.3b2', '1.3.6b2'),
+    ('1.2.3b3', '+0.1.3a2', '1.3.6a2'),
 
     ('1.1.post3', '+0.2', '1.3'),
     ('0.dev', '+0', '0'),
@@ -52,14 +65,25 @@ def _check_addition(v1, v2, exp):
     ('0.0', '+post', '0.0post0'),
     ('0a', '+b', '0b0'),
     ('0beta', '+a', VersionError('ackward bump')),
-    ('0a1.post0.dev0', '+a.post.dev', '0a1.post0.dev0'),
+
+    ('0a1.post2.dev3', '+a.post.dev', VersionError('ackward bump')),  # '0a1.post2.dev3'),
+    ('0a1.post2.dev3', '+a1.post.dev', VersionError('ackward bump')),  # '0a1.post2.dev0'),
     ('0a1.post0.dev0', '+=a.post.dev', '0a1.post0.dev0'),
-    ('0a1.post0.dev0', '+a1', '0a1.post0.dev0'),
-    ('0a.post2.dev1', '+post', '0a0.post2.dev0'),
-    ('0a.post.dev', '+dev', '0a-.post0.dev0'),
+ 
+    ('0a0.post0.dev0', '+a1', '0a1'),
     ('0a.post.dev', '+=a1', '0a1.post0.dev0'),
-    ('0a.post2.dev', '+=post', '0a0.post2.dev0'),
+ 
+    ('0a.post2.dev1', '+post', VersionError('ackward bump')),  # '0a0.post2'),
+    ('0a.post2.dev1', '+=post1', '0a0.post3.dev1'),
+    ('0a.post2.dev1', '+post.dev', VersionError('ackward bump')),  # '0a0.post3.dev0'),
+ 
+    ('0a.post.dev', '+dev', VersionError('ackward bump')),  # '0a-.post0.dev0'),
     ('0a.post.dev2', '+=dev', '0a0.post0.dev2'),
+
+    ## TODO: epoch
+    #('0a.post.dev2', '+=1!dev', '0a0.post0.dev2'),
+    #('0a.post.dev2', '+=1!post2.dev1', '0a0.post2.dev3'),
+    #('0b.post.dev2', '+1!a.dev1', '0a0.dev1'),
 ])
 def test_plus_versions(v1, v2, exp):
     _check_addition(v1, v2, exp)
