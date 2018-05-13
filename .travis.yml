@@ -16,7 +16,7 @@ python:
 #     - python: 3.7-dev
 
 install:
-  - pip install --upgrade setuptools pip
+  - pip install --upgrade setuptools pip wheel
   - pip install -r requirements_dev.txt
 
   - pip install -e pvlib[test]
