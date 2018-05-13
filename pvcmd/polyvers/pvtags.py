@@ -17,19 +17,24 @@ There are 3 important methods/functions calling Git:
   project instances; certain pvtag-related Project methods would fail if
   this function has not been applies on a project instance.
 """
+
 from typing import List, Dict, Sequence, Optional
 import contextlib
+import logging
 
 import polyversion as pvlib
 import subprocess as sbp
 
 from . import pvproject
 from .cmdlet import cmdlets
-from .utils.oscmd import cmd
+from .utils.oscmd import cmd, PopenCmd
 
 
 MONOREPO = '<monorepo>'
 MONO_PROJECT = '<mono-project>'
+
+
+log = logging.getLogger(__name__)
 
 
 class GitError(cmdlets.CmdException):
@@ -75,26 +80,61 @@ def _git_current_branch() -> Optional[str]:
             return cur_branch
 
 
+def _parse_ref_pairs_list(reflines: str) -> Dict[str, str]:
+    "parses the output of ``git show-ref`` as a dict"
+    return {ref: sha
+            for sha, ref in (l.split()
+                             for l in reflines.split('\n'))}
+
+
+def _restore_refs(old_refs: Dict[str, str], new_refs: Dict[str, str]):
+    ## See https://git-scm.com/docs/git-update-ref
+    to_del = new_refs.keys() - old_refs.keys()
+    to_add = old_refs.keys() - new_refs.keys()
+    to_upd = old_refs.keys() & new_refs.keys()
+
+    cmd_lines = ['delete %s %s' % (ref, new_refs[ref])
+                 for ref in to_del]
+    cmd_lines.extend('create %s %s' % (ref, old_refs[ref])
+                     for ref in to_add)
+    cmd_lines.extend('update %s %s %s' % (ref, old_refs[ref], new_refs[ref])
+                     for ref in to_upd
+                     if old_refs[ref] != new_refs[ref])
+    if cmd_lines:
+        cmd_text = '\n'.join(cmd_lines) + '\n'
+        log.debug("Restoring git-refs: \n%s" % cmd_text)
+        PopenCmd(input=cmd_text.encode(),
+                 universal_newlines=False,
+                 encoding=None, encoding_errors=None
+                 ).git.update_ref(stdin=True)
+
+
 @contextlib.contextmanager
-def git_restore_point(restore=False):
+def git_restore_point(restore_head=False, heads=True, tags=True):
     """
     Restored checked out branch to previous state in case of errors (or if forced).
 
     :param restore:
         if true, force restore at exit, otherwise, restore only on errors
     """
+    show_ref_kw = {'heads': heads or None, 'tags': tags or None}
 
     cur_branch = _git_current_branch()
     original_commit_id = cmd.git.rev_parse.HEAD()
+    if heads or tags:
+        old_refs = _parse_ref_pairs_list(cmd.git.show_ref(**show_ref_kw))
     ok = False
     try:
-        yield  # TODO: provide for attaching tags into `with git_restore_point()`
+        yield
         ok = True
     finally:
-        if not ok or restore:
+        if not ok or restore_head:
             if cur_branch:
                 cmd.git.checkout(cur_branch, force=True)
             cmd.git.reset._(hard=True)(original_commit_id)
+            if heads or tags:
+                new_refs = _parse_ref_pairs_list(cmd.git.show_ref(**show_ref_kw))
+                _restore_refs(old_refs, new_refs)
 
 
 def make_pvtag_project(pname: str = MONOREPO,

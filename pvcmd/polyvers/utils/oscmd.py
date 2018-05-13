@@ -6,7 +6,6 @@
 # You may not use this work except in compliance with the Licence.
 # You may obtain a copy of the Licence at: http://ec.europa.eu/idabc/eupl
 #
-
 """Utility to call OS commands through :func:`subprocess.run()` with logging.
 
 The *polyvers* version-configuration tool is generating tags like::
@@ -126,7 +125,9 @@ def exec_cmd(cmd,
             #  A hackish wedge to report to the user
             ## the CWD when not in Git-repo.
 
-            if "ot a git repository" in ex.stderr:
+            if "ot a git repository" in (ex.stderr.decode()
+                                         if isinstance(ex.stderr, bytes) else
+                                         ex.stderr):
                 import os
                 from .. import pvtags
 

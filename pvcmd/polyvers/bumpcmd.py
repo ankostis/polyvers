@@ -227,16 +227,16 @@ class BumpCmd(cli._SubCmd):
         #  (but only after havin run some validation to run, above).
         self._stop_if_git_dirty()
 
-        with pvtags.git_restore_point(restore=self.dry_run):
+        with pvtags.git_restore_point(restore_head=self.dry_run):
             fproc.engrave_matches(match_map)
 
             ## TODO: move all git-cmds to pvtags?
             if self.out_of_trunk_releases:
                 for proj in projects:
                     proj.tag_version_commit(self, is_release=False)
-                ## TODO: append new tags to git-restore-point.__exit__
 
-                with pvtags.git_restore_point(restore=True):
+                with pvtags.git_restore_point(restore_head=True,
+                                              heads=False, tags=False):
                     if self.release_branch:
                         cmd.git.checkout._(B=True)(self.release_branch)
                     else:
@@ -246,15 +246,12 @@ class BumpCmd(cli._SubCmd):
 
                     for proj in projects:
                         proj.tag_version_commit(self, is_release=True)
-                    ## TODO: append new tags to git-restore-point.__exit__ if dry-run
 
             else:  # In-trunk plain *vtags* for mono-project repos.
                 self._commit_new_release(projects)
 
                 for proj in projects:
                     proj.tag_version_commit(self, is_release=False)
-                ## TODO: append new tags to git-restore-point.__exit__
-
         self.log.notice('Bumped projects: %s',
                         ', '.join('%s-%s --> %s' %
                                   (prj.pname, prj.current_version, prj.version)
