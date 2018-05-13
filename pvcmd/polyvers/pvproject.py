@@ -243,7 +243,8 @@ class Project(cmdlets.Replaceable, cmdlets.Printable, yu.YAMLable, cmdlets.Spec)
     def load_current_version_from_history(self):
         vtag_index = -2 if self.amend else -1
         try:
-            self.current_version = self.pvtags_history[vtag_index]
+            tag = self.pvtags_history[vtag_index]
+            self.current_version = self.version_from_pvtag(tag)
         except IndexError:
             self.log.debug("A vtag[%i] does not exist in history of %s",
                            vtag_index, self)
