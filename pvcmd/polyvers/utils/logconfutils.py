@@ -101,6 +101,11 @@ def _setup_color_logs(frmt):
         color_message_error=('red', None, True),
         color_message_critical=('white', 'red', True),
     )
+
+    ## NOTE: Quick'nDirty backreference to `polyvers`.
+    from .. import NOTICE
+    color_handler._column_color['%(message)s'][NOTICE] = ('green', None, False)
+
     formatter = logging.Formatter(frmt)
     color_handler.setFormatter(formatter)
 
