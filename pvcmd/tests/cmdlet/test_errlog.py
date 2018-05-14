@@ -6,14 +6,14 @@
 # You may not use this work except in compliance with the Licence.
 # You may obtain a copy of the Licence at: http://ec.europa.eu/idabc/eupl
 
+from polyvers._vendor.traitlets import traitlets as trt
+from polyvers.cmdlet import cmdlets, errlog
+from polyvers.cmdlet.errlog import _ErrNode, ErrLog
 import logging
 import re
 
 import pytest
 
-from polyvers._vendor.traitlets import traitlets as trt
-from polyvers.cmdlet import cmdlets, errlog
-from polyvers.cmdlet.errlog import _ErrNode, ErrLog
 import textwrap as tw
 
 
@@ -158,7 +158,7 @@ def test_ErrLog_str(forceable):
 
 
 def test_ErrLog_properties(forceable, logcollector):
-    with pytest.raises(trt.TraitError, match='not Forceable'):
+    with pytest.raises(ValueError, match='not Forceable'):
         ErrLog(object())
 
     erl = ErrLog(forceable)

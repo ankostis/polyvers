@@ -43,7 +43,6 @@ Of course you can mix'n match.
 
 .. [#] http://traitlets.readthedocs.io/
 """
-
 from collections import OrderedDict
 from os import PathLike
 from typing import (
@@ -56,6 +55,7 @@ import os
 import re
 
 from boltons.setutils import IndexedSet as iset
+import contextvars
 
 import os.path as osp
 
@@ -430,14 +430,7 @@ class Printable(metaclass=trt.MetaHasTraits):
 
 
 #: The global :class:`ErrLog` used by :meth:`Forceable.errlogged()`.
-_current_errlog = None
-
-
-def clear_global_errlog():
-    global _current_errlog
-
-    log.debug("Clearing global errlog %r.", _current_errlog)
-    _current_errlog = None
+_current_errlog = contextvars.ContextVar('errlog', default=None)
 
 
 class Forceable(metaclass=trt.MetaHasTraits):
@@ -511,24 +504,12 @@ class Forceable(metaclass=trt.MetaHasTraits):
               # Any errors collected above, will be raised/WARNed here.
 
         """
-        global _current_errlog
-
+        ## TODO: decouple `force` from `ErrLog`.
         from . import errlog
 
-        prev_errlog = _current_errlog
-        if _current_errlog:
-
-            _current_errlog = _current_errlog(
-                *exceptions,
-                parent=self,
-                token=token, doing=doing,
-                raise_immediately=raise_immediately,
-                warn_log=warn_log,
-                info_log=info_log,
-            )
-        else:
-            ## TODO: decouple `force` from `ErrLog`.
-            _current_errlog = errlog.ErrLog(
+        enclosing_elog: Optional[errlog.ErrLog] = _current_errlog.get()
+        if enclosing_elog is None:
+            elog = errlog.ErrLog(
                 self,
                 *exceptions,
                 token=token, doing=doing,
@@ -536,11 +517,20 @@ class Forceable(metaclass=trt.MetaHasTraits):
                 warn_log=warn_log,
                 info_log=info_log,
             )
-
+        else:
+            elog = enclosing_elog(
+                *exceptions,
+                parent=self,
+                token=token, doing=doing,
+                raise_immediately=raise_immediately,
+                warn_log=warn_log,
+                info_log=info_log,
+            )
+        token = _current_errlog.set(elog)
         try:
-            yield _current_errlog
+            yield elog
         finally:
-            _current_errlog = prev_errlog
+            _current_errlog.reset(token)
 
 
 class CmdletsInterpolation(interpctxt.InterpolationContext):

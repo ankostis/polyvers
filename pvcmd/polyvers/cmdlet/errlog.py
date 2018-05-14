@@ -336,7 +336,7 @@ class ErrLog(cmdlets.Replaceable, trt.HasTraits):
                  ) -> None:
         """Root created only in constructor - the rest in __call__()/__enter__()."""
         if not isinstance(parent, cmdlets.Forceable):
-            raise trt.TraitError("Parent '%s' is not Forceable!" % parent)
+            raise ValueError("Parent '%s' is not Forceable!" % parent)
         super().__init__(parent=parent, exceptions=exceptions or (Exception, ),
                          token=token, doing=doing,
                          raise_immediately=raise_immediately,

@@ -294,13 +294,13 @@ def test_errlog_thread_context():
 
     with frc1.errlogged() as erl1:
         assert erl1.parent == frc1
-        assert cmdlets._current_errlog is erl1
+        assert cmdlets._current_errlog.get() is erl1
         with frc2.errlogged() as erl2:
-            assert cmdlets._current_errlog is erl2
+            assert cmdlets._current_errlog.get() is erl2
             assert erl2.parent == frc2
             assert erl1._root_node is erl2._root_node
-        assert cmdlets._current_errlog is erl1
-    assert cmdlets._current_errlog is None
+        assert cmdlets._current_errlog.get() is erl1
+    assert cmdlets._current_errlog.get() is None
 
 
 def test_CfgFilesRegistry_consolidate_posix_1():
