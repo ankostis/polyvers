@@ -507,7 +507,7 @@ class Forceable(metaclass=trt.MetaHasTraits):
         ## TODO: decouple `force` from `ErrLog`.
         from . import errlog
 
-        enclosing_elog: Optional[errlog.ErrLog] = _current_errlog.get()
+        enclosing_elog: Optional[errlog.ErrLog] = _current_errlog.get()  # type: ignore
         if enclosing_elog is None:
             elog = errlog.ErrLog(
                 self,
@@ -526,11 +526,11 @@ class Forceable(metaclass=trt.MetaHasTraits):
                 warn_log=warn_log,
                 info_log=info_log,
             )
-        token = _current_errlog.set(elog)
+        token = _current_errlog.set(elog)  # type: ignore
         try:
             yield elog
         finally:
-            _current_errlog.reset(token)
+            _current_errlog.reset(token)  # type: ignore
 
 
 class CmdletsInterpolation(interpctxt.InterpolationContext):
