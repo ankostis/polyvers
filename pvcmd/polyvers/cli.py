@@ -605,6 +605,7 @@ def run(argv=(), cmd_consumer=None, **app_init_kwds):
     try:
         from .utils import mainpump as mpu
         from ._vendor.traitlets import TraitError
+        from .cmdlet.errlog import CollectedErrors
     except Exception as ex:
         ## Print stacktrace to stderr and exit-code(-1).
         return mlu.exit_with_pride(ex, logger=log)
@@ -616,7 +617,10 @@ def run(argv=(), cmd_consumer=None, **app_init_kwds):
         log.debug('App exited due to: %r', ex, exc_info=1)
         ## Suppress stack-trace for "expected" errors but exit-code(1).
         msg = str(ex)
-        if type(ex) is not cmdlets.CmdException:
+        ## Hide some exception-names:
+        #    - CmdEx: does not offer anything
+        #    - CollectedErrors: msg start with "Collected 2 errors..."
+        if type(ex) not in (cmdlets.CmdException, CollectedErrors):
             msg = '%s: %s' % (type(ex).__name__, ex)
         return mlu.exit_with_pride(msg, logger=log)
     except Exception as ex:

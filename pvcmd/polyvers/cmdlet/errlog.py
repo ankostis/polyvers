@@ -229,6 +229,10 @@ class _ErrNode(trt.HasTraits):
 _no_value = object()
 
 
+class CollectedErrors(cmdlets.CmdException):
+    pass
+
+
 ## TODO: decouple `force` from `ErrLog`.
 class ErrLog(cmdlets.Replaceable, trt.HasTraits):
     """
@@ -318,9 +322,6 @@ class ErrLog(cmdlets.Replaceable, trt.HasTraits):
     """
     class ErrLogException(Exception):
         """A pass-through for critical ErrLog, e.g. context re-enter. """
-        pass
-
-    class CollectedErrors(cmdlets.CmdException):
         pass
 
     ## TODO: weakref(ErrLog.parent), see `BaseDescriptor._property`.
@@ -542,15 +543,15 @@ class ErrLog(cmdlets.Replaceable, trt.HasTraits):
         if log.isEnabledFor(logging.DEBUG):
             log.debug("Collecting %s.", _exstr(ex), exc_info=ex)
 
-    def report_root(self, ex_raised: Optional[Exception]) -> Optional['ErrLog.CollectedErrors']:
+    def report_root(self, ex_raised: Optional[Exception]) -> Optional['CollectedErrors']:
         """
         Raise or log the errors collected from
         :param ex_raised:
             the cntxt-body exception ``__exit__()`` is about to raise
         :return:
-            a :class:`ErrLog.CollectedErrors` in case catured errors contain
+            a :class:`CollectedErrors` in case catured errors contain
             non-forced errors BUT `ex_raised` given.
-        :raise ErrLog.CollectedErrors:
+        :raise CollectedErrors:
             any non-forced exceptions captured in tree (if any),
             unless `ex_raised` given
         """
@@ -576,7 +577,7 @@ class ErrLog(cmdlets.Replaceable, trt.HasTraits):
             if is_all_forced:
                 return None
 
-        collected_errors = ErrLog.CollectedErrors(msg)
+        collected_errors = CollectedErrors(msg)
         if ex_raised and self.pdebug:
             ex_raised.__cause__ = collected_errors
         else:

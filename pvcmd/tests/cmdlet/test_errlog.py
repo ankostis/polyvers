@@ -8,7 +8,7 @@
 
 from polyvers._vendor.traitlets import traitlets as trt
 from polyvers.cmdlet import cmdlets, errlog
-from polyvers.cmdlet.errlog import _ErrNode, ErrLog
+from polyvers.cmdlet.errlog import _ErrNode, ErrLog, CollectedErrors
 from tests.conftest import check_text
 import logging
 import re
@@ -18,7 +18,6 @@ import pytest
 import textwrap as tw
 
 
-CollectedErrors = errlog.ErrLog.CollectedErrors
 ErrLogException = errlog.ErrLog.ErrLogException
 
 
