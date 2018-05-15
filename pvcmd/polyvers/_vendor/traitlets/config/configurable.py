@@ -204,17 +204,11 @@ class Configurable(HasTraits):
 
     def update_config(self, config):
         """Update config and load the new values"""
-        # traitlets prior to 4.2 created a copy of self.config in order to trigger change events.
-        # Some projects (IPython < 5) relied upon one side effect of this,
-        # that self.config prior to update_config was not modified in-place.
-        # For backward-compatibility, we must ensure that self.config
-        # is a new object and not modified in-place,
-        # but config consumers should not rely on this behavior.
-        self.config = deepcopy(self.config)
-        # load config
-        self._load_config(config)
-        # merge it into self.config
+        ## Update my config so that when autotraits are instanciated,
+        #  they get fully configured from it.
+        #  We don't care about < traitlets-4.2 compatibilty anymore.
         self.config.merge(config)
+        self._load_config(config)
         # TODO: trigger change event if/when dict-update change events take place
         # DO NOT trigger full trait-change
 
