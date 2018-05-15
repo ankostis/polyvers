@@ -113,10 +113,10 @@ And you get the ``polyvers`` command:
 Assuming our *monorepo* project ``/monorepo.git/`` contains two sub-projects::
 
     /monorepo.git/
-        +--setup.py:  setup(name='baseproj', ...)
-        +--baseproj/__init__.py
+        +--setup.py:  setup(name='mainprog', ...)
+        +--mainprog/__init__.py
         +--...
-        +--core/
+        +--core-lib/
             +--setup.py: setup(name='core', ...)
             +--core/__init__.py
             +--...
@@ -136,10 +136,10 @@ named as  ``/monorepo.git/.polyvers.py``:
     ...
     PolyversCmd:
       projects:
-      - pname: baseproj     # name extracted from `setup.py`.
+      - pname: mainprog     # name extracted from `setup.py`.
         basepath: .         # path discovered by the location of `setup.py`
       - pname: core
-        basepath: core
+        basepath: core-lib
     ...
 
     $ git add .polyvers.yaml
@@ -151,7 +151,7 @@ sub-projects:
 .. code-block:: console
 
     $ polyvers status
-    baseproj:
+    mainprog:
       version:
     core:
       version:
@@ -165,17 +165,29 @@ We can now use tool to set the same version to all sub-projects:
 
 .. code-block:: console
 
-    $ polyvers bump 0.0.0    # all projects implied, if no project-name given
-    ...
-    base_project: 0.0.0
-    core: 0.0.0
+    $ polyvers bump 0.0.0 -f noengraves   # all projects implied, if no project-name given
+    00:52:06       |WARNI|polyvers.bumpcmd.BumpCmd|Ignored 1 errors while checking if at least one version-engraving happened:
+      ignored (--force=noengraves): CmdException: No version-engravings happened, bump aborted.
+    00:52:07       |NOTIC|polyvers.bumpcmd.BumpCmd|Bumped projects: mainprog-0.0.0 --> 0.0.0, core-0.0.0 --> 0.0.0
+
+The ``--force=noengraves`` disables a safety check that requires at least one
+file modification for engraving the current version in the leaf "Release" commit
+(see next step).
+
+.. code-block:: console
+
+    $ polyvers status
+    mainprog:
+      version: 0.0.0
+    core:
+      version: 0.0.0
 
     $ git lg    # Ok, augmented `lg` output a bit here...HEAD --> UPPER branch.
     COMMITS BRANCH TAGS                 REMARKS
     ======= ====== ==================== ========================================
-         O  latest baseproj-r0.0.0      - x2 tags on "Release" leaf-commit
+         O  latest mainprog-r0.0.0      - x2 tags on "Release" leaf-commit
         /          core-r0.0.0            outside-of-trunk (not in HEAD).
-       O    MASTER baseproj-v0.0.0      - x2 tags on "Version" commit
+       O    MASTER mainprog-v0.0.0      - x2 tags on "Version" commit
        |           core-v0.0.0            for bumping both projects to v0.0.0
        O                                - Previous commit, before version bump.
 
@@ -186,68 +198,74 @@ We can now use tool to set the same version to all sub-projects:
 
    .. code-block:: console
 
-    $ cat base_project/baseproj/__init__.py    # Untouched!
+    $ cat mainprog/mainprog/__init__.py    # Untouched!
     import polyvers
 
-    __title__     = "baseproj"
-    __version__ = polyvers.version('baseproj')
+    __title__     = "mainprog"
+    __version__ = polyvers.version('mainprog')
     ...
 
     $ git checkout  latest
-    $ cat base_project/baseproj/__init__.py
+    $ cat mainprog/mainprog/__init__.py
     import polyvers
 
-    __title__     = "baseproj"
+    __title__     = "mainprog"
     __version__ = '0.0.0'
     ...
 
     $ git checkout  -  # to return to master.
 
 
-4. Engrave version in thw sources
+4. Engrave version in the sources
 ---------------------------------
-We may then set each sub-project to derive its version *on runtime* from latest tag(s),
-using this code in e.g. ``/monorepo.git/base_project/baseproj/__init__.py:``:
+Usually programs report their version somehow when run, e.g. with ```cmd --version``.
+With *polyvers* we can derive the latest from the tags created in the previous step,
+using a code like this, usually in the file ``/mainprog/mainprog/__init__.py:``:
 
 .. code-block:: python
 
     import polyvers
 
-    __title__ = "baseproj"
-    __version__ = polyvers.version('baseproj')
+    __title__ = "mainprog"
+    __version__ = polyvers.version('mainprog')
     ...
+
+...and respectively ``/core-lib/core/__init__.py:``:
+
+.. code-block:: python
+
+    __version__ = polyvers.version('core')
+
 
 
 5. Bump sub-projects selectively
 --------------------------------
-Now let's add another commit and then bump ONLY ONE sub-project:
+Now let's add another dummy commit and then bump ONLY ONE sub-project:
 
 .. code-block:: console
 
     $ git commit  --allow-empty  -m "some head work"
-    $ polyvers bump 0.0.1.dev  baseproj
-    ...
-    base_project: 0.0.1.dev0
-    core: 0.0.0+base_project.0.0.1.dev0
+    $ polyvers bump ^1 mainprog
+    00:53:07       |NOTIC|polyvers.bumpcmd.BumpCmd|Bumped projects: mainprog-0.0.0 --> 0.0.1
 
     $ git lg
     COMMITS BRANCH TAGS                 REMARKS
     ======= ====== ==================== ========================================
-         O  latest baseproj-r0.0.1.dev0 - The latest "Release" leaf-commit.
+         O  latest mainprog-r0.0.1.dev0 - The latest "Release" leaf-commit.
         /                                 branch `latest` was reset non-ff.
-       O    MASTER baseproj-v0.0.1.dev0 - The latest "Version" commit.
+       O    MASTER mainprog-v0.0.1.dev0 - The latest "Version" commit.
        O                                - some head work
-       | O         baseproj-r0.0.0      - It's obvious now why "Release" commits
+       | O         mainprog-r0.0.0      - Now it's obvious why "Release" commits
        |/          core-r0.0.0            are called "leafs".
-       O           baseproj-v0.0.0
+       O           mainprog-v0.0.0
        |           core-v0.0.0
        O
 
     $ git checkout latest
-    $ cat base_project/baseproj/__init__.py
+    $ cat mainprog/mainprog/__init__.py
     import polyvers
 
-    __title__     = "baseproj"
+    __title__     = "mainprog"
     __version__ = '0.0.1.dev0'
     ...
 
@@ -255,14 +273,14 @@ Now let's add another commit and then bump ONLY ONE sub-project:
     import polyvers
 
     __title__ = "core"
-    __version__ = '0.0.0+baseproj.0.0.1.dev0'
+    __version__ = '0.0.0+mainprog.0.0.1.dev0'
     ...
     $ git checkout -
 
 Notice how the the `"local" part of PEP-440
 <https://www.python.org/dev/peps/pep-0440/#local-version-identifiers>`_ (statring with ``+...``)
 is used by the engraved version of the **un-bumped** ``core`` project to signify
-the correlated version of the **bumped** ``baseproj``.  This trick is uneccesary
+the correlated version of the **bumped** ``mainprog``.  This trick is uneccesary
 for tags because they apply repo-wide, to all sub-projects.
 
 
