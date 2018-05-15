@@ -6,13 +6,23 @@
 # You may not use this work except in compliance with the Licence.
 # You may obtain a copy of the Licence at: http://ec.europa.eu/idabc/eupl
 #
-"""Suppress or ignore  exceptions collected in a nested contexts. """
+"""
+Suppress or ignore  exceptions collected in a nested contexts.
+
+To get a "nested" :class:`ErrLog` instance either use :func:`nesterrlog()`, or
+call :meth:`ErrLog.__call__()` on the enclosing one.
+
+FIXME: possible to have different node-hierarchies in contextvars-nesting!!
+       (unless :meth:`ErrLog()` constructor is never called)
+"""
 
 from functools import partial
 from typing import Any, Dict, Union, Callable  # noqa: F401 @UnusedImport
 from typing import List, Tuple, Optional
 import contextlib
 import logging
+
+import contextvars
 
 import textwrap as tw
 
@@ -25,6 +35,45 @@ from .._vendor.traitlets.traitlets import Bool, CBool, Unicode, Instance
 
 
 log = logging.getLogger(__name__)
+
+
+#: The thread-local :class:`ErrLog` used to nest elogs.
+_nesting_errlog = contextvars.ContextVar('errlog', default=None)
+
+
+def nesterrlog(parent,
+               *exceptions,
+               token: Union[bool, str] = None,
+               doing=None,
+               raise_immediately=None,
+               warn_log: Callable = None,
+               info_log: Callable = None):
+    """
+    To nest errlogs, prefer this function instead of this :class:`ErrLog()` constructor,
+    or else you must keep a reference on the last enclosing errlog and
+    explicitly call :meth:`ErrLog.__call__()` on it.
+    """
+    enclosing_elog = _nesting_errlog.get()  # type: ignore
+    if enclosing_elog is None:
+        elog = ErrLog(
+            parent,
+            *exceptions,
+            token=token, doing=doing,
+            raise_immediately=raise_immediately,
+            warn_log=warn_log,
+            info_log=info_log,
+        )
+    else:
+        elog = enclosing_elog(
+            *exceptions,
+            parent=parent,
+            token=token, doing=doing,
+            raise_immediately=raise_immediately,
+            warn_log=warn_log,
+            info_log=info_log,
+        )
+
+    return elog
 
 
 def _idstr(obj):
@@ -184,6 +233,12 @@ _no_value = object()
 class ErrLog(cmdlets.Replaceable, trt.HasTraits):
     """
     Collects errors in "stacked" contexts and delays or ignores ("forces") them.
+
+    .. NOTE::
+        To nest errlogs, prefer :func:`nesterrlog()` instead of this constructor,
+        or else you must keep a reference on the last enclosing errlog and
+        explicitly call :meth:`ErrLog.__call__()` on it.
+        .
 
     - Unknown errors (not in `exceptions`) always bubble up immediately.
     - Any "forced" errors are collected and logged in `warn_log` on context-exit,
@@ -393,7 +448,7 @@ class ErrLog(cmdlets.Replaceable, trt.HasTraits):
 
         changes = {
             'exceptions': exceptions or (Exception, ),
-            'token': token
+            'token': token,
         }
 
         fields = 'parent doing raise_immediately warn_log info_log'
@@ -418,6 +473,9 @@ class ErrLog(cmdlets.Replaceable, trt.HasTraits):
                                               self.is_forced,
                                               self.token)
         new_errlog = self.replace(_anchor=self._active, _active=None)
+
+        ## Nest.
+        self._nesting_token = _nesting_errlog.set(new_errlog)  # type: ignore
 
         return new_errlog
 
@@ -445,6 +503,12 @@ class ErrLog(cmdlets.Replaceable, trt.HasTraits):
                           (coords, doing, subtasks))
 
     def __exit__(self, exctype, ex, _exctb):
+        ## De-nest.
+        #
+        assert getattr(self, '_nesting_token', None), self
+        _nesting_errlog.reset(self._nesting_token)
+        self._nesting_token = None
+
         ## A 3-state flag:
         #  - None: no exc
         #  - False: raising
@@ -529,7 +593,7 @@ def errlogged(*errlog_args, **errlog_kw):
     def decorate(func):
         @contextlib.wraps(func)
         def inner(forceable, *args, **kw):
-            errlog = ErrLog(forceable, *errlog_args, **errlog_kw)
+            errlog = nesterrlog(forceable, *errlog_args, **errlog_kw)
             inner.errlog = errlog
             with errlog(*errlog_args, **errlog_kw):
                 return func(forceable, *args, **kw)

@@ -286,37 +286,39 @@ def test_Forceable_is_forced(force, token, exp):
 
 
 def test_errlog_thread_context(monkeypatch):
-    from polyvers.cmdlet.errlog import ErrLog
+    from polyvers.cmdlet import errlog
 
     class F(cmdlets.Forceable, trt.HasTraits):
         pass
 
     enter_passes = 0
 
-    def counting_enter(self):
-        nonlocal enter_passes
+    class CountingErrLog(errlog.ErrLog):
+        def __enter__(self):
+            nonlocal enter_passes
 
-        enter_passes += 1
-        return self
+            enter_passes += 1
+            return super().__enter__()
 
-    monkeypatch.setattr(ErrLog, '__enter__', counting_enter)
+    monkeypatch.setattr(errlog, 'ErrLog', CountingErrLog)
 
     frc1 = F()
     frc2 = F()
 
+    assert errlog._nesting_errlog.get() is None
     with frc1.errlogged() as erl1:
         assert erl1.parent == frc1
-        assert cmdlets._current_errlog.get() is erl1
+        assert errlog._nesting_errlog.get() is erl1
         assert enter_passes == 1
-        
+
         with frc2.errlogged() as erl2:
-            assert cmdlets._current_errlog.get() is erl2
+            assert errlog._nesting_errlog.get() is erl2
             assert erl2.parent == frc2
             assert erl1._root_node is erl2._root_node
             assert enter_passes == 2
-            
-        assert cmdlets._current_errlog.get() is erl1
-    assert cmdlets._current_errlog.get() is None
+
+        assert errlog._nesting_errlog.get() is erl1
+    assert errlog._nesting_errlog.get() is None
 
 
 def test_CfgFilesRegistry_consolidate_posix_1():

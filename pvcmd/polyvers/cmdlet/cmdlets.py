@@ -55,7 +55,6 @@ import os
 import re
 
 from boltons.setutils import IndexedSet as iset
-import contextvars
 
 import os.path as osp
 
@@ -429,10 +428,6 @@ class Printable(metaclass=trt.MetaHasTraits):
         return '%s(%s)' % (cls_name, trait_values_msg)
 
 
-#: The global :class:`ErrLog` used by :meth:`Forceable.errlogged()`.
-_current_errlog = contextvars.ContextVar('errlog', default=None)
-
-
 class Forceable(metaclass=trt.MetaHasTraits):
     """Mixin to facilitate "forcing" actions by ignoring/delaying their errors. """
     force = ListTrait(
@@ -473,7 +468,6 @@ class Forceable(metaclass=trt.MetaHasTraits):
             return True
         return isinstance(token, str) and '*' in force
 
-    @contextlib.contextmanager
     def errlogged(self,
                   *exceptions,
                   token: Union[bool, str] = None,
@@ -507,30 +501,14 @@ class Forceable(metaclass=trt.MetaHasTraits):
         ## TODO: decouple `force` from `ErrLog`.
         from . import errlog
 
-        enclosing_elog: Optional[errlog.ErrLog] = _current_errlog.get()  # type: ignore
-        if enclosing_elog is None:
-            elog = errlog.ErrLog(
-                self,
-                *exceptions,
-                token=token, doing=doing,
-                raise_immediately=raise_immediately,
-                warn_log=warn_log,
-                info_log=info_log,
-            )
-        else:
-            elog = enclosing_elog(
-                *exceptions,
-                parent=self,
-                token=token, doing=doing,
-                raise_immediately=raise_immediately,
-                warn_log=warn_log,
-                info_log=info_log,
-            )
-        token = _current_errlog.set(elog)  # type: ignore
-        try:
-            yield elog
-        finally:
-            _current_errlog.reset(token)  # type: ignore
+        return errlog.nesterrlog(
+            self,
+            *exceptions,
+            token=token, doing=doing,
+            raise_immediately=raise_immediately,
+            warn_log=warn_log,
+            info_log=info_log,
+        )
 
 
 class CmdletsInterpolation(interpctxt.InterpolationContext):
