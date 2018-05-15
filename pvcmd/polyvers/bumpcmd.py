@@ -196,6 +196,7 @@ class BumpCmd(cli._SubCmd):
                              all=True,
                              sign=self.sign_commmits or None,
                              dry_run=self.dry_run or None,
+                             allow_empty=True  # empty when no engraves!
                              )
         if self.dry_run:
             self.log.warning('PRETEND commit: %s' % out)
@@ -260,10 +261,10 @@ class BumpCmd(cli._SubCmd):
                                   (prj.pname, prj.current_version, prj.version)
                                   for prj in projects))
 
-    def start(self):
-        with self.errlogged(doing="running cmd '%s'" % self.name,
-                            info_log=self.log.info):
-            return super().start()
+    # def start(self):
+    #     with self.errlogged(doing="running cmd '%s'" % self.name,
+    #                         info_log=self.log.info):
+    #         return super().start()
 
 
 BumpCmd.flags = {  # type: ignore
