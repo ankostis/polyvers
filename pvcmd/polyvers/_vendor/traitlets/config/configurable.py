@@ -25,8 +25,6 @@ from ipython_genutils.text import indent, dedent, wrap_paragraphs
 #-----------------------------------------------------------------------------
 # Helper classes for Configurables
 #-----------------------------------------------------------------------------
-
-
 class ConfigurableError(Exception):
     pass
 
@@ -138,8 +136,9 @@ class Configurable(HasTraits):
         if self.parent:
             cfgs.append(self.parent._find_my_config(cfg))
         my_config = Config()
+        my_section_names = self.section_names()
         for c in cfgs:
-            for sname in self.section_names():
+            for sname in my_section_names:
                 # Don't do a blind getattr as that would cause the config to
                 # dynamically create the section with name Class.__name__.
                 if c._has_section(sname):
