@@ -218,7 +218,7 @@ class _ErrNode(trt.HasTraits):
             msg_parts.append(cnodes_msg)
         if self.err:
             errtype = 'ignored' if self.is_forced else 'delayed'
-            force_msg = '' if self.token is None else ' (force: %r)' % self.token
+            force_msg = '' if self.token is None else ' (--force=%s)' % self.token
             msg_parts.append("\n  %s%s: %s" % (
                 errtype, force_msg, _exstr(self.err)))
 

@@ -9,6 +9,7 @@
 from polyvers._vendor.traitlets import traitlets as trt
 from polyvers.cmdlet import cmdlets, errlog
 from polyvers.cmdlet.errlog import _ErrNode, ErrLog
+from tests.conftest import check_text
 import logging
 import re
 
@@ -72,9 +73,9 @@ _err2 = KeyError()
      "while zing:\n  delayed: ValueError: hi"),
     ({'doing': 'rafting', 'err': _err}, "while rafting:\n  delayed: ValueError"),
     ({'is_forced': True, 'err': _err}, "while ??:\n  ignored: ValueError"),
-    ({'token': True, 'err': _err}, "while ??:\n  delayed (force: True): ValueError"),
+    ({'token': True, 'err': _err}, "while ??:\n  delayed (--force=True): ValueError"),
     ({'is_forced': True, 'token': 'abc', 'err': _err},
-     "while ??:\n  ignored (force: 'abc'): ValueError"),
+     "while ??:\n  ignored (--force=abc): ValueError"),
     ({'doing': 'rafting', 'is_forced': True, 'err': _err},
      "while rafting:\n  ignored: ValueError"),
 
@@ -289,11 +290,11 @@ def test_ErrLog_nested_all_captured_and_info(caplog, logcollector, forceable):
     exp_warn = tw.dedent("""\
         Ignored 3 errors while starting:
           - while doing-1:
-            ignored (force: True): ValueError: Wrong-1!
+            ignored (--force=True): ValueError: Wrong-1!
           - while doing-2:
             - while do-doing:
-              ignored (force: True): AssertionError: Good-do-do
-            ignored (force: True): ValueError: better-2""")
+              ignored (--force=True): AssertionError: Good-do-do
+            ignored (--force=True): ValueError: better-2""")
     #print(caplog.text)
     assert exp_warn in caplog.text
 
@@ -334,7 +335,7 @@ def test_ErrLog_nested_warn_while_raising(caplog, forceable):
     exp = tw.dedent("""\
         Ignored 1 errors while starting:
           - while doing-1:
-            ignored (force: True): ValueError: Wrong-1!
+            ignored (--force=True): ValueError: Wrong-1!
     """)
     assert exp in caplog.text
 
@@ -361,14 +362,14 @@ def test_ErrLog_nested_forced(forceable, caplog):
     exp = tw.dedent("""\
         Collected 4 errors (2 ignored) while starting:
           - while doing-1:
-            ignored (force: 'abc'): ValueError: Wrong-1!
+            ignored (--force=abc): ValueError: Wrong-1!
           - while ??:
             delayed: KeyError
           - while doing-2:
-            delayed (force: 'BAD'): KeyError: 'Wrong-2'
-          ignored (force: 'abc'): KeyError: 'Wrong-2'""")
+            delayed (--force=BAD): KeyError: 'Wrong-2'
+          ignored (--force=abc): KeyError: 'Wrong-2'""")
     #print(exinfo.value)
-    assert exp in str(exinfo.value)
+    check_text(str(exinfo.value), exp)
 
 
 def test_ErrLog_decorator(caplog):

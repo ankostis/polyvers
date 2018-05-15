@@ -67,9 +67,10 @@ def _check_text(lines, require, forbid, match_func):
                 illegals[iterm] = i
 
     missed = set(require) - matches
-    err1 = missed and "\n  - MISSES: \n    - %s" % '\n    - '.join(missed) or ''
-    err2 = illegals and "\n  - ILLEGALS: \n    - %s" % '\n    - '.join(
-        "%r in line(%i): %s" % (k, v + 1, lines[v]) for k, v in illegals.items()) or ''
+    err1 = missed and "\n  - MISSES: %s" % '\n    - '.join([''] + list(missed)) or ''
+    err2 = illegals and "\n  - ILLEGALS: %s" % '\n    - '.join(
+        [''] + ["%r in line(%i): %s" % (k, v + 1, lines[v])
+                for k, v in illegals.items()]) or ''
 
     return err1, err2
 
@@ -104,15 +105,15 @@ def check_text(text, require=(), forbid=(), is_regex=False):
         text = text.split('\n')
 
     if isinstance(require, str):
-        require = [require]
+        require = require.split('\n')
     if isinstance(forbid, str):
-        forbid = [forbid]
+        forbid = forbid.split('\n')
 
     err1, err2 = _check_text(text, require, forbid, match_func)
 
     if err1 or err2:
         pytest.fail("Text errors: %s %s\n  text: %s" %
-                    (err1, err2, '\n    '.join(text)))
+                    (err1, err2, '\n   |'.join([''] + list(text))))
 
 
 @pytest.fixture()
