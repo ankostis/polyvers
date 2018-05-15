@@ -5,7 +5,7 @@
 # Distributed under the terms of the Modified BSD License.
 
 
-from ruamel.yaml import YAML  # @UnresolvedImport
+from ruamel import yaml  # @UnresolvedImport
 
 from .._vendor.traitlets import config as trc
 
@@ -25,7 +25,7 @@ class YAMLFileConfigLoader(trc.loader.FileConfigLoader):
 
     def __init__(self, *args, **kw):
         if not self.yaml:
-            YAMLFileConfigLoader.yaml = YAML(typ='rt')  # round-trip
+            YAMLFileConfigLoader.yaml = yaml.YAML(typ='safe')  # round-trip
         super().__init__(*args, **kw)
 
     def load_config(self):
