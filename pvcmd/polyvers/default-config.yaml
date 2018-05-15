@@ -1,8 +1,0 @@
-## Generic comment
-#
-PolyversCmd:
-    projects_scan:
-        globs:
-            - "**/setup.py"
-        grafts:
-            - regex: '\b(name|PROJECT|APPNAME) *= *([''"])(?P<pname>[\w\-.]+)\2'
