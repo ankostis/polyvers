@@ -220,8 +220,11 @@ class BumpCmd(cli._SubCmd):
         fproc = engrave.FileProcessor(parent=self)
         match_map = fproc.scan_projects(projects)
         if fproc.nmatches() == 0:
-            raise cmdlets.CmdException(
-                "No version-engraving matched, bump aborted.")
+            with self.errlogged(
+                    doing="checking if at least one version-engraving happened",
+                    token='noengraves'):
+                raise cmdlets.CmdException(
+                    "No version-engravings happened, bump aborted.")
 
         ## Finally stop before serious damage happens,
         #  (but only after havin run some validation to run, above).

@@ -61,7 +61,7 @@ def test_bump_cmd_bad(mutable_repo, caplog, capsys):
         caplog.text,
         require=[
             r"Auto-discovered \d+ sub-project\(s\)",
-            r"No version-engraving matched, bump aborted.",
+            r"No version-engravings happened, bump aborted.",
         ], forbid=[
             r"Auto-discovered versioning scheme",
             r"Cannot auto-discover versioning scheme,"
