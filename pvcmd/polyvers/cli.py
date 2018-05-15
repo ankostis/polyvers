@@ -364,6 +364,7 @@ class InitCmd(_SubCmd):
              ({'InitCmd': {'update': True}}, _init_update_help)}
 
     def _read_non_user_configs(self) -> trc.Config:
+        "Avoid writting user-specific configs as project ones."
         config_paths = [p for p in self.config_paths
                         if not p.startswith('~')]
         return self.read_config_files(config_paths)

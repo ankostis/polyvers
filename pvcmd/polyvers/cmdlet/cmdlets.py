@@ -366,6 +366,7 @@ class Replaceable:
 
     def _load_config(self, cfg, section_names=None, traits=None):
         """load traits from a Config object"""
+        ## Overriden just to allow readonly traits to read from configs.
 
         if traits is None:
             traits = self.traits(config=True)
