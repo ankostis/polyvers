@@ -6,12 +6,12 @@
 # You may not use this work except in compliance with the Licence.
 # You may obtain a copy of the Licence at: http://ec.europa.eu/idabc/eupl
 #
+from polyvers import cli
+from polyvers.utils.oscmd import cmd
 import re
 
 import pytest
 
-from polyvers.__main__ import main
-from polyvers.utils.oscmd import cmd
 import textwrap as tw
 
 from .conftest import (
@@ -33,7 +33,7 @@ def test_bump_cmd_bad(mutable_repo, caplog, capsys):
     ## No flag/setup.py
     #  Both auto-discoveries fail
     #
-    rc = main('bump -v 0.0.1'.split())
+    rc = cli.run('bump -v 0.0.1'.split())
     assert rc != 0
     check_text(
         caplog.text,
@@ -55,7 +55,7 @@ def test_bump_cmd_bad(mutable_repo, caplog, capsys):
     caplog.clear()
     make_setup_py_without_version(mutable_repo, 'base')
 
-    rc = main('bump --mono-project -v 1.1.1'.split())
+    rc = cli.run('bump --mono-project -v 1.1.1'.split())
     assert rc != 0
     check_text(
         caplog.text,
@@ -80,7 +80,7 @@ def test_bump_cmd_mono_project(mutable_repo, caplog, capsys):
     caplog.clear()
     setupy_fpath = make_setup_py(mutable_repo, 'simple')
 
-    rc = main('bump  -v --mono-project 0.0.1'.split())
+    rc = cli.run('bump  -v --mono-project 0.0.1'.split())
     # with capsys.disabled():
     #     print(caplog.text)
     assert rc == 0
@@ -118,7 +118,7 @@ def test_bump_cmd_monorepo(mutable_repo, caplog, capsys):
     caplog.clear()
     setupy_fpath = make_setup_py(mutable_repo, 'simple')
 
-    rc = main('bump  -v --monorepo 0.0.1'.split())
+    rc = cli.run('bump  -v --monorepo 0.0.1'.split())
     # with capsys.disabled():
     #     print(caplog.text)
     assert rc == 0

@@ -15,6 +15,7 @@ import logging
 
 from boltons.setutils import IndexedSet as iset
 
+import os.path as osp
 import polyversion as pvlib
 import textwrap as tw
 
@@ -574,3 +575,52 @@ Supported tokens:
   'glob'      : keep-going even if glob-patterns are invalid.
   'tag'       : replace existing tag.
 """
+
+
+def run(argv=(), cmd_consumer=None, **app_init_kwds):
+    """
+    Handle some exceptions politely and return the exit-code.
+
+    :param argv:
+        Cmd-line arguments, nothing assumed if nohing given.
+    :param cmd_consumer:
+        Specify a different main-mup, :class:`mpu.PrintConsumer` by default.
+        See :func:`mpu.pump_cmd()`.
+    """
+    ## At these early stages, any log cmd-line option
+    #  enable DEBUG logging ; later will be set by `baseapp` traits.
+    from .utils import logconfutils as mlu
+    log_level, argv = mlu.log_level_from_argv(
+        argv,
+        start_level=25,  # 20=INFO, 25=NOTICE (when patched), 30=WARNING
+        eliminate_quiet=True)
+
+    log = logging.getLogger('%s.main' % APPNAME)
+    logconf_yaml = osp.join('~', '.%s-logconf.yaml' % APPNAME)
+    mlu.init_logging(level=log_level, logconf=logconf_yaml)
+
+    ## Imports in separate try-block due to CmdException.
+    #
+    try:
+        from .utils import mainpump as mpu
+        from ._vendor.traitlets import TraitError
+    except Exception as ex:
+        ## Print stacktrace to stderr and exit-code(-1).
+        return mlu.exit_with_pride(ex, logger=log)
+
+    try:
+        cmd = PolyversCmd.make_cmd(argv, **app_init_kwds)  # @UndefinedVariable
+        return mpu.pump_cmd(cmd.start(), consumer=cmd_consumer) and 0
+    except (cmdlets.CmdException, TraitError) as ex:
+        log.debug('App exited due to: %r', ex, exc_info=1)
+        ## Suppress stack-trace for "expected" errors but exit-code(1).
+        msg = str(ex)
+        if type(ex) is not cmdlets.CmdException:
+            msg = '%s: %s' % (type(ex).__name__, ex)
+        return mlu.exit_with_pride(msg, logger=log)
+    except Exception as ex:
+        ## Log in DEBUG not to see exception x2, but log it anyway,
+        #  in case log has been redirected to a file.
+        log.debug('App failed due to: %r', ex, exc_info=1)
+        ## Print stacktrace to stderr and exit-code(-1).
+        return mlu.exit_with_pride(ex, logger=log)

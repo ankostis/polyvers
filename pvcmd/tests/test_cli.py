@@ -7,7 +7,6 @@
 # You may obtain a copy of the Licence at: http://ec.europa.eu/idabc/eupl
 #
 from polyvers import cli, __version__, __updated__, pvproject, pvtags
-from polyvers.__main__ import main
 from polyvers._vendor.traitlets import config as trc
 from polyvers.cmdlet import cmdlets
 from polyvers.utils import yamlutil as yu
@@ -77,7 +76,7 @@ def test_all_cmds_help_version(cmd, capsys):
 def test_config_cmd(cmd, match, illegal):
     ## VERY IMPORTANT TCs FOR ConfigCmd!!!
     lc = ListConsumer()
-    rc = main(cmd.split(), cmd_consumer=lc)
+    rc = cli.run(cmd.split(), cmd_consumer=lc)
     assert rc == 0
     check_text(lc.items, match, illegal)
     #print('\n'.join(lc.items))
@@ -243,7 +242,7 @@ def test_bootstrapp_projects_autodiscover_monorepo(mutable_pvtags_repo, caplog):
 def test_init_cmd_mono_project(mutable_vtags_repo):
     mutable_vtags_repo.chdir()
 
-    rc = main('init --mono-project --pdata f=g -v'.split())
+    rc = cli.run('init --mono-project --pdata f=g -v'.split())
     assert rc == 0
 
     cfg = trc.Config()
@@ -316,7 +315,7 @@ def test_status_cmd_vtags(mutable_repo, caplog, capsys):
     caplog.clear()
     make_setup_py(mutable_repo, 'simple')
 
-    rc = main('status --mono-project -v'.split())
+    rc = cli.run('status --mono-project -v'.split())
     assert rc == 0
     check_text(
         caplog.text,
@@ -330,7 +329,7 @@ def test_status_cmd_vtags(mutable_repo, caplog, capsys):
     assert not err
     assert 'simple:\n  version:\n' == out
 
-    rc = main('status --mono-project --all'.split())
+    rc = cli.run('status --mono-project --all'.split())
     assert rc == 0
     out, err = capsys.readouterr()
     assert 'simple:\n  version:\n  history: []\n  basepath: .\n' == out
@@ -341,7 +340,7 @@ def test_status_cmd_vtags(mutable_repo, caplog, capsys):
     caplog.clear()
 
     cmd.git.tag('v0.1.0', m='annotate!')
-    rc = main('status -v'.split())
+    rc = cli.run('status -v'.split())
     assert rc == 0
     check_text(
         caplog.text,
@@ -356,7 +355,7 @@ def test_status_cmd_vtags(mutable_repo, caplog, capsys):
     assert not err
     assert {'simple': {'version': 'v0.1.0'}} == yu.yloads(out)
 
-    rc = main('status --all'.split())
+    rc = cli.run('status --all'.split())
     assert rc == 0
     out, err = capsys.readouterr()
     exp = yu.yloads("""
@@ -368,17 +367,17 @@ def test_status_cmd_vtags(mutable_repo, caplog, capsys):
     """)
     assert dict_eq(exp, yu.yloads(out))
 
-    rc = main('status --all simple'.split())
+    rc = cli.run('status --all simple'.split())
     assert rc == 0
     out, err = capsys.readouterr()
     assert dict_eq(exp, yu.yloads(out))
 
-    rc = main('status --all simple foobar'.split())
+    rc = cli.run('status --all simple foobar'.split())
     assert rc == 0
     out, err = capsys.readouterr()
     assert dict_eq(exp, yu.yloads(out))
 
-    rc = main('status --all foobar'.split())
+    rc = cli.run('status --all foobar'.split())
     assert rc == 0
     out, err = capsys.readouterr()
     assert not yu.yloads(out)
@@ -394,7 +393,7 @@ def test_status_cmd_pvtags(mutable_repo, caplog, capsys):
     make_setup_py(mutable_repo, 'base')
     make_setup_py(mutable_repo / 'foo_project', 'foo')
 
-    rc = main('status --monorepo -v'.split())
+    rc = cli.run('status --monorepo -v'.split())
     assert rc == 0
     check_text(
         caplog.text,
@@ -408,7 +407,7 @@ def test_status_cmd_pvtags(mutable_repo, caplog, capsys):
     assert not err
     assert {'base': {'version': None}, 'foo': {'version': None}} == yu.yloads(out)
 
-    rc = main('status --monorepo --all'.split())
+    rc = cli.run('status --monorepo --all'.split())
     assert rc == 0
     out, err = capsys.readouterr()
     exp = yu.yloads('base:\n  version:\n  history: []\n  basepath: .\n'
@@ -421,7 +420,7 @@ def test_status_cmd_pvtags(mutable_repo, caplog, capsys):
     caplog.clear()
 
     cmd.git.tag('base-v0.1.0', m='annotate!')
-    rc = main('status -v'.split())
+    rc = cli.run('status -v'.split())
     assert rc == 0
     check_text(
         caplog.text,
@@ -437,7 +436,7 @@ def test_status_cmd_pvtags(mutable_repo, caplog, capsys):
     exp = yu.yloads("base:\n  version: base-v0.1.0\nfoo:\n  version:\n")
     assert dict_eq(exp, yu.yloads(out))
 
-    rc = main('status --all'.split())
+    rc = cli.run('status --all'.split())
     assert rc == 0
     out, err = capsys.readouterr()
     exp = yu.yloads("""
@@ -453,22 +452,22 @@ def test_status_cmd_pvtags(mutable_repo, caplog, capsys):
     """)
     assert dict_eq(exp, yu.yloads(out))
 
-    rc = main('status --all base foo'.split())
+    rc = cli.run('status --all base foo'.split())
     assert rc == 0
     out, err = capsys.readouterr()
     assert dict_eq(exp, yu.yloads(out))
 
-    rc = main('status --all base foo BAD'.split())
+    rc = cli.run('status --all base foo BAD'.split())
     assert rc == 0
     out, err = capsys.readouterr()
     assert dict_eq(exp, yu.yloads(out))
 
-    rc = main('status --all BAD'.split())
+    rc = cli.run('status --all BAD'.split())
     assert rc == 0
     out, err = capsys.readouterr()
     assert not out
 
-    rc = main('status --all foo BAD'.split())
+    rc = cli.run('status --all foo BAD'.split())
     assert rc == 0
     exp = yu.yloads("""
     foo:
