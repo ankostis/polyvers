@@ -22,6 +22,10 @@ from .cmdlet import cmdlets
 VerLike = Union[str, Version]
 
 
+def _packver(v: VerLike) -> Version:
+    return v if isinstance(v, Version) else Version(v)
+
+
 class VersionError(cmdlets.CmdException):
     pass
 
@@ -97,7 +101,7 @@ def _add_pre(base_tuple, rel_label, rel_num):
 
 
 def _add_versions(base_ver: VerLike, relative_ver):
-    bver = base_ver if isinstance(base_ver, Version) else Version(base_ver)
+    bver = _packver(base_ver)
     m = _relative_ver_regex.match(str(relative_ver))
     if not m:
         raise VersionError("Invalid relative version: {}".format(relative_ver))
@@ -190,7 +194,7 @@ def add_versions(v1: VerLike, *rel_versions: VerLike) -> Version:
     for v2 in rel_versions:
         new_version = _add_versions(new_version, v2)
 
-    v1 = Version(v1)
+    v1 = _packver(v1)
     ## TODO: make backward bump forceable.
     if new_version < v1:
         raise VersionError("Backward bump is forbidden: %s -/-> %s" %
