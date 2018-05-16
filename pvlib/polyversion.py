@@ -231,6 +231,8 @@ def polyversion(project, default=None, repo_path=None,
         tag_regex = vtag_regex if mono_project else pvtag_regex
     if not repo_path:
         repo_path = _caller_fpath()
+        if not repo_path:
+            repo_path = '.'
 
     tag_pattern = _interp_fnmatch(tag_frmt, project)
     tag_regex = re.compile(_interp_regex(tag_regex, project))
