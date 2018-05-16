@@ -151,13 +151,27 @@ sub-projects:
 .. code-block:: console
 
     $ polyvers status
-    mainprog:
-      version:
-    core:
-      version:
+    - mainprog
+    - core
 
 Indeed there are no tags in in git-history for the tool to derive and display
-project-versions.
+project-versions, so only project-names are shown.  With ``--all`` option
+more gets displayed:
+
+.. code-block:: console
+
+    $ polyvers status -a
+    - pname: mainprog
+      basepath: .
+      gitver:
+      history: []
+    - pname: core
+      basepath: core-lib
+      gitver:
+      history: []
+
+..where ``gitver`` would be the result of ``git-describe``.
+
 
 3. Bump versions
 ----------------
@@ -177,10 +191,8 @@ file modification for engraving the current version in the leaf "Release" commit
 .. code-block:: console
 
     $ polyvers status
-    mainprog:
-      version: 0.0.0
-    core:
-      version: 0.0.0
+    - mainprog-v0.0.0
+    - core-v0.0.0
 
     $ git lg    # Ok, augmented `lg` output a bit here...HEAD --> UPPER branch.
     COMMITS BRANCH TAGS                 REMARKS
