@@ -63,10 +63,9 @@ When bumping the version of sub-project(s), *polyvers* does the following:
 
 Additional capabilities and utilities:
 
-- **polyversion** library code to extract sub-project's version from past tags
-  (provided a a separate subproject here);
-
-- (``pip install -e <project>``) all subprojects in "develop mode".
+- **polyversion** library code to extract sub-project's version from past tags;
+  provided as a separate subproject here, for not depending on the full
+  development tool.
 
 - It is still possible to use plain **version tags (vtags)** like ``v0.1.0``,
   assuming you have a single project (called hereinafter a *mono-project*)
@@ -74,8 +73,8 @@ Additional capabilities and utilities:
 .. _opening-end:
 
 .. contents:: Table of Contents
-  :backlinks: top
-  :depth: 4
+   :backlinks: top
+   :depth: 4
 
 
 .. _usage:
@@ -102,7 +101,7 @@ And you get the ``polyvers`` command:
 
   Actually two projects are installed:
 
-  - **polyvers** tool, for developing python monorepos,
+  - **polyvers** cmd-line tool, for developing python monorepos,
   - **polyversion**: the base python library used by projects developed
     with *polyvers* tool, so that their sources can discover their subproject-version
     on runtime from Git.
@@ -386,32 +385,50 @@ Other Features
 - Always accurate version reported on runtime when run from git repos
   (never again wonder with which version your experimental-data were produced).
 
-.. NOTE::
-   TODO: Extensible with *pre/post release hooks* (e.g. for validating doctests)
-    implemented as `setuptools plugins
-    <http://setuptools.readthedocs.io/en/latest/setuptools.html#dynamic-discovery-of-services-and-plugins>`_.
+Features TODO
+-------------
+pre/post release hooks
+^^^^^^^^^^^^^^^^^^^^^^
+Possible to implement hooks as `setuptools plugins
+ <http://setuptools.readthedocs.io/en/latest/setuptools.html#dynamic-discovery-of-services-and-plugins>`_.
+to run, for example, housekeeping commands on all subprojects like
+``pip install -e <project>`` and immediately start working in "develop mode".
 
-    This functionality would allow running this *shell scripts* before and
-    after every bump::
+ This functionality would also allow to *validate tests* before/after
+ every bump::
 
-        ## Pre-release hook
-        #
-        pytest tests
+     ## Pre-release hook
+     #
+     pytest tests
 
 
-        ## Post-release hook
-        #
-        rm -r dist/* build/*;
-        python setup.py sdist bdist_wheel
-        twine upload dist/*whl -s
+     ## Post-release hook
+     #
+     rm -r dist/* build/*;
+     python setup.py sdist bdist_wheel
+     twine upload dist/*whl -s
+
+Lock release trains as "developmental"
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Specific branches can be selected always to be published into *PyPi* only as
+`PEP-440's "Developmental" releases
+<https://www.python.org/dev/peps/pep-0440/#developmental-releases>`_, meanining that
+users need ``pip install --pre`` to install from such release-trains.
+This is a safeguard to avoid accidentally landing half-baked code to users.
 
 
 Drawbacks & Workarounds
 -----------------------
-- To ``pip``-install python projects from remote URLs is a bit `more complicated
-  <https://pip.pypa.io/en/stable/reference/pip_install/#vcs-support>`_::
+- (not related to this tool) If you don't place a ``setup.py`` file at the root
+  of your git-repo, then it becomes more cumbersome to ``pip`` `install directly
+  from remote URLs <https://pip.pypa.io/en/stable/reference/pip_install/#vcs-support>`_,
+  like this:
+  ::
 
       pip install -e git+https://repo_url/#egg=pkg&subdirectory=pkg_dir
+
+  You may use ``package_dir`` argument to ``setup()`` function
+  (see `setuptools-docs <http://setuptools.readthedocs.io/en/latest/setuptools.html#id10>`_).
 
 - Set branch ``latest`` as default in GitHub to show engraved sub-project version-ids.
 
