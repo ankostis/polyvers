@@ -8,7 +8,7 @@
 #
 """Validate absolute versions or add relative ones on top of a base absolute."""
 
-from typing import Union, Optional
+from typing import Union, Optional, Sequence, List, Mapping, Match
 import re
 
 from packaging.version import InvalidVersion, Version, _parse_letter_version
@@ -20,6 +20,7 @@ from .cmdlet import cmdlets
 
 
 VerLike = Union[str, Version]
+VerLikes = Sequence[VerLike]
 
 
 class VersionError(cmdlets.CmdException):
@@ -88,6 +89,65 @@ def is_version_id_relative(version_str: VerLike) -> bool:
     return _relative_ver_regex.match(str(version_str)) is not None
 
 
+def _group_to_enclosure_index() -> Mapping[str, str]:
+    "Organize groups to respond the Q: which stacked-match to select for some group."
+    enclosure = [  # Extracted from the regex, above.
+        ('op', None),       # not straight-forward to decide
+        ('fix', None),      # not straight-forward to decide
+        ('epoch', None),
+        ('release', None),
+        ('pre', ('fixpre', 'pre_l', 'pre_n')),
+        ('post', ('fixpost', 'post_n1', 'post_l', 'post_n2')),
+        ('dev', ('fixdev', 'dev_l', 'dev_n')),
+        ('local', None),
+    ]
+
+    g2enc = {g: enc
+             for enc, groups in enclosure
+             for g in (groups + (enc, ) if groups else (enc, ))}  # type: ignore
+    return g2enc
+
+
+class RelativeVersions:
+    """
+    Extract captured groups from multiple relative-versions merged as one.
+
+    Capturing-groups from later versions win over earlier ones.
+    """
+    _group_to_enclosure = _group_to_enclosure_index()
+
+    def _parse_relative_versions(self, vers: VerLikes) -> List[Match[str]]:
+        matches = [_relative_ver_regex.match(str(v))
+                   for v in vers]
+        if not all(matches):
+            fail_report = ['%2i: %32s%s' % (i, v, '' if m else ': BAD')
+                           for i, (v, m) in enumerate(zip(vers, matches))]
+            raise VersionError("Invalid relative versions: %s" %
+                               '\n  '.join([''] + fail_report))
+        return matches  # type: ignore
+
+    def __init__(self, vers: VerLikes) -> None:
+        self._stacked_matches = self._parse_relative_versions(vers)[::-1]
+
+    def _first_match(self, group):
+        "Mimic ``re.group()`` but on the match-stack."
+        enc = self._group_to_enclosure[group]
+        for m in self._stacked_matches:
+            if m.group(enc):
+                return m
+
+    def group(self, group):
+        "Mimic ``re.group()`` but on the match-stack."
+        m = self._first_match(group)
+        return m and m.group(group)
+
+    def op_n_group(self, group):
+        m = self._first_match(group)
+        if m:
+            return m.group('op'), m.group(group)
+        return None, None
+
+
 def _add_pre(base_tuple, rel_label, rel_num):
     assert base_tuple is not None or rel_label is not None, (
         base_tuple, rel_label, rel_num)
@@ -103,20 +163,15 @@ def _add_pre(base_tuple, rel_label, rel_num):
         return rlabel, rnum
 
 
-def _add_versions(base_ver: VerLike, relative_ver):
-    ## TODO: epoch vermath, and update README
+def _add_versions(base_ver: VerLike, relative_versions: VerLikes):
     bver = _packver(base_ver)
-    m = _relative_ver_regex.match(str(relative_ver))
-    if not m:
-        raise VersionError("Invalid relative version: {}".format(relative_ver))
+    m = RelativeVersions(relative_versions)
 
-    op = m.group('op')
+    ## Caret(^) operation makes a difference only for release-digits.
+    op, rel_release = m.op_n_group('release')
 
     ver_nums = list(bver.release)
-    rel_release = m.group('release')
     if rel_release:
-        #
-        ## Caret(^) makes a difference only for release-digits.
 
         rel_nums = [int(d) for d in rel_release.split('.')]
         if op == '^':
@@ -192,15 +247,13 @@ def _add_versions(base_ver: VerLike, relative_ver):
     return _packver(new_version)
 
 
-def add_versions(v1: VerLike, *rel_versions: VerLike) -> Version:
+def add_versions(base_ver: VerLike, *rel_versions: VerLike) -> Version:
     """return the "sum" of the the given two versions."""
-    new_version = v1
-    for v2 in rel_versions:
-        new_version = _add_versions(new_version, v2)
+    base_ver = _packver(base_ver)
+    new_version = _add_versions(base_ver, rel_versions)
 
-    v1 = _packver(v1)
     ## TODO: make backward bump forceable.
-    if new_version < v1:
+    if new_version < base_ver:
         raise VersionError("Backward bump is forbidden: %s -/-> %s" %
-                           (v1, new_version))
+                           (base_ver, new_version))
     return new_version
