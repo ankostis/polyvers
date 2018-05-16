@@ -3,6 +3,7 @@
 
 """Setup script *polyvers-cmd*."""
 
+from os import path as osp
 import sys
 
 from setuptools import setup, find_packages
@@ -10,14 +11,16 @@ from setuptools import setup, find_packages
 from pvlib.polyversion import polyversion
 
 
+mydir = osp.dirname(osp.realpath(__file__))
+
 MIN_PYTHON = (3, 6)
 if sys.version_info < MIN_PYTHON:
     sys.exit("Sorry, Python >= %s is required, found: %s" %
              ('.'.join(str(i) for i in MIN_PYTHON), str(sys.version_info)))
-with open('README.rst') as readme_file:
+with open(osp.join(mydir, 'README.rst')) as readme_file:
     readme = readme_file.read()
 
-with open('HISTORY.rst') as history_file:
+with open(osp.join(mydir, 'HISTORY.rst')) as history_file:
     history = history_file.read()
 
 ## Remove 1st header-mark line or else,
@@ -47,6 +50,7 @@ test_requirements = [
     #'mypy',
 ]
 PROJECT = 'polyvers'
+
 setup(
     name=PROJECT,
     version=polyversion(PROJECT, '0.0.0'),
