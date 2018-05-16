@@ -202,12 +202,10 @@ def make_match_all_vtags_project(**project_kw) -> pvproject.Project:
                              **project_kw)
 
 
-def _fetch_all_tags(acli, tag_patterns: List[str],
+def _fetch_all_tags(tag_patterns: List[str],
                     pnames_msg: str):
-    acli.tag
-
     with git_project_errors_handled(pnames_msg):
-        out = acli('--list', *tag_patterns)
+        out = cmd.git.tag._(sort='-taggerdate')('--list', *tag_patterns)
 
     return out and out.split('\n') or ()
 
@@ -227,7 +225,7 @@ def _parse_git_tag_ref_lines(tag_ref_lines: List[str],
     return tags
 
 
-def _fetch_annotated_tags(acli, tag_patterns: Sequence[str],
+def _fetch_annotated_tags(tag_patterns: Sequence[str],
                           pnames_msg: str) -> List[str]:
     """
     Collect only non-annotated tags (those pointing to tag-objects).
@@ -236,8 +234,9 @@ def _fetch_annotated_tags(acli, tag_patterns: Sequence[str],
     """
     tag_patterns = ['refs/tags/' + pat for pat in tag_patterns]
     with git_project_errors_handled(pnames_msg):
-        out = acli.for_each_ref(*tag_patterns,
-                                format='%(objecttype) %(refname:short)')
+        out = cmd.git.for_each_ref(*tag_patterns,
+                                   format='%(objecttype) %(refname:short)',
+                                   sort='-taggerdate')
 
     if not out:
         return []
@@ -293,11 +292,10 @@ def populate_pvtags_history(*projects: pvproject.Project,
             tag_patterns.append(proj.tag_fnmatch(is_release))
 
     pnames_msg = ', '.join(p.pname for p in projects)
-    acli = cmd.git
     if include_lightweight:
-        tags = _fetch_all_tags(acli, tag_patterns, pnames_msg)
+        tags = _fetch_all_tags(tag_patterns, pnames_msg)
     else:
-        tags = _fetch_annotated_tags(acli, tag_patterns, pnames_msg)
+        tags = _fetch_annotated_tags(tag_patterns, pnames_msg)
 
     for proj in projects:
         proj._pvtags_collected = []

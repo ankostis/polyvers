@@ -238,10 +238,12 @@ class Project(cmdlets.Replaceable, cmdlets.Printable, yu.YAMLable, cmdlets.Spec)
 
     amend = Bool(
         config=True,
-        help="Amend the last version tag of the project, don't bump.")
+        help="""
+        Amend the last version tag of the project, don't bump
+        (one older version assumed)""")
 
     def load_current_version_from_history(self):
-        vtag_index = -2 if self.amend else -1
+        vtag_index = 1 if self.amend else 0
         try:
             tag = self.pvtags_history[vtag_index]
             self.current_version = self.version_from_pvtag(tag)

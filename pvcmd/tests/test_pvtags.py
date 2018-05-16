@@ -125,22 +125,22 @@ def test_populate_pvtags_history_per_project(ok_repo, project1, project2, foo):
         project1.pvtags_history
 
     pvtags.populate_pvtags_history(project1)
-    assert project1.pvtags_history == ['proj1-v0.0.0', 'proj1-v0.0.1']
+    assert project1.pvtags_history == ['proj1-v0.0.1', 'proj1-v0.0.0']
 
     pvtags.populate_pvtags_history(project2)
     assert project2.pvtags_history == []
     pvtags.populate_pvtags_history(project2, include_lightweight=True)
-    assert project2.pvtags_history == ['proj-2-V0.2.0', 'proj-2-V0.2.1']
+    assert project2.pvtags_history == ['proj-2-V0.2.1', 'proj-2-V0.2.0']
 
     ## Ensure no side-effects.
-    assert project1.pvtags_history == ['proj1-v0.0.0', 'proj1-v0.0.1']
+    assert project1.pvtags_history == ['proj1-v0.0.1', 'proj1-v0.0.0']
 
     pvtags.populate_pvtags_history(foo)
     assert foo.pvtags_history == []
 
     ## Ensure no side-effects.
-    assert project1.pvtags_history == ['proj1-v0.0.0', 'proj1-v0.0.1']
-    assert project2.pvtags_history == ['proj-2-V0.2.0', 'proj-2-V0.2.1']
+    assert project1.pvtags_history == ['proj1-v0.0.1', 'proj1-v0.0.0']
+    assert project2.pvtags_history == ['proj-2-V0.2.1', 'proj-2-V0.2.0']
 
 
 def test_populate_pvtags_history_multi_projects(ok_repo, project1, project2, foo):
@@ -148,8 +148,8 @@ def test_populate_pvtags_history_multi_projects(ok_repo, project1, project2, foo
 
     pvtags.populate_pvtags_history(project1, project2, foo,
                                    include_lightweight=True)
-    assert project1.pvtags_history == ['proj1-v0.0.0', 'proj1-v0.0.1']
-    assert project2.pvtags_history == ['proj-2-V0.2.0', 'proj-2-V0.2.1']
+    assert project1.pvtags_history == ['proj1-v0.0.1', 'proj1-v0.0.0']
+    assert project2.pvtags_history == ['proj-2-V0.2.1', 'proj-2-V0.2.0']
     assert foo.pvtags_history == []
 
 
@@ -187,7 +187,7 @@ def test_project_matching_all_pvtags(ok_repo, project1):
     all_pvtags = pvtags.make_match_all_pvtags_project()
     pvtags.populate_pvtags_history(all_pvtags)
     assert all_pvtags.pname == '<PVTAG>'
-    assert all_pvtags.pvtags_history == ['proj1-v0.0.0', 'proj1-v0.0.1']
+    assert all_pvtags.pvtags_history == ['proj1-v0.0.1', 'proj1-v0.0.0']
 
     all_vtags = pvtags.make_match_all_vtags_project()
     assert all_vtags.pname == '<VTAG>'
@@ -218,8 +218,8 @@ def test_simple_project(mutable_pvtags_repo, project2, caplog):
     pvtags.populate_pvtags_history(project2, all_pvtags, all_vtags,
                                    include_lightweight=True)
     assert all_vtags.pvtags_history == ['v12.0', 'v123']
-    assert all_pvtags.pvtags_history == ['proj1-v0.0.0', 'proj1-v0.0.1']
-    assert project2.pvtags_history == ['proj-2-V0.2.0', 'proj-2-V0.2.1']
+    assert all_pvtags.pvtags_history == ['proj1-v0.0.1', 'proj1-v0.0.0']
+    assert project2.pvtags_history == ['proj-2-V0.2.1', 'proj-2-V0.2.0']
 
 
 ##############
