@@ -8,7 +8,7 @@
 #
 """Validate absolute versions or add relative ones on top of a base absolute."""
 
-from typing import Union, Optional, Sequence, List, Mapping, Match
+from typing import Union, Optional, Sequence, List, Set, Mapping, Match
 import re
 
 from packaging.version import InvalidVersion, Version, _parse_letter_version
@@ -89,6 +89,11 @@ def is_version_id_relative(version_str: VerLike) -> bool:
     return _relative_ver_regex.match(str(version_str)) is not None
 
 
+#############
+## Various indices for higer-level parsing
+## of relative-versions by :class:`RelativeVersions`.
+#############
+
 def _group_to_enclosure_index() -> Mapping[str, str]:
     "Organize groups to respond the Q: which stacked-match to select for some group."
     enclosure = [  # Extracted from the regex, above.
@@ -105,17 +110,28 @@ def _group_to_enclosure_index() -> Mapping[str, str]:
     g2enc = {g: enc
              for enc, groups in enclosure
              for g in (groups + (enc, ) if groups else (enc, ))}  # type: ignore
+
     return g2enc
+
+
+_group_to_enclosure = _group_to_enclosure_index()
+#: parts `release` and `post_X` handled specially.
+_associative_groups = {'epoch', 'pre_n', 'dev_n'}
+_post_num_roups = {'post_n1', 'post_n2'}
+_numeric_groups = _associative_groups + _post_num_roups
 
 
 class RelativeVersions:
     """
     Extract captured groups from multiple relative-versions merged as one.
 
-    Capturing-groups from later versions win over earlier ones.
+    :ivar _stacked_matches:
+        The stack has inverted order from the versions passed
+        in constructor:
+          - label-groups: versions near the head win over tail ones.
+          - numeric-groups: the order is relevant when considering
+            the `XXXfix` groups`.
     """
-    _group_to_enclosure = _group_to_enclosure_index()
-
     def _parse_relative_versions(self, vers: VerLikes) -> List[Match[str]]:
         matches = [_relative_ver_regex.match(str(v))
                    for v in vers]
@@ -127,21 +143,41 @@ class RelativeVersions:
         return matches  # type: ignore
 
     def __init__(self, vers: VerLikes) -> None:
+        """
+        :param vers:
+            for label-groups, tail-versions win over head ones
+        """
         self._stacked_matches = self._parse_relative_versions(vers)[::-1]
 
-    def _first_match(self, group):
-        "Mimic ``re.group()`` but on the match-stack."
-        enc = self._group_to_enclosure[group]
+    def label(self, group):
+        """
+        Mimic ``re.group()`` on the match-stack, used for alphas (not numerics).
+
+        :return:
+            the 1st non empty/none group in the match-stack
+         """
+        assert group not in _numeric_groups
+        enc = _group_to_enclosure[group]
+        for m in self._stacked_matches:
+            if m.group(enc):
+                return m.group(group)
+
+    def num(self, group):
+        """
+        Sum all non-none stack-matches of the group (empties assumed 0)
+
+        :param group:
+
+        """
+        enc = _group_to_enclosure[group]
         for m in self._stacked_matches:
             if m.group(enc):
                 return m
-
-    def group(self, group):
-        "Mimic ``re.group()`` but on the match-stack."
         m = self._first_match(group)
         return m and m.group(group)
 
     def op_n_group(self, group):
+        "used exclusively by `release` part"
         m = self._first_match(group)
         if m:
             return m.group('op'), m.group(group)
@@ -190,7 +226,7 @@ def _add_versions(base_ver: VerLike, relative_versions: VerLikes):
     fix_parts = bool(m.group('fix'))
     """When `fix`, pre/post/dev parts are not reset if earlier parts have changed,
        and relative-number is added on top of existing base one."""
-    are_previous_parts_changed = bool(rel_release)
+    previous_parts_changed = bool(rel_release)
     """A rolling flag tracking if any earlier release/pre/post/dev part has changed.
        Used to decide whether to update/reset/clear the part-number ."""
 
@@ -204,39 +240,39 @@ def _add_versions(base_ver: VerLike, relative_versions: VerLikes):
         :param base_exists:
             if base-version has a pre/post/dev part
         :return:
-            true when the part must be updated
+            true when the part must be updated, false if it must be omitted
         """
-        nonlocal are_previous_parts_changed
+        nonlocal previous_parts_changed
 
         must_update = bool(rel_exist or
-                           base_exist and (not are_previous_parts_changed or
+                           base_exist and (not previous_parts_changed or
                                            fix_parts or
                                            part_fix))
-        are_previous_parts_changed |= must_update
+        previous_parts_changed |= must_update
 
         return must_update
 
-    def rebase_part(base_part: Optional[int]) -> int:
+    def restart_part(base_part: Optional[int]) -> int:
         "conditionally reset pre/post/dev part if earlier parts have changed"
         return (0
-                if are_previous_parts_changed and not fix_parts else
+                if previous_parts_changed and not fix_parts else
                 base_part or 0)
 
     if is_part_in_new_version(m.group('pre'), bver.pre, m.group('fixpre')):
         bver_pre = bver.pre
         if bver_pre:
-            bver_pre = (bver_pre[0], rebase_part(bver_pre[1]))
+            bver_pre = (bver_pre[0], restart_part(bver_pre[1]))
         parts.append('%s%s' % _add_pre(bver_pre,
                                        m.group('pre_l'),
                                        m.group('pre_n')))
 
     if is_part_in_new_version(m.group('post'), bver.post is not None, m.group('fixpost')):
         rel_post = m.group('post_n1') or m.group('post_n2') or 0
-        new_post = rebase_part(bver.post) + int(rel_post)
+        new_post = restart_part(bver.post) + int(rel_post)
         parts.append(".post%s" % new_post)
 
     if is_part_in_new_version(m.group('dev'), bver.dev is not None, m.group('fixdev')):
-        new_dev = rebase_part(bver.dev) + int(m.group('dev_n') or 0)
+        new_dev = restart_part(bver.dev) + int(m.group('dev_n') or 0)
         parts.append(".dev%s" % new_dev)
 
     if bver.local:

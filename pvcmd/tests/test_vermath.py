@@ -161,6 +161,11 @@ def test_RelativeVersions(relvers, group, exp):
 #     ('0.0.0', '0', ('^0.0', '+0.0')),
 
     ## relatives added with themselves
+    ## XXXXX: FAIL, and STARTED REWORK IN RelativeVersions (label(), num())
+    ('2', '0', ('+1', '+1')),
+    ('2', '0', ('^1', '^1')),
+    ('2', '0', ('^1', '+1')),
+    ('2', '0', ('+1', '^1')),
     ('0b3', '0b1', ('+b1', '+b1')),
     ('0b3', '0b1', ('+=b1', '+=b1')),
 
