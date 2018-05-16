@@ -457,12 +457,11 @@ class Project(cmdlets.Replaceable, cmdlets.Printable, yu.YAMLable, cmdlets.Spec)
         tag_pattern = self.tag_fnmatch(is_release)
 
         ## TODO: move to pvtags
-        acli = cmd.git.describe
-        if include_lightweight:
-            acli._(tags=True)
-
         with pvtags.git_project_errors_handled(self.pname):
-            out = acli._(*git_args, **git_flags)(match=tag_pattern)
+            out = cmd.git.describe._(
+                tags=(include_lightweight) or None,
+                *git_args,
+                **git_flags)(match=tag_pattern)
 
         version = out
 
