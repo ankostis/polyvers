@@ -90,17 +90,17 @@ class YAMLable(metaclass=trt.MetaHasTraits):
                 ddict.yaml_set_comment_before_after_key(
                     tname, before=_make_trait_help(has_traits, trait))
 
-        return _get_yamel().representer.represent_dict(ddict)
+        return get_yamel().representer.represent_dict(ddict)
 
 
-def _get_yamel():
+def get_yamel(typ='rt'):
     from ruamel import yaml
     from ruamel.yaml.representer import RoundTripRepresenter
 
     def _represent_path(_dumper, path):
         return y.representer.represent_str(str(path))
 
-    y = yaml.YAML(typ='rt')
+    y = yaml.YAML(typ=typ)
 
     yaddrepr = y.representer
     for d in [odict, defaultdict]:
@@ -134,7 +134,7 @@ def ydumps(obj, sink=None, trait_help=False, classes=()) -> Optional[str]:
         _dump_trait_help.set(trait_help)
         _classes_yamling.set(classes)
 
-        _get_yamel().dump(obj, sink)
+        get_yamel().dump(obj, sink)
 
     dump_to_str = not bool(sink)
     if dump_to_str:
@@ -152,4 +152,4 @@ def yloads(text):
     if not text:
         return
 
-    return _get_yamel().load(text)
+    return get_yamel().load(text)

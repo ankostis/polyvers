@@ -18,7 +18,7 @@ import pytest
 
 import textwrap as tw
 
-from .conftest import check_text, dict_eq, make_setup_py
+from .conftest import check_text, make_setup_py
 
 
 all_cmds = [c
@@ -327,12 +327,12 @@ def test_status_cmd_vtags(mutable_repo, caplog, capsys):
         ])
     out, err = capsys.readouterr()
     assert not err
-    assert 'simple:\n  version:\n' == out
+    assert '- simple\n' == out
 
     rc = cli.run('status --mono-project --all'.split())
     assert rc == 0
     out, err = capsys.readouterr()
-    assert 'simple:\n  version:\n  history: []\n  basepath: .\n' == out
+    assert '- pname: simple\n  basepath: .\n  gitver:\n  history: []\n' == out
 
     ##############
     ## TAG REPO
@@ -353,29 +353,27 @@ def test_status_cmd_vtags(mutable_repo, caplog, capsys):
         ])
     out, err = capsys.readouterr()
     assert not err
-    assert {'simple': {'version': 'v0.1.0'}} == yu.yloads(out)
+    assert ['v0.1.0'] == yu.yloads(out)
 
     rc = cli.run('status --all'.split())
     assert rc == 0
     out, err = capsys.readouterr()
-    exp = yu.yloads("""
-        simple:
-          version: v0.1.0
-          history:
-          - v0.1.0
-          basepath: .
-    """)
-    assert dict_eq(exp, yu.yloads(out))
+    exp = [{'pname': 'simple',
+            'basepath': '.',
+            'gitver': 'v0.1.0',
+            'history': ['v0.1.0']
+            }]
+    assert exp == yu.yloads(out)
 
     rc = cli.run('status --all simple'.split())
     assert rc == 0
     out, err = capsys.readouterr()
-    assert dict_eq(exp, yu.yloads(out))
+    assert exp == yu.yloads(out)
 
     rc = cli.run('status --all simple foobar'.split())
     assert rc == 0
     out, err = capsys.readouterr()
-    assert dict_eq(exp, yu.yloads(out))
+    assert exp == yu.yloads(out)
 
     rc = cli.run('status --all foobar'.split())
     assert rc == 0
@@ -405,14 +403,14 @@ def test_status_cmd_pvtags(mutable_repo, caplog, capsys):
         ])
     out, err = capsys.readouterr()
     assert not err
-    assert {'base': {'version': None}, 'foo': {'version': None}} == yu.yloads(out)
+    assert ['base', 'foo'] == yu.yloads(out)
 
     rc = cli.run('status --monorepo --all'.split())
     assert rc == 0
     out, err = capsys.readouterr()
-    exp = yu.yloads('base:\n  version:\n  history: []\n  basepath: .\n'
-                    'foo:\n  version:\n  history: []\n  basepath: foo_project\n')
-    assert dict_eq(exp, yu.yloads(out))
+    exp = yu.yloads('- pname: base\n  basepath: .\n  gitver:\n  history: []\n'
+                    '- pname: foo\n  basepath: foo_project\n  gitver:\n  history: []\n')
+    assert exp == yu.yloads(out)
 
     ##############
     ## TAG REPO
@@ -433,34 +431,34 @@ def test_status_cmd_pvtags(mutable_repo, caplog, capsys):
         ])
     out, err = capsys.readouterr()
     assert not err
-    exp = yu.yloads("base:\n  version: base-v0.1.0\nfoo:\n  version:\n")
-    assert dict_eq(exp, yu.yloads(out))
+    exp = ['base-v0.1.0', 'foo']
+    assert exp == yu.yloads(out)
 
     rc = cli.run('status --all'.split())
     assert rc == 0
     out, err = capsys.readouterr()
     exp = yu.yloads("""
-    base:
-      version: base-v0.1.0
+    - pname: base
+      basepath: .
+      gitver: base-v0.1.0
       history:
       - base-v0.1.0
-      basepath: .
-    foo:
-      version:
-      history: []
+    - pname: foo
       basepath: foo_project
+      gitver:
+      history: []
     """)
-    assert dict_eq(exp, yu.yloads(out))
+    assert exp == yu.yloads(out)
 
     rc = cli.run('status --all base foo'.split())
     assert rc == 0
     out, err = capsys.readouterr()
-    assert dict_eq(exp, yu.yloads(out))
+    assert exp == yu.yloads(out)
 
     rc = cli.run('status --all base foo BAD'.split())
     assert rc == 0
     out, err = capsys.readouterr()
-    assert dict_eq(exp, yu.yloads(out))
+    assert exp == yu.yloads(out)
 
     rc = cli.run('status --all BAD'.split())
     assert rc == 0
@@ -470,10 +468,10 @@ def test_status_cmd_pvtags(mutable_repo, caplog, capsys):
     rc = cli.run('status --all foo BAD'.split())
     assert rc == 0
     exp = yu.yloads("""
-    foo:
-      version:
-      history: []
+    - pname: foo
       basepath: foo_project
+      gitver:
+      history: []
     """)
     out, err = capsys.readouterr()
-    assert dict_eq(exp, yu.yloads(out))
+    assert exp == yu.yloads(out)

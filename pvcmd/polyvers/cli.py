@@ -440,6 +440,13 @@ _status_all_help = """
 """
 
 
+def _git_desc_without_screams(proj):
+    try:
+        return proj.git_describe()
+    except pvtags.GitVoidError as _:
+        return None
+
+
 class StatusCmd(_SubCmd):
     """
     List the versions of project(s).
@@ -451,27 +458,19 @@ class StatusCmd(_SubCmd):
         config=True,
         help=_status_all_help)
 
-    flags = {'all': ({'StatusCmd': {'all': True}}, _status_all_help)}
+    flags = {('a', 'all'): ({'StatusCmd': {'all': True}}, _status_all_help)}  # type: ignore
 
     def _describe_projects(self, projects):
-        def git_desc_without_screams(proj):
-            try:
-                return proj.git_describe()
-            except pvtags.GitVoidError as _:
-                return None
-
-        versions = {p.pname: {'version': git_desc_without_screams(p)}
-                    for p in projects}
-        return versions
+        return [_git_desc_without_screams(p) or p.pname
+                for p in projects]
 
     def _fetch_all(self, projects):
-        ## TODO: extract method to classify pre-populated histories.
-        pvtags.populate_pvtags_history(*projects)
         ## TODO: YAMLable Project (apart from Printable) with metadata Print/header
-        pinfos = {p.pname: {'history': p.pvtags_history,
-                            'basepath': str(p.basepath)}
-                  for p in projects}
-        return pinfos
+        return [{'pname': p.pname,
+                 'basepath': str(p.basepath),
+                 'gitver': _git_desc_without_screams(p),
+                 'history': p.pvtags_history}
+                for p in projects]
 
     def run(self, *pnames):
         projects = self.bootstrapp_projects()
@@ -481,10 +480,12 @@ class StatusCmd(_SubCmd):
             projects = [p for p in projects
                         if p.pname in pnames]
 
-        res = self._describe_projects(projects)
-
+        ## TODO: extract method to classify pre-populated histories.
+        pvtags.populate_pvtags_history(*projects)
         if self.all:
-            merge_dict(res, self._fetch_all(projects))
+            res = self._fetch_all(projects)
+        else:
+            res = self._describe_projects(projects)
 
         if res:
             return yu.ydumps(res)
