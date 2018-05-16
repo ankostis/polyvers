@@ -199,34 +199,6 @@ class ConfigCmd(_ConfigBase):
                 **kwds)
 
 
-class WriteCmd(_ConfigBase):
-    """
-    Store config defaults into specified path(s); The 1st in `config_paths` assumed if not given.
-
-    SYNTAX
-        {cmd_chain} [OPTIONS] [<config-path-1>] ...
-
-    - If a path resolves to a folder, the filename '{appname}_config.py' is appended.
-    - It OVERWRITES any pre-existing configuration file(s)!
-    """
-
-    examples = Unicode("""
-        - Generate a config-file at your home folder::
-              {cmd_chain} ~/my_conf
-
-        - To re-use the generated custom config-file alone, use the option::
-              --config-paths=~/my_conf  ...
-    """)
-
-    def run(self, *args):
-        ## Prefer to modify `classes` after `initialize()`, or else,
-        #  the cmd options would be irrelevant and fatty :-)
-        self.classes = all_configurables(self)
-        args = args or [None]
-        for fpath in args:
-            self.write_default_config(fpath, self.is_forced('foverwrite'))
-
-
 class InfosCmd(_ConfigBase):
     """
     List paths and other intallation infos.
@@ -626,7 +598,6 @@ class DescCmd(_ConfigBase):
 
 
 config_subcmds = (
-    WriteCmd,
     InfosCmd,
     ShowCmd,
     DescCmd,
