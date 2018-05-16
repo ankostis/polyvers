@@ -9,14 +9,13 @@
 from polyvers import vermath
 from polyvers.vermath import VersionError
 
+from packaging.version import Version
 import pytest
 
 
 def _check_addition(v1, v2, exp):
-    from packaging.version import Version
-
     if isinstance(exp, Exception):
-        with pytest.raises(type(exp), message=str(exp)):
+        with pytest.raises(type(exp), match=str(exp)):
             vermath.add_versions(v1, v2)
     else:
         got = vermath.add_versions(v1, v2)
