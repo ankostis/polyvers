@@ -23,6 +23,21 @@ def _check_addition(v1, v2, exp):
 
 
 @pytest.mark.parametrize('v1, v2, exp', [
+    ('1.1.1', 'foo', VersionError('Invalid relative')),
+    ('bar', '+1', VersionError('Invalid version')),
+    ('bar', 'foo', VersionError('Invalid version')),
+    ('0', '=dev1', VersionError('Invalid relative')),
+    ('0', '=rc0', VersionError('Invalid relative')),
+    ('0', '=a', VersionError('Invalid relative')),
+    ('0', '=.beta', VersionError('Invalid relative')),
+    ('0', '=.post', VersionError('Invalid relative')),
+    ('0', '=-12', VersionError('Invalid relative')),
+])
+def test_errors(v1, v2, exp):
+    _check_addition(v1, v2, exp)
+
+
+@pytest.mark.parametrize('v1, v2, exp', [
     ('1.1.1', '+0.1.2', '1.2.3'),
     ('0.0', '+1.1.1', '1.1.1'),
     ('1.1.1', ' +0.0 ', '1.1.1'),
@@ -68,14 +83,14 @@ def _check_addition(v1, v2, exp):
     ('0a1.post2.dev3', '+a.post.dev', VersionError('ackward bump')),  # '0a1.post2.dev3'),
     ('0a1.post2.dev3', '+a1.post.dev', VersionError('ackward bump')),  # '0a1.post2.dev0'),
     ('0a1.post0.dev0', '+=a.post.dev', '0a1.post0.dev0'),
- 
+
     ('0a0.post0.dev0', '+a1', '0a1'),
     ('0a.post.dev', '+=a1', '0a1.post0.dev0'),
- 
+
     ('0a.post2.dev1', '+post', VersionError('ackward bump')),  # '0a0.post2'),
     ('0a.post2.dev1', '+=post1', '0a0.post3.dev1'),
     ('0a.post2.dev1', '+post.dev', VersionError('ackward bump')),  # '0a0.post3.dev0'),
- 
+
     ('0a.post.dev', '+dev', VersionError('ackward bump')),  # '0a-.post0.dev0'),
     ('0a.post.dev2', '+=dev', '0a0.post0.dev2'),
 

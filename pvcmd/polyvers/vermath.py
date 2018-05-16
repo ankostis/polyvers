@@ -6,12 +6,12 @@
 # You may not use this work except in compliance with the Licence.
 # You may obtain a copy of the Licence at: http://ec.europa.eu/idabc/eupl
 #
-"""Validate and do algebra operations on Version-ids."""
+"""Validate absolute versions or add relative ones on top of a base absolute."""
 
 from typing import Union, Optional
 import re
 
-from packaging.version import Version, _parse_letter_version
+from packaging.version import InvalidVersion, Version, _parse_letter_version
 
 import itertools as itt
 
@@ -22,12 +22,15 @@ from .cmdlet import cmdlets
 VerLike = Union[str, Version]
 
 
-def _packver(v: VerLike) -> Version:
-    return v if isinstance(v, Version) else Version(v)
-
-
 class VersionError(cmdlets.CmdException):
     pass
+
+
+def _packver(v: VerLike) -> Version:
+    try:
+        return v if isinstance(v, Version) else Version(str(v))
+    except InvalidVersion as ex:
+        raise VersionError(str(ex))
 
 
 class Pep440Version(trt.Instance):
@@ -36,7 +39,7 @@ class Pep440Version(trt.Instance):
     _cast_types = str  # type: ignore
 
     def cast(self, value):
-        return Version(str(value))
+        return _packver(value)
 
 
 #: Possible to skip release-numbers, no local-part.
@@ -185,7 +188,7 @@ def _add_versions(base_ver: VerLike, relative_ver):
 
     new_version = ''.join(parts)
 
-    return Version(new_version)
+    return _packver(new_version)
 
 
 def add_versions(v1: VerLike, *rel_versions: VerLike) -> Version:
