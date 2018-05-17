@@ -207,18 +207,18 @@ def test_polytime_BAD_no_git_cmd(ok_repo, monkeypatch, today):
 ##############
 
 def test_MAIN_polyversions(ok_repo, untagged_repo, no_repo, capsys):
-    from polyversion.__main__ import main
+    from polyversion import run
     ok_repo.chdir()
 
-    main()
+    run()
     out, err = capsys.readouterr()
     assert not out and not err
 
-    main(proj1)
+    run(proj1)
     out, err = capsys.readouterr()
     assert out.startswith(proj1_ver) and not err
 
-    main(proj1, 'foo')
+    run(proj1, 'foo')
     out, err = capsys.readouterr()
     assert re.match(
         r'proj1: 0\.0\.1\+2\.g[\da-f]+\nfoo:', out)
@@ -226,12 +226,12 @@ def test_MAIN_polyversions(ok_repo, untagged_repo, no_repo, capsys):
 
     untagged_repo.chdir()
 
-    main()
+    run()
     out, err = capsys.readouterr()
     assert not out and not err
     with pytest.raises(sbp.CalledProcessError):
-        main('foo')
-    main('foo', 'bar')
+        run('foo')
+    run('foo', 'bar')
     out, err = capsys.readouterr()
     assert out == 'foo: \nbar: \n'
     #assert 'No names found' in caplog.text()
@@ -239,8 +239,8 @@ def test_MAIN_polyversions(ok_repo, untagged_repo, no_repo, capsys):
     no_repo.chdir()
 
     with pytest.raises(sbp.CalledProcessError):
-        main(proj1)
-    main('foo', 'bar')
+        run(proj1)
+    run('foo', 'bar')
     out, err = capsys.readouterr()
     assert out == 'foo: \nbar: \n'
     #assert caplog.records()

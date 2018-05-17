@@ -10,10 +10,7 @@
 
 ## Launch-script sets up sys-path so relative imports work in ``main()`.
 
-import os
 import sys
-
-import os.path as osp
 
 
 def main():
@@ -25,31 +22,11 @@ def main():
 
     See http://polyvers.readthedocs.io
 
-    - Invokes :func:`polyversion.polyversion()` with ``sys.argv[1:]``.
+    - Invokes :func:`polyversion.run()` with ``sys.argv[1:]``.
     - In order to set cmd-line arguments, invoke directly the function above.
     """
-    args = sys.argv[1:]
-
-    for o in ('-h', '--help'):
-        import textwrap as tw
-
-        if o in args:
-            cmdname = osp.basename(sys.argv[0])
-            doc = tw.dedent('\n'.join(main.__doc__.split('\n')[1:7]))
-            print(doc % {'prog': cmdname})
-            return 0
-
-    from polyversion import polyversion
-
-    if len(args) == 1:
-        res = polyversion(args[0], repo_path=os.curdir)
-    else:
-        res = '\n'.join('%s: %s' % (p, polyversion(p, default='',
-                                                   repo_path=os.curdir))
-                        for p in args)
-
-    if res:
-        print(res)
+    import polyversion
+    polyversion.run(*sys.argv[1:])
 
 
 if __name__ == '__main__':

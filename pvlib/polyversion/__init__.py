@@ -25,7 +25,6 @@ Also the wheel is executable like that::
 from __future__ import print_function
 
 import inspect
-import os
 import re
 import sys
 
@@ -168,19 +167,19 @@ def _interp_regex(tag_regex, pname, is_release=False):
                             vprefix=tag_vprefixes[int(is_release)])
 
 
-def polyversion(project, default=None, repo_path=None,
+def polyversion(pname, default=None, repo_path=None,
                 mono_project=None,
                 tag_frmt=None, tag_regex=None,
                 git_options=()):
     """
-    Report the *pvtag* of the `project` in the git repo hosting the source-file calling this.
+    Report the *pvtag* of the `pname` in the git repo hosting the source-file calling this.
 
-    :param str project:
-        Used as the prefix of pvtags when searching them.
+    :param str pname:
+        The project-name, used as the prefix of pvtags when searching them.
     :param str default:
         What *version* to return if git cmd fails.
     :param str repo_path:
-        A path inside the git repo hosting the `project` in question; if missing,
+        A path inside the git repo hosting the `pname` in question; if missing,
         derived from the calling stack.
     :param bool mono_project:
         Choose versioning scheme:
@@ -239,19 +238,19 @@ def polyversion(project, default=None, repo_path=None,
         if not repo_path:
             repo_path = '.'
 
-    tag_pattern = _interp_fnmatch(tag_frmt, project)
-    tag_regex = re.compile(_interp_regex(tag_regex, project))
+    tag_pattern = _interp_fnmatch(tag_frmt, pname)
+    tag_regex = re.compile(_interp_regex(tag_regex, pname))
     try:
         cmd = 'git describe'.split()
         cmd.extend(git_options)
         cmd.append('--match=' + tag_pattern)
         pvtag = _my_run(cmd, cwd=repo_path)
         matched_project, version, descid = split_pvtag(pvtag, tag_regex)
-        if matched_project and matched_project != project:
+        if matched_project and matched_project != pname:
             #import traceback as tb
             #tb.print_stack()
             print("Matched  pvtag project '%s' different from expected '%s'!" %
-                  (matched_project, project), file=sys.stderr)
+                  (matched_project, pname), file=sys.stderr)
         if descid:
             version = version_from_descid(version, descid)
     except:  # noqa;  E722"
@@ -290,3 +289,33 @@ def polytime(no_raise=False, repo_path=None):
         cdate = rfc2822_tstamp()
 
     return cdate
+
+
+def run(*args):
+    """
+    Invoked by ``main()``
+
+    :param argv:
+        Cmd-line arguments, nothing assumed if nothing given.
+    """
+    import os
+    from .__main__ import main
+
+    for o in ('-h', '--help'):
+        import textwrap as tw
+
+        if o in args:
+            cmdname = osp.basename(sys.argv[0])
+            doc = tw.dedent('\n'.join(main.__doc__.split('\n')[1:7]))  # @UndefinedVariable
+            print(doc % {'prog': cmdname})
+            return 0
+
+    if len(args) == 1:
+        res = polyversion(args[0], repo_path=os.curdir)
+    else:
+        res = '\n'.join('%s: %s' % (p, polyversion(p, default='',
+                                                   repo_path=os.curdir))
+                        for p in args)
+
+    if res:
+        print(res)
