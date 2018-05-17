@@ -68,7 +68,7 @@ setup(
     package_dir={'': 'pvcmd'},
     packages=find_packages('pvcmd', exclude=['tests', 'tests.*']),
     include_package_data=True,
-    setup_requires=['polyversion'],
+    #setup_requires=['polyversion'],
     install_requires=requirements,
     license='EUPL 1.2',
     zip_safe=True,
