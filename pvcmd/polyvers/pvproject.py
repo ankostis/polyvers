@@ -236,20 +236,12 @@ class Project(cmdlets.Replaceable, cmdlets.Printable, yu.YAMLable, cmdlets.Spec)
         None, allow_none=True,
         help="The new absolute version to bump to.")
 
-    amend = Bool(
-        config=True,
-        help="""
-        Amend the last version tag of the project, don't bump
-        (one older version assumed)""")
-
     def load_current_version_from_history(self):
-        vtag_index = 1 if self.amend else 0
         try:
-            tag = self.pvtags_history[vtag_index]
+            tag = self.pvtags_history[0]
             self.current_version = self.version_from_pvtag(tag)
         except IndexError:
-            self.log.debug("A vtag[%i] does not exist in history of %s",
-                           vtag_index, self)
+            self.log.debug("No vtags in history of %s", self)
             self.current_version = self.start_version_id
 
     def set_new_version(self, version_bump: str = None):
