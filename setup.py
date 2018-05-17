@@ -76,7 +76,7 @@ setup(
     keywords="version-management configuration-management versioning "
              "git monorepo tool library".split(),
     classifiers=[
-        'Development Status :: 2 - Pre-Alpha',
+        'Development Status :: 3 - Alpha',
         'Intended Audience :: Developers',
         'License :: OSI Approved :: European Union Public Licence 1.1 (EUPL 1.1)',
         'Natural Language :: English',
