@@ -1,18 +1,33 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-
 """Setup script *polyversion-lib*."""
-## Need this to install from sources.
-try:
-    from polyversion import polyversion
-except ImportError:
-    def polyversion(*_, **__):
-        return '0.0.0'
+from __future__ import print_function
 
 from setuptools import setup
 import os.path as osp
 
 mydir = osp.dirname(osp.realpath(__file__))
+
+## This sub-project eats it's own dog-food, and
+#  uses `polyversion` to derive its own version on runtime from Git tags.
+#
+#  For this reason the following hack is needed to start developing it
+#  from git-sources: it bootstraps  ``pip install -e pvlib[test]``
+#  when not any version of the `polyversion` lib is already installed on the system.
+#
+try:
+    from polyversion import polyversion
+except ImportError:
+    import sys
+    try:
+        print("Hack: pre-installing `polyversion` from standalaone `bin/pvlib.whl`...",
+              file=sys.stderr)
+        sys.path.append(osp.join(mydir, 'bin', 'pvlib.whl'))
+        from polyversion import polyversion
+    except Exception as ex:
+        print("Hack failed :-(", file=sys.stderr)
+        polyversion = lambda *_, **__: '0.0.0'
+
 
 with open(osp.join(mydir, 'README.rst')) as readme_file:
     readme = readme_file.read()
