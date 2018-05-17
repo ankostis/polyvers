@@ -36,7 +36,9 @@ script:
   #
   - |
     if [ $TRAVIS_PYTHON_VERSION \> '3.5' ]; then
-        python setup.py build bdist_wheel
+        python setup.py bdist_wheel
+        rm -rf build/*
+        python pvlib/setup.py build bdist_wheel
         pytest -v pvcmd
     fi
 
@@ -44,7 +46,7 @@ script:
   #
   - |
     if [ $TRAVIS_PYTHON_VERSION \> '3.5' ]; then
-        pip uninstall polyvers -y
+        pip uninstall polyvers polyversion -y
         pip install dist/*.whl
     fi
 
