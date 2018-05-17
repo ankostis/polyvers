@@ -19,7 +19,7 @@ install:
   - pip install --upgrade setuptools pip wheel
   - pip install -r requirements_dev.txt
 
-  - python pvlib/setup.py develop
+  - pip install -e pvlib[test]
 
   - |
     if [ $TRAVIS_PYTHON_VERSION \> '3.5' ]; then
@@ -30,30 +30,41 @@ install:
 script:
   ## Check *polyversion* lib in older Pythons.
   - python pvlib/setup.py build bdist_wheel
+  ## TODO: test actually `polyversion.whl`, not sources.
   - pytest -v pvlib
 
-  ## Check *polyvers* cmd in newer python only.
+########################################
+## Check *polyvers* cmd in newer python only.
+#
+
+  ## Test both pvlib & pvcmd with COVERAGE.
   #
   - |
     if [ $TRAVIS_PYTHON_VERSION \> '3.5' ]; then
-        python setup.py bdist_wheel
-        rm -rf build/*
-        python pvlib/setup.py build bdist_wheel
-        pytest -v pvcmd
+        pytest pvlib --cov=polyversion --cov-report=term-missing
+        pytest pvcmd --cov=polyvers --cov-report=term-missing
     fi
 
-  ## Re-test EXACT deps on WHEEL, with COVERAGE.
+  ## Build pvcmd WHEEL.
+  #
+  - |
+    if [ $TRAVIS_PYTHON_VERSION \> '3.5' ]; then
+        rm -rf build/*
+        python setup.py bdist_wheel
+    fi
+
+  ## Re-test EXACT deps on WHEELS.
   #
   - |
     if [ $TRAVIS_PYTHON_VERSION \> '3.5' ]; then
         pip uninstall polyvers polyversion -y
         pip install dist/*.whl
+        pytest pvlib
+        pytest pvcmd
     fi
 
-  - |
-    if [ $TRAVIS_PYTHON_VERSION \> '3.5' ]; then
-        pytest --cov=polyvers --cov-report=term-missing
-    fi
+########################################
+## LINTERS
 
   - |
     if [ $TRAVIS_PYTHON_VERSION \> '3.5' ]; then
