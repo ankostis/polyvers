@@ -68,7 +68,10 @@ setup(
     package_dir={'': 'pvcmd'},
     packages=find_packages('pvcmd', exclude=['tests', 'tests.*']),
     include_package_data=True,
-    #setup_requires=['polyversion'],
+    # setup_requires=[   # pytest suggestion: https://docs.pytest.org/en/latest/goodpractices.html
+    #     #'polyversion',  @@ no, actually it is engraved-out from packages
+    #     'pytest-runner'
+    # ],
     install_requires=requirements,
     license='EUPL 1.2',
     zip_safe=True,
