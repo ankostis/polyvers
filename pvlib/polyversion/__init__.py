@@ -215,7 +215,7 @@ def polyversion(pname, default=None, repo_path=None,
     .. TIP::
         It is to be used in ``__init__.py`` files like this::
 
-            __version__ = polyversion('myproj')
+            __version__ = '0.0.2a2'
 
         ...or in ``setup.py`` where a default is needed for *develop* mode
         to work::
