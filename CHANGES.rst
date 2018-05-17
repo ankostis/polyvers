@@ -2,18 +2,21 @@
 CHANGES
 =======
 
-0.0.2a3 (2018-05-17)
+0.0.2a4 (2018-05-18)
 --------------------
-Actually most changes happened in previous "interim" release `v0.0.2a2`.
+Actually most changes happened in "interim" release `v0.0.2a2`, below.
 
 - feat: make a standalone polyversion-lib wheel to facilitate bootstrap
   when installing & building from sources (and the lib is not yet installed).
 - Add ``bin/package.sh`` that create the `pvlib` wheel as executable ``pvlib.run``.
 - doc: fix rtd & pypi sites.
 
+0.0.2a3 (2018-05-17)
+~~~~~~~~~~~~~~~~~~~~
+Broken `pvcmd`, was missing `polyversion` lib dependency(!)
 
 0.0.2a2 (2018-05-17)
---------------------
+~~~~~~~~~~~~~~~~~~~~
 Interim release to produce executable wheel needed by next release.
 
 
