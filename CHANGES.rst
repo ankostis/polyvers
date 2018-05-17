@@ -1,8 +1,8 @@
 =======
-History
+CHANGES
 =======
 
-0.0.2a0 (2018-05-16)
+0.0.2a1 (2018-05-17)
 --------------------
 - 2nd release as 2 projects:
   - **polyvers:** cmdline tool
@@ -14,6 +14,11 @@ History
 - Support both ``--monorepo`` and ``--mono-project`` configurations.
 - By default ``__init__.py``, ``setup.py`` and ``README.rst`` files are engraved
   with bumped version.
+
+
+0.0.2a0 (2018-05-16)
+--------------------
+broken
 
 
 0.0.1a0 (2018-01-29)

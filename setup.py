@@ -20,7 +20,7 @@ if sys.version_info < MIN_PYTHON:
 with open(osp.join(mydir, 'README.rst')) as readme_file:
     readme = readme_file.read()
 
-with open(osp.join(mydir, 'HISTORY.rst')) as history_file:
+with open(osp.join(mydir, 'CHANGES.rst')) as history_file:
     history = history_file.read()
 
 ## Remove 1st header-mark line or else,
