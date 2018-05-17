@@ -293,20 +293,27 @@ def polytime(no_raise=False, repo_path=None):
 
 def run(*args):
     """
-    Invoked by ``main()``
+    Describe the version of a *polyvers* projects from git tags.
+
+    USAGE:
+        %(prog)s [PROJ-1] ...
+
+    See http://polyvers.readthedocs.io
 
     :param argv:
         Cmd-line arguments, nothing assumed if nothing given.
+
+    - Invokes :func:`polyversion.run()` with ``sys.argv[1:]``.
+    - In order to set cmd-line arguments, invoke directly the function above.
     """
     import os
-    from .__main__ import main
 
     for o in ('-h', '--help'):
         import textwrap as tw
 
         if o in args:
             cmdname = osp.basename(sys.argv[0])
-            doc = tw.dedent('\n'.join(main.__doc__.split('\n')[1:7]))  # @UndefinedVariable
+            doc = tw.dedent('\n'.join(run.__doc__.split('\n')[1:7]))
             print(doc % {'prog': cmdname})
             return 0
 
