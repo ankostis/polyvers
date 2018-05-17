@@ -7,7 +7,7 @@
 # You may obtain a copy of the Licence at: http://ec.europa.eu/idabc/eupl
 #
 """
-Python-2.7 safe code to discover sub-project versions in Git *polyvers* monorepos.
+Python-2.7-safe, no-deps code to discover sub-project versions in Git *polyvers* monorepos.
 
 The *polyvers* version-configuration tool is generating **pvtags** like::
 
@@ -16,6 +16,11 @@ The *polyvers* version-configuration tool is generating **pvtags** like::
 And assuming :func:`polyversion()` is invoked from within a Git repo, it may return
 either ``0.1.0`` or ``0.1.0+2.gcaffe00``, if 2 commits have passed since
 last *pvtag*.
+
+Also the wheel is executable like that::
+
+    python polyversion-*.whl --help
+
 """
 from __future__ import print_function
 
@@ -285,33 +290,3 @@ def polytime(no_raise=False, repo_path=None):
         cdate = rfc2822_tstamp()
 
     return cdate
-
-
-def main(*args):
-    """
-    Describe a single or multiple projects.
-
-    :param args:
-        usually ``*sys.argv[1:]``
-    """
-    for o in ('-h', '--help'):
-        if o in args:
-            doc = main.__doc__.split('\n')[1].strip()
-            cmdname = osp.basename(sys.argv[0])
-            print("%s\n\nUsage: %s [PROJ-1]..." %
-                  (doc, cmdname))
-            exit(0)
-
-    if len(args) == 1:
-        res = polyversion(args[0], repo_path=os.curdir)
-    else:
-        res = '\n'.join('%s: %s' % (p, polyversion(p, default='',
-                                                   repo_path=os.curdir))
-                        for p in args)
-
-    if res:
-        print(res)
-
-
-if __name__ == '__main__':
-    main(*sys.argv[1:])

@@ -48,10 +48,9 @@ setup(
     #  break.
     #  Also tried chdir(mydir) at the top, but didn't work.
     package_dir={'': osp.relpath(mydir)},
-    py_modules=['polyversion'],  # need `package_dir`, or bad build from other dirs
-    # setup_requires=[   # pytest suggestion: https://docs.pytest.org/en/latest/goodpractices.html
-    #     'pytest-runner'
-    # ],
+    # packages=find_packages(osp.realpath(osp.join(mydir, 'polyversion')),
+    #                        exclude=['tests', 'tests.*']),
+    packages=['polyversion'],
     license='EUPL 1.2',
     zip_safe=True,
     platforms=['any'],
