@@ -14,8 +14,9 @@
 # serve to show the default.
 
 import os
-import polyvers
 import sys
+
+import os.path as osp
 
 
 # If extensions (or modules to document with autodoc) are in another
@@ -25,12 +26,17 @@ import sys
 #sys.path.insert(0, os.path.abspath('.'))
 # Get the project root dir, which is the parent dir of this
 cwd = os.getcwd()
-project_root = os.path.dirname(cwd)
+mydir = osp.realpath(osp.dirname(__file__))
+project_root = osp.join(mydir, '..')
+print("project_root: %s" % project_root)
 
 # Insert the project root dir as the first element in the PYTHONPATH.
 # This lets us ensure that the source package is imported, and that its
 # version is used.
-sys.path.insert(0, project_root)
+sys.path.insert(0, osp.join(project_root))
+sys.path.insert(0, osp.join(project_root, 'pvcmd'))
+sys.path.insert(0, osp.join(project_root, 'pvlib'))
+import polyvers  #@ NOACTION
 
 
 # -- General configuration ---------------------------------------------
