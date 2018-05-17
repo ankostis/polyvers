@@ -29,6 +29,7 @@ history = '\n'.join(history.split('\n')[1:])
 
 
 requirements = [
+    'polyversion',
     'boltons',                  # for IndexSet
     'toolz',
     'rainbow_logging_handler',
