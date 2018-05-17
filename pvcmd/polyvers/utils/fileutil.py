@@ -10,6 +10,7 @@
 
 from pathlib import Path
 from typing import Optional, Union
+import contextlib
 import os
 import re
 
@@ -201,3 +202,13 @@ def _is_same_file(fp1: Path, fp2: Path) -> Union[bool, None]:
         return fp1.samefile(fp2)
     except FileNotFoundError:
         return None
+
+
+@contextlib.contextmanager
+def chdir(path):
+    opath = os.getcwd()
+    try:
+        os.chdir(path)
+        yield
+    finally:
+        os.chdir(opath)

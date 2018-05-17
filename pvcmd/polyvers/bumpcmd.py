@@ -203,6 +203,7 @@ class BumpCmd(cli._SubCmd):
 
     def run(self, *version_and_pnames):
         from . import engrave
+        from .utils import fileutil as fu
 
         projects = self.bootstrapp_projects()
         if version_and_pnames:
@@ -219,7 +220,9 @@ class BumpCmd(cli._SubCmd):
             prj.set_new_version(version_bump)
 
         fproc = engrave.FileProcessor(parent=self)
-        match_map = fproc.scan_projects(projects)
+        with fu.chdir(self.git_root):
+            match_map = fproc.scan_projects(projects)
+
         if fproc.nmatches() == 0:
             ## FIXME: check each project specifically for engraves.
             with self.errlogged(
@@ -233,7 +236,8 @@ class BumpCmd(cli._SubCmd):
         self._stop_if_git_dirty()
 
         with pvtags.git_restore_point(restore_head=self.dry_run):
-            fproc.engrave_matches(match_map)
+            with fu.chdir(self.git_root):
+                fproc.engrave_matches(match_map)
 
             ## TODO: move all git-cmds to pvtags?
             if self.out_of_trunk_releases:
