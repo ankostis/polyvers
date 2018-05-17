@@ -430,6 +430,11 @@ Drawbacks & Workarounds
   then you may actually build a package(*wheel*, ok?) with that "default" version.
   So, always check you package's version before uploading it to *pypi*.
 
+- (not related to this tool) When building projects with ``python setup.py bdist_wheel``,
+  you have to clean up your build directory, or else, the distribution package
+  will contain the sources from all previous subprojects.  That applies also
+  when rebuilding a project between versions.
+
 - (not related to this tool) If you don't place a ``setup.py`` file at the root
   of your git-repo, then it becomes more cumbersome to ``pip`` `install directly
   from remote URLs <https://pip.pypa.io/en/stable/reference/pip_install/#vcs-support>`_,
