@@ -553,7 +553,7 @@ class Project(cmdlets.Replaceable, cmdlets.Printable, yu.YAMLable, cmdlets.Spec)
                     (?xm)
                         \b__version__
                         (\ *=\ *)
-                        (.+[\r\n])
+                        (.+?[\r\n])
                     '''),
                 'subst': r"__version__\1'{version}'"
             }, {
@@ -561,7 +561,7 @@ class Project(cmdlets.Replaceable, cmdlets.Printable, yu.YAMLable, cmdlets.Spec)
                     (?xm)
                         \b__updated__
                         (\ *=\ *)
-                        (.+[\r\n])
+                        (.+?[\r\n])
                     '''),
                 'subst': r"__updated__\1'{release_date}'"
             }],
