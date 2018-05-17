@@ -126,10 +126,13 @@ def glob_files(patterns: List[str],
 
     files = _glob_filter_in_mybase(files, mybase)
     if other_bases:
-        ## Exclude bases coinciding with mybase.
+        ## Keep bases only inside mybase, but
+        # Exclude bases coinciding with mybase.
+        #
         other_ppaths = [Path(ob) for ob in other_bases]
         other_ppaths = [ob for ob in other_ppaths
-                        if not fu._is_same_file(mybase, ob)]
+                        if not fu._is_same_file(mybase, ob) and
+                        fu._is_base_or_same(mybase, ob)]
         files = _glob_filter_out_other_bases(files, other_ppaths)
 
     assert all(isinstance(f, Path) for f in files)

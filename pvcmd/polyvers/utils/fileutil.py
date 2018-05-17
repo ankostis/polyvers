@@ -164,6 +164,7 @@ def find_git_root(path=None) -> Optional[Path]:
 ## pathlib.Paths ##
 ###################
 
+##TODO: publicize path-set ops.
 def _is_base_or_same(basepath: Path, longpath: Path, strict=False) -> Union[bool, None]:
     """
     Inverses, resolving, same-file checking, non-raising :meth:`pathlib.relative_to()`.
@@ -191,6 +192,7 @@ def _is_base_or_same(basepath: Path, longpath: Path, strict=False) -> Union[bool
             return False
 
 
+##TODO: publicize path-set ops.
 def _is_same_file(fp1: Path, fp2: Path) -> Union[bool, None]:
     """
     Non-raising version of pathlib.
