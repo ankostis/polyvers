@@ -42,7 +42,12 @@ setup(
         'Source': 'https://github.com/jrcstu/polyvers',
         'Tracker': 'https://github.com/jrcstu/polyvers/issues',
     },
-    package_dir={'': 'pvlib'},
+    ## The ``package_dir={'': <sub-dir>}`` arg is needed for `py_modules` to work
+    #  when packaging sub-projects. But ``<sub-dir>`` must be relative to launch cwd,
+    #  or else, ``pip install -e <subdir>`` and/or ``python setup.py develop``
+    #  break.
+    #  Also tried chdir(mydir) at the top, but didn't work.
+    package_dir={'': osp.relpath(mydir)},
     py_modules=['polyversion'],  # need `package_dir`, or bad build from other dirs
     license='EUPL 1.2',
     zip_safe=True,

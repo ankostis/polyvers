@@ -430,6 +430,14 @@ Drawbacks & Workarounds
   then you may actually build a package(*wheel*, ok?) with that "default" version.
   So, always check you package's version before uploading it to *pypi*.
 
+- (not related to this tool) In ``setup.py`` script, the kw-argument
+  ``package_dir={'': <sub-dir>}`` arg is needed for `py_modules` to work
+  when packaging sub-projects (also useful with ``find_packages()``,
+  check this project's sources).
+  But ``<sub-dir>`` must be relative to launch cwd, or else,
+  ``pip install -e <subdir>`` and/or ``python setup.py develop``
+  break.
+
 - (not related to this tool) When building projects with ``python setup.py bdist_wheel``,
   you have to clean up your build directory, or else, the distribution package
   will contain the sources from all previous subprojects.  That applies also
