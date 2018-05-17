@@ -66,7 +66,7 @@ setup(
         'Tracker': 'https://github.com/jrcstu/polyvers/issues',
     },
     package_dir={'': 'pvcmd'},
-    packages=find_packages('pvcmd', exclude=['tests*']),
+    packages=find_packages('pvcmd', exclude=['tests', 'tests.*']),
     include_package_data=True,
     setup_requires=['polyversion'],
     install_requires=requirements,
