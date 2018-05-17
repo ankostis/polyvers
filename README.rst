@@ -389,8 +389,8 @@ Features TODO
 -------------
 pre/post release hooks
 ^^^^^^^^^^^^^^^^^^^^^^
-Possible to implement hooks as `setuptools plugins
- <http://setuptools.readthedocs.io/en/latest/setuptools.html#dynamic-discovery-of-services-and-plugins>`_.
+Possible to implement hooks as
+`setuptools plugins <http://setuptools.readthedocs.io/en/latest/setuptools.html#dynamic-discovery-of-services-and-plugins>`_.
 to run, for example, housekeeping commands on all subprojects like
 ``pip install -e <project>`` and immediately start working in "develop mode".
 
@@ -421,7 +421,7 @@ Drawbacks & Workarounds
 -----------------------
 - WARNING: when you build your package for distribution (*wheel*, correct?)
   remember to switch to the `out-of-trunk (leaf) "Release" commit`.
-  This is particularly important if your ``setup.py`` file  use :func:`~polyversion()`
+  This is particularly important if your ``setup.py`` file  use ``polyversion()``
   to derive its version.. Because if it fails for whatever reason
   (``git`` command is missing, project not located in a git-repo, miss-configuration,
   etc).
