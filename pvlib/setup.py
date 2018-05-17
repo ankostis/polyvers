@@ -2,18 +2,12 @@
 # -*- coding: utf-8 -*-
 
 """Setup script *polyversion-lib*."""
-
-#import sys
-
 from polyversion import polyversion
 
-from setuptools import setup, find_packages
-
+from setuptools import setup
 import os.path as osp
 
-
-mydir = osp.dirname(__file__)
-
+mydir = osp.dirname(osp.realpath(__file__))
 
 with open(osp.join(mydir, 'README.rst')) as readme_file:
     readme = readme_file.read()
@@ -33,7 +27,7 @@ setup(
     name=PROJECT,
     version=polyversion(PROJECT, '0.0.0'),
     description="Lib code deriving subproject versions from tags on git monorepos.",
-    long_description=readme,
+    long_description='readme',
     author="Kostis Anagnostopoulos",
     author_email='ankostis@gmail.com',
     url='https://github.com/jrcstu/polyvers',
@@ -43,7 +37,8 @@ setup(
         'Source': 'https://github.com/jrcstu/polyvers',
         'Tracker': 'https://github.com/jrcstu/polyvers/issues',
     },
-    packages=find_packages(exclude=['tests']),
+    package_dir={'': 'pvlib'},
+    py_modules=['polyversion'],  # need `package_dir`, or bad build from other dirs
     license='EUPL 1.2',
     zip_safe=True,
     platforms=['any'],
