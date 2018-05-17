@@ -6,25 +6,19 @@
 # You may not use this work except in compliance with the Licence.
 # You may obtain a copy of the Licence at: http://ec.europa.eu/idabc/eupl
 #
-"A launch script to execute the wheel: ``python polyversion-*.whl <project>``"
+"""
+A launch script to execute the *polyversion*.
 
-## Launch-script sets up sys-path so relative imports work in ``main()`.
+- Gives pyhon opportunity to setup sys-path so relative imports work in wheel.
+- Invokes :func:`~run()` with ``sys.argv[1:]``.
+- To specify different than cmd-line arguments, invoke directly that function above.
+"""
+
 
 import sys
 
 
 def main():
-    """
-    Describe the version of a *polyvers* projects from git tags.
-
-    USAGE:
-        %(prog)s [PROJ-1] ...
-
-    See http://polyvers.readthedocs.io
-
-    - Invokes :func:`polyversion.run()` with ``sys.argv[1:]``.
-    - In order to set cmd-line arguments, invoke directly the function above.
-    """
     import polyversion
     polyversion.run(*sys.argv[1:])
 

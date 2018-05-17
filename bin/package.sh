@@ -2,7 +2,7 @@
 #
 ## Build both polyvers packages
 
-PVLIB_SH="dist/pvlib.sh"
+PVLIB_SH="pvlib.run"
 
 my_dir=`dirname "$0"`
 cd $my_dir/..
@@ -28,5 +28,10 @@ git checkout latest
 git checkout -
 set +e
 
-echo -ne '#!python\n' | cat - dist/polyversion*.whl > "$PVLIB_SH"
+cd ./dist
+tmpzip=_pvlib.zip
+cp polyversion*.whl $tmpzip
+zip -d $tmpzip polyversion/__main__.py
+zip -j $tmpzip ../pvlib/polyversion/__main__.py
+echo -ne '#!python\n' | cat - $tmpzip > "$PVLIB_SH"
 chmod a+x "$PVLIB_SH"
