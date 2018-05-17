@@ -33,9 +33,8 @@ Interim release to produce executable wheel needed by next release.
 - By default ``__init__.py``, ``setup.py`` and ``README.rst`` files are engraved
   with bumped version.
 
-
 0.0.2a0 (2018-05-16)
---------------------
+~~~~~~~~~~~~~~~~~~~~
 broken
 
 
