@@ -221,6 +221,7 @@ class BumpCmd(cli._SubCmd):
         fproc = engrave.FileProcessor(parent=self)
         match_map = fproc.scan_projects(projects)
         if fproc.nmatches() == 0:
+            ## FIXME: check each project specifically for engraves.
             with self.errlogged(
                     doing="checking if at least one version-engraving happened",
                     token='noengraves'):
