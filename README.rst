@@ -33,8 +33,8 @@ Polyvers: Bump independently sub-project versions in Git monorepos
     :target: https://www.codacy.com/app/ankostis/polyvers_jrc
     :alt: Code quality metric
 
-:version:       |version|
-:updated:       |today|
+:version:       0.0.2a1
+:updated:       2018-05-17T03:34:15.052775
 :Documentation: https://polyvers.readthedocs.io
 :repository:    https://github.com/JRCSTU/polyvers
 :pypi-repo:     https://pypi.org/project/polyvers/
