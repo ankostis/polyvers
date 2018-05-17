@@ -31,7 +31,7 @@ install:
   - python -m pip install --upgrade setuptools pip wheel
   - pip install -q -r requirements_dev.txt
 
-  - pip install -e pvlib[test]
+  - python pvlib/setup.py develop
 
   - IF "%PYTHON_VERSION%" == "3.6" (
       pip install -q -r requirements.txt  &&

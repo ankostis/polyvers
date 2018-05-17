@@ -2,7 +2,12 @@
 # -*- coding: utf-8 -*-
 
 """Setup script *polyversion-lib*."""
-from polyversion import polyversion
+## Need this to install from sources.
+try:
+    from polyversion import polyversion
+except ImportError:
+    def polyversion(*_, **__):
+        return '0.0.0'
 
 from setuptools import setup
 import os.path as osp
@@ -27,7 +32,7 @@ setup(
     name=PROJECT,
     version=polyversion(PROJECT, '0.0.0'),
     description="Lib code deriving subproject versions from tags on git monorepos.",
-    long_description='readme',
+    long_description=readme,
     author="Kostis Anagnostopoulos",
     author_email='ankostis@gmail.com',
     url='https://github.com/jrcstu/polyvers',

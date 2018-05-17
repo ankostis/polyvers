@@ -19,7 +19,7 @@ install:
   - pip install --upgrade setuptools pip wheel
   - pip install -r requirements_dev.txt
 
-  - pip install -e pvlib[test]
+  - python pvlib/setup.py develop
 
   - |
     if [ $TRAVIS_PYTHON_VERSION \> '3.5' ]; then
