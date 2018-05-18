@@ -3,24 +3,20 @@ Reference
 =========
 
 
-..
+Polyversion (library)
+=====================
+.. autosummary::
 
-    ??!CANNOT REFER TO THEM!??
-    Polyversion Library
-    ===================
-    .. autosummary::
+   polyversion
 
-       polyversion
-
-
-    Module: :mod:`polyversion`
-    ------------------------------------
-    .. automodule:: polyversion
-       :members:
+Module: :mod:`polyversion`
+------------------------------------
+.. automodule:: polyversion
+   :members:
 
 
-Main app
-========
+Polyvers (command-tool)
+========================
 .. autosummary::
 
    polyvers
@@ -29,10 +25,15 @@ Main app
    polyvers.pvproject
    polyvers.pvtags
    polyvers.engrave
-   polyvers.mainpump
-   polyvers.logconfutils
-   polyvers.cmdlets
-   polyvers.cfgcmd
+   polyvers.vermath
+   polyvers.cmdlet.cfgcmd
+   polyvers.cmdlet.cmdlets
+   polyvers.cmdlet.errlog
+   polyvers.cmdlet.interpctxt
+   polyvers.utils.mainpump
+   polyvers.utils.logconfutils
+   polyvers.utils.oscmd
+   polyvers.utils.fileutil
 
 Module: :mod:`polyvers.cli`
 -------------------------------
@@ -67,6 +68,11 @@ Module: :mod:`polyvers.vermath`
 
 Cmdlets
 =======
+Module: :mod:`polyvers.cmdlet.cfgcmd`
+-------------------------------------
+.. automodule:: polyvers.cmdlet.cfgcmd
+   :members:
+
 Module: :mod:`polyvers.cmdlet.cmdlets`
 --------------------------------------
 .. automodule:: polyvers.cmdlet.cmdlets
@@ -80,11 +86,6 @@ Module: :mod:`polyvers.cmdlet.errlog`
 Module: :mod:`polyvers.cmdlet.interpctxt`
 -----------------------------------------
 .. automodule:: polyvers.cmdlet.interpctxt
-   :members:
-
-Module: :mod:`polyvers.cmdlet.cfgcmd`
--------------------------------------
-.. automodule:: polyvers.cmdlet.cfgcmd
    :members:
 
 
