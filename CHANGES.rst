@@ -5,11 +5,13 @@ CHANGES
 
 0.0.2a6 (2018-05-18)
 --------------------
-- ``bump`` cmd:
-    - feat: ``bump --amend`` now works
-    - feat: ``bump --engrave-only``.
-    - fix: report ``--dry-run`` while doing actions.
+- ``bump`` command:
+    - feat: ``--amend`` now works
+    - feat: ``--engrave-only``.
+    - feat: log ``PRETEND`` while doing actions.
     - feat: Log which files where engraved in the final message.
+- fix(engrave): don't waste cycles/log-messages to substite empty-matches
+  (minor).
 
 
 0.0.2a5 (2018-05-18)
@@ -27,7 +29,8 @@ doc: bad PyPi landing page.
 
 0.0.2a3 (2018-05-17)
 ^^^^^^^^^^^^^^^^^^^^
-Broken `pvcmd`, was missing `polyversion` lib dependency(!)
+The `pvcmd` was actually broken so far; was missing `polyversion` lib
+dependency!
 
 0.0.2a2 (2018-05-17)
 ^^^^^^^^^^^^^^^^^^^^
