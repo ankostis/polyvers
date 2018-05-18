@@ -28,10 +28,15 @@ install:
     fi
 
 script:
-  ## Check *polyversion* lib in older Pythons.
   - python pvlib/setup.py build bdist_wheel
   ## TODO: test actually `polyversion.whl`, not sources.
-  - pytest -v pvlib
+
+  ## Check pvlib only in older Pythons (later tested with coverage).
+  #
+  - |
+    if [ $TRAVIS_PYTHON_VERSION \<= '3.5' ]; then
+        pytest -v pvlib
+    fi
 
 ########################################
 ## Check *polyvers* cmd in newer python only.
