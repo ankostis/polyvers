@@ -216,13 +216,14 @@ class FileProcessor(cmdlets.Spec):
                 self.log.debug("Skipped untouched file '%s'.", fpath)
                 continue
 
-            with self.errlogged(OSError,
-                                token='fwrite',
-                                doing="writing file '%s'" % fpath):
-                fpath.write_bytes(fbytes)
+            if not self.dry_run:
+                with self.errlogged(OSError,
+                                    token='fwrite',
+                                    doing="writing file '%s'" % fpath):
+                    fpath.write_bytes(fbytes)
 
-                self.log.info("Written %i-bytes in engraved file '%s'.",
-                              len(fbytes), fpath)
+            self.log.info("Written %i-bytes in engraved file '%s'.",
+                          len(fbytes), fpath)
 
     match_map: MatchMap = DictTrait(key_trait=Instance(Path))  # type: ignore
 #                                     TupleTrait((Instance(pvproject.Project),
