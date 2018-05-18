@@ -594,7 +594,7 @@ def run(argv=(), cmd_consumer=None, **app_init_kwds):
     from .utils import logconfutils as mlu
     log_level, argv = mlu.log_level_from_argv(
         argv,
-        start_level=25,  # 20=INFO, 25=NOTICE (when patched), 30=WARNING
+        start_level=20,  # 20=INFO, 25=NOTICE (when patched), 30=WARNING
         eliminate_quiet=True)
 
     log = logging.getLogger('%s.main' % APPNAME)
