@@ -338,7 +338,8 @@ class FileProcessor(cmdlets.Spec):
 
         return match_map
 
-    def engrave_matches(self, match_map: MatchMap):
+    def engrave_matches(self):
+        match_map = self.match_map
         for fpath, match_qruple in match_map.items():
             fbytes = self._read_file(fpath)
             offset = 0  # File growth/shrink as substituted?

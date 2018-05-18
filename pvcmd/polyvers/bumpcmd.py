@@ -14,6 +14,7 @@ from boltons.setutils import IndexedSet as iset
 from . import NOTICE, pvtags, pvproject, cli
 from ._vendor.traitlets.traitlets import Bool, Unicode
 from .cmdlet import cmdlets
+from .utils import fileutil as fu
 from .utils.oscmd import cmd
 
 
@@ -92,7 +93,13 @@ class BumpCmd(cli._SubCmd):
         config=True,
         help="""
         Amend the last version tag of the project, don't bump
-        (one older version assumed)""")
+        (one older version assumed)"""
+    )
+
+    engrave_only = Bool(
+        config=True,
+        help="Don't commit/tag after engraving; good for debugging engravings"
+    )
 
     out_of_trunk_releases = Bool(
         True,
@@ -241,9 +248,26 @@ class BumpCmd(cli._SubCmd):
 
         return pverbump
 
+    def _engrave_matches(self, fproc):
+        git_root = self.git_root.resolve(strict=True)
+        with fu.chdir(git_root):
+            fproc.engrave_matches()
+
+        if self.log.isEnabledFor(NOTICE):
+            enfiles = fproc.grafted_files()
+            enfiles_desc = '\n    - '.join(
+                str(f.relative_to(git_root)) for
+                f in enfiles)
+            self.log.notice(
+                "Engraved %s grafts in %s files (out of %s searched): "
+                "\n    - %s",
+                fproc.nmatches(),
+                len(enfiles),
+                len(fproc.grafted_files(all_searched=True)),
+                enfiles_desc)
+
     def run(self, *version_and_pnames):
         from . import engrave
-        from .utils import fileutil as fu
 
         git_root = self.git_root.resolve(strict=True)
         projects = self.bootstrapp_projects()
@@ -261,7 +285,7 @@ class BumpCmd(cli._SubCmd):
 
         fproc = engrave.FileProcessor(parent=self)
         with fu.chdir(git_root):
-            match_map = fproc.scan_projects(projects)
+            fproc.scan_projects(projects)
 
         if fproc.nmatches() == 0:
             ## FIXME: check each project specifically for engraves.
@@ -271,25 +295,16 @@ class BumpCmd(cli._SubCmd):
                 raise cmdlets.CmdException(
                     "No version-engravings happened, bump aborted.")
 
+        if self.engrave_only:
+            self._engrave_matches(fproc)
+            return
+
         ## Finally stop before serious damage happens,
         #  (but only after havin run some validation to run, above).
         self._stop_if_git_dirty()
 
         with pvtags.git_restore_point(restore_head=self.dry_run):
-            with fu.chdir(git_root):
-                fproc.engrave_matches(match_map)
-            if self.log.isEnabledFor(NOTICE):
-                enfiles = fproc.grafted_files()
-                enfiles_desc = '\n    - '.join(
-                    str(f.relative_to(git_root))
-                    for f in enfiles)
-                self.log.notice(
-                    "Engraved %s grafts in %s files (out of %s searched): "
-                    "\n    - %s",
-                    fproc.nmatches(),
-                    len(enfiles),
-                    len(fproc.grafted_files(all_searched=True)),
-                    enfiles_desc)
+            self._engrave_matches(fproc)
 
             ## TODO: move all git-cmds to pvtags?
             if self.out_of_trunk_releases:
@@ -341,6 +356,10 @@ BumpCmd.flags = {  # type: ignore
     ('a', 'amend'): (
         {'BumpCmd': {'amend': True}},
         BumpCmd.amend.help
+    ),
+    ('e', 'engrave-only'): (
+        {'BumpCmd': {'engrave_only': True}},
+        BumpCmd.engrave_only.help
     ),
     ('t', 'tag'): (
         {'Project': {'tag': True}},

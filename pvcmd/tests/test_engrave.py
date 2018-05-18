@@ -237,7 +237,8 @@ def test_engrave(fileset_mutable, ok_files, f1_graft, f2_graft, caplog):
     prj = Project(config=cfg)
     fproc = engrave.FileProcessor()
     match_map = fproc.scan_projects([prj])
-    fproc.engrave_matches(match_map)
+    assert match_map == fproc.match_map
+    fproc.engrave_matches()
     #print(pformat(match_map))
     assert fproc.nmatches() == 4
 
@@ -269,8 +270,8 @@ def test_engrave_duped_scans(fileset_mutable, ok_files, f1_graft, f2_graft, capl
     prj2 = Project(config=cfg)
 
     fproc = engrave.FileProcessor()
-    match_map = fproc.scan_projects([prj1, prj2])
-    fproc.engrave_matches(match_map)
+    fproc.scan_projects([prj1, prj2])
+    fproc.engrave_matches()
     #print(pformat(match_map))
     assert fproc.nmatches() == 4
 
