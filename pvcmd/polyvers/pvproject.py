@@ -544,7 +544,7 @@ class Project(cmdlets.Replaceable, cmdlets.Printable, yu.YAMLable, cmdlets.Spec)
             'grafts': [{
                 'regex': tw.dedent(r'''
                     (?xm)
-                        \b__version__
+                        ^__version__
                         (\ *=\ *)
                         (.+?[\r\n])
                     '''),
@@ -552,7 +552,7 @@ class Project(cmdlets.Replaceable, cmdlets.Printable, yu.YAMLable, cmdlets.Spec)
             }, {
                 'regex': tw.dedent(r'''
                     (?xm)
-                        \b__updated__
+                        ^__updated__
                         (\ *=\ *)
                         (.+?[\r\n])
                     '''),
