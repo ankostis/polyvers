@@ -66,7 +66,7 @@ setup(
     # packages=find_packages(osp.realpath(osp.join(mydir, 'polyversion')),
     #                        exclude=['tests', 'tests.*']),
     packages=['polyversion'],
-    license='EUPL 1.2',
+    license='MIT',
     zip_safe=True,
     platforms=['any'],
     keywords="version-management configuration-management versioning "
@@ -74,7 +74,7 @@ setup(
     classifiers=[
         'Development Status :: 3 - Alpha',
         'Intended Audience :: Developers',
-        'License :: OSI Approved :: European Union Public Licence 1.1 (EUPL 1.1)',
+        'License :: OSI Approved :: MIT License',
         'Natural Language :: English',
         'Programming Language :: Python :: 3',
         'Programming Language :: Python :: 3.6',
