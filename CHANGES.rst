@@ -12,11 +12,11 @@ Actually most changes happened in "interim" release `v0.0.2a2`, below.
 - doc: fix rtd & pypi sites.
 
 0.0.2a3 (2018-05-17)
-~~~~~~~~~~~~~~~~~~~~
+^^^^^^^^^^^^^^^^^^^^
 Broken `pvcmd`, was missing `polyversion` lib dependency(!)
 
 0.0.2a2 (2018-05-17)
-~~~~~~~~~~~~~~~~~~~~
+^^^^^^^^^^^^^^^^^^^^
 Interim release to produce executable wheel needed by next release.
 
 
@@ -34,7 +34,7 @@ Interim release to produce executable wheel needed by next release.
   with bumped version.
 
 0.0.2a0 (2018-05-16)
-~~~~~~~~~~~~~~~~~~~~
+^^^^^^^^^^^^^^^^^^^^
 broken
 
 
