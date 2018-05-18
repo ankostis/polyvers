@@ -8,7 +8,7 @@ import sys
 
 from setuptools import setup, find_packages
 
-from pvlib.polyversion import polyversion
+from pvlib.polyversion import polyversion  # noqa: F401  # engraved-out in packages.
 
 
 mydir = osp.dirname(osp.realpath(__file__))

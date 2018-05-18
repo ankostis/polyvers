@@ -64,7 +64,7 @@ class PolyversCmd(cmdlets.Cmd, yu.YAMLable):
     SYNTAX:
       {cmd_chain} <sub-cmd> ...
     """
-    version = __version__
+    version = __version__  # type: ignore  # mypy complains with engraved value??g.
     examples = Unicode("""
         - Let it guess the configurations for your monorepo::
               {cmd_chain} init
