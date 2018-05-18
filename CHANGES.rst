@@ -3,9 +3,17 @@ Changes
 =======
 
 
+0.0.2a8 (2018-05-18): polyvers
+------------------------------
+- FIX(bump): was engraving all projects and not limiting to those
+  specified in the command-line - command's syntax slightly changed.
+- chore: Stop increasing `polyversion` version from now on.
+- doc: fix all sphinx errors and API reference.
+
 0.0.2a7 (2018-05-18)
---------------------
-LICENSE `polyversion` lib under MIT
+^^^^^^^^^^^^^^^^^^^^
+Interim release to embed re-LICENSED ``bin/pvlib.whl``,
+from EUPLv1.2-->MIT
 
 
 0.0.2a6 (2018-05-18)
@@ -15,8 +23,7 @@ LICENSE `polyversion` lib under MIT
     - feat: ``--engrave-only``.
     - feat: log ``PRETEND`` while doing actions.
     - feat: Log which files where engraved in the final message.
-- fix(engrave): don't waste cycles/log-messages to substite empty-matches
-  (minor).
+- fix(engrave): don't waste cycles/log-messages on empty-matches (minor).
 
 
 0.0.2a5 (2018-05-18)
