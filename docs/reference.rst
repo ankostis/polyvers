@@ -24,22 +24,29 @@ Main app
 .. autosummary::
 
    polyvers
-   polyvers.pvproject
    polyvers.cli
+   polyvers.bumpcmd
+   polyvers.pvproject
    polyvers.pvtags
+   polyvers.engrave
    polyvers.mainpump
    polyvers.logconfutils
    polyvers.cmdlets
    polyvers.cfgcmd
 
-Module: :mod:`polyvers.pvproject`
----------------------------------
-.. automodule:: polyvers.pvproject
-   :members:
-
 Module: :mod:`polyvers.cli`
 -------------------------------
 .. automodule:: polyvers.cli
+   :members:
+
+Module: :mod:`polyvers.bumpcmd`
+-------------------------------
+.. automodule:: polyvers.cli
+   :members:
+
+Module: :mod:`polyvers.pvproject`
+---------------------------------
+.. automodule:: polyvers.pvproject
    :members:
 
 Module: :mod:`polyvers.pvtags`

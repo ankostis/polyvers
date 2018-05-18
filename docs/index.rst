@@ -15,8 +15,8 @@ Contents:
     :name: mastertoc
 
     usage
+    changes
     reference
-    history
 
 Indices and tables
 ------------------
