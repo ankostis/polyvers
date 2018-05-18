@@ -2,6 +2,16 @@
 CHANGES
 =======
 
+
+0.0.2a6 (2018-05-18)
+--------------------
+- ``bump`` cmd:
+    - feat: ``bump --amend`` now works
+    - feat: ``bump --engrave-only``.
+    - fix: report ``--dry-run`` while doing actions.
+    - feat: Log which files where engraved in the final message.
+
+
 0.0.2a5 (2018-05-18)
 --------------------
 Actually most changes happened in "interim" release `v0.0.2a2`, below.
@@ -26,12 +36,12 @@ Interim release to produce executable wheel needed by next release.
 
 0.0.2a1 (2018-05-17)
 --------------------
-- 2nd release as 2 projects:
+- 2nd release, own "mono-project" splitted into 2-project "monorepo":
   - **polyvers:** cmdline tool
   - **polyversion:** library code for program-sources to derive version from git-tags
 - `init`, `status`, `bump` and `config` commands work.
 - Read/write YAML config file ``.polyvers.yaml`` at the git-root,
-  and can automatically discovere used configuration (from existing git *tags*
+  and can automatically discover used configuration (from existing git *tags*
   or projects files).
 - Support both ``--monorepo`` and ``--mono-project`` configurations.
 - By default ``__init__.py``, ``setup.py`` and ``README.rst`` files are engraved
