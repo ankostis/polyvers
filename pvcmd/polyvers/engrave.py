@@ -271,8 +271,11 @@ class FileProcessor(cmdlets.Spec):
                                     for graft in eng.grafts)
         return igtruples or {}
 
-    def _glob_all_projects(self, projects: Sequence[pvproject.Project]):
-        other_bases = [prj.basepath for prj in projects if prj.basepath]
+    def _glob_all_projects(self,
+                           projects: Sequence[pvproject.Project],
+                           all_projects: Sequence[pvproject.Project]
+                           ) -> GraftsMap:
+        other_bases = [prj.basepath for prj in all_projects if prj.basepath]
         glob_truples = []
         for prj in projects:
             with self.errlogged(token='glob',
@@ -330,10 +333,12 @@ class FileProcessor(cmdlets.Spec):
 
         return good_match_map
 
-    def scan_projects(
-            self, projects: Sequence[pvproject.Project]
-    ) -> MatchMap:
-        grafts_map = self._glob_all_projects(projects)
+    def scan_projects(self,
+                      projects: Sequence[pvproject.Project],
+                      all_projects: Sequence[pvproject.Project] = None
+                      ) -> MatchMap:
+        assert projects
+        grafts_map = self._glob_all_projects(projects, all_projects or projects)
         match_map = self._scan_all_grafts(grafts_map)
         match_map = self._drop_overlapping_matches(match_map)
 

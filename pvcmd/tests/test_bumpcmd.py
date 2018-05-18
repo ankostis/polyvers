@@ -159,7 +159,7 @@ def test_bump_cmd_monorepo(mutable_repo, caplog, capsys):
     check_text(
         caplog.text,
         require=[
-            r"When --amend, version must empty, was 'badver'",
+            r"Unknown project",
         ])
 
     caplog.clear()

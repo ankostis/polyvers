@@ -23,7 +23,7 @@ class BumpCmd(cli._SubCmd):
     Increase or set the version of project(s) to the (relative/absolute) version.
 
     SYNTAX:
-        {cmd_chain} [OPTIONS] <version> [<project>]...
+        {cmd_chain} [OPTIONS] [<version> | --amend] [<project>]...
 
     - If no project(s) specified, increase the versions on all projects.
     - Denied if version for some projects is backward-in-time (or has jumped parts?);
@@ -275,20 +275,18 @@ class BumpCmd(cli._SubCmd):
 
         projects = self.bootstrapp_projects()
         if version_and_pnames:
-            version_bump, projects = self._filter_projects_by_pnames(projects, *version_and_pnames)
+            if self.amend:
+                ## When --amend, no version accepted.
+                version_and_pnames = (None, ) + version_and_pnames
+            version_bump, bump_projects = self._filter_projects_by_pnames(
+                projects, *version_and_pnames)
         else:
             version_bump = None
+            bump_projects = projects
 
-        ## Args-checks
-        #
-        if self.amend and version_bump:
-            raise cmdlets.CmdException(
-                "When --amend, version must empty, was '%s'!" %
-                version_bump)
+        pvtags.populate_pvtags_history(*bump_projects)
 
-        pvtags.populate_pvtags_history(*projects)
-
-        for prj in projects:
+        for prj in bump_projects:
             pverbump = self._prepare_project_current_version(prj, version_bump)
             ## Scream if version-bump fails pep440 validation.
             prj.set_new_version(pverbump)
@@ -301,7 +299,7 @@ class BumpCmd(cli._SubCmd):
 
         git_root = self.git_root.resolve(strict=True)
         with fu.chdir(git_root):
-            fproc.scan_projects(projects)
+            fproc.scan_projects(bump_projects, projects)
 
         if fproc.nmatches() == 0:
             ## FIXME: check each project specifically for engraves.
@@ -314,7 +312,7 @@ class BumpCmd(cli._SubCmd):
         if self.engrave_only:
             with fu.chdir(git_root):
                 fproc.engrave_matches()
-            self._log_action_completed(projects, fproc)
+            self._log_action_completed(bump_projects, fproc)
             return
 
         ## Finally stop before serious damage happens,
@@ -327,8 +325,8 @@ class BumpCmd(cli._SubCmd):
 
             ## TODO: move all git-cmds to pvtags?
             if self.out_of_trunk_releases:
-                for proj in projects:
-                    msg = self._make_commit_message(*projects, is_release=False)
+                for proj in bump_projects:
+                    msg = self._make_commit_message(*bump_projects, is_release=False)
                     proj.tag_version_commit(
                         msg, is_release=False, amend=self.amend,
                         sign_tag=self.sign_tags,
@@ -341,21 +339,21 @@ class BumpCmd(cli._SubCmd):
                     else:
                         cmd.git.checkout('HEAD')
 
-                    msg = self._make_commit_message(*projects, is_release=True)
-                    self._commit_new_release(msg, projects)
+                    msg = self._make_commit_message(*bump_projects, is_release=True)
+                    self._commit_new_release(msg, bump_projects)
 
-                    for proj in projects:
-                        msg = self._make_commit_message(*projects, is_release=True)
+                    for proj in bump_projects:
+                        msg = self._make_commit_message(*bump_projects, is_release=True)
                         proj.tag_version_commit(
                             msg, is_release=True, amend=self.amend,
                             sign_tag=self.sign_tags,
                             sign_user=self.sign_user)
 
             else:  # In-trunk plain *vtags* for mono-project repos.
-                msg = self._make_commit_message(*projects, is_release=False)
-                self._commit_new_release(msg, projects)
+                msg = self._make_commit_message(*bump_projects, is_release=False)
+                self._commit_new_release(msg, bump_projects)
 
-                for proj in projects:
+                for proj in bump_projects:
                     proj.tag_version_commit(
                         self,
                         msg, is_release=False,
@@ -363,7 +361,7 @@ class BumpCmd(cli._SubCmd):
                         sign_tag=self.sign_tags,
                         sign_user=self.sign_user)
 
-        self._log_action_completed(projects, fproc)
+        self._log_action_completed(bump_projects, fproc)
 
     # def start(self):
     #     with self.errlogged(doing="running cmd '%s'" % self.name,
