@@ -235,6 +235,12 @@ class FileProcessor(cmdlets.Spec):
                    for qruple in self.match_map.values()
                    for _prj, _eng, _graft, matches in qruple)
 
+    def grafted_files(self, all_searched=False) -> List[Path]:
+        return sorted(fpath
+                      for fpath, (_fbytes, changed)
+                      in self._fpath_bytes.items()
+                      if all_searched or changed)
+
     def _glob_project(self,
                       project: pvproject.Project,
                       other_bases: pvproject.FLikeList = ()

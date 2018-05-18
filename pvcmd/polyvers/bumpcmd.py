@@ -11,7 +11,7 @@ from typing import Tuple, Set, List  # noqa: F401 @UnusedImport, flake8 blind in
 
 from boltons.setutils import IndexedSet as iset
 
-from . import pvtags, pvproject, cli
+from . import NOTICE, pvtags, pvproject, cli
 from ._vendor.traitlets.traitlets import Bool, Unicode
 from .cmdlet import cmdlets
 from .utils.oscmd import cmd
@@ -205,6 +205,7 @@ class BumpCmd(cli._SubCmd):
         from . import engrave
         from .utils import fileutil as fu
 
+        git_root = self.git_root.resolve(strict=True)
         projects = self.bootstrapp_projects()
         if version_and_pnames:
             version_bump, projects = self._filter_projects_by_pnames(projects, *version_and_pnames)
@@ -220,7 +221,7 @@ class BumpCmd(cli._SubCmd):
             prj.set_new_version(version_bump)
 
         fproc = engrave.FileProcessor(parent=self)
-        with fu.chdir(self.git_root):
+        with fu.chdir(git_root):
             match_map = fproc.scan_projects(projects)
 
         if fproc.nmatches() == 0:
@@ -236,8 +237,20 @@ class BumpCmd(cli._SubCmd):
         self._stop_if_git_dirty()
 
         with pvtags.git_restore_point(restore_head=self.dry_run):
-            with fu.chdir(self.git_root):
+            with fu.chdir(git_root):
                 fproc.engrave_matches(match_map)
+            if self.log.isEnabledFor(NOTICE):
+                enfiles = fproc.grafted_files()
+                enfiles_desc = '\n    - '.join(
+                    str(f.relative_to(git_root))
+                    for f in enfiles)
+                self.log.notice(
+                    "Engraved %s grafts in %s files (out of %s searched): "
+                    "\n    - %s",
+                    fproc.nmatches(),
+                    len(enfiles),
+                    len(fproc.grafted_files(all_searched=True)),
+                    enfiles_desc)
 
             ## TODO: move all git-cmds to pvtags?
             if self.out_of_trunk_releases:
@@ -261,10 +274,12 @@ class BumpCmd(cli._SubCmd):
 
                 for proj in projects:
                     proj.tag_version_commit(self, is_release=False)
-        self.log.notice('Bumped projects: %s',
-                        ', '.join('%s-%s --> %s' %
-                                  (prj.pname, prj.current_version, prj.version)
-                                  for prj in projects))
+
+        if self.log.isEnabledFor(NOTICE):
+            bumpdesc = ', '.join('%s-%s --> %s' %
+                                 (prj.pname, prj.current_version, prj.version)
+                                 for prj in projects)
+            self.log.notice("Bumped projects: %s", bumpdesc)
 
     # def start(self):
     #     with self.errlogged(doing="running cmd '%s'" % self.name,
