@@ -6,7 +6,7 @@
 # You may obtain a copy of the Licence at: http://ec.europa.eu/idabc/eupl
 #
 """The command that actually bumps versions."""
-from typing import Sequence
+from typing import Sequence, Optional
 from typing import Tuple, Set, List  # noqa: F401 @UnusedImport, flake8 blind in funcs
 
 from boltons.setutils import IndexedSet as iset
@@ -22,9 +22,15 @@ class BumpCmd(cli._SubCmd):
     Increase or set the version of project(s) to the (relative/absolute) version.
 
     SYNTAX:
-        {cmd_chain} [OPTIONS] [<version>] [<project>]...
+        {cmd_chain} [OPTIONS] <version> [<project>]...
 
-    - A version specifier, either ABSOLUTE, or RELATIVE to current version:
+    - If no project(s) specified, increase the versions on all projects.
+    - Denied if version for some projects is backward-in-time (or has jumped parts?);
+      use --force if you might.
+
+    VERSION:
+    - A version specifier, either ABSOLUTE, or RELATIVE to the
+    current version og each project:
 
       - *ABSOLUTE* PEP-440 version samples:
         - Pre-releases: when working on new features:
@@ -61,13 +67,31 @@ class BumpCmd(cli._SubCmd):
         - ^+a_b-cd      ## Increased by a "local" identifier::
                         #       1.2.3     --> 1.2.3+a.b.cd
 
-    - If no <version> specified, '^1' assumed.
-    - If no project(s) specified, increase the versions on all projects.
-    - Denied if version for some projects is backward-in-time (or has jumped parts?);
-      use --force if you might.
-    - The 'v' prefix is not needed!
+    - If no <version> specified, each project specifies its default
+      (by default '^1').
+    - Doon't add a 'v' prefix in the version!
+
+    GRAMMAR (TODO):
+        ver       := ( oepoch '!' )? release? opre? opost? odev?
+        oepoch    := op? epoch
+        epoch     := DIGIT+
+        release   := onum ( '.' onum )*
+        onum      := op? DIGIT+
+        opre      := op? pre
+        opost     := op? post
+        odev      := op? dev
+        op        := ( '+' | '^' | '=' ) '?'?            # '=' if missing
+        (spaces not allowed):
+        (see PEP440 for the grammar of <pre>, <post>, <dev>)
     """
+
     classes = [pvproject.Project, pvproject.Engrave, pvproject.Graft]  # type: ignore
+
+    amend = Bool(
+        config=True,
+        help="""
+        Amend the last version tag of the project, don't bump
+        (one older version assumed)""")
 
     out_of_trunk_releases = Bool(
         True,
@@ -201,6 +225,21 @@ class BumpCmd(cli._SubCmd):
         if self.dry_run:
             self.log.warning('PRETEND commit: %s' % out)
 
+    def _prepare_project_current_version(self, prj,
+                                         version_bump: Optional[str]
+                                         ) -> Optional[str]:
+        prj.load_current_version_from_history()
+        pverbump = version_bump
+        if self.amend:
+            if pverbump:
+                raise cmdlets.CmdException(
+                    "When --amend, version must empty, was '%s'!" %
+                    pverbump)
+            pverbump = prj.current_version
+            prj.load_current_version_from_history(1)
+
+        return pverbump
+
     def run(self, *version_and_pnames):
         from . import engrave
         from .utils import fileutil as fu
@@ -215,10 +254,9 @@ class BumpCmd(cli._SubCmd):
         pvtags.populate_pvtags_history(*projects)
 
         for prj in projects:
+            pverbump = self._prepare_project_current_version(prj, version_bump)
             ## Scream if version-bump fails pep440 validation.
-            #
-            prj.load_current_version_from_history()
-            prj.set_new_version(version_bump)
+            prj.set_new_version(pverbump)
 
         fproc = engrave.FileProcessor(parent=self)
         with fu.chdir(git_root):
@@ -255,7 +293,8 @@ class BumpCmd(cli._SubCmd):
             ## TODO: move all git-cmds to pvtags?
             if self.out_of_trunk_releases:
                 for proj in projects:
-                    proj.tag_version_commit(self, is_release=False)
+                    proj.tag_version_commit(self, is_release=False,
+                                            amend=self.amend)
 
                 with pvtags.git_restore_point(restore_head=True,
                                               heads=False, tags=False):
@@ -267,13 +306,15 @@ class BumpCmd(cli._SubCmd):
                     self._commit_new_release(projects)
 
                     for proj in projects:
-                        proj.tag_version_commit(self, is_release=True)
+                        proj.tag_version_commit(self, is_release=True,
+                                                amend=self.amend)
 
             else:  # In-trunk plain *vtags* for mono-project repos.
                 self._commit_new_release(projects)
 
                 for proj in projects:
-                    proj.tag_version_commit(self, is_release=False)
+                    proj.tag_version_commit(self, is_release=False,
+                                            amend=self.amend)
 
         if self.log.isEnabledFor(NOTICE):
             bumpdesc = ', '.join('%s-%s --> %s' %
@@ -297,8 +338,8 @@ BumpCmd.flags = {  # type: ignore
         BumpCmd.sign_tags.help
     ),
     ('a', 'amend'): (
-        {'pvproject.Project': {'amend': True}},
-        pvproject.Project.amend.help
+        {'BumpCmd': {'amend': True}},
+        BumpCmd.amend.help
     ),
     ('t', 'tag'): (
         {'Project': {'tag': True}},
