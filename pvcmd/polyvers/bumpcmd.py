@@ -258,9 +258,10 @@ class BumpCmd(cli._SubCmd):
                 for prj in projects)
             action = "Engraved" if self.engrave_only else "Bumped"
             self.log.notice(
-                "%s projects: \n    - %s\n  with %s grafts in %s files"
+                "%s%s projects: \n    - %s\n  with %s grafts in %s files"
                 " (out of %s files globbed): "
                 "\n    - %s",
+                'PRETEND ' if self.dry_run else '',
                 action,
                 projver_desc,
                 fproc.nmatches(),
