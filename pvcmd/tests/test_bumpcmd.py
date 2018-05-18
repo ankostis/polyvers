@@ -100,7 +100,7 @@ def test_bump_cmd_mono_project(mutable_repo, caplog, capsys):
     # with capsys.disabled():
     #     print(gitlog)
     exp = tw.dedent("""\
-        chore(ver): bump simple-0.0.0 -> 0.0.1  (tag: r0.0.1, latest)
+        chore(ver): bump simple-r0.0.0 -> 0.0.1  (tag: r0.0.1, latest)
         added 'setup.py'  (HEAD -> master, tag: v0.0.1)
         some_msg  (origin/master, origin/HEAD)""")
     assert exp in gitlog
@@ -139,7 +139,7 @@ def test_bump_cmd_monorepo(mutable_repo, caplog, capsys):
     # with capsys.disabled():
     #     print(gitlog)
     exp = tw.dedent("""\
-        chore(ver): bump simple-0.0.0 -> 0.0.1  (tag: simple-r0.0.1, latest)
+        chore(ver): bump simple-r0.0.0 -> 0.0.1  (tag: simple-r0.0.1, latest)
         added 'setup.py'  (HEAD -> master, tag: simple-v0.0.1)
         some_msg  (origin/master, origin/HEAD)""")
     assert exp in gitlog

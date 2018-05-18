@@ -203,10 +203,11 @@ class BumpCmd(cli._SubCmd):
 
         return version, projects
 
-    def _make_commit_message(self, *projects: pvproject.Project):
+    def _make_commit_message(self, *projects: pvproject.Project,
+                             is_release=False):
         from ipython_genutils.text import indent, wrap_paragraphs
 
-        sub_summary = ', '.join(prj.interp(prj.message_summary)  # type: ignore # (null item)
+        sub_summary = ', '.join(prj.interp(prj.summary_interped(is_release))  # type: ignore # none
                                 for prj in projects)
         summary = self.interp(self.message_summary, sub_summary=sub_summary)
 
@@ -221,8 +222,8 @@ class BumpCmd(cli._SubCmd):
 
         return '%s\n\n%s' % (summary, body)
 
-    def _commit_new_release(self, projects: Sequence[pvproject.Project]):
-        msg = self._make_commit_message(*projects)
+    def _commit_new_release(self, msg,
+                            projects: Sequence[pvproject.Project]):
         ## TODO: move all git-cmds to pvtags?
         out = cmd.git.commit(message=msg,  # --message=fo bar FAILS!
                              all=True,
@@ -327,8 +328,11 @@ class BumpCmd(cli._SubCmd):
             ## TODO: move all git-cmds to pvtags?
             if self.out_of_trunk_releases:
                 for proj in projects:
-                    proj.tag_version_commit(self, is_release=False,
-                                            amend=self.amend)
+                    msg = self._make_commit_message(*projects, is_release=False)
+                    proj.tag_version_commit(
+                        msg, is_release=False, amend=self.amend,
+                        sign_tag=self.sign_tags,
+                        sign_user=self.sign_user)
 
                 with pvtags.git_restore_point(restore_head=True,
                                               heads=False, tags=False):
@@ -337,18 +341,27 @@ class BumpCmd(cli._SubCmd):
                     else:
                         cmd.git.checkout('HEAD')
 
-                    self._commit_new_release(projects)
+                    msg = self._make_commit_message(*projects, is_release=True)
+                    self._commit_new_release(msg, projects)
 
                     for proj in projects:
-                        proj.tag_version_commit(self, is_release=True,
-                                                amend=self.amend)
+                        msg = self._make_commit_message(*projects, is_release=True)
+                        proj.tag_version_commit(
+                            msg, is_release=True, amend=self.amend,
+                            sign_tag=self.sign_tags,
+                            sign_user=self.sign_user)
 
             else:  # In-trunk plain *vtags* for mono-project repos.
-                self._commit_new_release(projects)
+                msg = self._make_commit_message(*projects, is_release=False)
+                self._commit_new_release(msg, projects)
 
                 for proj in projects:
-                    proj.tag_version_commit(self, is_release=False,
-                                            amend=self.amend)
+                    proj.tag_version_commit(
+                        self,
+                        msg, is_release=False,
+                        amend=self.amend,
+                        sign_tag=self.sign_tags,
+                        sign_user=self.sign_user)
 
         self._log_action_completed(projects, fproc)
 

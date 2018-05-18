@@ -346,14 +346,18 @@ class Project(cmdlets.Replaceable, cmdlets.Printable, yu.YAMLable, cmdlets.Spec)
         """)
 
     message_summary = Unicode(
-        "{pname}-{current_version} -> {version}",
+        "{pname}-{vprefix}{current_version} -> {version}",
         config=True,
         help="""
             The commit & tag message's summary-line part for this project.
 
             Available interpolations (apart from env-vars prefixed with '$'):
-            {ikeys}
+            {vprefix}, {ikeys}
         """)
+
+    def summary_interped(self, is_release=False):
+        return self.interp(self.message_summary,
+                           vprefix=self.tag_vprefixes[int(is_release)])
 
     message_body = Unicode(
         config=True,
@@ -495,8 +499,9 @@ class Project(cmdlets.Replaceable, cmdlets.Printable, yu.YAMLable, cmdlets.Spec)
 
         return out
 
-    def tag_version_commit(self, bump_cmd, is_release=False,
-                           amend=False):
+    def tag_version_commit(self, msg, *,
+                           is_release=False, amend=False,
+                           sign_tag=None, sign_user=None):
         """
         Make a tag on current commit denoting a version-bump.
 
@@ -507,15 +512,18 @@ class Project(cmdlets.Replaceable, cmdlets.Printable, yu.YAMLable, cmdlets.Spec)
         from . import pvtags
 
         tag_name = self._format_vtag(self.version, is_release)
-        msg = bump_cmd._make_commit_message(self)
         ## TODO: move all git-cmds to pvtags?
         try:
-            cmd.git.tag(tag_name,
-                        message=msg,
-                        force=amend or self.is_forced('tag') or None,
-                        sign=bump_cmd.sign_tags or None,
-                        local_user=bump_cmd.sign_user or None,
-                        )
+            out = cmd.git.tag(
+                tag_name,
+                message=msg,
+                force=amend or self.is_forced('tag') or None,
+                sign=sign_tag or None,
+                local_user=sign_user or None,
+            )
+
+            if self.dry_run:
+                self.log.warning('PRETEND tag: %s' % out)
         except sbp.CalledProcessError as ex:
             if "already exists" in str(ex.stderr):
                 raise pvtags.GitError(
