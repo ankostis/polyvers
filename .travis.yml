@@ -90,5 +90,8 @@ script:
     fi
 
 after_success:
-  - pip install python-coveralls
-  - if [ $TRAVIS_PYTHON_VERSION \> '3.5' ]; then coveralls; fi
+  - |
+    if [ $TRAVIS_PYTHON_VERSION \> '3.5' ]; then
+        pip install python-coveralls
+        coveralls
+    fi
