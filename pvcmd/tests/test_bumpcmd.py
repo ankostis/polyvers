@@ -87,7 +87,8 @@ def test_bump_cmd_mono_project(mutable_repo, caplog, capsys):
     check_text(
         caplog.text,
         require=[
-            r"Bumped projects: simple-0.0.0 --> 0.0.1",
+            r"Bumped projects",
+            r"simple-0.0.0 --> 0.0.1",
         ], forbid=[
             "Cannot auto-discover (sub-)project",
             "Cannot auto-discover versioning scheme,"
@@ -125,7 +126,8 @@ def test_bump_cmd_monorepo(mutable_repo, caplog, capsys):
     check_text(
         caplog.text,
         require=[
-            r"Bumped projects: simple-0.0.0 --> 0.0.1",
+            r"Bumped projects",
+            r"simple-0.0.0 --> 0.0.1",
         ], forbid=[
             "Cannot auto-discover (sub-)project",
             "Cannot auto-discover versioning scheme,"
@@ -168,7 +170,8 @@ def test_bump_cmd_monorepo(mutable_repo, caplog, capsys):
     check_text(
         caplog.text,
         require=[
-            r"Bumped projects: simple-0.0.0 --> 0.0.1",
+            r"Bumped projects",
+            r"simple-0.0.0 --> 0.0.1",
         ], forbid=[
             "Cannot auto-discover (sub-)project",
             "Cannot auto-discover versioning scheme,"
@@ -184,10 +187,12 @@ def test_bump_cmd_monorepo(mutable_repo, caplog, capsys):
     check_text(
         caplog.text,
         require=[
+            r"Engraved projects",
+            r"simple-0.0.0 --> 0.0.1",
         ], forbid=[
             "Cannot auto-discover (sub-)project",
             "Cannot auto-discover versioning scheme,"
-            r"Bumped projects: simple-0.0.0 --> 0.0.1",
+            r"Bumped projects",
         ])
     out, err = capsys.readouterr()
     assert not out and not err

@@ -248,19 +248,23 @@ class BumpCmd(cli._SubCmd):
 
         return pverbump
 
-    def _engrave_matches(self, fproc):
-        git_root = self.git_root.resolve(strict=True)
-        with fu.chdir(git_root):
-            fproc.engrave_matches()
-
+    def _log_action_completed(self, projects, fproc):
         if self.log.isEnabledFor(NOTICE):
+            git_root = self.git_root.resolve(strict=True)
             enfiles = fproc.grafted_files()
             enfiles_desc = '\n    - '.join(
                 str(f.relative_to(git_root)) for
                 f in enfiles)
+            projver_desc = '\n    - '.join(
+                '%s-%s --> %s' % (prj.pname, prj.current_version, prj.version)
+                for prj in projects)
+            action = "Engraved" if self.engrave_only else "Bumped"
             self.log.notice(
-                "Engraved %s grafts in %s files (out of %s searched): "
+                "%s projects: \n    - %s\n  with %s grafts in %s files"
+                " (out of %s files globbed): "
                 "\n    - %s",
+                action,
+                projver_desc,
                 fproc.nmatches(),
                 len(enfiles),
                 len(fproc.grafted_files(all_searched=True)),
@@ -296,7 +300,9 @@ class BumpCmd(cli._SubCmd):
                     "No version-engravings happened, bump aborted.")
 
         if self.engrave_only:
-            self._engrave_matches(fproc)
+            with fu.chdir(git_root):
+                fproc.engrave_matches()
+            self._log_action_completed(projects, fproc)
             return
 
         ## Finally stop before serious damage happens,
@@ -304,7 +310,8 @@ class BumpCmd(cli._SubCmd):
         self._stop_if_git_dirty()
 
         with pvtags.git_restore_point(restore_head=self.dry_run):
-            self._engrave_matches(fproc)
+            with fu.chdir(git_root):
+                fproc.engrave_matches()
 
             ## TODO: move all git-cmds to pvtags?
             if self.out_of_trunk_releases:
@@ -332,11 +339,7 @@ class BumpCmd(cli._SubCmd):
                     proj.tag_version_commit(self, is_release=False,
                                             amend=self.amend)
 
-        if self.log.isEnabledFor(NOTICE):
-            bumpdesc = ', '.join('%s-%s --> %s' %
-                                 (prj.pname, prj.current_version, prj.version)
-                                 for prj in projects)
-            self.log.notice("Bumped projects: %s", bumpdesc)
+        self._log_action_completed(projects, fproc)
 
     # def start(self):
     #     with self.errlogged(doing="running cmd '%s'" % self.name,
