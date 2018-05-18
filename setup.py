@@ -65,6 +65,7 @@ setup(
         'Documentation': 'http://polyvers.readthedocs.io/',
         'Source': 'https://github.com/jrcstu/polyvers',
         'Tracker': 'https://github.com/jrcstu/polyvers/issues',
+        'Polyversion': 'https://pypi.org/project/polyversion/',
     },
     package_dir={'': 'pvcmd'},
     packages=find_packages('pvcmd', exclude=['tests', 'tests.*']),

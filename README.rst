@@ -37,7 +37,7 @@ Polyvers: Bump independently sub-project versions in Git monorepos
 :updated:       |today|
 :Documentation: https://polyvers.readthedocs.io
 :repository:    https://github.com/JRCSTU/polyvers
-:pypi-repo:     https://pypi.org/project/polyvers/
+:pypi-repo:     https://pypi.org/project/polyvers/, https://pypi.org/project/polyversion/
 :keywords:      version-management, configuration-management, versioning,
                 git, monorepo, tool, library
 :copyright:     2018 JRC.C4(STU), European Commission (`JRC <https://ec.europa.eu/jrc/>`_)
