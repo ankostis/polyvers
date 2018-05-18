@@ -32,5 +32,7 @@ __music__ = {
 
 
 NOTICE = 25
+TRACE = 5
 lcu.patch_new_level_in_logging(NOTICE, 'NOTICE')
+lcu.patch_new_level_in_logging(TRACE, 'TRACE')
 lcu.default_logging_level = NOTICE
