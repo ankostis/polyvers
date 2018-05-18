@@ -293,6 +293,11 @@ class BumpCmd(cli._SubCmd):
             prj.set_new_version(pverbump)
 
         fproc = engrave.FileProcessor(parent=self)
+        if not self.engrave_only:
+            ## Cancel --dry-run when doing a "real" bump,
+            #  because Git will rollback the changes.
+            fproc.dry_run = False
+
         git_root = self.git_root.resolve(strict=True)
         with fu.chdir(git_root):
             fproc.scan_projects(projects)
