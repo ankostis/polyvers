@@ -45,7 +45,7 @@ test_requirements = [
 PROJECT = 'polyversion'
 setup(
     name=PROJECT,
-    version=polyversion(PROJECT, '0.0.0'),
+    version='0.0.2a6',
     description="Lib code deriving subproject versions from tags on git monorepos.",
     long_description=readme,
     author="Kostis Anagnostopoulos",
