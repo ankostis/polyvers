@@ -290,10 +290,12 @@ class FileProcessor(cmdlets.Spec):
                                     doing="scanning '%s' for %.21s.%.21s" %
                                     (fpath, prj, eng)):
                     matches = graft.collect_matches(fbytes, prj)
-                    self.log.debug("Scanned %i matches in %i-bytes text of file '%s': "
-                                   "\n  %s\n  %s\n  %s \n  %s",
-                                   len(matches), len(fbytes), fpath,
-                                   matches, graft, eng, prj)
+                    self.log.debug(
+                        "Scanned %i matches in %i-bytes text of file '%s': "
+                        "\n  matches: %s\n  %s\n  %s \n  %s",
+                        len(matches), len(fbytes), fpath,
+                        '\n    '.join(str(m) for m in [''] + matches),  # type: ignore
+                        graft, eng, prj)
 
                     sliced_matches = graft.sliced_matches(matches)
                     if len(sliced_matches) != len(matches):
@@ -345,6 +347,8 @@ class FileProcessor(cmdlets.Spec):
             fbytes = self._read_file(fpath)
             offset = 0  # File growth/shrink as substituted?
             for prj, eng, graft, matches in match_qruple:
+                if not matches:
+                    continue
                 with self.errlogged(token='subst',
                                     doing="subst '%s' with %.21s.%.21s.%.21s" %
                                     (fpath, prj, eng, graft)):
