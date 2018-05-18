@@ -3,7 +3,7 @@ Changes
 =======
 
 
-0.0.2a8 (2018-05-18): polyvers
+0.0.2a8 (2018-05-19): polyvers
 ------------------------------
 - FIX(bump): was engraving all projects and not limiting to those
   specified in the command-line - command's syntax slightly changed.
