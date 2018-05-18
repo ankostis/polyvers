@@ -87,7 +87,7 @@ def test_bump_cmd_mono_project(mutable_repo, caplog, capsys):
     check_text(
         caplog.text,
         require=[
-            r" Bumped projects: simple-0.0.0 --> 0.0.1",
+            r"Bumped projects: simple-0.0.0 --> 0.0.1",
         ], forbid=[
             "Cannot auto-discover (sub-)project",
             "Cannot auto-discover versioning scheme,"
@@ -125,7 +125,7 @@ def test_bump_cmd_monorepo(mutable_repo, caplog, capsys):
     check_text(
         caplog.text,
         require=[
-            r" Bumped projects: simple-0.0.0 --> 0.0.1",
+            r"Bumped projects: simple-0.0.0 --> 0.0.1",
         ], forbid=[
             "Cannot auto-discover (sub-)project",
             "Cannot auto-discover versioning scheme,"
@@ -145,3 +145,49 @@ def test_bump_cmd_monorepo(mutable_repo, caplog, capsys):
     cmd.git.checkout('latest')  # Branch-name from BumpCmd.release_branch.
     setuppy_text = setupy_fpath.read_text(encoding='utf-8')
     assert re.search("version *= *'0.0.1',", setuppy_text), setuppy_text
+
+    # # FIXME: project fails with return mg['version']!
+    # rc = cli.run('init'.split())
+    # _ = capsys.readouterr()
+    # assert rc == 1
+
+    rc = cli.run('bump  --amend badver'.split())
+    assert rc == 1
+    capsys.readouterr()
+    check_text(
+        caplog.text,
+        require=[
+            r"When --amend, version must empty, was 'badver'",
+        ])
+
+    caplog.clear()
+    rc = cli.run('bump  -v --amend'.split())
+    # with capsys.disabled():
+    #     print(caplog.text)
+    assert rc == 0
+    check_text(
+        caplog.text,
+        require=[
+            r"Bumped projects: simple-0.0.0 --> 0.0.1",
+        ], forbid=[
+            "Cannot auto-discover (sub-)project",
+            "Cannot auto-discover versioning scheme,"
+        ])
+    out, err = capsys.readouterr()
+    assert not out and not err
+
+    caplog.clear()
+    rc = cli.run('bump  -v --amend --engrave-only'.split())
+    # with capsys.disabled():
+    #     print(caplog.text)
+    assert rc == 0
+    check_text(
+        caplog.text,
+        require=[
+        ], forbid=[
+            "Cannot auto-discover (sub-)project",
+            "Cannot auto-discover versioning scheme,"
+            r"Bumped projects: simple-0.0.0 --> 0.0.1",
+        ])
+    out, err = capsys.readouterr()
+    assert not out and not err
