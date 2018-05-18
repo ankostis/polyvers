@@ -67,12 +67,12 @@ class BumpCmd(cli._SubCmd):
         - ^+a_b-cd      ## Increased by a "local" identifier::
                         #       1.2.3     --> 1.2.3+a.b.cd
 
-    - If no <version> specified, each project specifies its default
-      (by default '^1').
-    - Doon't add a 'v' prefix in the version!
+      - If no <version> specified, each project specifies its default
+        (by default '^1').
+      - Don't add a 'v' prefix in the version!
 
     GRAMMAR (TODO):
-        ver       := ( oepoch '!' )? release? opre? opost? odev?
+        ver       := ( oepoch '!' )? release? opre? opost? odev? ( '+' local')?
         oepoch    := op? epoch
         epoch     := DIGIT+
         release   := onum ( '.' onum )*
@@ -81,8 +81,9 @@ class BumpCmd(cli._SubCmd):
         opost     := op? post
         odev      := op? dev
         op        := ( '+' | '^' | '=' ) '?'?            # '=' if missing
-        (spaces not allowed):
-        (see PEP440 for the grammar of <pre>, <post>, <dev>)
+
+       - spaces are not allowed
+       - see PEP440 for the grammar of <pre>, <post>, <dev>, <local>
     """
 
     classes = [pvproject.Project, pvproject.Engrave, pvproject.Graft]  # type: ignore

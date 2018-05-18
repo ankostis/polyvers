@@ -417,11 +417,32 @@ users need ``pip install --pre`` to install from such release-trains.
 This is a safeguard to avoid accidentally landing half-baked code to users.
 
 
-Knwon Limitations, Drawbacks & Workarounds
+Known Limitations, Drawbacks & Workarounds
 ------------------------------------------
 .. TODO: epoch vermath, and update README
 
 - PEP440 `Epoch` handling is not yet working.
+- Version-bump's grammar is not yet as described in "GRAMMAR" section
+  of command's doc::
+
+    $ polyvers config desc --class BumpCmd
+    BumpCmd(_SubCmd)
+    ----------------
+    Increase or set the version of project(s) to the (relative/absolute) version.
+    SYNTAX:
+        polyvers config desc [OPTIONS] <version> [<project>]...
+    - If no project(s) specified, increase the versions on all projects.
+    - Denied if version for some projects is backward-in-time (or has jumped parts?);
+      use --force if you might.
+    VERSION: - A version specifier, either ABSOLUTE, or RELATIVE to the current
+    version og each project:
+      - *ABSOLUTE* PEP-440 version samples:
+        - Pre-releases: when working on new features:
+            X.YbN               # Beta release
+            X.YrcN  or  X.YcN   # Release Candidate
+            X.Y                 # Final release
+    ...
+
 - WARNING: when you build your package for distribution (*wheel*, correct?)
   remember to switch to the `out-of-trunk (leaf) "Release" commit`.
   This is particularly important if your ``setup.py`` file  use ``polyversion()``
