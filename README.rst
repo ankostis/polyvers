@@ -417,8 +417,11 @@ users need ``pip install --pre`` to install from such release-trains.
 This is a safeguard to avoid accidentally landing half-baked code to users.
 
 
-Drawbacks & Workarounds
------------------------
+Knwon Limitations, Drawbacks & Workarounds
+------------------------------------------
+.. TODO: epoch vermath, and update README
+
+- PEP440 `Epoch` handling is not yet working.
 - WARNING: when you build your package for distribution (*wheel*, correct?)
   remember to switch to the `out-of-trunk (leaf) "Release" commit`.
   This is particularly important if your ``setup.py`` file  use ``polyversion()``

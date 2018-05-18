@@ -94,7 +94,7 @@ def test_errors(v1, v2, exp):
     ('0a.post.dev', '+dev', VersionError('ackward bump')),  # '0a-.post0.dev0'),
     ('0a.post.dev2', '+=dev', '0a0.post0.dev2'),
 
-    ## TODO: epoch
+    ## TODO: epoch vermath, and update README
     #('0a.post.dev2', '+=1!dev', '0a0.post0.dev2'),
     #('0a.post.dev2', '+=1!post2.dev1', '0a0.post2.dev3'),
     #('0b.post.dev2', '+1!a.dev1', '0a0.dev1'),

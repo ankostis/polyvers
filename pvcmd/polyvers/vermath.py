@@ -104,6 +104,7 @@ def _add_pre(base_tuple, rel_label, rel_num):
 
 
 def _add_versions(base_ver: VerLike, relative_ver):
+    ## TODO: epoch vermath, and update README
     bver = _packver(base_ver)
     m = _relative_ver_regex.match(str(relative_ver))
     if not m:
