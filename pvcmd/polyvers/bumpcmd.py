@@ -239,10 +239,8 @@ class BumpCmd(cli._SubCmd):
         prj.load_current_version_from_history()
         pverbump = version_bump
         if self.amend:
-            if pverbump:
-                raise cmdlets.CmdException(
-                    "When --amend, version must empty, was '%s'!" %
-                    pverbump)
+            assert not pverbump, (
+                "cmd.run() checks that no ver given: %s" % pverbump)
             pverbump = prj.current_version
             prj.load_current_version_from_history(1)
 
@@ -273,12 +271,18 @@ class BumpCmd(cli._SubCmd):
     def run(self, *version_and_pnames):
         from . import engrave
 
-        git_root = self.git_root.resolve(strict=True)
         projects = self.bootstrapp_projects()
         if version_and_pnames:
             version_bump, projects = self._filter_projects_by_pnames(projects, *version_and_pnames)
         else:
             version_bump = None
+
+        ## Args-checks
+        #
+        if self.amend and version_bump:
+            raise cmdlets.CmdException(
+                "When --amend, version must empty, was '%s'!" %
+                version_bump)
 
         pvtags.populate_pvtags_history(*projects)
 
@@ -288,6 +292,7 @@ class BumpCmd(cli._SubCmd):
             prj.set_new_version(pverbump)
 
         fproc = engrave.FileProcessor(parent=self)
+        git_root = self.git_root.resolve(strict=True)
         with fu.chdir(git_root):
             fproc.scan_projects(projects)
 
