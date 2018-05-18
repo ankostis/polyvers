@@ -3,6 +3,11 @@ CHANGES
 =======
 
 
+0.0.2a7 (2018-05-18)
+--------------------
+LICENSE `polyversion` lib under MIT
+
+
 0.0.2a6 (2018-05-18)
 --------------------
 - ``bump`` command:
