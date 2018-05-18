@@ -7,7 +7,7 @@
 # You may obtain a copy of the Licence at: http://ec.europa.eu/idabc/eupl
 #
 """
-Utils for building elaborate Commands/Sub-commands with traitlets Application.
+Utils for building elaborate Commands/Sub-commands with traitlets [1]_ Application.
 
 ## Examples:
 
@@ -41,7 +41,7 @@ Of course you can mix'n match.
 
 4. Listen `Good Bait <https://www.youtube.com/watch?v=CE4bl5rk5OQ>`_ after 1:43.
 
-.. [#] http://traitlets.readthedocs.io/
+.. [1] http://traitlets.readthedocs.io/
 """
 from collections import OrderedDict
 from os import PathLike
@@ -864,13 +864,13 @@ class Cmd(trc.Application, Spec):
         Load :attr:`config_paths` and maintain :attr:`config_registry`.
 
         :param config_paths:
-            optional paths to override those in `config_paths`trait,
+            optional paths to override those in `config_paths` trait,
             in descending order (1st overrides the rest).
         :return:
             the static_config loaded
 
         - Configuration files are read and merged from ``.json`` and/or ``.py`` files
-          in :attribute:`config_paths`.
+          in :attr:`config_paths`.
         """
         ## Adapted from :meth:`load_config_file()` & :meth:`_load_config_files()`.
         config_paths = self._collect_static_fpaths(config_paths)
@@ -1047,10 +1047,10 @@ class Cmd(trc.Application, Spec):
             self = self.parent
 
     def start(self):
-        """Dispatches into sub-cmds (if any), and then delegates to :meth:`run().
+        """Dispatches into sub-cmds (if any), and then delegates to :meth:`run()`.
 
         If overriden, better invoke :func:`super()`, but even better
-        to override :meth:``run()`.
+        to override :meth:`run()`.
         """
         if self.subapp is None:
             res = self.run(*self.extra_args)

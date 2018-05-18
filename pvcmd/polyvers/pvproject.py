@@ -423,6 +423,7 @@ class Project(cmdlets.Replaceable, cmdlets.Printable, yu.YAMLable, cmdlets.Spec)
             using python functions, e.g. ``('*-v*', '*-r*')``
         :param git_flags:
             CLI flags passed to ``git describe`` command.
+
             - See :class:`.oscmd.PopenCmd` on how to specify cli flags
               using python functions, e.g. ``(all=True)``.
             - See https://git-scm.com/docs/git-describe
@@ -440,7 +441,7 @@ class Project(cmdlets.Replaceable, cmdlets.Printable, yu.YAMLable, cmdlets.Spec)
            for extracting just the version part from a *pvtag*; use this one
            from within project sources.
 
-        .. INFO::
+        .. TIP::
            Same results can be retrieved by this `git` command::
 
                git describe --tags --match <PROJECT>-v*
@@ -484,7 +485,7 @@ class Project(cmdlets.Replaceable, cmdlets.Printable, yu.YAMLable, cmdlets.Spec)
         :raise sbp.CalledProcessError:
             for any other error while executing *git*.
 
-        .. INFO::
+        .. NOTE::
            Same results can be retrieved by this `git` command::
 
                git describe --tags --match <PROJECT>-v*

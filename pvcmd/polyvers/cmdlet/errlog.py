@@ -242,7 +242,6 @@ class ErrLog(cmdlets.Replaceable, trt.HasTraits):
         To nest errlogs, prefer :func:`nesterrlog()` instead of this constructor,
         or else you must keep a reference on the last enclosing errlog and
         explicitly call :meth:`ErrLog.__call__()` on it.
-        .
 
     - Unknown errors (not in `exceptions`) always bubble up immediately.
     - Any "forced" errors are collected and logged in `warn_log` on context-exit,
@@ -264,6 +263,7 @@ class ErrLog(cmdlets.Replaceable, trt.HasTraits):
         the :attr:`force` token to respect, like :meth:`Spec.is_forced()`.
         Resets on each new instance from :meth:`__call__()`.
         Possible values:
+
           - false: (default) completely ignore `force` trait
              collected are just delayed);
           - <a string>: "force" if this token is in `force` trait;
@@ -546,6 +546,7 @@ class ErrLog(cmdlets.Replaceable, trt.HasTraits):
     def report_root(self, ex_raised: Optional[Exception]) -> Optional['CollectedErrors']:
         """
         Raise or log the errors collected from
+
         :param ex_raised:
             the cntxt-body exception ``__exit__()`` is about to raise
         :return:

@@ -43,6 +43,7 @@ vtag_frmt = '{vprefix}{version}'
 
 #: The default regex pattern breaking *monorepo* version-tags
 #: and/or ``git-describe`` output into 3 capturing groups:
+#:
 #:   - ``pname``,
 #:   - ``version`` (without the ``{vprefix)``),
 #:   - ``descid`` (optional) anything following the dash('-') after
@@ -183,7 +184,7 @@ def polyversion(pname, default=None, repo_path=None,
         - true: use plain *vtags* :data:`vtag_frmt` & :data:`vtag_regex`.
         - The `tag_frmt` and `tag_regex` args take precendance, if given.
     :param str tag_frmt:
-        The :pep:`3101` pattern for creating *pvtags* (or *vtags).
+        The :pep:`3101` pattern for creating *pvtags* (or *vtags*).
 
         - It receives 2 parameters to interpolate: ``{pname}, {version} = '*'``.
         - It is used also to generate the match patterns for ``git describe --match <pattern>``
@@ -192,6 +193,7 @@ def polyversion(pname, default=None, repo_path=None,
         - See :data:`pvtag_frmt` & :data:`vtag_frmt`
     :param regex tag_regex:
         The regex pattern breaking apart *pvtags*, with 3 named capturing groups:
+
         - ``pname``,
         - ``version`` (without the 'v'),
         - ``descid`` (optional) anything following the dash('-') after

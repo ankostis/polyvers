@@ -206,7 +206,9 @@ class InfosCmd(_ConfigBase):
     Some of the environment-variables affecting configurations:
         HOME, USERPROFILE,          : where configs & DICE projects are stored
                                       (1st one defined wins)
+
         <APPNAME>_CONFIG_PATHS      : where to read configuration-files.
+
     """
 
     examples = Unicode("""

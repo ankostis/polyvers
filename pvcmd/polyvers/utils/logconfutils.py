@@ -189,8 +189,10 @@ def init_logging(
     :param logconf:
         File(s) to configure loggers; set `[]` to prohibit loading any logconf file.
         Allowed file-extensions:
+
           - '.conf' (implied if missing) .
           - '.yml'/'yaml'
+
         The `~` in the path expanded to $HOME.
         See https://docs.python.org/3/library/logging.config.html
     :type logconf:

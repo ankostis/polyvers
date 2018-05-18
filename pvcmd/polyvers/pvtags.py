@@ -10,9 +10,10 @@
 Git code to make/inspect sub-project "(p)vtags" and respective commits in (mono)repos.
 
 There are 3 important methods/functions calling Git:
-- :method:`Project.git_describe()` that fetches the same version-id
+
+- :meth:`Project.git_describe()` that fetches the same version-id
   that :func:`polyversion.polyversion()` would return, but with more options.
-- :method:`Project.last_commit_tstamp()`, same as above.
+- :meth:`Project.last_commit_tstamp()`, same as above.
 - :func:`populate_pvtags_history()` that populates *pvtags* on the given
   project instances; certain pvtag-related Project methods would fail if
   this function has not been applies on a project instance.
@@ -273,9 +274,9 @@ def populate_pvtags_history(*projects: pvproject.Project,
     :raise sbp.CalledProcessError:
         if `git` executable not in PATH
 
-    .. Info::
+    .. Note::
        Internally, *pvtags* are populated in :attr:`_pvtags_collected` which
-       by default it is ``None`.  After this call, it will be a (possibly empty)
+       by default it is ``None``.  After this call, it will be a (possibly empty)
        list.  Any pre-existing *pvtags* are removed from all projects
        before collecting them anew.
 
