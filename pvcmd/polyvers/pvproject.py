@@ -527,7 +527,7 @@ class Project(cmdlets.Replaceable, cmdlets.Printable, yu.YAMLable, cmdlets.Spec)
             if "already exists" in str(ex.stderr):
                 raise pvtags.GitError(
                     "Cannot bump, tag '%s' already exists!"
-                    "\n  Add `--force=tag` if you must." % tag_name)
+                    "\n  Add `--force=tag` if you must, or you can --amend." % tag_name)
             raise
 
     engraves = ListTrait(
