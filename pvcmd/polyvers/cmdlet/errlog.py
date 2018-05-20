@@ -53,6 +53,10 @@ def nesterrlog(parent,
     or else you must keep a reference on the last enclosing errlog and
     explicitly call :meth:`ErrLog.__call__()` on it.
     """
+
+    #: `mypy` has genericized `ContextVar` in the `typeshed
+    #: <https://www.python.org/dev/peps/pep-0484/#typeshed)>`_:
+    #: https://github.com/python/typeshed/blob/master/stdlib/3.7/contextvars.pyi
     enclosing_elog = _nesting_errlog.get()  # type: ignore
     if enclosing_elog is None:
         elog = ErrLog(
