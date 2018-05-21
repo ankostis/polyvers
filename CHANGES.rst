@@ -3,6 +3,19 @@ Changes
 =======
 
 
+X.Y.Z: polyvers
+------------------------------
+- feat: add ``-C`` option to change project dir before running command.
+- ``init`` command:
+    - fix: were creating invalid ``.polyvers.yaml`` configuration-file
+      unless ``--monorepo/--mono-project`` flags were given.
+    - feat: include config-help in generated file only if
+      the new ``--doc`` flag given.
+    - feat: inform user of the projects auto-discovered and what type of config-file
+      was generated.
+- various fixes.
+
+
 0.0.2a8 (2018-05-19): polyvers
 ------------------------------
 - FIX(bump): was engraving all projects and not limiting to those
