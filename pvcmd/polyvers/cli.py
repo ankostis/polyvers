@@ -351,6 +351,8 @@ class _SubCmd(PolyversCmd):
 
 _init_update_help = \
     "Update existing configs, excluding user's home folder and those overriden by cmd-line options"
+_init_doc_help = \
+    "Include class/param descriptions/defaults in the dumped yaml."
 
 
 class InitCmd(_SubCmd):
@@ -360,8 +362,16 @@ class InitCmd(_SubCmd):
         config=True,
         help=_init_update_help)
 
-    flags = {('u', 'update'):    # type: ignore
-             ({'InitCmd': {'update': True}}, _init_update_help)}
+    doc = Bool(
+        config=True,
+        help=_init_doc_help)
+
+    flags = {  # type: ignore
+        ('u', 'update'):
+        ({'InitCmd':
+          {'update': True}}, _init_update_help),
+        'doc': ({'InitCmd': {'doc': True}}, _init_doc_help),
+    }
 
     def _read_non_user_configs(self) -> trc.Config:
         "Avoid writting user-specific configs as project ones."
@@ -420,7 +430,12 @@ class InitCmd(_SubCmd):
         self.bootstrapp_projects()
 
         old_config = self._cleaned_config()
-        new_config = self.generate_config_file_yaml(self.all_app_configurables, old_config)
+
+        _t = yu._dump_trait_help.set(self.doc)
+        try:
+            new_config = self.generate_config_file_yaml(self.all_app_configurables, old_config)
+        finally:
+            yu._dump_trait_help.reset(_t)
 
         cfgpath = Path(self.git_root) / ('%s.yaml' % self.config_basename)
 
@@ -430,7 +445,7 @@ class InitCmd(_SubCmd):
                            cfgpath, pformat(new_config))
 
         with io.open(cfgpath, 'wt', encoding='utf-8') as fout:
-            yu.ydumps(new_config, fout)
+            yu.ydumps(new_config, fout, trait_help=self.doc)
 
         yield "Created new config-file '%s'." % cfgpath
 

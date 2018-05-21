@@ -20,7 +20,7 @@ import textwrap as tw
 from .._vendor import traitlets as trt
 
 
-_dump_trait_help = cv.ContextVar('dump_trait_help')
+_dump_trait_help = cv.ContextVar('dump_trait_help', default=True)
 _classes_yamling = cv.ContextVar('classes_yamling')
 
 
@@ -112,7 +112,7 @@ def get_yamel(typ='rt'):
     return y
 
 
-def ydumps(obj, sink=None, trait_help=False, classes=()) -> Optional[str]:
+def ydumps(obj, sink=None, trait_help=None, classes=()) -> Optional[str]:
     """
     Dump any false objects as empty string, None as nothing, or as YAML.
 
@@ -131,7 +131,8 @@ def ydumps(obj, sink=None, trait_help=False, classes=()) -> Optional[str]:
         return ''
 
     def dump_with_contextvars():
-        _dump_trait_help.set(trait_help)
+        if trait_help is not None:
+            _dump_trait_help.set(trait_help)
         _classes_yamling.set(classes)
 
         get_yamel().dump(obj, sink)

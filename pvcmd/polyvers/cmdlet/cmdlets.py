@@ -1115,7 +1115,7 @@ def _make_comment(s):
     return '\n \n '.join(wrap_paragraphs(s, 78)) + '\n '
 
 
-def class_config_yaml(cls, outer_cfg,
+def class_config_yaml(cls, outer_cfg,  # noqa: C901  # too complex: TODO: FIX Yaml+contextvars
                       classes=None,
                       config: trc.Config = None):
     """Get the config section for this Configurable.
@@ -1151,49 +1151,51 @@ def class_config_yaml(cls, outer_cfg,
         if default_repr and default_repr.count('\n') > 1 and default_repr[0] != '\n':
             default_repr = tw.indent('\n' + default_repr, ' ' * 9)
 
-        if classes:
-            defining_class = cls._defining_class(trait, classes)
-        else:
-            defining_class = cls
-        if defining_class is cls:
-            # cls owns the trait, show full help
-            if trait.help:
-                trait_lines.append('')
-                trait_lines.append(_make_comment(trait.help).strip())
-            if 'Enum' in type(trait).__name__:
-                # include Enum choices
-                trait_lines.append('Choices: %s' % trait.info())
-            trait_lines.append('Default: %s' % default_repr)
-        else:
-            # Trait appears multiple times and isn't defined here.
-            # Truncate help to first line + "See also Original.trait"
-            if trait.help:
-                trait_lines.append(_make_comment(trait.help.split('\n', 1)[0]))
-            trait_lines.append('See also: %s.%s' % (defining_class.__name__, name))
+        if yu._dump_trait_help.get():
+            if classes:
+                defining_class = cls._defining_class(trait, classes)
+            else:
+                defining_class = cls
+            if defining_class is cls:
+                # cls owns the trait, show full help
+                if trait.help:
+                    trait_lines.append('')
+                    trait_lines.append(_make_comment(trait.help).strip())
+                if 'Enum' in type(trait).__name__:
+                    # include Enum choices
+                    trait_lines.append('Choices: %s' % trait.info())
+                trait_lines.append('Default: %s' % default_repr)
+            else:
+                # Trait appears multiple times and isn't defined here.
+                # Truncate help to first line + "See also Original.trait"
+                if trait.help:
+                    trait_lines.append(_make_comment(trait.help.split('\n', 1)[0]))
+                trait_lines.append('See also: %s.%s' % (defining_class.__name__, name))
 
-        cfg.yaml_set_comment_before_after_key(name,
-                                              before='\n'.join(trait_lines),
-                                              indent=2)
+            cfg.yaml_set_comment_before_after_key(name,
+                                                  before='\n'.join(trait_lines),
+                                                  indent=2)
 
     if not cfg:
         return
 
-    # section header
-    breaker = '#' * 76
-    parent_classes = ', '.join(
-        p.__name__ for p in cls.__bases__
-        if issubclass(p, trc.Configurable)
-    )
-
-    s = "%s(%s) configuration" % (cls.__name__, parent_classes)
-    head_lines = ['', '', breaker, s, breaker]
-    # get the description trait
-    desc = class_help_description_lines(cls)
-    if desc:
-        head_lines.append(_make_comment('\n'.join(desc)))
     outer_cfg[cls.__name__] = cfg
-    outer_cfg.yaml_set_comment_before_after_key(cls.__name__,
-                                                '\n'.join(head_lines))
+    if yu._dump_trait_help.get():
+        # section header
+        breaker = '#' * 76
+        parent_classes = ', '.join(
+            p.__name__ for p in cls.__bases__
+            if issubclass(p, trc.Configurable)
+        )
+
+        s = "%s(%s) configuration" % (cls.__name__, parent_classes)
+        head_lines = ['', '', breaker, s, breaker]
+        # get the description trait
+        desc = class_help_description_lines(cls)
+        if desc:
+            head_lines.append(_make_comment('\n'.join(desc)))
+        outer_cfg.yaml_set_comment_before_after_key(
+            cls.__name__, '\n'.join(head_lines))
 
 
 trc.Configurable.class_config_yaml = classmethod(class_config_yaml)  # type: ignore
@@ -1258,6 +1260,7 @@ def generate_config_file_yaml(self, classes=None, config: trc.Config = None):
     """
     from ruamel.yaml.comments import CommentedMap
     import ipython_genutils.text as tw
+    from ..utils import yamlutil as yu
 
     classes = self.classes if classes is None else classes
 
@@ -1268,16 +1271,17 @@ def generate_config_file_yaml(self, classes=None, config: trc.Config = None):
                        for cls in order_class_hierarchy(classes)
                        if cls in config_classes]
     class_hiearchy = generate_class_hierarchy_text(ordered_classes)
-    start_comment = tw.dedent("""
-        ############################################################################
-        Configuration hierarchy for `%s`:
-        %s
-        ############################################################################
-
-    """) % (self.root_object().name, class_hiearchy)
-
     cfg = CommentedMap()
-    cfg.yaml_set_start_comment(start_comment)
+
+    if yu._dump_trait_help.get():
+        start_comment = tw.dedent("""
+            ############################################################################
+            Configuration hierarchy for `%s`:
+            %s
+            ############################################################################
+
+        """) % (self.root_object().name, class_hiearchy)
+        cfg.yaml_set_start_comment(start_comment)
 
     for cls in ordered_classes[::-1]:  # Inverted order from title's class-list, above.
         cls.class_config_yaml(cfg, config=config)

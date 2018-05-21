@@ -242,7 +242,7 @@ def test_bootstrapp_projects_autodiscover_monorepo(mutable_pvtags_repo, caplog):
 def test_init_cmd_mono_project(mutable_vtags_repo):
     mutable_vtags_repo.chdir()
 
-    rc = cli.run('init --mono-project --pdata f=g -v'.split())
+    rc = cli.run('init --doc --mono-project --pdata f=g -v'.split())
     assert rc == 0
 
     cfg = trc.Config()
