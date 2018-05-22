@@ -402,6 +402,7 @@ class InitCmd(_SubCmd):
         config = self.config
         clean_keys = [
             'InitCmd.update',
+            'InitCmd.doc',
             'Spec.*',
             '*.verbose',
             '*.debug',
