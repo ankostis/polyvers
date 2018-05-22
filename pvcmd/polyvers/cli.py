@@ -316,14 +316,16 @@ class PolyversCmd(cmdlets.Cmd, yu.YAMLable):
         git_root = self.git_root
 
         template_project = pvproject.Project(parent=self)
-        has_template_project = (template_project.tag_vprefixes and
-                                template_project.pvtag_frmt and
-                                template_project.pvtag_regex)
+        has_template_project = bool(template_project.tag_vprefixes and
+                                    template_project.pvtag_frmt and
+                                    template_project.pvtag_regex)
 
         if not has_template_project:
             template_project = self._autodiscover_versioning_scheme()
             self.log.info("Auto-discovered versioning scheme: %s",
                           template_project.pname)
+
+        self._template_project = template_project
 
         has_subprojects = bool(self.projects)
         if not has_subprojects:
@@ -474,7 +476,10 @@ class InitCmd(_SubCmd):
             with io.open(cfgpath, 'wt', encoding='utf-8') as fout:
                 yu.ydumps(new_config, fout, trait_help=self.doc)
 
-        yield "Created new config-file '%s'." % cfgpath
+        self.log.notice("Created a %s config-file '%s' for %i projects: %s",
+                        self._template_project.pname, cfgpath, len(self.projects),
+                        ''.join('\n  - %s: %s' % (p.pname, p.basepath)
+                                for p in self.projects))
 
 
 _status_all_help = """
@@ -580,7 +585,8 @@ PolyversCmd.flags = {  # type: ignore
     ),
 
     'monorepo': (
-        {'Project': {
+        {'Project': {  # type: ignore
+            'pname': pvtags.MONOREPO,
             'pvtag_frmt': pvlib.pvtag_frmt,
             'pvtag_regex': pvlib.pvtag_regex,
         }},
@@ -590,7 +596,8 @@ PolyversCmd.flags = {  # type: ignore
         ## TODO: Conflicting vscheme flags possible!
     ),
     'mono-project': (
-        {'Project': {
+        {'Project': {  # type: ignore
+            'pname': pvtags.MONO_PROJECT,
             'pvtag_frmt': pvlib.vtag_frmt,
             'pvtag_regex': pvlib.vtag_regex,
         }},
