@@ -316,7 +316,8 @@ class PolyversCmd(cmdlets.Cmd, yu.YAMLable):
                 if not pdata:
                     raise cmdlets.CmdException(
                         "Cannot auto-discover (sub-)project path(s)!"
-                        "\n  Please use `ìnit` cmd to specify sub-projects explicitly.")
+                        "\n  Please use `--pdata <pname>=<basepath> ...` "
+                        "to specify sub-project(s) explicitly.")
 
                 self.log.info(
                     "Auto-discovered %i sub-project(s) in git-root '%s': \n%s",
