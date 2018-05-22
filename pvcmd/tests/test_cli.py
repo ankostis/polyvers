@@ -12,10 +12,12 @@ from polyvers.cmdlet import cmdlets
 from polyvers.utils import yamlutil as yu
 from polyvers.utils.mainpump import ListConsumer
 from polyvers.utils.oscmd import cmd
+import os
 import re
 
 import pytest
 
+import os.path as osp
 import textwrap as tw
 
 from .conftest import check_text, make_setup_py
@@ -239,21 +241,26 @@ def test_bootstrapp_projects_autodiscover_monorepo(mutable_pvtags_repo, caplog):
                                            pvtags.MONOREPO)
 
 
-def test_init_cmd_mono_project(mutable_vtags_repo):
+def test_init_cmd_mono_project(mutable_vtags_repo, caplog):
     mutable_vtags_repo.chdir()
+    exp_fpath = (mutable_vtags_repo / '.polyvers.yaml')
 
-    rc = cli.run('init --doc --mono-project --pdata f=g -v'.split())
+    rc = cli.run('init --pdata f=g -v'.split())
     assert rc == 0
+    assert osp.exists(exp_fpath)
+    got = exp_fpath.read_text('utf-8')
+    assert '############' not in got
 
+    os.remove(exp_fpath)
     cfg = trc.Config()
     cfg.Project.pvtag_frmt = cfg.Project.pvtag_regex = 'some'
     cfg.PolyversCmd.pdata = {'foo': 'foo_path'}
-    cmd = cli.InitCmd(config=cfg)
-    cmd.run()
+    rc = cli.run('init --mono-project --doc -v'.split(), config=cfg)
+    assert rc == 0
 
-    exp_fpath = (mutable_vtags_repo / '.polyvers.yaml')
+    assert osp.exists(exp_fpath)
     got = exp_fpath.read_text('utf-8')
-    print(got)
+    #print(got)
     cleaned_text = '# Spec(LoggingConfigurable) configuration'
     assert cleaned_text not in got
 
@@ -299,8 +306,16 @@ def test_init_cmd_mono_project(mutable_vtags_repo):
                 ^(?P<pname>)
                 {vprefix}(?P<version>\d[^-]*)
                 (?:-(?P<descid>\d+-g[a-f\d]+))?$''')
-    assert exp_value[1:] in got
+    check_text(got, exp_value)
 
+    os.remove(exp_fpath)
+    caplog.clear()
+    cfg.Spec.dry_run = True
+    rc = cli.run('init -v --dry-run'.split(), config=cfg)
+    assert rc == 0
+    assert not osp.exists(exp_fpath)
+    assert 'WARNING  PRETEND init: ' in caplog.text
+    check_text(caplog.text, exp_value)
 
 # def test_init_cmd_monorepo(mutable_repo):
 #     mutable_repo.chdir()

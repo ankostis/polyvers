@@ -446,8 +446,13 @@ class InitCmd(_SubCmd):
             self.log.debug("Writing config to yaml file '%s': \n%s",
                            cfgpath, pformat(new_config))
 
-        with io.open(cfgpath, 'wt', encoding='utf-8') as fout:
-            yu.ydumps(new_config, fout, trait_help=self.doc)
+        if self.dry_run:
+            sink = io.StringIO()
+            yu.ydumps(new_config, sink, trait_help=self.doc)
+            self.log.warning('PRETEND init: %s' % sink.getvalue())
+        else:
+            with io.open(cfgpath, 'wt', encoding='utf-8') as fout:
+                yu.ydumps(new_config, fout, trait_help=self.doc)
 
         yield "Created new config-file '%s'." % cfgpath
 
