@@ -68,25 +68,11 @@ script:
         pytest pvcmd
     fi
 
-########################################
-## LINTERS
-
+    ## LINTERS
+    #
   - |
     if [ $TRAVIS_PYTHON_VERSION \> '3.5' ]; then
-        flake8 --show-source
-    fi
-
-  - |
-    if [ $TRAVIS_PYTHON_VERSION \> '3.5' ]; then
-        mypy \
-            pvcmd/polyvers/vermath.py \
-            pvcmd/polyvers/cmdlet/cmdlets.py \
-            pvcmd/polyvers/cmdlet/errlog.py \
-            pvcmd/polyvers/pvproject.py \
-            pvcmd/polyvers/engrave.py \
-            pvcmd/polyvers/pvtags.py \
-            pvcmd/polyvers/cli.py \
-            pvcmd/polyvers/bumpcmd.py
+        bin/lint.sh
     fi
 
 after_success:

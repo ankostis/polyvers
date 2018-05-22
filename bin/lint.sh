@@ -1,4 +1,7 @@
 #!/bin/bash
+set -x
+set -o pipefail
+( \
 mypy \
     pvcmd/polyvers/vermath.py \
     pvcmd/polyvers/cmdlet/cmdlets.py \
@@ -7,6 +10,7 @@ mypy \
     pvcmd/polyvers/engrave.py \
     pvcmd/polyvers/pvtags.py \
     pvcmd/polyvers/cli.py \
-    pvcmd/polyvers/bumpcmd.py
-flake8 --show-source
+    pvcmd/polyvers/bumpcmd.py |
+flake8 --show-source \
+)
 
