@@ -127,6 +127,21 @@ class PolyversCmd(cmdlets.Cmd, yu.YAMLable):
 
         return paths
 
+    curdir = Unicode(
+        config=True,
+        help="Work as if changed in the given current-dir.")
+
+    @trc.catch_config_error
+    def parse_command_line(self, argv=None):
+        super().parse_command_line.__wrapped__(self, argv)  # not to re-catch_config_error
+
+        ## Chdir as soon as possible.
+        #
+        if self.curdir:
+            self.log.info('Switching to dir: %s', self.curdir)
+            import os
+            os.chdir(self.curdir)
+
     _git_root: Optional[Path] = None
 
     @property
@@ -586,6 +601,7 @@ PolyversCmd.flags = {  # type: ignore
 }
 
 PolyversCmd.aliases = {  # type: ignore
+    ('C', 'curdir'): 'PolyversCmd.curdir',
     ('f', 'force'): 'Spec.force',
     ('p', 'pdata'): 'PolyversCmd.pdata',
 }
