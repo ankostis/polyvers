@@ -871,8 +871,9 @@ class Cmd(trc.Application, Spec):
 
         - Configuration files are read and merged from ``.json`` and/or ``.py`` files
           in :attr:`config_paths`.
+        - Adapted from :meth:`load_config_file()` & :meth:`_load_config_files()`
+          but without applying configs on the app, just returning them.
         """
-        ## Adapted from :meth:`load_config_file()` & :meth:`_load_config_files()`.
         config_paths = self._collect_static_fpaths(config_paths)
 
         new_config = trc.Config()
@@ -948,7 +949,7 @@ class Cmd(trc.Application, Spec):
     #  even when hierarchy changes (e.g. in TCs).
     #  See https://github.com/ipython/traitlets/commit/e857996#commitcomment-27681994
 
-    @trc.catch_config_error  # Needed, bc does not invoke super().
+    @trc.catch_config_error
     def initialize_subcommand(self, subc, argv=None):
         subapp, _ = self.subcommands.get(subc)
 
@@ -969,6 +970,8 @@ class Cmd(trc.Application, Spec):
             raise AssertionError("Invalid mappings for subcommand '%s'!" % subc)
 
         # ... and finally initialize subapp.
+        ## NOTE: do not call __wrapped__ bc relying on captured failures
+        #  to distinguish which args belong to next subcmds.
         self.subapp.initialize(argv)
 
     @classmethod
@@ -1017,7 +1020,7 @@ class Cmd(trc.Application, Spec):
         cmdlets_map['cmd_chain'] = cmd_line_chain(self)
         cmdlets_map['appname'] = self.root_object().name
 
-    #@trc.catch_config_error NOT needed, invoking super()!
+    @trc.catch_config_error
     def initialize(self, argv=None):
         """
         Invoked after __init__() by `make_cmd()` to apply configs and build subapps.
@@ -1030,7 +1033,7 @@ class Cmd(trc.Application, Spec):
         then re-apply cmd-line configs as overrides (trick copied from `jupyter-core`).
         """
         self.update_interp_context()
-        super().initialize(argv)
+        super().initialize.__wrapped__(self, argv)  # not to re-catch_config_error
         if self._is_dispatching():
             ## Only the final child reads file-configs.
             #  Also avoid contaminations with user if generating-config.

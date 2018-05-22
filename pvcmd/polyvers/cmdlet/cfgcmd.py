@@ -369,7 +369,7 @@ class ShowCmd(_ConfigBase):
     @trc.catch_config_error
     def initialize(self, argv=None):
         """Override to store file-configs separately (before merge)."""
-        super().initialize(argv)
+        super().initialize.__wrapped__(self, argv)        # not to re-catch_config_error
         cfg = self.read_config_files()
         self._loaded_config = cfg
 

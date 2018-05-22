@@ -405,7 +405,7 @@ class InitCmd(_SubCmd):
         ## Overridden, to skip configs-loading unless --update given.
 
         self.update_interp_context()
-        self.parse_command_line(argv)
+        self.parse_command_line.__wrapped__(self, argv)  # not to re-catch_config_error
 
         if self.update:
             config = self._read_non_user_configs()
