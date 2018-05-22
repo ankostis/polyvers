@@ -3,8 +3,9 @@
 my_dir=`dirname "$0"`
 cd $my_dir/..
 
+declare -i err=0
 set -x
-set -e
+
 mypy \
     pvcmd/polyvers/vermath.py \
     pvcmd/polyvers/cmdlet/cmdlets.py \
@@ -14,5 +15,12 @@ mypy \
     pvcmd/polyvers/pvtags.py \
     pvcmd/polyvers/cli.py \
     pvcmd/polyvers/bumpcmd.py
-flake8 --show-source
+let err+=$?
 
+flake8 --show-source
+let err+=$?
+
+if [ $err -ne 0 ]; then
+    echo "Lint had $err failures!"
+    exit 1
+fi
