@@ -256,7 +256,7 @@ class Application(SingletonConfigurable):
 
         Override in subclasses.
         """
-        self.parse_command_line(argv)
+        self.parse_command_line.__wrapped__(self, argv)  # not to re-catch_config_error
         if self.subapp is None and (
                 self.show_config or self.show_config_json):
             self._dump_config()
@@ -529,6 +529,8 @@ class Application(SingletonConfigurable):
             raise AssertionError("Invalid mappings for subcommand '%s'!" % subc)
 
         # ... and finally initialize subapp.
+        ## NOTE: do not call __wrapped__ bc relying on captured failures
+        #  to distinguish which args belong to next subcmds.
         self.subapp.initialize(argv)
 
     def flatten_flags(self):
@@ -609,7 +611,8 @@ class Application(SingletonConfigurable):
             subc, subargv = argv[0], argv[1:]
             if re.match(r'^\w(\-?\w)*$', subc) and subc in self.subcommands:
                 # it's a subcommand, and *not* a flag or class parameter
-                return self.initialize_subcommand(subc, subargv)
+                return self.initialize_subcommand.__wrapped__(
+                    self, subc, subargv)
 
         # Arguments after a '--' argument are for the script IPython may be
         # about to run, not IPython iteslf. For arguments parsed here (help and
