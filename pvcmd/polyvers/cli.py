@@ -140,7 +140,12 @@ class PolyversCmd(cmdlets.Cmd, yu.YAMLable):
         if self.curdir:
             self.log.info('Switching to dir: %s', self.curdir)
             import os
-            os.chdir(self.curdir)
+            try:
+                os.chdir(self.curdir)
+            except Exception as ex:
+                raise cmdlets.CmdException(
+                    "Cannot switch to dir '%s' due to: %s" %
+                    (self.curdir, ex)) from ex
 
     _git_root: Optional[Path] = None
 
