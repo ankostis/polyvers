@@ -20,9 +20,9 @@ try:
 except ImportError:
     import sys
     try:
-        print("Hack: pre-installing `polyversion` from standalaone `bin/pvlib.whl`...",
+        print("Hack: pre-installing `polyversion` from standalone `bin/pvlib.whl`...",
               file=sys.stderr)
-        sys.path.append(osp.join(mydir, 'bin', 'pvlib.whl'))
+        sys.path.append(osp.join(mydir, '..', 'bin', 'pvlib.whl'))
         from polyversion import polyversion
     except Exception as ex:
         print("Hack failed :-(", file=sys.stderr)

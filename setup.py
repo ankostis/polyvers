@@ -8,10 +8,29 @@ import sys
 
 from setuptools import setup, find_packages
 
-from pvlib.polyversion import polyversion  # noqa: F401  # engraved-out in packages.
-
 
 mydir = osp.dirname(osp.realpath(__file__))
+
+
+## This sub-project eats it's own dog-food, and
+#  uses `polyversion` to derive its own version on runtime from Git tags.
+#
+#  For this reason the following hack is needed to start developing it
+#  from git-sources: it bootstraps  ``pip install -e pvlib[test]``
+#  when not any version of the `polyversion` lib is already installed on the system.
+#
+try:
+    from polyversion import polyversion
+except ImportError:
+    try:
+        print("Hack: pre-installing `polyversion` from standalone `bin/pvlib.whl`...",
+              file=sys.stderr)
+        sys.path.append(osp.join(mydir, 'bin', 'pvlib.whl'))
+        from polyversion import polyversion
+    except Exception as ex:
+        print("Hack failed :-(", file=sys.stderr)
+        polyversion = lambda *_, **__: '0.0.0'
+
 
 MIN_PYTHON = (3, 6)
 if sys.version_info < MIN_PYTHON:
