@@ -17,7 +17,12 @@ fi
 
 
 set -e
+
+./bin/lint.sh
+
 git checkout latest
+
+    ./bin/check_readme.sh
 
     rm -rf build/* dist/*
     python setup.py bdist_wheel
@@ -26,6 +31,7 @@ git checkout latest
     python pvlib/setup.py bdist_wheel
 
 git checkout -
+
 set +e
 
 cd ./dist
@@ -37,6 +43,4 @@ echo -ne '#!python\n' | cat - $tmpzip > "$PVLIB_SH"
 chmod a+x "$PVLIB_SH"
 
 ## Nice chance to send tags.
-if { ./bin/check_readme.sh && ./bin/lint.sh; }; then
-    git push jrcstu latest --tag -f  # latest always forced.
-fi
+git push jrcstu latest --tag -f  # latest always forced.
