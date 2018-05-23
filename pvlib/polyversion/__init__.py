@@ -288,6 +288,10 @@ def polytime(no_raise=False, repo_path=None):
     return cdate
 
 
+__version__ = polyversion('polyversion', '0.0.0')
+__updated__ = polytime(no_raise=True)
+
+
 def run(*args):
     """
     Describe the version of a *polyvers* projects from git tags.
