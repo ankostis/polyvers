@@ -173,7 +173,6 @@ class PolyversCmd(cmdlets.Cmd, yu.YAMLable):
         - example:: --pdata foo=foo/fpath
         """)
 
-    ## TODO: rename to autodiscovery_...
     autodiscover_subproject_projects = ListTrait(
         autotrait.AutoInstance(pvproject.Project),
         default_value=[{
@@ -194,20 +193,20 @@ class PolyversCmd(cmdlets.Cmd, yu.YAMLable):
         allow_none=True,
         config=True,
         help="""
-        Two projects with glob-patterns/regexes autodiscovering sub-project basepath/names.
+        Projects with globs/regexes that can autodiscover sub-project basepaths/names.
 
-        - Needed when a) no configuration file is given (or has partial infos),
-          and b) when constructing/updating the configuration file.
+        - Needed when no configuration file is given (or has partial infos).
         - The glob-patterns contained in this `Project[Engrave[Graft]]`
           should match files in the root dir of auto-discovered-projects
-          (`Graft.subst` are unused here).
-        - `Project.basepath` must be a relative
-        - Regex(es) may extract the project-name from globbed files.
+          (`Graft.subst` is not used here).
+        - `Project.basepath` must denote the project-root relative to the globbed
+           file's dir ('.' assumed).
+        - Project name(s) must be captured by the `Graft`.
           If none (or different ones) match, project detection fails.
         - A Project is identified only if file(s) are globbed AND regexp(s) matched.
+        - User should fallback to --data if it fails.
         """)
 
-    ## TODO: rename to autodiscovery_...
     autodiscover_version_scheme_projects = TupleTrait(
         autotrait.AutoInstance(pvproject.Project), autotrait.AutoInstance(pvproject.Project),
         default_value=({
@@ -260,9 +259,10 @@ class PolyversCmd(cmdlets.Cmd, yu.YAMLable):
         #  pair (pname <--> path) matched.
         #
         pname_path_pairs: List[Tuple[str, Path]] = [
-            (m.groupdict()['pname'].decode('utf-8'), fpath.parent)
+            (m.groupdict()['pname'].decode('utf-8'),
+             fpath.parent / (prj.basepath or '.'))
             for fpath, mqruples in match_map.items()
-            for _prj, _eng, _graft, matches in mqruples
+            for prj, _eng, _graft, matches in mqruples
             for m in matches]
         unique_pname_paths = iset(pname_path_pairs)
 
