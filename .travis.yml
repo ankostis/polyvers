@@ -63,7 +63,9 @@ script:
   - |
     if [ $TRAVIS_PYTHON_VERSION \> '3.5' ]; then
         pip uninstall polyvers polyversion -y
-        pip install dist/*.whl
+        cd dist
+        pip install *.whl
+        cd -
         pytest pvlib
         pytest pvcmd
     fi
