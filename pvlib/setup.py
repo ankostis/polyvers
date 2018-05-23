@@ -92,5 +92,5 @@ setup(
     },
     entry_points={
         'console_scripts': [
-            '%(p)s = %(p)s:main' % {'p': PROJECT}]},
+            '%(p)s = %(p)s.__main__:main' % {'p': PROJECT}]},
 )
