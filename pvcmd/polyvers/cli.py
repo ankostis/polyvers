@@ -178,16 +178,17 @@ class PolyversCmd(cmdlets.Cmd, yu.YAMLable):
         default_value=[{
             'engraves': [{
                 'globs': ['**/setup.py'],
-                'grafts': [
-                    {'regex': tw.dedent(r'''
+                'grafts': [{
+                    'regex': tw.dedent(r'''
                         (?xm)
                             \b(name|PROJECT|APPNAME|APPLICATION)
                             \ *=\ *
                             (['"])
                                 (?P<pname>[\w\-.]+)
                             \2
-                    ''')}
-                ]
+                    '''),
+                    'slices': -1
+                }]
             }]
         }],
         allow_none=True,
