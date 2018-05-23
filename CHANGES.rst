@@ -3,8 +3,8 @@ Changes
 =======
 
 
-X.Y.Z: polyvers
-------------------------------
+0.0.2a9.post0 (2018-05-23): polyvers
+------------------------------------
 - feat: add ``-C`` option to change project dir before running command.
 - ``init`` command:
     - fix: were creating invalid ``.polyvers.yaml`` configuration-file
