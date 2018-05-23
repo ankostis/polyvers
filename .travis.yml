@@ -17,64 +17,45 @@ python:
 
 install:
   - pip install --upgrade setuptools pip wheel
+
+script:
   - pip install -r requirements_dev.txt
 
-  - git tag polyversion-v0.0.0 -m "something for the next command to hang on"
-  - pip install -e pvlib[test]
+  ## Check standalone `pvlib.run`
+  #
+  - cd bin
+  - ./pvlib.run
+  - python ./pvlib.run --help
+  - python ./pvlib.run -m polyversion  -v
+  - PYTHONPATH=./pvlib.run  python -m polyversion  -V
+  - cd -
 
+  ## Build WHEELS, install, smoketest. and uninstall.
+  #
+  - python pvlib/setup.py build bdist_wheel
+  - pip install dist/polyversion-*.whl
+  - polyversion --help
   - |
     if [ $TRAVIS_PYTHON_VERSION \> '3.5' ]; then
         pip install -r requirements.txt
-        git tag polyvers-v0.0.0 -m "something for the next command to hang on"
-        pip install -e .[test]
+        rm -rf build/*
+        python setup.py build bdist_wheel
+        pip install dist/polyvers-*.whl
+        polyvers --help
     fi
+  - pip uninstall -y polyversion polyvers
 
-script:
-  - python pvlib/setup.py build bdist_wheel
+  ## Install sources and PYTEST both pvlib & pvcmd with COVERAGE.
+  #
+  - pip install -e pvlib[test]
   - polyversion --help
-  ## Search `polyversion` tags; pvlib gets released sparingly
-  #  so its tags might have been clipped by travi's `git clone`.
-  - polyversion polyversion
-
-  ## TODO: test actually `polyversion.whl`, not sources.
-
-  ## Check pvlib only in older Pythons (later tested with coverage).
-  #
-  - |
-    if [ $TRAVIS_PYTHON_VERSION \<= '3.5' ]; then
-        pytest -v pvlib
-    fi
-
-########################################
-## Check *polyvers* cmd in newer python only.
-#
-
-  ## Test both pvlib & pvcmd with COVERAGE.
-  #
+  - pytest pvlib
   - |
     if [ $TRAVIS_PYTHON_VERSION \> '3.5' ]; then
+        pip install -e .[test]
+        polyvers --help
         pytest pvlib --cov=polyversion --cov-report=term-missing
         pytest pvcmd --cov=polyvers --cov-report=term-missing
-    fi
-
-  ## Build pvcmd WHEEL.
-  #
-  - |
-    if [ $TRAVIS_PYTHON_VERSION \> '3.5' ]; then
-        rm -rf build/*
-        python setup.py bdist_wheel
-    fi
-
-  ## Re-test EXACT deps on WHEELS.
-  #
-  - |
-    if [ $TRAVIS_PYTHON_VERSION \> '3.5' ]; then
-        pip uninstall polyvers polyversion -y
-        cd dist
-        pip install *.whl
-        cd -
-        pytest pvlib
-        pytest pvcmd
     fi
 
   ## LINTERS
