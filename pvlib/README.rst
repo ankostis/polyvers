@@ -1,5 +1,5 @@
 ==================================================================
-Polyversion: derive subproject versions from tags on git monorepos
+Polyversion: derive subproject versions from tags on Git monorepos
 ==================================================================
 
 .. image:: https://img.shields.io/pypi/v/polyversion.svg
@@ -32,7 +32,7 @@ Polyversion: derive subproject versions from tags on git monorepos
 
 :version:       |version|
 :updated:       |today|
-:Documentation: file:///D:/Work/polyvers.git/build/sphinx/html/usage.html#usage-of-polyversion-library
+:Documentation: https://polyvers.readthedocs.io/en/latest/usage.html#usage-of-polyversion-library
 :repository:    https://github.com/JRCSTU/polyvers
 :pypi-repo:     https://pypi.org/project/polyversion/
 :copyright:     2018 JRC.C4(STU), European Commission (`JRC <https://ec.europa.eu/jrc/>`_)
@@ -51,7 +51,7 @@ There are 3 ways to use this library:
   - through its Python-API (to dynamically version your project);
   - through its barebone cmdline tool: ``polyversion``
     (installation required);
-  - through the standalone executable wheel: ``pvlib/bin/pvlib.whl``
+  - through the standalone executable wheel: ``bin/pvlib.run``
     (no installation, but sources required; behaves identically
     to ``polyversion`` command).
 
@@ -64,25 +64,43 @@ API usage
 ---------
 .. currentmodule:: polyversion
 
-An API sample of using :func:`polyversion.polyversion()` in
-a ``myproject.git/setup.py`` file:
+An API usage sample of using :func:`polyversion.polyversion()` from within your
+``myproject.git/setup.py`` file:
 
 .. code-block:: python
 
+    from setuptools import setup
+
+    ## OPTIONAL HACK if you want to facilitate people to install from sources.
+    #  You have to attach `pvlib.run` into your repository for this.
+    #
+    try:
+        from polyversion import polyversion
+    except Exception as ex:
+        import sys
+        sys.path.append(<YOUR PATH TO pvlib.run>)
+        from polyversion import polyversion
+
     ...
+
     setup(
         name='myproject',
         version=polyversion('myproject')
+        install_requires=[
+            'polyversion'
+            ...
+        ],
         ...
     )
 
-An API sample of using also :func:`polytime()` in
-a ``myproject.git/myproject/__init__.py`` file:
+An API usage sample of using also :func:`polytime()` from within your
+``myproject.git/myproject/__init__.py`` file:
 
 .. code-block:: python
 
-    ...
-    __version__ = polyversion()  # project assumed equal to module-name 'myproject'
+    from polyversion import polyversion, polytime  # no hack, dependency already installed
+
+    __version__ = polyversion()  # project assumed equal to this module-name: 'myproject'
     __updated__ = polytime()
     ...
 
@@ -94,7 +112,8 @@ a ``myproject.git/myproject/__init__.py`` file:
 
 Console usage
 -------------
-A sample of command-line usage is given below:
+The typical command-line usage of this library (assuming you don't want to install
+the full blown `polyvers` command tool) is given below:
 
 .. code-block:: console
 
@@ -105,23 +124,39 @@ A sample of command-line usage is given below:
     USAGE:
         polyversion [PROJ-1] ...
 
-    user@host:~/ $ polyversion polyversion
-    polyversion: 0.0.2a7+37.g0707a09
-    polyvers: 0.0.2a9.post0+7.g0707a09
+    user@host:~/ $ polyversion polyversion    # fails, not in a git repo
+    b'fatal: not a git repository (or any of the parent directories): .git\n'
+      cmd: ['git', 'describe', '--match=cf-v*']
+    Traceback (most recent call last):
+      File "/pyenv/site-packages/pvlib/polyversion/__main__.py", line 18, in main
+        polyversion.run(*sys.argv[1:])
+      File "/pyenv/site-packages/pvlib/polyversion/__init__.py", line 340, in run
+        res = polyversion(args[0], repo_path=os.curdir)
+      File "/pyenv/site-packages/pvlib/polyversion/__init__.py", line 262, in polyversion
+        pvtag = _my_run(cmd, cwd=repo_path)
+      File "/pyenv/site-packages/pvlib/polyversion/__init__.py", line 106, in _my_run
+        raise sbp.CalledProcessError(proc.returncode, cmd)
+    subprocess.CalledProcessError: Command '['git', 'describe', '--match=cf-v*']' returned non-zero exit status 128.
 
-    user@host:~/polyvers.git (dev) $ polyversion --help
-    Describe the version of a *polyvers* projects from git tags.
+    user@host:~/ $ cd polyversion
+    user@host:~/polyvers.git (dev) $ polyversion polyvers polyversion
+    polyvers: 0.0.2a10
+    polyversion: 0.0.2a8+1.g0707a09
 
-    USAGE:
-        polyversion [PROJ-1] ...
-
-A sample of the standalone wheel:
+And various ways to use the standalone wheel from *bash*
+(these will still work without having installed anything):
 
 .. code-block:: console
 
-    user@host:~/ $ cd ~/polyvers.git
-    user@host:~/polyvers.git (master) $ polyversion polyversion
-    polyversion: 0.0.2a7+37.g0707a09
+    user@host:~/polyvers.git (master) $
+    user@host:~/polyvers.git (master) $ ./bin/pvlib.run polyversion
+    polyversion: 0.0.2a8+1.g0707a09
+    user@host:~/polyvers.git (master) $ python ./bin/pvlib.run --help
+    ...
+    user@host:~/polyvers.git (master) $ python ./bin/pvlib.run -m polyversion  --help
+    ...
+    user@host:~/polyvers.git (master) $ PYTHONPATH=./bin/pvlib.run  python -m polyversion  --help
+    ...
 
 
 .. Note:

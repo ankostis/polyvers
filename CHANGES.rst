@@ -6,15 +6,20 @@ Changes
 0.0.2a10 (2018-05-23): polyvers
 -------------------------------
 - fix: slight change of default engraving for ``setup.py:version=...``.
-- updated included standalone ``pvlib/bin/pvlib.whl`` tool generated from
-  ``polyversion-0.0.2a8``, below.
 - Remove default versions from the sources of our-own-dog-food
   (affects installations for developing this tool).
+- refact: merged ```pvlib.whl`` and ``pvlib.run`` into a single executable and
+  importable standalone wheel in ``bin/pvlib.run``, generated from
+  ``polyversion-0.0.2a8``, release below.
 - doc: expand section for installing and contributing into this project.
+- chore: tighten various test harnesses.
+
 
 0.0.2a8 (2018-05-23): polyversion
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-- FIX ``polyversion`` barebone command (a utility for when not intalling
+Interim release to embed new ``bin/pvlib.run``.
+
+- FIX ``polyversion`` barebone command (a utility for when not installing
   the full `polyvers` tool).
 - feat: make project-name optional in :func:`polyversion.polyversion()`;
   if not given,  defaults to caller's last segment of the  module.

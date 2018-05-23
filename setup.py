@@ -24,9 +24,9 @@ try:
     from polyversion import polyversion
 except ImportError:
     try:
-        print("Hack: pre-installing `polyversion` from standalone `bin/pvlib.whl`...",
+        print("Hack: pre-installing `polyversion` from standalone `pvlib.run` wheel",
               file=sys.stderr)
-        sys.path.append(osp.join(mydir, 'bin', 'pvlib.whl'))
+        sys.path.append(osp.join(mydir, 'bin', 'pvlib.run'))
         from polyversion import polyversion
     except Exception as ex:
         print("Hack failed :-(", file=sys.stderr)
@@ -146,14 +146,14 @@ PROJECT = 'polyvers'
 setup(
     name=PROJECT,
     version=polyversion(PROJECT),
-    description="Bump sub-project PEP-440 versions in Git monorepos independently.",
+    description="Bump sub-project versions in Git monorepos independently.",
     long_description=long_desc,
     author="Kostis Anagnostopoulos",
     author_email='ankostis@gmail.com',
     url='https://github.com/jrcstu/polyvers',
     download_url='https://pypi.org/project/polyvers/',
     project_urls={
-        'Documentation': 'http://polyvers.readthedocs.io/',
+        'Documentation': 'https://polyvers.readthedocs.io/',
         'Source': 'https://github.com/jrcstu/polyvers',
         'Tracker': 'https://github.com/jrcstu/polyvers/issues',
         'Polyversion': 'https://pypi.org/project/polyversion/',

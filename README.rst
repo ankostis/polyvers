@@ -1,5 +1,5 @@
 ==================================================================
-Polyvers: Bump independently sub-project versions in Git monorepos
+Polyvers: Bump sub-project versions in Git monorepos independently
 ==================================================================
 
 .. _opening-start:
