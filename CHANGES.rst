@@ -3,6 +3,24 @@ Changes
 =======
 
 
+0.0.2a10 (2018-05-23): polyvers
+-------------------------------
+- fix: slight change of default engraving for ``setup.py:version=...``.
+- updated included standalone ``pvlib/bin/pvlib.whl`` tool generated from
+  ``polyversion-0.0.2a8``, below.
+- Remove default versions from the sources of our-own-dog-food
+  (affects installations for developing this tool).
+- doc: expand section for installing and contributing into this project.
+
+0.0.2a8 (2018-05-23): polyversion
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+- FIX ``polyversion`` barebone command (a utility for when not intalling
+  the full `polyvers` tool).
+- feat: make project-name optional in :func:`polyversion.polyversion()`;
+  if not given,  defaults to caller's last segment of the  module.
+- doc: rudimentary explanation of how to use the lib on its own README.
+
+
 0.0.2a9.post0 (2018-05-23): polyvers
 ------------------------------------
 - feat: add ``-C`` option to change project dir before running command.
@@ -25,7 +43,7 @@ Changes
 
 0.0.2a7 (2018-05-18)
 ^^^^^^^^^^^^^^^^^^^^
-Interim release to embed re-LICENSED ``bin/pvlib.whl``,
+Interim release to embed re-LICENSED ``pvlib/bin/pvlib.whl``,
 from EUPLv1.2-->MIT
 
 
@@ -45,7 +63,7 @@ Actually most changes happened in "interim" release `v0.0.2a2`, below.
 
 - feat: make a standalone polyversion-lib wheel to facilitate bootstrap
   when installing & building from sources (and the lib is not yet installed).
-- Add ``bin/package.sh`` that create the `pvlib` wheel as executable ``pvlib.run``.
+- Add ``bin/package.sh`` that create the `pvlib` wheel as executable ``dist/pvlib.run``.
 - doc: fix rtd & pypi sites.
 
 0.0.2a4 (2018-05-18)
