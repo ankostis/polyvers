@@ -28,9 +28,11 @@ Polyversion: derive subproject versions from tags on git monorepos
     :target: https://www.codacy.com/app/ankostis/polyvers_jrc
     :alt: Code quality metric
 
+.. _coord-start:
+
 :version:       |version|
 :updated:       |today|
-:Documentation: https://polyvers.readthedocs.io
+:Documentation: file:///D:/Work/polyvers.git/build/sphinx/html/usage.html#usage-of-polyversion-library
 :repository:    https://github.com/JRCSTU/polyvers
 :pypi-repo:     https://pypi.org/project/polyversion/
 :copyright:     2018 JRC.C4(STU), European Commission (`JRC <https://ec.europa.eu/jrc/>`_)
@@ -39,6 +41,7 @@ Polyversion: derive subproject versions from tags on git monorepos
 The python 2.7+ library needed by (sub-)projects managed by `polyvers cmd
 <https://github.com/JRCSTU/polyvers>`_ to derive their version-ids on runtime from Git.
 
+.. _coord-end:
 
 Quickstart
 ==========
@@ -79,7 +82,7 @@ a ``myproject.git/myproject/__init__.py`` file:
 .. code-block:: python
 
     ...
-    __version__ = polyversion()  # project-name assumed equal to module-name
+    __version__ = polyversion()  # project assumed equal to module-name 'myproject'
     __updated__ = polytime()
     ...
 
