@@ -88,9 +88,10 @@ def catch_config_error(method):
         try:
             return method(app, *args, **kwargs)
         except (TraitError, ArgumentError) as e:
-            app.print_help()
-            app.log.fatal("Bad config encountered during initialization: %s", e)
-            app.log.debug("Config at the time: %s", app.config)
+            #app.print_help()
+            from pprint import pformat
+            app.log.fatal("Bad config encountered during initialization: %s"
+                          "\n  config at the time: %s", e, pformat(app.config))
             app.exit(1)
 
     return inner
