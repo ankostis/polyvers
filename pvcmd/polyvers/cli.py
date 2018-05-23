@@ -316,15 +316,14 @@ class PolyversCmd(cmdlets.Cmd, yu.YAMLable):
         git_root = self.git_root
 
         template_project = pvproject.Project(parent=self)
-        has_template_project = bool(template_project.tag_vprefixes and
-                                    template_project.pvtag_frmt and
-                                    template_project.pvtag_regex)
+        has_template_project = template_project.is_good()
 
         if not has_template_project:
             template_project = self._autodiscover_versioning_scheme()
             self.log.info("Auto-discovered versioning scheme: %s",
                           template_project.pname)
 
+        ## Store template-project for InitCmd.
         self._template_project = template_project
 
         has_subprojects = bool(self.projects)
@@ -350,8 +349,7 @@ class PolyversCmd(cmdlets.Cmd, yu.YAMLable):
                                                       basepath=basepath,
                                                       _pvtags_collected=None)
                              for pname, basepath in pdata.items()]
-            ## Set discovered projects also in `config`, so
-            #  InitCmd can write it in the generated YAML.
+            ## Set discovered projects in `config` for InitCmd.
             self.config.PolyversCmd.projects = [
                 {'pname': pname, 'basepath': basepath}
                 for pname, basepath in pdata.items()]
@@ -443,6 +441,26 @@ class InitCmd(_SubCmd):
 
         return config
 
+    def _make_yaml_config(self) -> trc.Config:
+        old_config = self._cleaned_config()
+        tproj = self._template_project
+        assert tproj and tproj.is_good(), "Bootstrap template: %s" % tproj
+
+        ## Create explicetely `Project` into config,
+        #  bc program has does not hold such toplevel class.
+        self.config.Project = trc.Config({
+            'tag_vprefixes': tproj.tag_vprefixes,
+            'pvtag_frmt': tproj.pvtag_frmt,
+            'pvtag_regex': tproj.pvtag_regex,
+        })
+
+        _t = yu._dump_trait_help.set(self.doc)
+        try:
+            return self.generate_config_file_yaml(  # type: ignore # meth monkeypatched
+                self.all_app_configurables, old_config)
+        finally:
+            yu._dump_trait_help.reset(_t)
+
     def run(self, *args):
         if len(args) > 0:
             raise cmdlets.CmdException(
@@ -453,13 +471,7 @@ class InitCmd(_SubCmd):
 
         self.bootstrapp_projects()
 
-        old_config = self._cleaned_config()
-
-        _t = yu._dump_trait_help.set(self.doc)
-        try:
-            new_config = self.generate_config_file_yaml(self.all_app_configurables, old_config)
-        finally:
-            yu._dump_trait_help.reset(_t)
+        new_config = self._make_yaml_config()
 
         cfgpath = Path(self.git_root) / ('%s.yaml' % self.config_basename)
 

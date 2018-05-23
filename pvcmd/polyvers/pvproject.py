@@ -336,6 +336,12 @@ class Project(cmdlets.Replaceable, cmdlets.Printable, yu.YAMLable, cmdlets.Spec)
             proposal.trait.error(None, value, ex)
         return value
 
+    def is_good(self):
+        "If format patterns are missing, spurious NPEs will happen when using project."
+        return bool(self.tag_vprefixes and
+                    self.pvtag_frmt and
+                    self.pvtag_regex)
+
     tag = Bool(
         config=True,
         help="""
