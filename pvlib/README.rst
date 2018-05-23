@@ -2,6 +2,32 @@
 Polyversion: derive subproject versions from tags on git monorepos
 ==================================================================
 
+.. image:: https://img.shields.io/pypi/v/polyversion.svg
+    :alt: Deployed in PyPi?
+    :target: https://pypi.org/pypi/polyversion
+
+.. image:: https://img.shields.io/travis/JRCSTU/polyvers.svg
+    :alt: TravisCI (linux) build ok?
+    :target: https://travis-ci.org/JRCSTU/polyvers
+
+.. image:: https://ci.appveyor.com/api/projects/status/lyyjtmit5ti7tg1n?svg=true
+    :alt: Apveyor (Windows) build?
+    :scale: 100%
+    :target: https://ci.appveyor.com/project/ankostis/polyvers
+
+.. image:: https://img.shields.io/coveralls/github/JRCSTU/polyvers.svg
+    :alt: Test-case coverage report
+    :scale: 100%
+    :target: https://coveralls.io/github/JRCSTU/polyvers?branch=master&service=github
+
+.. image:: https://readthedocs.org/projects/polyvers/badge/?version=latest
+    :target: https://polyvers.readthedocs.io/en/latest/?badge=latest
+    :alt: Auto-generated documentation status
+
+.. image:: https://api.codacy.com/project/badge/Grade/11b2545fd0264f1cab4c862998833503
+    :target: https://www.codacy.com/app/ankostis/polyvers_jrc
+    :alt: Code quality metric
+
 :version:       |version|
 :updated:       |today|
 :Documentation: https://polyvers.readthedocs.io
