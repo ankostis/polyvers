@@ -543,8 +543,7 @@ class Project(cmdlets.Replaceable, cmdlets.Printable, yu.YAMLable, cmdlets.Spec)
         default_value=[{
             'globs': ['setup.py'],
             'grafts': [{
-                ## TODO: add `Graft.desc` field
-                ## version must be in its own line.
+                ## TODO: add `Graft.desc`: "version must be in its own line."
                 'regex': tw.dedent(r'''
                     (?xm)
                         \bversion
@@ -561,7 +560,7 @@ class Project(cmdlets.Replaceable, cmdlets.Printable, yu.YAMLable, cmdlets.Spec)
                     (?xm)
                         ^__version__
                         (\ *=\ *)
-                        (.+?[\r\n])
+                        (.+?)$
                     '''),
                 'subst': r"__version__\1'{version}'"
             }, {
@@ -569,7 +568,7 @@ class Project(cmdlets.Replaceable, cmdlets.Printable, yu.YAMLable, cmdlets.Spec)
                     (?xm)
                         ^__updated__
                         (\ *=\ *)
-                        (.+?[\r\n])
+                        (.+?)$
                     '''),
                 'subst': r"__updated__\1'{release_date}'"
             }],
