@@ -97,7 +97,7 @@ def get_yamel(typ='rt'):
     from ruamel import yaml
     from ruamel.yaml.representer import RoundTripRepresenter
 
-    def _represent_path(_dumper, path):
+    def _represent_to_str(_dumper, path):
         return y.representer.represent_str(str(path))
 
     y = yaml.YAML(typ=typ)
@@ -106,8 +106,9 @@ def get_yamel(typ='rt'):
     for d in [odict, defaultdict]:
         yaddrepr.add_representer(d, RoundTripRepresenter.represent_dict)
 
-    yaddrepr.add_multi_representer(pathlib.Path, _represent_path)
-    yaddrepr.add_multi_representer(YAMLable, YAMLable._YAML_represent_instance)
+        yaddrepr.add_multi_representer(YAMLable, YAMLable._YAML_represent_instance)
+    yaddrepr.add_multi_representer(pathlib.Path, _represent_to_str)
+    yaddrepr.add_multi_representer(slice, _represent_to_str)
 
     return y
 
