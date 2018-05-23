@@ -29,6 +29,12 @@ install:
 
 script:
   - python pvlib/setup.py build bdist_wheel
+  - polyversion --help
+  ## Search `polyversion` tags; pvlib gets released sparingly
+  #  so its tags might have been clipped by travi's `git clone`.
+  - git tag polyversion-v0.0.0 -m "something for the next command to hand on"
+  - polyversion polyversion
+
   ## TODO: test actually `polyversion.whl`, not sources.
 
   ## Check pvlib only in older Pythons (later tested with coverage).
