@@ -19,11 +19,13 @@ install:
   - pip install --upgrade setuptools pip wheel
   - pip install -r requirements_dev.txt
 
+  - git tag polyversion-v0.0.0 -m "something for the next command to hang on"
   - pip install -e pvlib[test]
 
   - |
     if [ $TRAVIS_PYTHON_VERSION \> '3.5' ]; then
         pip install -r requirements.txt
+        git tag polyvers-v0.0.0 -m "something for the next command to hang on"
         pip install -e .[test]
     fi
 
@@ -32,7 +34,6 @@ script:
   - polyversion --help
   ## Search `polyversion` tags; pvlib gets released sparingly
   #  so its tags might have been clipped by travi's `git clone`.
-  - git tag polyversion-v0.0.0 -m "something for the next command to hand on"
   - polyversion polyversion
 
   ## TODO: test actually `polyversion.whl`, not sources.
