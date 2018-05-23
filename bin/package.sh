@@ -34,10 +34,17 @@ git checkout -
 
 set +e
 
+## Create executable AND importable wheel::
+#      ./pvlib.run --help                           # from bash
+#      python ./pvlib.run --help                    # outer __main__.py
+#      python ./pvlib.run -m polyversion  --help    # inner __main__.py
+#
 cd ./dist
 tmpzip=_pvlib.zip
 cp polyversion*.whl $tmpzip
-zip -d $tmpzip polyversion/__main__.py
+## Leave both __main__.py files, one for -m,
+#  and the other for executing as scrpt.
+#zip -d $tmpzip polyversion/__main__.py
 zip -j $tmpzip ../pvlib/polyversion/__main__.py
 echo -ne '#!python\n' | cat - $tmpzip > "$PVLIB_SH"
 chmod a+x "$PVLIB_SH"
