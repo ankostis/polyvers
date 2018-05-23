@@ -14,8 +14,9 @@
 
 set +x ## Enable for debug
 
-my_dir=`dirname "$0"`
-cd $my_dir/..
+mydir=`dirname "$0"`
+projdir="$(realpath "$mydir/..")"
+cd "$projdir"
 
 py=""
 rst="rst2html"
@@ -37,6 +38,23 @@ if [ ! -x "`which $rst 2>/dev/null`" ]; then
     fi
 fi
 
-export PYTHONPATH='$my_dir/..'
-#python setup.py --long-description > t.html  ## Uncomment to generate pypi landing-page
-python setup.py --long-description | $py "$rst"  --halt=warning > /dev/null && echo OK
+check_readme() {
+    local projdir="$1"
+    local setup="$projdir/setup.py"
+
+    echo -e "\nChecking --long- description from: $setup" > /dev/stderr
+    export PYTHONPATH='$projdir'
+    #python setup.py --long-description > t.html  ## Uncomment to generate pypi landing-page
+    python "$setup" --long-description | $py "$rst"  --halt=warning > /dev/null && echo OK
+}
+
+check_readme "$projdir"
+let err+=$?
+
+check_readme "$projdir/pvlib"
+let err+=$?
+
+if [ $err -ne 0 ]; then
+    echo "Lint had $err failures!"
+    exit 1
+fi
