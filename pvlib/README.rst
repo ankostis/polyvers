@@ -39,9 +39,26 @@ Polyversion: derive subproject versions from tags on git monorepos
 The python 2.7+ library needed by (sub-)projects managed by `polyvers cmd
 <https://github.com/JRCSTU/polyvers>`_ to derive their version-ids on runtime from Git.
 
-Consult the *polyvers* project: https://polyvers.readthedocs.io
+This library can be used:
+- through its API (to version your project)
+- through its barebone cmdline ``polyversion``:
+
+  .. code-block:: console
+
+
+      user@host ~/polyvers.git (dev) $ polyversion --help
+      Describe the version of a *polyvers* projects from git tags.
+
+      USAGE:
+          polyversion [PROJ-1] ...
+
+      user@host ~/polyvers.git (dev) $ polyversion polyversion
+      polyversion: 0.0.2a7+37.g0707a09
+      polyvers: 0.0.2a9.post0+7.g0707a09
+
+For the rest, consult the *polyvers* project: https://polyvers.readthedocs.io
 
 .. Note::
-    Only this library is (permissive) MIT-licensed so it can be used
-    freely by programs - the respective `polyvers` command-line tool is
+    Only this library is (permissive) MIT-licensed so it can be freely used
+    by any program - the respective `polyvers` command-line tool is
     "copylefted" under EUPLv1.2.
