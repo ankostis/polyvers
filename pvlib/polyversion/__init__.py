@@ -306,8 +306,8 @@ def polytime(no_raise=False, repo_path=None):
     return cdate
 
 
-__version__ = polyversion('polyversion', '0.0.0')
-__updated__ = polytime(no_raise=True)
+__version__ = '0.0.2a8'
+__updated__ = '2018-05-24T00:50:38.794096'
 
 
 def run(*args):
