@@ -98,7 +98,6 @@ And you get the ``polyvers`` command:
     polyvers: Neither `setup.py` nor `.polyvers(.json|.py|.salt)` config-files found!
 
 .. Note::
-
   Actually two projects are installed:
 
   - **polyvers** cmd-line tool, for developing python monorepos,
@@ -203,7 +202,7 @@ file modification for engraving the current version in the leaf "Release" commit
        O                                - Previous commit, before version bump.
 
    .. Hint::
-    Note the difference between ``ABC-v0.0.0`` vs ``ABC-r0.0.0`` tags.
+      Note the difference between ``ABC-v0.0.0`` vs ``ABC-r0.0.0`` tags.
 
    In the source code, it's only the "release" commit that has *engraved* version-ids:
 

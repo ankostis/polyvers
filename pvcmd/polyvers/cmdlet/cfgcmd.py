@@ -520,9 +520,7 @@ class DescCmd(_ConfigBase):
               {cmd_chain} -le  mail.*\.  # Search 'mail' anywhere in class-names.
               {cmd_chain} -le  \..*mail  # Search 'mail' anywhere in param-names.
 
-        Tip:
-          Do all of the above and remove -l.
-          For instance::
+        - Do all of the above and remove -l, like this::
               {cmd_chain} -c DescCmd    # View help for this cmd without its parameters.
               {cmd_chain} -t Spec.      # View help sorted alphabetically
     """)

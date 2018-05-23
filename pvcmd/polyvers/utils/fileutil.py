@@ -175,7 +175,7 @@ def _is_base_or_same(basepath: Path, longpath: Path, strict=False) -> Union[bool
         BUT when not resolved, them surprises happen, check TCs!
         (e.g. 'BAD' considered base of 'BAD/..', but not on Linux...)
 
-    .. TIP::
+    .. Tip::
        To check if `longpath` has or `basepath` use::
 
            _is_base_or_same(obase, long) in (None, True)

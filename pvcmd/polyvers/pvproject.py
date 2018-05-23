@@ -274,7 +274,7 @@ class Project(cmdlets.Replaceable, cmdlets.Printable, yu.YAMLable, cmdlets.Spec)
         among others ``{pname}`` and ``{version}``; use ``{ikeys}`` to receive
         all available keys.
 
-        .. WARNING::
+        .. Important::
            If you change this, ensure the :func:`polyversion.polyversion()`
            gets invoked from project's sources with the same value
            in `pvtag_frmt` kw-arg.
@@ -317,7 +317,7 @@ class Project(cmdlets.Replaceable, cmdlets.Printable, yu.YAMLable, cmdlets.Spec)
         to receive all available keys.
         See :pep:`0426` for project-name characters and format.
 
-        .. WARNING::
+        .. Important::
            If you change this, ensure the :func:`polyversion.polyversion()`
            gets invoked from project's sources with the same value
            in `pvtag_regex` kw-arg.
@@ -442,12 +442,12 @@ class Project(cmdlets.Replaceable, cmdlets.Printable, yu.YAMLable, cmdlets.Spec)
         :raise sbp.CalledProcessError:
             for any other error while executing *git*.
 
-        .. NOTE::
+        .. Tip::
            There is also the python==2.7 & python<3.6 safe :func:`polyvers.polyversion()``
            for extracting just the version part from a *pvtag*; use this one
            from within project sources.
 
-        .. TIP::
+        .. Tip::
            Same results can be retrieved by this `git` command::
 
                git describe --tags --match <PROJECT>-v*

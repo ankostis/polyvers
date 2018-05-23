@@ -10,13 +10,16 @@ project is at a very early stage.
 Installation
 ============
 Install both sub-projects in *develop* mode using ``pip``
-(installing *egg*  with ``python setup.py install develop`` may not work):
 
 .. code-block:: console
 
     $ git clone  https://github.com/JRCSTU/polyvers  polyvers.git
     $ cd polyvers.git
     $ pip install  -e pvlib[test]  -e .[test]
+
+.. Caution::
+   Installing *egg* with ``python setup.py install develop`` is not tested,
+   and may fail to work correctly.
 
 
 Tests & integrations

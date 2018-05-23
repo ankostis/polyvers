@@ -172,7 +172,7 @@ class InterpolationContext(ChainMap):
 
         - For params, see :meth:`interp()`.
 
-        .. NOTE::
+        .. Attention::
            Must use ``str.format_map()`` when `_stub_keys` is true;
            otherwise, ``format()`` will clone all existing keys in
            a static map.

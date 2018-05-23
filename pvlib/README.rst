@@ -52,7 +52,7 @@ There are 3 ways to use this library:
     (no installation, but sources required; behaves identically
     to ``polyversion`` command).
 
-.. Info::
+.. Note::
     Only this library is (permissive) MIT-licensed, so it can be freely used
     by any program - the respective `polyvers` command-line tool is
     "copylefted" under EUPLv1.2.
@@ -83,7 +83,7 @@ a ``myproject.git/myproject/__init__.py`` file:
     __updated__ = polytime()
     ...
 
-.. Note::
+.. Tip::
    Depending on your repo's *versioning scheme* (eg you have a *mono-project* repo,
    with version-tags simply like ``vX.Y.Z``), you must add in both invocations
    of :func:`polyversion.polyversion()` above the kw-arg ``mono_project=True``.

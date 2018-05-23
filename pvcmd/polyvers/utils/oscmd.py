@@ -220,8 +220,10 @@ class PopenCmd:
     :raise sbp.CalledProcessError:
         if check_returncode=true and exit code is non-zero.
 
-    if self.returncode:    .. Note::
-       It's mostly for Git bc flags are produced like that:
+    .. Important::
+       Flags written out are mostly for Git, bc flags are produced
+       like that::
+
            -f <value> --flag=<value>
     """
     def __init__(self,

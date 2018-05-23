@@ -184,7 +184,7 @@ def polyversion(pname=None, default=None, repo_path=None,
         The project-name, used as the prefix of pvtags when searching them.
         If not given, defaults to the *last segment of the module-name of the caller*.
 
-        .. Note::
+        .. Attention::
            when calling it from ``setup.py`` files, auto-deduction above
            will not work;  you must supply a project name.
     :param str default:
@@ -234,7 +234,7 @@ def polyversion(pname=None, default=None, repo_path=None,
 
             version=polyversion('myproj', '0.0.0)
 
-    .. NOTE::
+    .. Tip::
        This is a python==2.7 & python<3.6 safe function; there is also the similar
        function with elaborate error-handling :func:`polyvers.pvtags.descrivbe_project()`
        used by the tool internally.

@@ -456,7 +456,7 @@ class Forceable(metaclass=trt.MetaHasTraits):
             - Rows above, win; columns to the left win.
             - To catch all tokens, use ``--force=true, --force='*'``
 
-        .. Note::
+        .. Tip::
            prefer using it via :class:`ErrLog` contextman.
         """
         assert token is None or isinstance(token, (bool, str)), token
@@ -613,7 +613,7 @@ class Spec(Forceable, trc.LoggingConfigurable):
         - Self has the least priority, kwds the most.
         - For params, see :meth:`interp.InterpolationContext.interp()`.
 
-        .. NOTE::
+        .. Attention::
            Must use ``str.format_map()`` when `_stub_keys` is true;
            otherwise, ``format()`` will clone all existing keys in
            a static map.
