@@ -70,8 +70,8 @@ script:
         pytest pvcmd
     fi
 
-    ## LINTERS
-    #
+  ## LINTERS
+  #
   - |
     if [ $TRAVIS_PYTHON_VERSION \> '3.5' ]; then
         bin/lint.sh
