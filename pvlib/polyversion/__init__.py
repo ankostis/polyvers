@@ -108,6 +108,16 @@ def _my_run(cmd, cwd):
         return clean_cmd_result(res)
 
 
+def _caller_module(nframes_back=2):
+    frame = inspect.currentframe()
+    try:
+        for _ in range(nframes_back):
+            frame = frame.f_back
+        return inspect.getmodulename(inspect.getframeinfo(frame).filename)
+    finally:
+        del frame
+
+
 def _caller_fpath(nframes_back=2):
     frame = inspect.currentframe()
     try:
@@ -163,7 +173,7 @@ def _interp_regex(tag_regex, pname, is_release=False):
                             vprefix=tag_vprefixes[int(is_release)])
 
 
-def polyversion(pname, default=None, repo_path=None,
+def polyversion(pname=None, default=None, repo_path=None,
                 mono_project=None,
                 tag_frmt=None, tag_regex=None,
                 git_options=()):
@@ -172,6 +182,11 @@ def polyversion(pname, default=None, repo_path=None,
 
     :param str pname:
         The project-name, used as the prefix of pvtags when searching them.
+        If not given, defaults to the *last segment of the module-name of the caller*.
+
+        .. Note::
+           when calling it from ``setup.py`` files, auto-deduction above
+           will not work;  you must supply a project name.
     :param str default:
         What *version* to return if git cmd fails.
     :param str repo_path:
@@ -225,6 +240,9 @@ def polyversion(pname, default=None, repo_path=None,
        used by the tool internally.
     """
     version = None
+
+    if not pname:
+        pname = _caller_module()
 
     if tag_frmt is None:
         tag_frmt = vtag_frmt if mono_project else pvtag_frmt

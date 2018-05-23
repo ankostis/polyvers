@@ -67,6 +67,11 @@ def test_caller_fpath():
     assert os.stat(caller_dir) == os.stat(exp)
 
 
+def test_caller_module():
+    caller_mod = pvlib._caller_module(1)
+    assert caller_mod == __name__.split('.')[-1]
+
+
 ##############
 ## DESCRIBE ##
 ##############
