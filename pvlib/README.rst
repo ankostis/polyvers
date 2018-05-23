@@ -59,7 +59,7 @@ There are 3 ways to use this library:
 
 API usage
 ---------
-.. py:currentmodule:: polyversion
+.. currentmodule:: polyversion
 
 An API sample of using :func:`polyversion.polyversion()` in
 a ``myproject.git/setup.py`` file:
