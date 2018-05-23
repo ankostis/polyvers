@@ -3,8 +3,12 @@
 """Setup script *polyversion-lib*."""
 from __future__ import print_function
 
+import re
+
 from setuptools import setup
+
 import os.path as osp
+
 
 mydir = osp.dirname(osp.realpath(__file__))
 
@@ -29,9 +33,80 @@ except ImportError:
         polyversion = lambda *_, **__: '0.0.0'
 
 
-with open(osp.join(mydir, 'README.rst')) as readme_file:
-    readme = readme_file.read()
+def yield_rst_only_markup(lines):
+    """
+    :param file_inp:     a `filename` or ``sys.stdin``?
+    :param file_out:     a `filename` or ``sys.stdout`?`
 
+    """
+    substs = [
+        # Selected Sphinx-only Roles.
+        #
+        (r':abbr:`([^`]+)`', r'\1'),
+        (r':ref:`([^`]+)`', r'ref: *\1*'),
+        (r':term:`([^`]+)`', r'**\1**'),
+        (r':dfn:`([^`]+)`', r'**\1**'),
+        (r':(samp|guilabel|menuselection|doc|file):`([^`]+)`', r'``\2``'),
+
+        # Sphinx-only roles:
+        #        :foo:`bar`   --> foo(``bar``)
+        #        :a:foo:`bar` XXX afoo(``bar``)
+        #
+        #(r'(:(\w+))?:(\w+):`([^`]*)`', r'\2\3(``\4``)'),
+        (r':(\w+):`([^`]*)`', r'\1(`\2`)'),
+        # emphasis
+        # literal
+        # code
+        # math
+        # pep-reference
+        # rfc-reference
+        # strong
+        # subscript, sub
+        # superscript, sup
+        # title-reference
+
+
+        # Sphinx-only Directives.
+        #
+        (r'\.\. doctest', r'code-block'),
+        (r'\.\. module', r'code-block'),
+        (r'\.\. currentmodule::', r'currentmodule:'),
+        (r'\.\. plot::', r'.. plot:'),
+        (r'\.\. seealso', r'info'),
+        (r'\.\. glossary', r'rubric'),
+        (r'\.\. figure::', r'.. '),
+        (r'\.\. image::', r'.. '),
+
+        (r'\.\. dispatcher', r'code-block'),
+
+        # Other
+        #
+        (r'\|version\|', r'x.x.x'),
+        (r'\|today\|', r'x.x.x'),
+        (r'\.\. include:: AUTHORS', r'see: AUTHORS'),
+    ]
+
+    regex_subs = [(re.compile(regex, re.IGNORECASE), sub)
+                  for (regex, sub) in substs]
+
+    def clean_line(line):
+        try:
+            for (regex, sub) in regex_subs:
+                line = regex.sub(sub, line)
+        except Exception as ex:
+            print("ERROR: %s, (line(%s)" % (regex, sub))
+            raise ex
+
+        return line
+
+    for line in lines:
+        yield clean_line(line)
+
+
+with open(osp.join(mydir, 'README.rst')) as readme_file:
+    readme = readme_file.readlines()
+
+long_desc = ''.join(yield_rst_only_markup(readme))
 
 test_requirements = [
     'pytest',
@@ -47,7 +122,7 @@ setup(
     name=PROJECT,
     version=polyversion(PROJECT, '0.0.0'),
     description="Lib code deriving subproject versions from tags on git monorepos.",
-    long_description=readme,
+    long_description=long_desc,
     author="Kostis Anagnostopoulos",
     author_email='ankostis@gmail.com',
     url='https://github.com/jrcstu/polyvers',

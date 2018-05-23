@@ -4,6 +4,7 @@
 """Setup script *polyvers-cmd*."""
 
 from os import path as osp
+import re
 import sys
 
 from setuptools import setup, find_packages
@@ -36,16 +37,87 @@ MIN_PYTHON = (3, 6)
 if sys.version_info < MIN_PYTHON:
     sys.exit("Sorry, Python >= %s is required, found: %s" %
              ('.'.join(str(i) for i in MIN_PYTHON), str(sys.version_info)))
+
+
+def yield_rst_only_markup(lines):
+    """
+    :param file_inp:     a `filename` or ``sys.stdin``?
+    :param file_out:     a `filename` or ``sys.stdout`?`
+
+    """
+    substs = [
+        # Selected Sphinx-only Roles.
+        #
+        (r':abbr:`([^`]+)`', r'\1'),
+        (r':ref:`([^`]+)`', r'ref: *\1*'),
+        (r':term:`([^`]+)`', r'**\1**'),
+        (r':dfn:`([^`]+)`', r'**\1**'),
+        (r':(samp|guilabel|menuselection|doc|file):`([^`]+)`', r'``\2``'),
+
+        # Sphinx-only roles:
+        #        :foo:`bar`   --> foo(``bar``)
+        #        :a:foo:`bar` XXX afoo(``bar``)
+        #
+        #(r'(:(\w+))?:(\w+):`([^`]*)`', r'\2\3(``\4``)'),
+        (r':(\w+):`([^`]*)`', r'\1(`\2`)'),
+        # emphasis
+        # literal
+        # code
+        # math
+        # pep-reference
+        # rfc-reference
+        # strong
+        # subscript, sub
+        # superscript, sup
+        # title-reference
+
+
+        # Sphinx-only Directives.
+        #
+        (r'\.\. doctest', r'code-block'),
+        (r'\.\. module', r'code-block'),
+        (r'\.\. currentmodule::', r'currentmodule:'),
+        (r'\.\. plot::', r'.. plot:'),
+        (r'\.\. seealso', r'info'),
+        (r'\.\. glossary', r'rubric'),
+        (r'\.\. figure::', r'.. '),
+        (r'\.\. image::', r'.. '),
+
+        (r'\.\. dispatcher', r'code-block'),
+
+        # Other
+        #
+        (r'\|version\|', r'x.x.x'),
+        (r'\|today\|', r'x.x.x'),
+        (r'\.\. include:: AUTHORS', r'see: AUTHORS'),
+    ]
+
+    regex_subs = [(re.compile(regex, re.IGNORECASE), sub)
+                  for (regex, sub) in substs]
+
+    def clean_line(line):
+        try:
+            for (regex, sub) in regex_subs:
+                line = regex.sub(sub, line)
+        except Exception as ex:
+            print("ERROR: %s, (line(%s)" % (regex, sub))
+            raise ex
+
+        return line
+
+    yield from (clean_line(line) for line in lines)
+
+
 with open(osp.join(mydir, 'README.rst')) as readme_file:
-    readme = readme_file.read()
+    readme = readme_file.readlines()
 
 with open(osp.join(mydir, 'CHANGES.rst')) as history_file:
-    history = history_file.read()
+    ## Remove 1st header-mark line or else,
+    #  README.rst gets invalid header levels.
+    history = history_file.readlines()[1:]
 
-## Remove 1st header-mark line or else,
-#  README.rst gets invalid header levels.
-history = '\n'.join(history.split('\n')[1:])
 
+long_desc = ''.join(yield_rst_only_markup((readme + ['\n\n'] + history)))
 
 requirements = [
     'polyversion',
@@ -75,7 +147,7 @@ setup(
     name=PROJECT,
     version=polyversion(PROJECT),
     description="Bump sub-project PEP-440 versions in Git monorepos independently.",
-    long_description=readme + '\n\n' + history,
+    long_description=long_desc,
     author="Kostis Anagnostopoulos",
     author_email='ankostis@gmail.com',
     url='https://github.com/jrcstu/polyvers',
