@@ -16,6 +16,7 @@ Contents:
 
     usage
     changes
+    contributing
     reference
 
 Indices and tables
