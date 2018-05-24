@@ -148,7 +148,7 @@ the full blown `polyvers` command tool) is given below:
     user@host:~/ $ cd polyversion
     user@host:~/polyvers.git (dev) $ polyversion polyvers polyversion
     polyvers: 0.0.2a10
-    polyversion: 0.0.2a8
+    polyversion: 0.0.2a9
 
 And various ways to use the standalone wheel from *bash*
 (these will still work without having installed anything):
@@ -157,13 +157,13 @@ And various ways to use the standalone wheel from *bash*
 
     user@host:~/polyvers.git (master) $
     user@host:~/polyvers.git (master) $ ./bin/pvlib.run polyversion
-    polyversion: 0.0.2a8
+    polyversion: 0.0.2a9
     user@host:~/polyvers.git (master) $ python ./bin/pvlib.run --help
     ...
     user@host:~/polyvers.git (master) $ python ./bin/pvlib.run -m polyversion  -v
-    version: 0.0.2a8
+    version: 0.0.2a9
     user@host:~/polyvers.git (master) $ PYTHONPATH=./bin/pvlib.run  python -m polyversion  -V
-    version: 0.0.2a8
+    version: 0.0.2a9
     updated: Thu, 24 May 2018 02:47:37 +0300
 
 
