@@ -173,7 +173,7 @@ def _interp_regex(tag_regex, pname, is_release=False):
                             vprefix=tag_vprefixes[int(is_release)])
 
 
-def polyversion(pname=None, default=None, repo_path=None,
+def polyversion(pname=None, default='', repo_path=None,
                 mono_project=None,
                 tag_frmt=None, tag_regex=None,
                 git_options=()):
@@ -189,6 +189,7 @@ def polyversion(pname=None, default=None, repo_path=None,
            will not work;  you must supply a project name.
     :param str default:
         What *version* to return if git cmd fails.
+        Set it to `None` to raise if no *vtag* found.
     :param str repo_path:
         A path inside the git repo hosting the `pname` in question; if missing,
         derived from the calling stack.
@@ -222,17 +223,18 @@ def polyversion(pname=None, default=None, repo_path=None,
         List of options(str) passed to ``git describe`` command.
     :return:
         The version-id derived from the *pvtag*, or `default` if
-        command failed/returned nothing.
+        command failed/returned nothing, unless None, in which case, it raises.
+    :raise:
+        if it cannot find t=any vtag (e.g. no git cmd/repo, no valid tags)
 
-    .. TIP::
+    .. Tip::
         It is to be used in ``__init__.py`` files like this::
 
             __version__ = polyversion('myproj')
 
-        ...or in ``setup.py`` where a default is needed for *develop* mode
-        to work::
+.        ...and in ``setup.py`` files::
 
-            version=polyversion('myproj', '0.0.0)
+            version=polyversion('myproj')
 
     .. Tip::
        This is a python==2.7 & python<3.6 safe function; there is also the similar
@@ -306,7 +308,7 @@ def polytime(no_raise=False, repo_path=None):
     return cdate
 
 
-__version__ = polyversion('polyversion', '0.0.0')
+__version__ = polyversion('polyversion')
 __updated__ = polytime(no_raise=True)
 
 
@@ -316,6 +318,7 @@ def run(*args):
 
     USAGE:
         %(prog)s [PROJ-1] ...
+        %(prog)s [-v | -V ]     # print my version information
 
     See http://polyvers.readthedocs.io
 
@@ -328,13 +331,21 @@ def run(*args):
     import os
 
     for o in ('-h', '--help'):
-        import textwrap as tw
 
         if o in args:
+            import textwrap as tw
+
             cmdname = osp.basename(sys.argv[0])
             doc = tw.dedent('\n'.join(run.__doc__.split('\n')[1:7]))
             print(doc % {'prog': cmdname})
             return 0
+
+    if '-v' in args:
+        print(__version__, end='')
+        return 0
+    if '-V' in args:
+        print("version: %s\nupdated: %s" % (__version__, __updated__))
+        return 0
 
     if len(args) == 1:
         res = polyversion(args[0], repo_path=os.curdir)

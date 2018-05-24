@@ -238,9 +238,19 @@ def test_MAIN_polyversions(ok_repo, untagged_repo, no_repo, capsys):
 
     no_repo.chdir()
 
-    with pytest.raises(sbp.CalledProcessError):
-        run(proj1)
-    run('foo', 'bar')
+
+def test_MAIN_polyversions_opts(ok_repo, untagged_repo, no_repo, capsys):
+    from polyversion import run, __version__, __updated__
+    ok_repo.chdir()
+
+    run('--help')
     out, err = capsys.readouterr()
-    assert out == 'foo: \nbar: \n'
-    #assert caplog.records()
+    assert run.__doc__.split('\n')[0] in out and not err
+
+    run('-v')
+    out, err = capsys.readouterr()
+    assert __version__ == out.strip() and not err
+
+    run('-V')
+    out, err = capsys.readouterr()
+    assert __version__ in out and __updated__ in out and not err
