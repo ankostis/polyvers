@@ -3,17 +3,24 @@ Changes
 =======
 
 
-0.0.2a10 (2018-05-23): polyvers
+0.0.2a10 (2018-05-24): polyvers
 -------------------------------
 - fix: slight change of default engraving for ``setup.py:version=...``.
 - Remove default versions from the sources of our-own-dog-food
   (affects installations for developing this tool).
 - refact: merged ```pvlib.whl`` and ``pvlib.run`` into a single executable and
   importable standalone wheel in ``bin/pvlib.run``, generated from
-  ``polyversion-0.0.2a8``, release below.
+  ``polyversion-0.0.2a9``, release below.
 - doc: expand section for installing and contributing into this project.
 - chore: tighten various test harnesses.
 
+0.0.2a9 (2018-05-24): polyversion
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2nd interim release to embed new ``bin/pvlib.run``.
+
+- INVERT by default ``polyversion()/polytime()`` functions not to raise
+  if vtags missing.
+- fix: `pvlib.run` shebang to use ``#!/usr/bin/env python`` to work on linux.
 
 0.0.2a8 (2018-05-23): polyversion
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
