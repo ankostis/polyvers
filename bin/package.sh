@@ -46,7 +46,7 @@ cp polyversion*.whl $tmpzip
 #  and the other for executing as scrpt.
 #zip -d $tmpzip polyversion/__main__.py
 zip -j $tmpzip ../pvlib/polyversion/__main__.py
-echo -ne '#!python\n' | cat - $tmpzip > "$PVLIB_SH"
+echo -ne '#!/usr/bin/env python\n' | cat - $tmpzip > "$PVLIB_SH"
 chmod a+x "$PVLIB_SH"
 
 ## Nice chance to send tags.
