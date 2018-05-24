@@ -145,7 +145,7 @@ the full blown `polyvers` command tool) is given below:
         raise sbp.CalledProcessError(proc.returncode, cmd)
     subprocess.CalledProcessError: Command '['git', 'describe', '--match=cf-v*']' returned non-zero exit status 128.
 
-    user@host:~/ $ cd polyversion
+    user@host:~/ $ cd polyvers.git
     user@host:~/polyvers.git (dev) $ polyversion polyvers polyversion
     polyvers: 0.0.2a10
     polyversion: 0.0.2a9
