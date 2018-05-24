@@ -145,7 +145,7 @@ PROJECT = 'polyvers'
 
 setup(
     name=PROJECT,
-    version=polyversion(PROJECT),
+    version=polyversion(PROJECT, '0.0.0'),  # for shallow clones
     description="Bump sub-project versions in Git monorepos independently.",
     long_description=long_desc,
     author="Kostis Anagnostopoulos",

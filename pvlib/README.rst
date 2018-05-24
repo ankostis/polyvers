@@ -85,13 +85,19 @@ An API usage sample of using :func:`polyversion.polyversion()` from within your
 
     setup(
         name='myproject',
-        version=polyversion('myproject')
+        version=polyversion('myproject', '0.0.0')
         install_requires=[
             'polyversion'
             ...
         ],
         ...
     )
+
+.. Tip::
+   For cases where a shallow git clone did not reach any *vtags* back in history,
+   or simply because the project is new, and there are no *vtags*, we set ``default=0.0.0``,
+   to facilitate pip-install these projects from sources.
+   If you want a hard fail, set ``default=None``.
 
 An API usage sample of using also :func:`polytime()` from within your
 ``myproject.git/myproject/__init__.py`` file:

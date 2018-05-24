@@ -87,14 +87,14 @@ def test_polyversion_p1(ok_repo, untagged_repo, no_repo):
     ## UNTAGGED REPO
 
     with pytest.raises(sbp.CalledProcessError):
-        pvlib.polyversion('foo', repo_path=untagged_repo)
+        pvlib.polyversion('foo', default=None, repo_path=untagged_repo)
     v = pvlib.polyversion('foo', default='<unused>', repo_path=untagged_repo)
     assert v == '<unused>'
 
     ## NO REPO
 
     with pytest.raises(sbp.CalledProcessError):
-        pvlib.polyversion(proj1, repo_path=no_repo)
+        pvlib.polyversion(proj1, default=None, repo_path=no_repo)
     v = pvlib.polyversion(proj1, default='<unused>', repo_path=no_repo)
     assert v == '<unused>'
 
@@ -135,14 +135,14 @@ def test_polyversion_vtags(vtags_repo):
 
 def test_polyversion_BAD_project(ok_repo):
     with pytest.raises(sbp.CalledProcessError):
-        pvlib.polyversion('foo', repo_path=ok_repo)
+        pvlib.polyversion('foo', default=None, repo_path=ok_repo)
     v = pvlib.polyversion('foo', default='<unused>', repo_path=ok_repo)
     assert v == '<unused>'
 
 
 def test_polyversion_BAD_no_commits(empty_repo):
     with pytest.raises(sbp.CalledProcessError):
-        pvlib.polyversion('foo', repo_path=empty_repo)
+        pvlib.polyversion('foo', default=None, repo_path=empty_repo)
     v = pvlib.polyversion('foo', default='<unused>', repo_path=empty_repo)
     assert v == '<unused>'
 
@@ -153,7 +153,7 @@ def test_polyversion_BAD_no_git_cmd(ok_repo, monkeypatch):
     monkeypatch.setenv('PATH', '')
 
     with pytest.raises(FileNotFoundError):
-        pvlib.polyversion('foo', repo_path=ok_repo)
+        pvlib.polyversion('foo', default=None, repo_path=ok_repo)
     v = pvlib.polyversion('foo', '0.1.1', repo_path=ok_repo)
     assert v == '0.1.1'
 
@@ -229,12 +229,13 @@ def test_MAIN_polyversions(ok_repo, untagged_repo, no_repo, capsys):
     run()
     out, err = capsys.readouterr()
     assert not out and not err
-    with pytest.raises(sbp.CalledProcessError):
-        run('foo')
+    run('foo')
+    out, err = capsys.readouterr()
+    assert not out and 'fatal: No names found' in err
     run('foo', 'bar')
     out, err = capsys.readouterr()
     assert out == 'foo: \nbar: \n'
-    #assert 'No names found' in caplog.text()
+    assert 'fatal: No names found' in err
 
     no_repo.chdir()
 
