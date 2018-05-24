@@ -145,7 +145,7 @@ PROJECT = 'polyvers'
 
 setup(
     name=PROJECT,
-    version=polyversion(PROJECT, '0.0.0'),
+    version='0.0.2a10',
     description="Bump sub-project versions in Git monorepos independently.",
     long_description=long_desc,
     author="Kostis Anagnostopoulos",
