@@ -16,6 +16,11 @@ import pprint
 import re
 import sys
 
+from ipython_genutils import py3compat
+from ipython_genutils.importstring import import_item
+from ipython_genutils.text import indent, wrap_paragraphs, dedent
+import six
+
 from ...traitlets.config.configurable import Configurable, SingletonConfigurable
 from ...traitlets.config.loader import (
     KVArgParseConfigLoader, PyFileConfigLoader, Config, ArgumentError, ConfigFileNotFound, JSONFileConfigLoader
@@ -23,11 +28,6 @@ from ...traitlets.config.loader import (
 from ...traitlets.traitlets import (
     Bool, Unicode, List, Enum, Dict, Instance, TraitError, observe, observe_compat, default,
 )
-
-from ipython_genutils import py3compat
-from ipython_genutils.importstring import import_item
-from ipython_genutils.text import indent, wrap_paragraphs, dedent
-import six
 
 
 #-----------------------------------------------------------------------------
@@ -90,11 +90,14 @@ def catch_config_error(method):
         except (TraitError, ArgumentError) as e:
             #app.print_help()
             from pprint import pformat
-            app.log.fatal("Bad config encountered during initialization: %s"
-                          "\n  config at the time: %s", e, pformat(app.config))
-            app.exit(1)
+            raise TraitError(
+                "Bad config encountered during initialization: %s"
+                "\n  config at the time: %s\n%s" %
+                (e, pformat(app.config),
+                 '\n'.join(app.emit_help_epilogue())))
 
     return inner
+
 
 class ApplicationError(Exception):
     pass
