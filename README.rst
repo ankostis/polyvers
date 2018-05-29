@@ -505,6 +505,9 @@ Similar Tools
 - https://github.com/korfuri/awesome-monorepo
 - `Lerna <https://lernajs.io/>`_: A tool for managing JavaScript projects
   with multiple packages.
+- `pbr <https://docs.openstack.org/pbr/>`_: a ``setup_requires`` library that
+  injects sensible default and behaviors into your *setuptools*.
+  Crafted for *Semantic Versioning*, maintained for OpenStack projects.
 - `Pants <https://www.pantsbuild.org/>`_:  a build system designed for codebases that:
   - Are large and/or growing rapidly.
   - Consist of many subprojects that share a significant amount of code.
