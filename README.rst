@@ -521,6 +521,11 @@ Similar Tools
 - `pbr <https://docs.openstack.org/pbr/>`_: a ``setup_requires`` library that
   injects sensible default and behaviors into your *setuptools*.
   Crafted for *Semantic Versioning*, maintained for OpenStack projects.
+- `Zest.releaser <http://zestreleaser.readthedocs.io/>`_: easy releasing and tagging 
+  for Python packages; make easy, quick and neat releases of your Python packages. 
+  You need to change the version number, add a new heading in your changelog, 
+  record the release date, svn/git/bzr/hg tag your project, perhaps upload it 
+  to pypi... *zest.releaser* takes care of the boring bits for you.
 - `Pants <https://www.pantsbuild.org/>`_:  a build system designed for codebases that:
   - Are large and/or growing rapidly.
   - Consist of many subprojects that share a significant amount of code.
