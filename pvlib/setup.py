@@ -167,6 +167,10 @@ setup(
         'test': test_requirements,
     },
     entry_points={
-        'console_scripts': [
-            '%(p)s = %(p)s.__main__:main' % {'p': PROJECT}]},
+        'distutils.setup_keywords': [
+            'polyversion = polyversion:SetupKeyword',
+        ],
+        'console_scripts':
+            ['%(p)s = %(p)s.__main__:main' % {'p': PROJECT}]
+    },
 )

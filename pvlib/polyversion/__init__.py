@@ -193,15 +193,23 @@ def polyversion(pname=None, default='', repo_path=None,
     :param str default:
         What *version* to return if git cmd fails.
         Set it to `None` to raise if no *vtag* found.
+
+        .. Tip::
+           For cases where a shallow git-clone does not finds any *vtags*
+           back in history, or simply because the project is new, and
+           there are no *vtags*, we set default-version to empty-string,
+           to facilitate pip-installing these projects from sources.
+
     :param str repo_path:
         A path inside the git repo hosting the `pname` in question; if missing,
         derived from the calling stack.
     :param bool mono_project:
-        Choose versioning scheme:
-
-        - false: (default) use *pvtags* :data:`pvtag_frmt` & :data:`pvtag_regex`.
-        - true: use plain *vtags* :data:`vtag_frmt` & :data:`vtag_regex`.
-        - The `tag_frmt` and `tag_regex` args take precendance, if given.
+      - false: (default) multiple sub-projects per git-repo.
+        Tags formatted by *pvtags* :data:`pvtag_frmt` & :data:`pvtag_regex`
+        (like ``pname-v1.2.3``).
+      - true: only one project in git-repo
+        Tags formatted as *vtags* :data:`vtag_frmt` & :data:`vtag_regex`.
+        (like ``v1.2.3``).
     :param str tag_frmt:
         The :pep:`3101` pattern for creating *pvtags* (or *vtags*).
 
@@ -361,3 +369,145 @@ def run(*args):
 
     if res:
         print(res)
+
+
+##############
+## `setup.py` keywords
+#
+#  Idea & some code borrowed from BSDlicensed *pbr* tool:
+#      https://github.com/openstack-dev/pbr/blob/master/pbr/packaging.py
+#
+
+def _get_version_from_pkg_metadata(package_name):
+    """Get the version from package metadata if present.
+
+    This looks for PKG-INFO if present (for sdists), and if not looks
+    for METADATA (for wheels) and failing that will return None.
+    """
+    import email
+
+    pkg_metadata_filenames = ['PKG-INFO', 'METADATA']
+    pkg_metadata = {}
+    for filename in pkg_metadata_filenames:
+        try:
+            pkg_metadata_file = open(filename, 'r')
+        except (IOError, OSError):
+            continue
+        try:
+            pkg_metadata = email.message_from_file(pkg_metadata_file)
+        except email.errors.MessageError:
+            continue
+
+    # Check to make sure we're in our own dir
+    if pkg_metadata.get('Name', None) != package_name:
+        return None
+    return pkg_metadata.get('Version', None)
+
+
+class SetupKeyword:
+    """
+    New *setuptools* kwd to find subproject version from PKG-INFO or git tags.
+
+    The value to this keyword can be a boolean, or a dictionary with keys
+    roughly mimicing those in :func:`polyversion()`:
+
+    :ivar bool version_scheme:
+        A string-label selecting versioning scheme:
+          - monorepo: (default) multiple sub-projects per git-repo.
+            Tags formatted by *pvtags* :data:`pvtag_frmt` & :data:`pvtag_regex`
+            (like ``pname-v1.2.3``).
+          - mono-project:
+            Tags formatted as *vtags* :data:`vtag_frmt` & :data:`vtag_regex`.
+            (like ``v1.2.3``).
+
+        The `tag_format` and `tag_regex` args take precendance, if given.
+    :ivar str tag_format:
+        The :pep:`3101` pattern for creating *pvtags* (or *vtags*).
+          - It may interpolate 2 parameters: ``{pname}, {version} = '*'``.
+          - It is used also to generate the match patterns for
+            command ``git describe --match <pattern>``.
+          - It overrides `version_scheme` arg.
+          - See :data:`pvtag_frmt` & :data:`vtag_frmt`
+    :ivar regex tag_regex:
+        The regex pattern breaking apart *pvtags*, with 3 named capturing groups:
+          - ``pname``,
+          - ``version`` (without the 'v'),
+          - ``descid`` (optional) anything following the dash('-') after
+            the version in ``git-describe`` result.
+
+          - It is given a :pep:`3101` parameter ``{pname}`` to interpolate.
+          - It overrides `version_scheme` arg.
+          - See :pep:`0426` for project-name characters and format.
+          - See :data:`pvtag_regex` & :data:`vtag_regex`
+    :ivar git_options:
+        List of options(str) passed to ``git describe`` command.
+
+    - First it tries to see if project contained in a distribution-archive
+      (e.g. a "wheel"), and tries to derive the version from egg-infos.
+      Then it falls through retrieving it from git tags.
+
+    - The standard ``setup(version=<version>)`` keyword is passed in as
+      the value to ``polyversion.polyversion(default=<version>)``.
+
+      So if ``version` is a (possibly empty) string, this will be used in case
+      version cannot be auto-retrived.
+
+      If ``version`` is omitted (or it is `None`), any problems will be raised,
+      and setup.script wil abort
+
+      .. Tip::
+          For cases where a shallow git-clone does not finds any *vtags*
+          back in history, or simply because the project is new, and
+          there are no *vtags*, we set default-version to empty-string,
+          to facilitate pip-installing these projects from sources.
+    """
+    # Registered in `distutils.setup_keywords` *entry_point* of this project's
+    #``setup.py``.
+
+    __slots__ = ('version_scheme tag_format '
+                 'tag_regex git_options'.split())
+
+    def __init__(self, dist, attr, value):
+        from distutils.errors import DistutilsSetupError
+
+        if value is False:
+            return
+        elif value is True:
+            value = {}
+
+        good_keys = SetupKeyword.__slots__
+        try:
+            for k in set(good_keys) | set(value):
+                setattr(self, k, value.get(k))
+        except Exception:
+            raise DistutilsSetupError(
+                "`%s` must be boolean or a dict mapping!"
+                "\n available keys: %s\n  got: %r" %
+                (attr, ', '.join(good_keys), value))
+
+        if self.version_scheme not in (None, 'monorepo', 'mono-project'):
+            raise DistutilsSetupError(
+                "`%s.version_scheme` must be one of ('monorepo' | 'mono-project', got: %r)" %
+                (attr, self.version_scheme))
+
+        if self.git_options and not isinstance(self.git_options, (tuple, list)):
+            raise DistutilsSetupError(
+                "`%s.git_options` must be an iterable (got: %r)" %
+                (attr, self.git_options))
+
+        pname = dist.metadata.name
+        version = _get_version_from_pkg_metadata(pname)
+        if not version:
+            version = polyversion(
+                pname=pname,
+                ## In case we cannot derrive version, use one provided by user (if any).
+                default=dist.metadata.version or '',
+                mono_project=self.version_scheme == 'mono-project',
+                tag_frmt=self.tag_format,
+                tag_regex=self.tag_regex,
+                git_options=self.git_options or (),
+
+                repo_path=osp.abspath('.'),
+            )
+
+        dist.metadata.version = version
