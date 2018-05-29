@@ -112,12 +112,22 @@ Assuming our *monorepo* project ``/monorepo.git/`` contains two sub-projects::
 
     /monorepo.git/
         +--setup.py:  setup(name='mainprog', ...)
+        +--pyproject.toml
         +--mainprog/__init__.py
         +--...
         +--core-lib/
             +--setup.py: setup(name='core', ...)
             +--core/__init__.py
             +--...
+
+.. Tip::
+    Notice the ``pyproject.toml`` file used so ``pip-v10+`` (:pep:`05128` enabled)
+    can pre-install the `polyversion` library *before* launching ``setup.py`` script,
+    with (roughly) this content::
+
+        [build-system]
+        requires = ["setuptools", "wheel", "polyversion"]
+
 
 ...we let the tool auto-discover the mapping of *project folders ↔ project-names*
 and create a `traitlets configuration YAML-file <https://traitlets.readthedocs.io>`_
