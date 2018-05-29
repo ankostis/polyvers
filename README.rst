@@ -138,6 +138,8 @@ then you need enter the following configurations into your build files::
 .. Tip::
     Notice the ``pyproject.toml`` file used so ``pip-v10+`` (:pep:`05128` enabled)
     can pre-install the `polyversion` library *before* launching ``setup.py`` script.
+    A simple sample for these files can be found in `polyvers` subprojects
+    (it eats its own dog food).
 
 
 ...we let the tool auto-discover the mapping of *project folders ↔ project-names*
