@@ -19,12 +19,9 @@ Also the wheel is executable like that::
 """
 from __future__ import print_function
 
-import inspect
-import re
 import sys
 
 import os.path as osp
-import subprocess as sbp
 
 
 #: A 2-tuple containing 2 ``{vprefix}`` values for the patterns below,for
@@ -94,6 +91,8 @@ def rfc2822_tstamp(nowdt=None):
 
 
 def _my_run(cmd, cwd):
+    import subprocess as sbp
+
     "For commands with small output/stderr."
     if not isinstance(cmd, (list, tuple)):
         cmd = cmd.split()
@@ -109,6 +108,8 @@ def _my_run(cmd, cwd):
 
 
 def _caller_module(nframes_back=2):
+    import inspect
+
     frame = inspect.currentframe()
     try:
         for _ in range(nframes_back):
@@ -119,6 +120,8 @@ def _caller_module(nframes_back=2):
 
 
 def _caller_fpath(nframes_back=2):
+    import inspect
+
     frame = inspect.currentframe()
     try:
         for _ in range(nframes_back):
@@ -241,6 +244,8 @@ def polyversion(pname=None, default='', repo_path=None,
        function with elaborate error-handling :func:`polyvers.pvtags.descrivbe_project()`
        used by the tool internally.
     """
+    import re
+
     version = None
 
     if not pname:
