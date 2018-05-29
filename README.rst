@@ -108,25 +108,36 @@ And you get the ``polyvers`` command:
 
 2. Initialize project
 ---------------------
-Assuming our *monorepo* project ``/monorepo.git/`` contains two sub-projects::
+Assuming our *monorepo* project ``/monorepo.git/`` contains two sub-projects,
+then you need enter the following configurations into your build files::
 
     /monorepo.git/
-        +--setup.py:  setup(name='mainprog', ...)
-        +--pyproject.toml
+        +--setup.py:
+        |                         from setuptools import setup...
+        |                         from polyversion import polyversion
+        |                         setup(
+        |                               name='mainprog',
+        |                               version=polyversion('mainprog')
+        |                               ...,
+        |
+        +--pyproject.toml:
+        |                         [build-system]
+        |                         requires = ["setuptools", "wheel", "polyversion"]
+        |
         +--mainprog/__init__.py
-        +--...
+        |                         from polyversion import polyversion, polytime
+        |                         __version__ = polyversion()
+        |                         __updated__ = polytime()
+        |                         ...
+        |
         +--core-lib/
-            +--setup.py: setup(name='core', ...)
-            +--core/__init__.py
+            +--setup.py:          # like above
+            +--core/__init__.py   # like above
             +--...
 
 .. Tip::
     Notice the ``pyproject.toml`` file used so ``pip-v10+`` (:pep:`05128` enabled)
-    can pre-install the `polyversion` library *before* launching ``setup.py`` script,
-    with (roughly) this content::
-
-        [build-system]
-        requires = ["setuptools", "wheel", "polyversion"]
+    can pre-install the `polyversion` library *before* launching ``setup.py`` script.
 
 
 ...we let the tool auto-discover the mapping of *project folders ↔ project-names*
