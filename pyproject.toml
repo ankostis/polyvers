@@ -1,3 +1,44 @@
 [build-system]
 # pep 0518: minimum requirements for the build system to execute.
 requires = ["setuptools", "wheel", "polyversion"]  # PEP 508 specifications.
+template_template_fname  = 'changes.d/template.rst'
+
+[tool.towncrier]
+    package = "polyvers"
+    filename = "CHANGES.rst"
+    directory = "changes.d"
+
+    [[tool.towncrier.type]]
+        directory = "break"
+        name = "Breaking Changes"
+        showcontent = true
+
+    [[tool.towncrier.type]]
+        directory = "feat"
+        name = "Features"
+        showcontent = true
+
+    [[tool.towncrier.type]]
+        directory = "drop"
+        name = "Deprecations and Removals"
+        showcontent = true
+
+    [[tool.towncrier.type]]
+        directory = "fix"
+        name = "Bugfixes"
+        showcontent = true
+
+    [[tool.towncrier.type]]
+        directory = "change"
+        name = "Changes"
+        showcontent = true
+
+    [[tool.towncrier.type]]
+        directory = "doc"
+        name = "Documentation changes"
+        showcontent = true
+
+    [[tool.towncrier.type]]
+        directory = "misc"
+        name = "Misc"
+        showcontent = true
