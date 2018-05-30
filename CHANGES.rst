@@ -3,6 +3,33 @@ Changes
 =======
 
 
+2018-05-30: polyversion-v0.0.2a10, polyversion-v0.0.2a11
+========================================================
+- feat:
+    - The `polyversion` library is now a *setuptools* plugin so it can be used
+      from within your ``setup.py`` files like this::
+
+          setup(
+              project='myname',
+              version=''              # omit (or None) to abort if cannot auto-version
+              polyversion={           # dict or bool
+                  'version_scheme: 'monorepo',
+                  ...  # See `polyversion.SetupKeyword` class for more keys.
+              polyversion=True,  # or a dict, see `polyversion.SetupKeyword` class
+              setup_requires=[..., 'polyversion'],
+              ...
+          )
+
+- doc:
+    - usage: explain how to set your projects :pep:`0518` ``pyproject.toml``
+      file & ``setup_requires`` keyword in ``setup.py`` in your script.
+    - similar tools: mention ``pbr`` *setuptools* extension from OpenStack.
+
+- chore:
+    - deps: don't pin `packaging==17.1`, any bigger +17 is fine for parsing
+      version correctly.
+
+
 0.0.2a10 (2018-05-24): polyvers
 -------------------------------
 - fix: slight change of default engraving for ``setup.py:version=...``.

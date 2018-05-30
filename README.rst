@@ -98,32 +98,21 @@ And you get the ``polyvers`` command:
     polyvers: Neither `setup.py` nor `.polyvers(.json|.py|.salt)` config-files found!
 
 .. Note::
-  Actually two projects are installed:
+    Actually two projects are installed:
 
-  - **polyvers** cmd-line tool, for developing python monorepos,
-  - **polyversion**: the base python library used by projects developed
-    with *polyvers* tool, so that their sources can discover their subproject-version
-    on runtime from Git.
+    - **polyvers** cmd-line tool, for developing python monorepos,
+    - **polyversion**: the base python library used by projects developed
+      with *polyvers* tool, so that their sources can discover their subproject-version
+      on runtime from Git.
 
 
-2. Initialize project
----------------------
+2. Prepare project
+------------------
 Assuming our *monorepo* project ``/monorepo.git/`` contains two sub-projects,
 then you need enter the following configurations into your build files::
 
     /monorepo.git/
-        +--setup.py:
-        |                         from setuptools import setup...
-        |                         from polyversion import polyversion
-        |                         setup(
-        |                               name='mainprog',
-        |                               version=polyversion('mainprog')
-        |                               ...,
-        |
-        +--pyproject.toml:
-        |                         [build-system]
-        |                         requires = ["setuptools", "wheel", "polyversion"]
-        |
+        +--setup.py               # see below for contents
         +--mainprog/__init__.py
         |                         from polyversion import polyversion, polytime
         |                         __version__ = polyversion()
@@ -136,12 +125,55 @@ then you need enter the following configurations into your build files::
             +--...
 
 .. Tip::
-    Notice the ``pyproject.toml`` file used so ``pip-v10+`` (:pep:`05128` enabled)
-    can pre-install the `polyversion` library *before* launching ``setup.py`` script.
-    A simple sample for these files can be found in `polyvers` subprojects
-    (it eats its own dog food).
+    Sample files can be derived from those in the `polyvers` subprojects
+    (where they eat their own dog food).
+
+The `polyversion` library is a *setuptools* plugin so it can be used from
+within your ``setup.py`` files like this:
+
+.. code-block:: python
+
+    from setuptools import setup
+
+    setup(
+        project='myname',
+        version=''              # omit (or None) to abort if cannot auto-version
+        polyversion={           # dict or bool
+            'version_scheme: 'mono-project',
+            ...  # See `polyversion.SetupKeyword` class for more keys.
+        },
+        setup_requires=[..., 'polyversion'],
+        ...
+    )
+
+.. Hint::
+    The ``setup_requires=['polyvers']`` keyword  (only available with *setuptools*,
+    and not *distutils*), enables the new ``polyversion-{..}`` setup-keyword.
+
+Alternatively, a subproject may use :pep:`0518` to pre-install `polyversion`
+library *before* pip-installing or launching ``setup.py`` script.
+To do that, add the ``pyproject.toml`` file below next to your `setup` script::
+
+    [build-system]
+    requires = ["setuptools", "wheel", "polyversion"]
+
+and then you can simply import ``polyversion`` from your ``setup.py``:
+
+.. code-block:: python
+
+    from setuptools import setup
+    from polyversion import polyversion
+
+    setup(
+        project='myname',
+        version=polyversion(mono_project=True)  # version implied empty string.
+
+.. Attention::
+    To properly install a :pep:`0518` project you need ``pip-v10+`` version.
 
 
+3. Initialize `polyvers`
+------------------------
 ...we let the tool auto-discover the mapping of *project folders ↔ project-names*
 and create a `traitlets configuration YAML-file <https://traitlets.readthedocs.io>`_
 named as  ``/monorepo.git/.polyvers.py``:
@@ -194,7 +226,7 @@ more gets displayed:
 ..where ``gitver`` would be the result of ``git-describe``.
 
 
-3. Bump versions
+4. Bump versions
 ----------------
 We can now use tool to set the same version to all sub-projects:
 
@@ -249,7 +281,7 @@ file modification for engraving the current version in the leaf "Release" commit
     $ git checkout  -  # to return to master.
 
 
-4. Engrave version in the sources
+5. Engrave version in the sources
 ---------------------------------
 Usually programs report their version somehow when run, e.g. with ```cmd --version``.
 With *polyvers* we can derive the latest from the tags created in the previous step,
@@ -271,7 +303,7 @@ using a code like this, usually in the file ``/mainprog/mainprog/__init__.py:``:
 
 
 
-5. Bump sub-projects selectively
+6. Bump sub-projects selectively
 --------------------------------
 Now let's add another dummy commit and then bump ONLY ONE sub-project:
 
@@ -518,19 +550,23 @@ Similar Tools
 - https://github.com/korfuri/awesome-monorepo
 - `Lerna <https://lernajs.io/>`_: A tool for managing JavaScript projects
   with multiple packages.
-- `pbr <https://docs.openstack.org/pbr/>`_: a ``setup_requires`` library that
-  injects sensible default and behaviors into your *setuptools*.
-  Crafted for *Semantic Versioning*, maintained for OpenStack projects.
-- `Zest.releaser <http://zestreleaser.readthedocs.io/>`_: easy releasing and tagging 
-  for Python packages; make easy, quick and neat releases of your Python packages. 
-  You need to change the version number, add a new heading in your changelog, 
-  record the release date, svn/git/bzr/hg tag your project, perhaps upload it 
-  to pypi... *zest.releaser* takes care of the boring bits for you.
 - `Pants <https://www.pantsbuild.org/>`_:  a build system designed for codebases that:
-  - Are large and/or growing rapidly.
-  - Consist of many subprojects that share a significant amount of code.
-  - Have complex dependencies on third-party libraries.
-  - Use a variety of languages, code generators and frameworks.
+    - Are large and/or growing rapidly.
+    - Consist of many subprojects that share a significant amount of code.
+    - Have complex dependencies on third-party libraries.
+    - Use a variety of languages, code generators and frameworks.
+- Other project versioning tools:
+    - `pbr <https://docs.openstack.org/pbr/>`_: a ``setup_requires`` library that
+      injects sensible default and behaviors into your *setuptools*.
+      Crafted for *Semantic Versioning*, maintained for OpenStack projects.
+    - `Zest.releaser <http://zestreleaser.readthedocs.io/>`_: easy releasing and tagging
+      for Python packages; make easy, quick and neat releases of your Python packages.
+      You need to change the version number, add a new heading in your changelog,
+      record the release date, svn/git/bzr/hg tag your project, perhaps upload it
+      to pypi... *zest.releaser* takes care of the boring bits for you.
+    - `incremental <https://github.com/twisted/incremental>`_: a small *setuptools* plugin library
+      that versions Python projects.
+
 
 
 

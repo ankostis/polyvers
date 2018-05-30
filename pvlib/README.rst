@@ -64,42 +64,25 @@ API usage
 ---------
 .. currentmodule:: polyversion
 
-An API usage sample of using :func:`polyversion.polyversion()` from within your
-``myproject.git/setup.py`` file:
+The `polyversion` library is a *setuptools* plugin so it can be used from
+within your ``setup.py`` files like this:
 
 .. code-block:: python
 
     from setuptools import setup
 
-    ## OPTIONAL HACK if you want to facilitate people to install from sources.
-    #  You have to attach `pvlib.run` into your repository for this.
-    #
-    try:
-        from polyversion import polyversion
-    except Exception as ex:
-        import sys
-        sys.path.append(<YOUR PATH TO pvlib.run>)
-        from polyversion import polyversion
-
-    ...
-
     setup(
-        name='myproject',
-        version=polyversion('myproject', '0.0.0')
-        install_requires=[
-            'polyversion'
-            ...
-        ],
+        project='myname',
+        version=''              # omit (or None) to abort if cannot auto-version
+        polyversion={           # dict or bool
+            'version_scheme: 'monorepo',
+            ...  # See `polyversion.SetupKeyword` class for more keys.
+        },
+        setup_requires=[..., 'polyversion'],
         ...
     )
 
-.. Tip::
-   For cases where a shallow git clone did not reach any *vtags* back in history,
-   or simply because the project is new, and there are no *vtags*, we set ``default=0.0.0``,
-   to facilitate pip-install these projects from sources.
-   If you want a hard fail, set ``default=None``.
-
-An API usage sample of using also :func:`polytime()` from within your
+An API sample of using also :func:`polytime()` from within your
 ``myproject.git/myproject/__init__.py`` file:
 
 .. code-block:: python
