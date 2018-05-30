@@ -127,18 +127,6 @@ class BumpCmd(cli._SubCmd):
             the version-ids.
     """)
 
-    release_branch = Unicode(
-        'latest',
-        config=True,
-        help="""
-        Branch-name where the release-tags must be created under.
-
-        - The branch will be hard-reset to the *out-of-trunk* commit
-          on each bump-version.
-        - If not given, no special branch used for *rtags*.
-        """
-    )
-
     commit = Bool(
         config=True,
         help="""
@@ -361,7 +349,7 @@ class BumpCmd(cli._SubCmd):
 
                 with pvtags.git_restore_point(restore_head=True,
                                               heads=False, tags=False):
-                    if self.release_branch:
+                    if WHICH PROJECT??.release_branch:
                         cmd.git.checkout._(B=True)(self.release_branch)
                     else:
                         cmd.git.checkout('HEAD')

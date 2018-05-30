@@ -372,6 +372,18 @@ class Project(cmdlets.Replaceable, cmdlets.Printable, yu.YAMLable, cmdlets.Spec)
 
         """)
 
+    release_branch = Unicode(
+        'latest',
+        config=True,
+        help="""
+        Branch-name where the release-tags must be created under.
+
+        - The branch will be hard-reset to the *out-of-trunk* commit
+          on each bump-version.
+        - If not given, no special branch used for *rtags*.
+        """
+    )
+
     message_summary = Unicode(
         "{pname}-{vprefix}{current_version} -> {version}",
         config=True,

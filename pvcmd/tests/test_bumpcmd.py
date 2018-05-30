@@ -105,7 +105,7 @@ def test_bump_cmd_mono_project(mutable_repo, caplog, capsys):
         some_msg  (origin/master, origin/HEAD)""")
     assert exp in gitlog
 
-    cmd.git.checkout('latest')  # Branch-name from BumpCmd.release_branch.
+    cmd.git.checkout('latest')  # Branch-name from Project.release_branch.
     setuppy_text = setupy_fpath.read_text(encoding='utf-8')
     assert re.search("version *= *'0.0.1',", setuppy_text), setuppy_text
 
@@ -144,7 +144,7 @@ def test_bump_cmd_monorepo(mutable_repo, caplog, capsys):
         some_msg  (origin/master, origin/HEAD)""")
     assert exp in gitlog
 
-    cmd.git.checkout('latest')  # Branch-name from BumpCmd.release_branch.
+    cmd.git.checkout('latest')  # Branch-name from Project.release_branch.
     setuppy_text = setupy_fpath.read_text(encoding='utf-8')
     assert re.search("version *= *'0.0.1',", setuppy_text), setuppy_text
 
