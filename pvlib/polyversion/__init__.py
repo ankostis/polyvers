@@ -299,12 +299,12 @@ def polyversion(pname=None, default='', repo_path=None,
     return version
 
 
-def polytime(scream=False, repo_path=None):
+def polytime(no_raise=False, repo_path=None):
     """
     The timestamp of last commit in git repo hosting the source-file calling this.
 
-    :param str scream:
-        If false, never fail and return current-time
+    :param str no_raise:
+        If true, never fail and return current-time
     :param str repo_path:
         A path inside the git repo hosting the project in question; if missing,
         derived from the calling stack.
@@ -318,7 +318,7 @@ def polytime(scream=False, repo_path=None):
     try:
             cdate = _my_run(cmd, cwd=repo_path)
     except:  # noqa;  E722
-        if scream:
+        if not no_raise:
             raise
 
     if not cdate:
@@ -328,7 +328,7 @@ def polytime(scream=False, repo_path=None):
 
 
 __version__ = polyversion('polyversion')
-__updated__ = polytime()
+__updated__ = polytime(no_raise=True)
 
 
 def run(*args):

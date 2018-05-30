@@ -15,7 +15,7 @@ __all__ = ['polyversion', 'polytime']
 APPNAME = 'polyvers'
 
 __version__ = polyversion(APPNAME)
-__updated__ = polytime()
+__updated__ = polytime(no_raise=True)
 __title__ = APPNAME
 __summary__ = "Bump independently versions on multi-project git repos"
 __uri__ = "https://github.com/JRCSTU/polyvers"

@@ -163,21 +163,21 @@ def test_polytime_p1(ok_repo, untagged_repo, no_repo, today):
 
     d = pvlib.polytime(repo_path=ok_repo)
     assert d.startswith(today)
-    d = pvlib.polytime(repo_path=ok_repo)
+    d = pvlib.polytime(no_raise=True, repo_path=ok_repo)
     assert d.startswith(today)
 
     ## UNTAGGED REPO
 
     pvlib.polytime(repo_path=untagged_repo)
     assert d.startswith(today)
-    d = pvlib.polytime(repo_path=untagged_repo)
+    d = pvlib.polytime(no_raise=True, repo_path=untagged_repo)
     assert d.startswith(today)
 
     ## NO REPO
 
     with pytest.raises(sbp.CalledProcessError):
-        pvlib.polytime(scream=True, repo_path=no_repo)
-    d = pvlib.polytime(repo_path=no_repo)
+        pvlib.polytime(repo_path=no_repo)
+    d = pvlib.polytime(no_raise=True, repo_path=no_repo)
     assert d.startswith(today)
 
 
@@ -188,7 +188,7 @@ def test_polytime_p2(ok_repo, today):
 
 def test_polytime_BAD_no_commits(empty_repo):
     with pytest.raises(sbp.CalledProcessError):
-        pvlib.polytime(scream=True, repo_path=empty_repo)
+        pvlib.polytime(repo_path=empty_repo)
 
 
 @pytest.mark.skipif(sys.version_info < (3, ),
@@ -197,8 +197,8 @@ def test_polytime_BAD_no_git_cmd(ok_repo, monkeypatch, today):
     monkeypatch.setenv('PATH', '')
 
     with pytest.raises(FileNotFoundError):
-        pvlib.polytime(scream=True, repo_path=ok_repo)
-    d = pvlib.polytime(repo_path=ok_repo)
+        pvlib.polytime(repo_path=ok_repo)
+    d = pvlib.polytime(no_raise=True, repo_path=ok_repo)
     assert d.startswith(today)
 
 
