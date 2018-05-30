@@ -49,13 +49,14 @@ script:
   #
   - pip install -e pvlib[test]
   - polyversion --help
-  - pytest pvlib
   - |
     if [ $TRAVIS_PYTHON_VERSION \> '3.5' ]; then
         pip install -e .[test]
         polyvers --help
         pytest pvlib --cov=polyversion --cov-report=term-missing
         pytest pvcmd --cov=polyvers --cov-report=term-missing
+    else
+        pytest pvlib
     fi
 
   ## LINTERS
