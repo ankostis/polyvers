@@ -13,24 +13,26 @@ from setuptools import setup, find_packages
 mydir = osp.dirname(osp.realpath(__file__))
 
 
-## This sub-project eats it's own dog-food, and
-#  uses `polyversion` to derive its own version on runtime from Git tags.
+#### Standalone-wheel Hack disabled, left here, just in case...
 #
-#  For this reason the following hack is needed to start developing it
-#  from git-sources: it bootstraps  ``pip install -e pvlib[test]``
-#  when not any version of the `polyversion` lib is already installed on the system.
-#
-try:
-    from polyversion import polyversion
-except ImportError:
-    try:
-        print("Hack: pre-installing `polyversion` from standalone `pvlib.run` wheel",
-              file=sys.stderr)
-        sys.path.append(osp.join(mydir, 'bin', 'pvlib.run'))
-        from polyversion import polyversion
-    except Exception as ex:
-        print("Hack failed :-(", file=sys.stderr)
-        polyversion = lambda *_, **__: '0.0.0'
+# ## This sub-project eats it's own dog-food, and
+# #  uses `polyversion` to derive its own version on runtime from Git tags.
+# #
+# #  For this reason the following hack is needed to start developing it
+# #  from git-sources: it bootstraps  ``pip install -e pvlib[test]``
+# #  when not any version of the `polyversion` lib is already installed on the system.
+# #
+# try:
+#     from polyversion import polyversion
+# except ImportError:
+#     try:
+#         print("Hack: pre-installing `polyversion` from standalone `pvlib.run` wheel",
+#               file=sys.stderr)
+#         sys.path.append(osp.join(mydir, 'bin', 'pvlib.run'))
+#         from polyversion import polyversion
+#     except Exception as ex:
+#         print("Hack failed :-(", file=sys.stderr)
+#         polyversion = lambda *_, **__: '0.0.0'
 
 
 MIN_PYTHON = (3, 6)
@@ -145,7 +147,8 @@ PROJECT = 'polyvers'
 
 setup(
     name=PROJECT,
-    version=polyversion(PROJECT, '0.0.0'),
+    version='0.0.0',
+    polyversion=True,
     description="Bump sub-project versions in Git monorepos independently.",
     long_description=long_desc,
     author="Kostis Anagnostopoulos",
@@ -165,7 +168,6 @@ setup(
     #     #'polyversion',  @@ no, actually it is engraved-out from packages
     #     'pytest-runner'
     # ],
-    install_requires=requirements,
     license='EUPL 1.2',
     zip_safe=True,
     platforms=['any'],
@@ -180,13 +182,15 @@ setup(
         'Programming Language :: Python :: 3.6',
         'Programming Language :: Python :: 3.7',
     ],
-    test_suite='tests',
     python_requires='>=3.6',
+    setup_requires=['setuptools', 'wheel', 'polyversion'],
+    install_requires=requirements,
     tests_require=test_requirements,
     extras_require={
         'test': test_requirements,
         'test:python_version>="3"': ['mypy']
     },
+    test_suite='tests',
     entry_points={
         'console_scripts': [
             '%(p)s = %(p)s.__main__:main' % {'p': PROJECT}]},

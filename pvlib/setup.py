@@ -12,25 +12,29 @@ import os.path as osp
 
 mydir = osp.dirname(osp.realpath(__file__))
 
-## This sub-project eats it's own dog-food, and
-#  uses `polyversion` to derive its own version on runtime from Git tags.
+#### Standalone-wheel Hack disabled, left here, just in case...
 #
-#  For this reason the following hack is needed to start developing it
-#  from git-sources: it bootstraps  ``pip install -e pvlib[test]``
-#  when not any version of the `polyversion` lib is already installed on the system.
-#
-try:
-    from polyversion import polyversion
-except ImportError:
-    import sys
-    try:
-        print("Hack: pre-installing `polyversion` from standalone `pvlib.run` wheel",
-              file=sys.stderr)
-        sys.path.append(osp.join(mydir, '..', 'bin', 'pvlib.run'))
-        from polyversion import polyversion
-    except Exception as ex:
-        print("Hack failed :-(", file=sys.stderr)
-        polyversion = lambda *_, **__: '0.0.0'
+# ## This sub-project eats it's own dog-food, and
+# #  uses `polyversion` to derive its own version on runtime from Git tags.
+# #
+# #  For this reason the following hack is needed to start developing it
+# #  from git-sources: it bootstraps  ``pip install -e pvlib[test]``
+# #  when not any version of the `polyversion` lib is already installed on the system.
+# #
+# try:
+#     from polyversion import polyversion
+# except ImportError:
+#     import sys
+#     try:
+#         print(
+#             "Hack: pre-installing `polyversion` from standalone `pvlib.run` wheel,"
+#             "\n  in case broken release in 'pypi'.",
+#             file=sys.stderr)
+#         sys.path.append(osp.join(mydir, '..', 'bin', 'pvlib.run'))
+#         from polyversion import polyversion
+#     except Exception as ex:
+#         print("Hack failed :-(", file=sys.stderr)
+#         polyversion = lambda *_, **__: '0.0.0'
 
 
 def yield_rst_only_markup(lines):
@@ -120,7 +124,8 @@ test_requirements = [
 PROJECT = 'polyversion'
 setup(
     name=PROJECT,
-    version=polyversion(PROJECT, '0.0.0'),
+    version='0.0.0',
+    polyversion=True,
     description="Polyvers's lib to derive subproject versions from tags on Git monorepos.",
     long_description=long_desc,
     author="Kostis Anagnostopoulos",
@@ -162,9 +167,11 @@ setup(
     ],
     test_suite='tests',
     #python_requires='>=3.6',
+    setup_requires=['setuptools', 'wheel', 'polyversion'],
     tests_require=test_requirements,
     extras_require={
         'test': test_requirements,
+        'setuptools': ['polyversion'],
     },
     entry_points={
         'distutils.setup_keywords': [
