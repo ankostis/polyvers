@@ -404,7 +404,7 @@ def _get_version_from_pkg_metadata(package_name):
     return pkg_metadata.get('Version', None)
 
 
-class SetupKeyword:
+class SetupKeyword(object):
     """
     New *setuptools* kwd to find subproject version from PKG-INFO or git tags.
 
