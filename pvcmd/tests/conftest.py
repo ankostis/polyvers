@@ -377,9 +377,21 @@ def make_setup_py(setup_dir, pname):
     text = tw.dedent("""
         setup(
             name='%s',
-            version = a func('"something there'),
+            version = 'something there',
             )
 
+        """ % pname)
+    _add_file_to_repo(fpath, text)
+
+    return fpath
+
+
+def make_init_py(basedir, pname):
+    fpath = (basedir / '__init__.py')
+    text = tw.dedent("""
+        __version__   =   '%s'
+        __updated__   =   polytime(no_raise=True)
+        any_other = 123
         """ % pname)
     _add_file_to_repo(fpath, text)
 

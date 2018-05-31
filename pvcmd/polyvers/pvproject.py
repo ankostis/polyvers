@@ -540,48 +540,38 @@ class Project(cmdlets.Replaceable, cmdlets.Printable, yu.YAMLable, cmdlets.Spec)
 
     engraves = ListTrait(
         autotrait.AutoInstance(Engrave),
-        default_value=[{
-            'globs': ['setup.py'],
-            'grafts': [{
-                ## TODO: add `Graft.desc`: "version must be in its own line."
-                'regex': tw.dedent(r'''
-                    (?xm)
-                        \bversion
-                        (\ *=\ *)
-                        .+?(,
-                        \ *[\n\r])+
-                    '''),
-                'subst': r"version\1'{version}'\2"
-            }],
-        }, {
-            'globs': ['__init__.py'],
-            'grafts': [{
-                'regex': tw.dedent(r'''
-                    (?xm)
-                        ^__version__
-                        (\ *=\ *)
-                        (.+?)$
-                    '''),
-                'subst': r"__version__\1'{version}'"
+        ## TODO: add `Graft.desc`: "version must be in its own line."
+        default_value=[
+            {
+                'globs': ['__init__.py'],
+                'grafts': [{
+                    'regex': tw.dedent(r'''
+                        (?xm)
+                            ^__version__
+                            (\ *=\ *)
+                            (.+?)$
+                        '''),
+                    'subst': r"__version__\1'{version}'"
+                }, {
+                    'regex': tw.dedent(r'''
+                        (?xm)
+                            ^__updated__
+                            (\ *=\ *)
+                            (.+?)$
+                        '''),
+                    'subst': r"__updated__\1'{release_date}'"
+                }],
             }, {
-                'regex': tw.dedent(r'''
-                    (?xm)
-                        ^__updated__
-                        (\ *=\ *)
-                        (.+?)$
-                    '''),
-                'subst': r"__updated__\1'{release_date}'"
-            }],
-        }, {
-            'globs': ['README.rst'],
-            'grafts': [{
-                'regex': r'\|version\|',
-                'subst': "{version}"
-            }, {
-                'regex': r'\|today\|',
-                'subst': "{release_date}"
-            }],
-        }],
+                'globs': ['README.rst'],
+                'grafts': [{
+                    'regex': r'\|version\|',
+                    'subst': "{version}"
+                }, {
+                    'regex': r'\|today\|',
+                    'subst': "{release_date}"
+                }],
+            },
+        ],
         config=True,
         help="""
         """)
