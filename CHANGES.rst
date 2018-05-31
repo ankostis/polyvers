@@ -8,7 +8,7 @@ Changes
 
 - break:
     - Dropped all positional-arguments from :func:`polyversion.polyversion()`;
-      was errorprone.  They have all been converted to keyword-arguments.
+      was error-prone.  They have all been converted to keyword-arguments.
 
     - Renamed argument ``default --> default_version`` argument of
       :func:`polyversion.polyversion()`.

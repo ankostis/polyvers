@@ -45,18 +45,22 @@ Polyvers: Bump sub-project versions in Git monorepos independently
 
 A python 3.6+ command-line tool to manage `PEP-440 version-ids
 <https://www.python.org/dev/peps/pep-0440/>`_ of dependent sub-projects
-hosted in a *Git* `monorepos`_, independently.
+hosted in a *Git* :term:`monorepos`, independently.
 
-Where it departs from `similar tools`_ is these key ideas `Versioning scheme`_
-`Release scheme`_ and `Version-bump algebra`.  Specifically,
-when bumping the version of sub-project(s), *polyvers* does the following:
+Where it departs from :term:`similar tools` is these key ideas:
+
+- :term:`Version scheme`,
+- :term:`Release scheme`, and
+- :term:`Version-bump algebra`.
+
+Specifically, when bumping the version of sub-project(s), *polyvers*:
 
 - help you decide the next version of sub-projects, selectively and
-  independently, based on `version algebra`_;
+  independently, based on :term:`version-bump algebra`;
 - add x2 tagged commits for each project bumped:
 
-  - one in-trunk *"Version" commit tags (pvtags)* like ``foo-proj-v0.1.0``,
-    and another `out-of-trunk (leaf) "Release" commit`_ like ``foo-proj-r0.1.0``;
+  - one in-trunk :term:`Version tag` tags (:term:`pvtags`) like ``foo-proj-v0.1.0``,
+    and another :term:`out-of-trunk` (leaf) :term:`Release tag` like ``foo-proj-r0.1.0``;
 
 - engrave the new versions in the source code of bumped-project(s) and
   all *dependent* sub-projects, but this happening only in the "leaf"
@@ -82,8 +86,8 @@ Additional capabilities and utilities:
 
 .. _usage:
 
-Quickstart
-==========
+Tutorial
+========
 1. Install the tool
 -------------------
 And you get the ``polyvers`` command:
@@ -103,7 +107,7 @@ And you get the ``polyvers`` command:
 .. Note::
     Actually two projects are installed:
 
-    - **polyvers** cmd-line tool, for developing python monorepos,
+    - **polyvers** cmd-line tool, for developing python :term:`monorepos`,
     - **polyversion**: the base python library used by projects developed
       with *polyvers* tool, so that their sources can discover their subproject-version
       on runtime from Git.
@@ -111,7 +115,7 @@ And you get the ``polyvers`` command:
 
 2. Prepare project
 ------------------
-Assuming our *monorepo* project ``/monorepo.git/`` contains two sub-projects,
+Assuming our :term:`monorepo` project ``/monorepo.git/`` contains two sub-projects,
 then you need enter the following configurations into your build files::
 
     /monorepo.git/
@@ -131,8 +135,8 @@ then you need enter the following configurations into your build files::
     Sample files can be derived from those in the `polyvers` subprojects
     (where they eat their own dog food).
 
-The `polyversion` library is a *setuptools* plugin so it can be used from
-within your ``setup.py`` files like this:
+The `polyversion` library function as a *setuptools* plugin so it can be used
+from within your ``setup.py`` files like this:
 
 .. code-block:: python
 
@@ -348,7 +352,7 @@ Now let's add another dummy commit and then bump ONLY ONE sub-project:
 Notice how the the `"local" part of PEP-440
 <https://www.python.org/dev/peps/pep-0440/#local-version-identifiers>`_ (statring with ``+...``)
 is used by the engraved version of the **un-bumped** ``core`` project to signify
-the correlated version of the **bumped** ``mainprog``.  This trick is uneccesary
+the correlated version of the **bumped** ``mainprog``.  This trick is not necessary
 for tags because they apply repo-wide, to all sub-projects.
 
 
@@ -356,122 +360,136 @@ for tags because they apply repo-wide, to all sub-projects.
 
 Features
 ========
-PEP 440 version ids
--------------------
-While most versioning tools use `Semantic versioning
-<http://semver.org/>`_, python's ``distutils`` native library
-supports the quasi-superset, but more versatile, `PEP-440 version ids
-<https://www.python.org/dev/peps/pep-0440/>`_, like that:
+.. glossary::
 
-- Pre-releases: when working on new features::
+    Version scheme
+    PEP 440 version ids
+        While most versioning tools use `Semantic versioning
+        <http://semver.org/>`_, python's ``distutils`` native library
+        supports the quasi-superset, but more versatile, `PEP-440 version ids
+        <https://www.python.org/dev/peps/pep-0440/>`_, like that:
 
-    X.YbN               # Beta release
-    X.YrcN  or  X.YcN   # Release Candidate
-    X.Y                 # Final release
+        - Pre-releases: when working on new features::
 
-- Post-release::
+            X.YbN               # Beta release
+            X.YrcN  or  X.YcN   # Release Candidate
+            X.Y                 # Final release
 
-    X.YaN.postM         # Post-release of an alpha release
-    X.YrcN.postM        # Post-release of a release candidate
+        - Post-release::
 
-- Dev-release::
+            X.YaN.postM         # Post-release of an alpha release
+            X.YrcN.postM        # Post-release of a release candidate
 
-    X.YaN.devM          # Developmental release of an alpha release
-    X.Y.postN.devM      # Developmental release of a post-release
+        - Dev-release::
 
+            X.YaN.devM          # Developmental release of an alpha release
+            X.Y.postN.devM      # Developmental release of a post-release
 
-Monorepos
----------
-When your single project succeeds, problems like these are known only too well:
+    version-bump algebra
+        When bumping, the increment over the base-version can be specified with a
+        "relative version", which is a combination of :pep:`0440` segments and
+        these ``+^~=`` modifiers.
+        See :mod:`polyvers.versionmath` for more.
 
-  Changes in **web-server** part depend on **core** features that cannot
-  go public because the "official" **wire-protocol** is freezed.
+    monorepos
+        When your single project succeeds, problems like these are known only too well:
 
-  While downstream projects using **core** as a library complain about
-  its bloated transitive dependencies (asking why *flask* library is needed??).
+          Changes in **web-server** part depend on **core** features that cannot
+          go public because the "official" **wire-protocol** is freezed.
 
-So the time to "split the project has come.  But from `lerna <https://lernajs.io/>`_:
+          While downstream projects using **core** as a library complain about
+          its bloated transitive dependencies (asking why *flask* library is needed??).
 
-  Splitting up large codebases into separate independently versioned packages
-  is extremely useful for code sharing. However, making changes across
-  many repositories is messy and difficult to track, and testing across repositories
-  gets complicated really fast.
+        So the time to "split the project has come.  But from :term:`Lerna`:
 
-So a *monorepo* [#]_ [#]_ is the solution.
-But as `Yarn <https://yarnpkg.com/blog/2017/08/02/introducing-workspaces/>`_ put it:
+          Splitting up large codebases into separate independently versioned packages
+          is extremely useful for code sharing. However, making changes across
+          many repositories is messy and difficult to track, and testing across repositories
+          gets complicated really fast.
 
-  OTOH, splitting projects into their own folders is sometimes not enough.
-  Testing, managing dependencies, and publishing multiple packages quickly
-  gets complicated and many such projects adopt tools such as ...
+        So a *monorepo* [#]_ [#]_ is the solution.
+        But as `Yarn <https://yarnpkg.com/blog/2017/08/02/introducing-workspaces/>`_ put it:
 
-*Polyvers* is such a tool.
+          OTOH, splitting projects into their own folders is sometimes not enough.
+          Testing, managing dependencies, and publishing multiple packages quickly
+          gets complicated and many such projects adopt tools such as ...
 
-.. [#] <https://medium.com/@maoberlehner/monorepos-in-the-wild-33c6eb246cb9
-.. [#] http://www.drmaciver.com/2016/10/why-you-should-use-a-single-repository-for-all-your-companys-projects/
+        *Polyvers* is such a tool.
 
-Out-of-trunk (leaf) "Release" commit
-------------------------------------
-Even in single-project repos, sharing code across branches may cause merge-conflicts
-due to the version-ids "engraved" in the sources.
-In monorepos, the versions proliferate, and so does the conflicts.
+        .. [#] <https://medium.com/@maoberlehner/monorepos-in-the-wild-33c6eb246cb9
+        .. [#] http://www.drmaciver.com/2016/10/why-you-should-use-a-single-repository-for-all-your-companys-projects/
 
-Contrary to `similar tools`_, static version-ids are engraved only in out-of-trunk
-(leaf) commits, and only when the sub-projects are released.
-In-trunk code is never touched, and version-ids are reported, on runtime, based
-on Git tags (like ``git-describe``), so they are always up-to-date.
+    release scheme
+    out-of-trunk commit
+    leaf commit
+    release tag
+    vtag
+    version tag
+    rtag
+    pvtag
+        Even in single-project repos, sharing code across branches may cause merge-conflicts
+        due to the version-ids "engraved" in the sources.
+        In :term:`monorepos`, the versions proliferate, and so does the conflicts.
 
-Marking dependent versions across sub-projects
-----------------------------------------------
-TODO: When bumping the version of a sub-project the `"local" part of PEP-440
-<https://www.python.org/dev/peps/pep-0440/#local-version-identifiers>`_
-on all other the *dependent* sub-projects in the monorepo  signify their relationship
-at the time of the bump.
+        Contrary to `similar tools`_, static version-ids are engraved only in out-of-trunk
+        (leaf) commits, and only when the sub-projects are released.
+        In-trunk code is never touched, and version-ids are reported, on runtime, based
+        on Git tags (like ``git-describe``), so they are always up-to-date.
 
-Lock release trains as "developmental"
---------------------------------------
-TODO: Specific branches can be selected always to be published into *PyPi* only as
-`PEP-440's "Developmental" releases
-<https://www.python.org/dev/peps/pep-0440/#developmental-releases>`_, meanining that
-users need ``pip install --pre`` to install from such release-trains.
-This is a safeguard to avoid accidentally landing half-baked code to users.
+    Marking dependent versions across sub-projects
+        [TODO] When bumping the version of a sub-project the `"local" part of PEP-440
+        <https://www.python.org/dev/peps/pep-0440/#local-version-identifiers>`_
+        on all other the *dependent* sub-projects in the monorepo  signify their relationship
+        at the time of the bump.
 
-Other Features
---------------
-- Highly configurable using `traitlets <https://traitlets.readthedocs.io>`_, with
-  sensible defaults; it's possible to run without any config file in single-project repos.
-- Always accurate version reported on runtime when run from git repos
-  (never again wonder with which version your experimental-data were produced).
+    Lock release trains as "developmental"
+        [TODO] Specific branches can be selected always to be published into *PyPi* only as
+        `PEP-440's "Developmental" releases
+        <https://www.python.org/dev/peps/pep-0440/#developmental-releases>`_, meanining that
+        users need ``pip install --pre`` to install from such release-trains.
+        This is a safeguard to avoid accidentally landing half-baked code to users.
+
+    Other Features
+        - Highly configurable using `traitlets <https://traitlets.readthedocs.io>`_,
+          with sensible defaults; it should be possible to start using the tool
+          without any config file (see `init` cmd), or by adding one of the flags
+          ``--monorepo``/``--mono-project`` in all commands, in the face of
+          conflicting tags.
+        - Always accurate version reported on runtime when run from git repos
+          (never again wonder with which version your experimental-data were produced).
 
 Features TODO
 -------------
-pre/post release hooks
-^^^^^^^^^^^^^^^^^^^^^^
-Possible to implement hooks as
-`setuptools plugins <http://setuptools.readthedocs.io/en/latest/setuptools.html#dynamic-discovery-of-services-and-plugins>`_.
-to run, for example, housekeeping commands on all subprojects like
-``pip install -e <project>`` and immediately start working in "develop mode".
+.. glossary::
 
- This functionality would also allow to *validate tests* before/after
- every bump::
+    pre/post release hooks
+        Possible to implement hooks as
+        `setuptools plugins
+        <http://setuptools.readthedocs.io/en/latest/setuptools.html#dynamic-discovery-of-services-and-plugins>`_.
+        to run, for example, housekeeping commands on all subprojects like
+        ``pip install -e <project>`` and immediately start working in "develop mode".
 
-     ## Pre-release hook
-     #
-     pytest tests
+         This functionality would also allow to *validate tests* before/after
+         every bump::
+
+             ## Pre-release hook
+             #
+             pytest tests
 
 
-     ## Post-release hook
-     #
-     rm -r dist/* build/*;
-     python setup.py sdist bdist_wheel
-     twine upload dist/*whl -s
+             ## Post-release hook
+             #
+             rm -r dist/* build/*;
+             python setup.py sdist bdist_wheel
+             twine upload dist/*whl -s
 
-Lock release trains as "developmental"
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Specific branches can be selected always to be published into *PyPi* only as
-`PEP-440's "Developmental" releases
-<https://www.python.org/dev/peps/pep-0440/#developmental-releases>`_, meanining that
-users need ``pip install --pre`` to install from such release-trains.
-This is a safeguard to avoid accidentally landing half-baked code to users.
+    Lock release trains as "developmental"
+        Based on :term:`version algebra`, specific branches can be selected
+        always to be published into *PyPi* only as `PEP-440's "Developmental" releases
+        <https://www.python.org/dev/peps/pep-0440/#developmental-releases>`_,
+        meanining that users need top use ``pip install --pre`` to fetch
+        such release-trains.
+        This is a safeguard to avoid accidentally landing half-baked code to users.
 
 
 Known Limitations, Drawbacks & Workarounds
@@ -540,35 +558,58 @@ Known Limitations, Drawbacks & Workarounds
 
 Similar Tools
 =============
-- The original **bumpversion** project; development stopped after 2015:
-  https://github.com/peritus/bumpversion
-- **bump2version:** active clone of the original:
-  https://github.com/c4urself/bump2version
-- **releash**: another *monorepos* managing tool, that publishes also to PyPi:
-  https://github.com/maartenbreddels/releash
-- **Git Bump** using git-hooks:
-  https://github.com/arrdem/git-bump
-- Search other `34 similar projects in GitHub
-  <https://github.com/search?l=Python&o=desc&q=bump+version&s=updated&type=Repositories>`_.
-- https://github.com/korfuri/awesome-monorepo
-- `Lerna <https://lernajs.io/>`_: A tool for managing JavaScript projects
-  with multiple packages.
-- `Pants <https://www.pantsbuild.org/>`_:  a build system designed for codebases that:
-    - Are large and/or growing rapidly.
-    - Consist of many subprojects that share a significant amount of code.
-    - Have complex dependencies on third-party libraries.
-    - Use a variety of languages, code generators and frameworks.
-- Other project versioning tools:
-    - `pbr <https://docs.openstack.org/pbr/>`_: a ``setup_requires`` library that
-      injects sensible default and behaviors into your *setuptools*.
-      Crafted for *Semantic Versioning*, maintained for OpenStack projects.
-    - `Zest.releaser <http://zestreleaser.readthedocs.io/>`_: easy releasing and tagging
-      for Python packages; make easy, quick and neat releases of your Python packages.
-      You need to change the version number, add a new heading in your changelog,
-      record the release date, svn/git/bzr/hg tag your project, perhaps upload it
-      to pypi... *zest.releaser* takes care of the boring bits for you.
-    - `incremental <https://github.com/twisted/incremental>`_: a small *setuptools* plugin library
-      that versions Python projects.
+.. glossary::
+
+    bumpversion
+        The original **bumpversion** project; development stopped after 2015:
+        https://github.com/peritus/bumpversion
+
+    bump2version
+        active clone of the original:
+        https://github.com/c4urself/bump2version
+
+    releash
+        another :term:`monorepos` managing tool, that publishes also to PyPi:
+        https://github.com/maartenbreddels/releash
+
+    Git Bump
+        bump version using git-hooks:
+        https://github.com/arrdem/git-bump
+
+    Lerna
+        A tool for managing JavaScript projects
+        with multiple packages.
+        https://lernajs.io/
+
+    Pants
+        a build system designed for codebases that:
+        - Are large and/or growing rapidly.
+        - Consist of many subprojects that share a significant amount of code.
+        - Have complex dependencies on third-party libraries.
+        - Use a variety of languages, code generators and frameworks.
+        - https://www.pantsbuild.org/
+
+    pbr
+        a ``setup_requires`` library that
+        injects sensible default and behaviors into your *setuptools*.
+        Crafted for *Semantic Versioning*, maintained for OpenStack projects.
+        https://docs.openstack.org/pbr/
+
+    Zest.releaser
+        easy releasing and tagging for Python packages; make easy, quick and
+        neat releases of your Python packages.  You need to change the version number,
+        add a new heading in your changelog, record the release date, svn/git/bzr/hg tag
+        your project, perhaps upload it to pypi... *zest.releaser* takes care
+        of the boring bits for you.
+        http://zestreleaser.readthedocs.io/
+
+    incremental
+        a small *setuptools* plugin library that versions Python projects.
+        https://github.com/twisted/incremental
+
+Find more than `34 similar projects in GitHub:
+<https://github.com/search?l=Python&o=desc&q=bump+version&s=updated&type=Repositories>`_
+and in awesome: https://github.com/korfuri/awesome-monorepo.
 
 
 
