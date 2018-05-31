@@ -47,9 +47,12 @@ A python 3.6+ command-line tool to manage `PEP-440 version-ids
 <https://www.python.org/dev/peps/pep-0440/>`_ of dependent sub-projects
 hosted in a *Git* `monorepos`_, independently.
 
-When bumping the version of sub-project(s), *polyvers* does the following:
+Where it departs from `similar tools`_ is these key ideas `Versioning scheme`_
+`Release scheme`_ and `Version-bump algebra`.  Specifically,
+when bumping the version of sub-project(s), *polyvers* does the following:
 
-- help you decide the next version of sub-projects, selectively and independently;
+- help you decide the next version of sub-projects, selectively and
+  independently, based on `version algebra`_;
 - add x2 tagged commits for each project bumped:
 
   - one in-trunk *"Version" commit tags (pvtags)* like ``foo-proj-v0.1.0``,
@@ -59,7 +62,7 @@ When bumping the version of sub-project(s), *polyvers* does the following:
   all *dependent* sub-projects, but this happening only in the "leaf"
   version-commit;
 - build packages out of the later (optionally);
-- enforce (customizable) validation rules and run (extensible) hooks.
+- enforce (customizable) validation rules and [TODO] run (extensible) hooks.
 
 Additional capabilities and utilities:
 
