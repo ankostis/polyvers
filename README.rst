@@ -47,11 +47,13 @@ A python 3.6+ command-line tool to manage `PEP-440 version-ids
 <https://www.python.org/dev/peps/pep-0440/>`_ of dependent sub-projects
 hosted in a *Git* :term:`monorepos`, independently.
 
-Where it departs from :term:`similar tools` is these key ideas:
+The key features are:
 
-- :term:`Version scheme`,
-- :term:`Release scheme`, and
-- :term:`Version-bump algebra`.
+    - :term:`monorepos`,
+    - :term:`version-bump algebra`,
+    - :term:`version scheme`,
+    - :term:`configurable engraves` and
+    - :term:`release scheme`.
 
 Specifically, when bumping the version of sub-project(s), *polyvers*:
 
@@ -62,7 +64,7 @@ Specifically, when bumping the version of sub-project(s), *polyvers*:
   - one in-trunk :term:`Version tag` tags (:term:`pvtags`) like ``foo-proj-v0.1.0``,
     and another :term:`out-of-trunk` (leaf) :term:`Release tag` like ``foo-proj-r0.1.0``;
 
-- engrave the new versions in the source code of bumped-project(s) and
+- :term:`engrave` the new versions in the source code of bumped-project(s) and
   all *dependent* sub-projects, but this happening only in the "leaf"
   version-commit;
 - build packages out of the later (optionally);
@@ -245,7 +247,7 @@ We can now use tool to set the same version to all sub-projects:
     00:52:07       |NOTIC|polyvers.bumpcmd.BumpCmd|Bumped projects: mainprog-0.0.0 --> 0.0.0, core-0.0.0 --> 0.0.0
 
 The ``--force=noengraves`` disables a safety check that requires at least one
-file modification for engraving the current version in the leaf "Release" commit
+file modification for :term:`engrave`\ing the current version in the leaf "Release" commit
 (see next step).
 
 .. code-block:: console
@@ -266,7 +268,7 @@ file modification for engraving the current version in the leaf "Release" commit
    .. Hint::
       Note the difference between ``ABC-v0.0.0`` vs ``ABC-r0.0.0`` tags.
 
-   In the source code, it's only the "release" commit that has *engraved* version-ids:
+   In the source code, it's only the "release" commit that has :term:`engrave`\d* version-ids:
 
    .. code-block:: console
 
@@ -429,13 +431,19 @@ Features
     rtag
     pvtag
         Even in single-project repos, sharing code across branches may cause merge-conflicts
-        due to the version-ids "engraved" in the sources.
+        due to the version-ids :term:`engrave`\d" in the sources.
         In :term:`monorepos`, the versions proliferate, and so does the conflicts.
 
         Contrary to `similar tools`_, static version-ids are engraved only in out-of-trunk
         (leaf) commits, and only when the sub-projects are released.
         In-trunk code is never touched, and version-ids are reported, on runtime, based
         on Git tags (like ``git-describe``), so they are always up-to-date.
+
+    engrave
+    configurable engraves
+        the search-n-replace in files, to substitute the new version.
+        Default grep-like substitutions are included, which can be re-configured
+        in the ``.polyvers.yaml`` config file.
 
     Marking dependent versions across sub-projects
         [TODO] When bumping the version of a sub-project the `"local" part of PEP-440
@@ -554,7 +562,7 @@ Known Limitations, Drawbacks & Workarounds
   You may use ``package_dir`` argument to ``setup()`` function
   (see `setuptools-docs <http://setuptools.readthedocs.io/en/latest/setuptools.html#id10>`_).
 
-- Set branch ``latest`` as default in GitHub to show engraved sub-project version-ids.
+- Set branch ``latest`` as default in GitHub to show :term:`engrave`\d sub-project version-ids.
 
 
 Similar Tools
