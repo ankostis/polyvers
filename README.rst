@@ -639,7 +639,10 @@ and in awesome: https://github.com/korfuri/awesome-monorepo.
 
 Credits
 =======
-This package was created with Cookiecutter_ and the `audreyr/cookiecutter-pypackage`_ project template.
+- Contains a function from the BSD-tool :term`pbr` to fetch version from *pkg-metadata*
+  when invoked as a :term:`setuptools plugin` from inside an egg.
+
+- This package was created with Cookiecutter_ and the `audreyr/cookiecutter-pypackage`_ project template.
 
 .. _Cookiecutter: https://github.com/audreyr/cookiecutter
 .. _`audreyr/cookiecutter-pypackage`: https://github.com/audreyr/cookiecutter-pypackage
