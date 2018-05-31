@@ -28,6 +28,9 @@ import sys
 import os.path as osp
 
 
+__all__ = 'polyversion polytime'.split()
+
+
 #: A 2-tuple containing 2 ``{vprefix}`` values for the patterns below,for
 #: for *version-tags* and *release-tags* respectively.
 tag_vprefixes = ('v', 'r')
