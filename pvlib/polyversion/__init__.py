@@ -114,7 +114,13 @@ def _caller_module(nframes_back=2):
     try:
         for _ in range(nframes_back):
             frame = frame.f_back
-        return inspect.getmodulename(inspect.getframeinfo(frame).filename)
+        modname = frame.f_globals['__name__']
+        name = modname.split('.')[-1]
+        if name.startswith('_'):  # eg: _version, __init__, __main__
+            raise ValueError(
+                "Auto-derived project-name from module '%s' starts with underscore!" %
+                modname)
+        return name
     finally:
         del frame
 
