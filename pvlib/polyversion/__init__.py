@@ -182,7 +182,7 @@ def _interp_regex(tag_regex, pname, is_release=False):
                             vprefix=tag_vprefixes[int(is_release)])
 
 
-def polyversion(pname=None, default='', repo_path=None,
+def polyversion(pname=None, default=None, repo_path=None,
                 mono_project=None,
                 tag_frmt=None, tag_regex=None,
                 git_options=()):
@@ -245,18 +245,14 @@ def polyversion(pname=None, default='', repo_path=None,
         if it cannot find t=any vtag (e.g. no git cmd/repo, no valid tags)
 
     .. Tip::
-        It is to be used in ``__init__.py`` files like this::
+        It is to be used, for example, in ``__init__.py`` files like this::
 
             __version__ = polyversion('myproj')
 
-.        ...and in ``setup.py`` files::
-
-            version=polyversion('myproj')
-
-    .. Tip::
+    .. Note::
        This is a python==2.7 & python<3.6 safe function; there is also the similar
        function with elaborate error-handling :func:`polyvers.pvtags.descrivbe_project()`
-       used by the tool internally.
+       in the full-blown tool `polyvers`.
     """
     import re
 
@@ -327,7 +323,7 @@ def polytime(no_raise=False, repo_path=None):
     return cdate
 
 
-__version__ = polyversion('polyversion')
+__version__ = polyversion('polyversion', '0.0.0')
 __updated__ = polytime(no_raise=True)
 
 
@@ -346,6 +342,7 @@ def run(*args):
 
     - Invokes :func:`polyversion.run()` with ``sys.argv[1:]``.
     - In order to set cmd-line arguments, invoke directly the function above.
+    - With a single project, it raises any problems (e.g. no tags).
     """
     import os
 
