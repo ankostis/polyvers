@@ -43,42 +43,47 @@ Polyvers: Bump sub-project versions in Git monorepos independently
 :copyright:     2018 JRC.C4(STU), European Commission (`JRC <https://ec.europa.eu/jrc/>`_)
 :license:       `EUPL 1.2 <https://joinup.ec.europa.eu/software/page/eupl>`_
 
-A python 3.6+ command-line tool to manage `PEP-440 version-ids
+A Python 3.6+ command-line tool to manage `PEP-440 version-ids
 <https://www.python.org/dev/peps/pep-0440/>`_ of dependent sub-projects
 hosted in a *Git* :term:`monorepos`, independently.
 
 The key features are:
 
-    - :term:`monorepos`,
-    - :term:`version-bump algebra`,
-    - :term:`version scheme`,
-    - :term:`configurable engraves`,
-    - :term:`setuptools integration` and
-    - :term:`release scheme`.
+    - :term:`monorepos` support,
+    - :term:`setuptools integration`,
+    - configurable :term:`version scheme`,
+    - intuitive :term:`version-bump algebra`,
+    - configurable :term:`engravings` and
+    - :term:`leaf release scheme`.
 
-Specifically, when bumping the version of sub-project(s), *polyvers*:
 
-- help you decide the next version of sub-projects, selectively and
-  independently, based on :term:`version-bump algebra`;
-- add x2 tagged commits for each project bumped:
+The last feature departs from the logic of :term:`similar tools`.
+Specifically, when bumping the version of sub-project(s), this tool
+adds **+2 tags and +1 commits**:
 
-  - one in-trunk :term:`Version tag` tags (:term:`pvtags`) like ``foo-proj-v0.1.0``,
-    and another :term:`out-of-trunk` (leaf) :term:`Release tag` like ``foo-proj-r0.1.0``;
+  - one :term:`Version tag` in-trunk like ``foo-proj-v0.1.0``,
+  - and another :term:`Release tag` on a new :term:`out-of-trunk commit` (leaf)
+    like ``foo-proj-r0.1.0`` (the new version-ids are :term:`engrave`\d only
+    in this release-commit):
 
-- :term:`engrave` the new versions in the source code of bumped-project(s) and
-  all *dependent* sub-projects, but this happening only in the "leaf"
-  version-commit;
-- build packages out of the later (optionally);
-- enforce (customizable) validation rules and [TODO] run (extensible) hooks.
+    .. figure:: _static/leaf_commits.png
+        :align: center
+        :alt: Leaf-commits & version/release tags for the two repo's sub-projects
+
+        Leaf-commits & version/release-tags for the two sub-project's,
+        as shown in this repo's git history.
+
+
 
 Additional capabilities and utilities:
 
-- **polyversion** library code to extract sub-project's version from past tags;
-  provided as a separate subproject here, for not depending on the full
-  development tool.
-
 - It is still possible to use plain **version tags (vtags)** like ``v0.1.0``,
   assuming you have a single project (called hereinafter a *mono-project*)
+
+- A separate Python 2.7+ **polyversion** project, which contains API to extract
+  sub-project's version from past tags (provided as a separate subproject
+  so client programs do not get ``polyvers`` commands transitive dependencies).
+  The library functions as a :term:`setuptools  plugin`.
 
 .. _opening-end:
 
@@ -425,7 +430,7 @@ Features
         .. [#] <https://medium.com/@maoberlehner/monorepos-in-the-wild-33c6eb246cb9
         .. [#] http://www.drmaciver.com/2016/10/why-you-should-use-a-single-repository-for-all-your-companys-projects/
 
-    release scheme
+    leaf release scheme
     out-of-trunk commit
     leaf commit
     release tag
@@ -443,7 +448,7 @@ Features
         on Git tags (like ``git-describe``), so they are always up-to-date.
 
     engrave
-    configurable engraves
+    engravings
         the search-n-replace in files, to substitute the new version.
         Default grep-like substitutions are included, which can be re-configured
         in the ``.polyvers.yaml`` config file.
@@ -537,7 +542,7 @@ Known Limitations, Drawbacks & Workarounds
     ...
 
 - WARNING: when you build your package for distribution (*wheel*, correct?)
-  remember to switch to the `out-of-trunk (leaf) "Release" commit`.
+  remember to switch to the :term:`out-of-trunk commit`.
   This is particularly important if your ``setup.py`` file  use ``polyversion()``
   to derive its version.. Because if it fails for whatever reason
   (``git`` command is missing, project not located in a git-repo, miss-configuration,

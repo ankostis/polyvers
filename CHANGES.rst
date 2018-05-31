@@ -54,8 +54,9 @@ Changes
 - doc:
     - usage: explain how to set your projects :pep:`0518` ``pyproject.toml``
       file & ``setup_requires`` keyword in ``setup.py`` in your script.
-    - similar tools: mention `pbr`, `incremental` and `Zest.release`
-      about as similar *setuptools*.
+    - add `pbr`, `incremental` and `Zest.release` in "similar tools" section
+      as  *setuptools* plugins.
+    - re-wrote and shrinked opening section using glossary terms.
 
 - chore:
     - deps: don't pin `packaging==17.1`, any bigger +17 is fine for parsing

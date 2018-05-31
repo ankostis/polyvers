@@ -6,8 +6,6 @@ Polyvers
     :start-after: _opening-start:
     :end-before: _opening-end:
 
-Contents:
-
 .. toctree::
     :maxdepth: 2
     :numbered:
