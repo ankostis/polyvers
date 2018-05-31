@@ -3,8 +3,37 @@ Changes
 =======
 
 
-2018-05-30: polyversion-v0.0.2a10, polyversion-v0.0.2a11
-========================================================
+2018-05-30: polyversion-v0.1.0a0, polyversion-v0.1.0a0: *setuptools* plugin
+===========================================================================
+
+- break:
+    - Dropped all positional-arguments from :func:`polyversion.polyversion()`;
+      was errorprone.  They have all been converted to keyword-arguments.
+
+    - Renamed argument ``default --> default_version`` argument of
+      :func:`polyversion.polyversion()`.
+
+    - Renamed argument and data ``tag_frmt --> tag_format``
+      (affects :func:`polyversion.polyversion()` and :class:`polyvers.pvproject.Project()`).
+
+    - REVERTED again the `0.0.2a9` default logic to raise when it version/time
+      vannot be derived.  Now by default it raises, unless default-version or
+      ``no_raise`` for :func:`polyversion.polytime()`.
+
+    - Stopped engraving ``setup.py`` files ; clients should use *setuptools* plugin
+      to derive version for those files (see new features, below)).
+      For reference, this is the removed element from default :class:`~Project`'s
+      configuration (in YAML)::
+
+            globs: [setup.py]
+            grafts:
+                - regex: -|
+                    (?xm)
+                        \bversion
+                        (\ *=\ *)
+                        .+?(,
+                        \ *[\n\r])+
+
 - feat:
     - The `polyversion` library is now a *setuptools* plugin so it can be used
       from within your ``setup.py`` files like this::
@@ -23,7 +52,8 @@ Changes
 - doc:
     - usage: explain how to set your projects :pep:`0518` ``pyproject.toml``
       file & ``setup_requires`` keyword in ``setup.py`` in your script.
-    - similar tools: mention ``pbr`` *setuptools* extension from OpenStack.
+    - similar tools: mention `pbr`, `incremental` and `Zest.release`
+      about as similar *setuptools*.
 
 - chore:
     - deps: don't pin `packaging==17.1`, any bigger +17 is fine for parsing
