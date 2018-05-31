@@ -51,7 +51,7 @@ Project:
   #    gets invoked from project's sources with the same value
   #    in `pvtag_frmt` kw-arg.
   # Default:
-  pvtag_frmt: '{pname}-{vprefix}{version}'
+  pvtag_format: '{pname}-{vprefix}{version}'
 
   # The regex pattern breaking *pvtags* and/or ``git-describe`` output
   # into 3 named capturing groups:
