@@ -182,10 +182,7 @@ def _interp_regex(tag_regex, pname, is_release=False):
                             vprefix=tag_vprefixes[int(is_release)])
 
 
-def polyversion(pname=None, default=None, repo_path=None,
-                mono_project=None,
-                tag_frmt=None, tag_regex=None,
-                git_options=()):
+def polyversion(**kw):
     """
     Report the *pvtag* of the `pname` in the git repo hosting the source-file calling this.
 
@@ -245,7 +242,11 @@ def polyversion(pname=None, default=None, repo_path=None,
         if it cannot find t=any vtag (e.g. no git cmd/repo, no valid tags)
 
     .. Tip::
-        It is to be used, for example, in ``__init__.py`` files like this::
+        It is to be used, for example, in package ``__init__.py`` files like this::
+
+            __version__ = polyversion()
+
+        Or from any other file::
 
             __version__ = polyversion('myproj')
 
@@ -254,7 +255,13 @@ def polyversion(pname=None, default=None, repo_path=None,
        function with elaborate error-handling :func:`polyvers.pvtags.descrivbe_project()`
        in the full-blown tool `polyvers`.
     """
-    import re
+    pname = kw.get('pname')
+    default = kw.get('default')
+    repo_path = kw.get('repo_path')
+    mono_project = kw.get('mono_project')
+    tag_frmt = kw.get('tag_frmt')
+    tag_regex = kw.get('tag_regex')
+    git_options = kw.get('git_options', ())
 
     version = None
 
@@ -269,6 +276,8 @@ def polyversion(pname=None, default=None, repo_path=None,
         repo_path = _caller_fpath()
         if not repo_path:
             repo_path = '.'
+
+    import re
 
     tag_pattern = _interp_fnmatch(tag_frmt, pname)
     tag_regex = re.compile(_interp_regex(tag_regex, pname))
@@ -295,7 +304,7 @@ def polyversion(pname=None, default=None, repo_path=None,
     return version
 
 
-def polytime(no_raise=False, repo_path=None):
+def polytime(**kw):
     """
     The timestamp of last commit in git repo hosting the source-file calling this.
 
@@ -307,6 +316,9 @@ def polytime(no_raise=False, repo_path=None):
     :return:
         the commit-date if in git repo, or now; :rfc:`2822` formatted
     """
+    no_raise = kw.get('no_raise', False)
+    repo_path = kw.get('repo_path')
+
     cdate = None
     if not repo_path:
         repo_path = _caller_fpath()
@@ -364,9 +376,10 @@ def run(*args):
         return 0
 
     if len(args) == 1:
-        res = polyversion(args[0], repo_path=os.curdir)
+        res = polyversion(pname=args[0], repo_path=os.curdir)
     else:
-        res = '\n'.join('%s: %s' % (p, polyversion(p, default='',
+        res = '\n'.join('%s: %s' % (p, polyversion(pname=p,
+                                                   default='',
                                                    repo_path=os.curdir))
                         for p in args)
 
