@@ -360,6 +360,7 @@ for tags because they apply repo-wide, to all sub-projects.
 
 Features
 ========
+.. include:: <xhtml1-lat1.txt>
 .. glossary::
 
     Version scheme
@@ -402,17 +403,17 @@ Features
 
         So the time to "split the project has come.  But from :term:`Lerna`:
 
-          Splitting up large codebases into separate independently versioned packages
+          |laquo|\ Splitting up large codebases into separate independently versioned packages
           is extremely useful for code sharing. However, making changes across
           many repositories is messy and difficult to track, and testing across repositories
-          gets complicated really fast.
+          gets complicated really fast.\ |Raquo|
 
         So a *monorepo* [#]_ [#]_ is the solution.
         But as `Yarn <https://yarnpkg.com/blog/2017/08/02/introducing-workspaces/>`_ put it:
 
-          OTOH, splitting projects into their own folders is sometimes not enough.
+          |laquo|\ OTOH, splitting projects into their own folders is sometimes not enough.
           Testing, managing dependencies, and publishing multiple packages quickly
-          gets complicated and many such projects adopt tools such as ...
+          gets complicated and many such projects adopt tools such as ...\ |Raquo|
 
         *Polyvers* is such a tool.
 
