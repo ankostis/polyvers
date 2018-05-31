@@ -81,21 +81,21 @@ def test_polyversion_p1(ok_repo, untagged_repo, no_repo):
 
     v = pvlib.polyversion(pname=proj1, repo_path=ok_repo)
     assert v.startswith(proj1_ver)
-    v = pvlib.polyversion(pname=proj1, default='<unused>', repo_path=ok_repo)
+    v = pvlib.polyversion(pname=proj1, default_version='<unused>', repo_path=ok_repo)
     assert v.startswith(proj1_ver)
 
     ## UNTAGGED REPO
 
     with pytest.raises(sbp.CalledProcessError):
-        pvlib.polyversion(pname='foo', default=None, repo_path=untagged_repo)
-    v = pvlib.polyversion(pname='foo', default='<unused>', repo_path=untagged_repo)
+        pvlib.polyversion(pname='foo', default_version=None, repo_path=untagged_repo)
+    v = pvlib.polyversion(pname='foo', default_version='<unused>', repo_path=untagged_repo)
     assert v == '<unused>'
 
     ## NO REPO
 
     with pytest.raises(sbp.CalledProcessError):
-        pvlib.polyversion(pname=proj1, default=None, repo_path=no_repo)
-    v = pvlib.polyversion(pname=proj1, default='<unused>', repo_path=no_repo)
+        pvlib.polyversion(pname=proj1, default_version=None, repo_path=no_repo)
+    v = pvlib.polyversion(pname=proj1, default_version='<unused>', repo_path=no_repo)
     assert v == '<unused>'
 
 
@@ -117,7 +117,8 @@ def test_polyversion_vtags(vtags_repo):
 
     v = pvlib.polyversion(pname=proj1, repo_path=vtags_repo, mono_project=True)
     assert v.startswith(proj1_ver)
-    v = pvlib.polyversion(pname=proj1, default='<unused>', repo_path=vtags_repo, mono_project=True)
+    v = pvlib.polyversion(pname=proj1, default_version='<unused>',
+                          repo_path=vtags_repo, mono_project=True)
     assert v.startswith(proj1_ver)
 
     ## BAD PROJECT STILL WORKSREPO
@@ -135,15 +136,15 @@ def test_polyversion_vtags(vtags_repo):
 
 def test_polyversion_BAD_project(ok_repo):
     with pytest.raises(sbp.CalledProcessError):
-        pvlib.polyversion(pname='foo', default=None, repo_path=ok_repo)
-    v = pvlib.polyversion(pname='foo', default='<unused>', repo_path=ok_repo)
+        pvlib.polyversion(pname='foo', default_version=None, repo_path=ok_repo)
+    v = pvlib.polyversion(pname='foo', default_version='<unused>', repo_path=ok_repo)
     assert v == '<unused>'
 
 
 def test_polyversion_BAD_no_commits(empty_repo):
     with pytest.raises(sbp.CalledProcessError):
-        pvlib.polyversion(pname='foo', default=None, repo_path=empty_repo)
-    v = pvlib.polyversion(pname='foo', default='<unused>', repo_path=empty_repo)
+        pvlib.polyversion(pname='foo', default_version=None, repo_path=empty_repo)
+    v = pvlib.polyversion(pname='foo', default_version='<unused>', repo_path=empty_repo)
     assert v == '<unused>'
 
 
@@ -153,8 +154,8 @@ def test_polyversion_BAD_no_git_cmd(ok_repo, monkeypatch):
     monkeypatch.setenv('PATH', '')
 
     with pytest.raises(FileNotFoundError):
-        pvlib.polyversion(pname='foo', default=None, repo_path=ok_repo)
-    v = pvlib.polyversion(pname='foo', default='0.1.1', repo_path=ok_repo)
+        pvlib.polyversion(pname='foo', default_version=None, repo_path=ok_repo)
+    v = pvlib.polyversion(pname='foo', default_version='0.1.1', repo_path=ok_repo)
     assert v == '0.1.1'
 
 

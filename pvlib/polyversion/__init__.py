@@ -193,7 +193,7 @@ def polyversion(**kw):
         .. Attention::
            when calling it from ``setup.py`` files, auto-deduction above
            will not work;  you must supply a project name.
-    :param str default:
+    :param str default_version:
         What *version* to return if git cmd fails.
         Set it to `None` to raise if no *vtag* found.
 
@@ -256,7 +256,7 @@ def polyversion(**kw):
        in the full-blown tool `polyvers`.
     """
     pname = kw.get('pname')
-    default = kw.get('default')
+    default_version = kw.get('default_version')
     repo_path = kw.get('repo_path')
     mono_project = kw.get('mono_project')
     tag_format = kw.get('tag_format')
@@ -295,11 +295,11 @@ def polyversion(**kw):
         if descid:
             version = version_from_descid(version, descid)
     except:  # noqa;  E722"
-        if default is None:
+        if default_version is None:
             raise
 
     if not version:
-        version = default
+        version = default_version
 
     return version
 
@@ -335,7 +335,7 @@ def polytime(**kw):
     return cdate
 
 
-__version__ = polyversion(default='0.0.0')
+__version__ = polyversion(default_version='0.0.0')
 __updated__ = polytime(no_raise=True)
 
 
@@ -379,7 +379,7 @@ def run(*args):
         res = polyversion(pname=args[0], repo_path=os.curdir)
     else:
         res = '\n'.join('%s: %s' % (p, polyversion(pname=p,
-                                                   default='',
+                                                   default_version='',
                                                    repo_path=os.curdir))
                         for p in args)
 
@@ -463,9 +463,9 @@ class SetupKeyword(object):
       Then it falls through retrieving it from git tags.
 
     - The standard ``setup(version=<version>)`` keyword is passed in as
-      the value to ``polyversion.polyversion(default=<version>)``.
+      the value to ``polyversion.polyversion(default_version=<version>)``.
 
-      So if ``version` is a (possibly empty) string, this will be used in case
+      So if ``version`` is a (possibly empty) string, this will be used in case
       version cannot be auto-retrived.
 
       If ``version`` is omitted (or it is `None`), any problems will be raised,
@@ -517,7 +517,7 @@ class SetupKeyword(object):
             version = polyversion(
                 pname=pname,
                 ## In case we cannot derrive version, use one provided by user (if any).
-                default=dist.metadata.version or '',
+                default_version=dist.metadata.version or '',
                 mono_project=self.version_scheme == 'mono-project',
                 tag_format=self.tag_format,
                 tag_regex=self.tag_regex,
