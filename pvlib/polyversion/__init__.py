@@ -12,7 +12,11 @@ And assuming :func:`polyversion()` is invoked from within a Git repo, it may ret
 either ``0.1.0`` or ``0.1.0+2.gcaffe00``, if 2 commits have passed since
 last *pvtag*.
 
-Also the wheel is executable like that::
+Also, this library function as a *setuptools* "plugin", and
+adds a new ``setup()`` keyword ``polyversion = (bool | dict)``
+(see :class:`SetupKeyword` for its content).
+
+finally, the wheel can be executed like that::
 
     python polyversion-*.whl --help
 
@@ -476,6 +480,23 @@ class SetupKeyword(object):
           back in history, or simply because the project is new, and
           there are no *vtags*, we set default-version to empty-string,
           to facilitate pip-installing these projects from sources.
+
+    Example:
+
+        .. code-block:: python
+
+            from setuptools import setup
+
+            setup(
+                project='myname',
+                version=''              # omit (or None) to abort if cannot auto-version
+                polyversion={           # dict or bool
+                    'version_scheme: 'mono-project',
+                    ...  # See `polyversion.SetupKeyword` class for more keys.
+                },
+                setup_requires=[..., 'polyversion'],
+                ...
+            )
     """
     # Registered in `distutils.setup_keywords` *entry_point* of this project's
     #``setup.py``.

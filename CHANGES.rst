@@ -35,8 +35,10 @@ Changes
                         \ *[\n\r])+
 
 - feat:
-    - The `polyversion` library is now a *setuptools* plugin so it can be used
-      from within your ``setup.py`` files like this::
+    - The `polyversion` library function as a *setuptools* "plugin", and
+      adds a new ``setup()`` keyword ``polyversion = (bool | dict)``
+      (see :class:`polyversion.SetupKeyword` for its content), which you can use it
+      like this::
 
           setup(
               project='myname',

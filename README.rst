@@ -52,7 +52,8 @@ The key features are:
     - :term:`monorepos`,
     - :term:`version-bump algebra`,
     - :term:`version scheme`,
-    - :term:`configurable engraves` and
+    - :term:`configurable engraves`,
+    - :term:`setuptools integration` and
     - :term:`release scheme`.
 
 Specifically, when bumping the version of sub-project(s), *polyvers*:
@@ -137,8 +138,10 @@ then you need enter the following configurations into your build files::
     Sample files can be derived from those in the `polyvers` subprojects
     (where they eat their own dog food).
 
-The `polyversion` library function as a *setuptools* plugin so it can be used
-from within your ``setup.py`` files like this:
+The `polyversion` library function as a *setuptools* "plugin", and
+adds a new ``setup()`` keyword ``polyversion = (bool | dict)``
+(see :class:`polyversion.SetupKeyword` for its content), which you can use it
+like this:
 
 .. code-block:: python
 
@@ -157,7 +160,7 @@ from within your ``setup.py`` files like this:
 
 .. Hint::
     The ``setup_requires=['polyvers']`` keyword  (only available with *setuptools*,
-    and not *distutils*), enables the new ``polyversion-{..}`` setup-keyword.
+    and not *distutils*), enables the new ``polyversion=`` setup-keyword.
 
 Alternatively, a subproject may use :pep:`0518` to pre-install `polyversion`
 library *before* pip-installing or launching ``setup.py`` script.
@@ -444,6 +447,12 @@ Features
         the search-n-replace in files, to substitute the new version.
         Default grep-like substitutions are included, which can be re-configured
         in the ``.polyvers.yaml`` config file.
+
+    setuptools plugin
+    setuptools integration
+        The `polyversion` library function as a *setuptools* "plugin", and
+        adds a new ``setup()`` keyword ``polyversion = (bool | dict)``
+        (see :class:`polyversion.SetupKeyword` for its content).
 
     Marking dependent versions across sub-projects
         [TODO] When bumping the version of a sub-project the `"local" part of PEP-440
