@@ -12,9 +12,9 @@ from .utils import logconfutils as lcu
 
 __all__ = ['polyversion', 'polytime']
 
-APPNAME = 'polyvers'
+APPNAME = __name__.split('.')[0]
 
-__version__ = polyversion(APPNAME, default='0.0.0')
+__version__ = polyversion(default='0.0.0')
 __updated__ = polytime(no_raise=True)
 __title__ = APPNAME
 __summary__ = "Bump independently versions on multi-project git repos"
