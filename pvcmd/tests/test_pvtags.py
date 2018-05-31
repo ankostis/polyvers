@@ -32,7 +32,7 @@ def monorepocfg():
     template_project = pvtags.make_pvtag_project()
     cfg = trc.Config({
         'Project': {
-            'pvtag_frmt': template_project.pvtag_frmt,
+            'pvtag_format': template_project.pvtag_format,
             'pvtag_regex': template_project.pvtag_regex,
         }})
 
@@ -48,7 +48,7 @@ def project1(monorepocfg):
 def project2():
     return Project(
         pname=pname2,
-        pvtag_frmt='{pname}-V{version}',
+        pvtag_format='{pname}-V{version}',
         pvtag_regex=r"""(?xmi)
             ^(?P<pname>{pname})
             -
@@ -81,13 +81,13 @@ def test_new_Project_raises_pvtags_unpopulated(project1):
 def test_Project_defaults(monorepocfg):
     proj = Project()
 
-    assert proj.pvtag_frmt == ''
+    assert proj.pvtag_format == ''
     assert proj.pvtag_regex == ''
     assert proj.tag_fnmatch() == ''
 
     proj = Project(config=monorepocfg)
 
-    assert proj.pvtag_frmt == pvlib.pvtag_frmt
+    assert proj.pvtag_format == pvlib.pvtag_format
     assert proj.pvtag_regex == pvlib.pvtag_regex
     assert proj.tag_fnmatch() == '-v*'
 

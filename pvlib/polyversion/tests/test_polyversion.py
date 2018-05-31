@@ -52,7 +52,7 @@ def test_fnmatch_format(inp, exp):
         pass
     else:
         project = exp[0]
-        frmt = pvlib._interp_fnmatch(pvlib.pvtag_frmt, project)
+        frmt = pvlib._interp_fnmatch(pvlib.pvtag_format, project)
         assert fnmatch.fnmatch(inp, frmt)
 
 
@@ -101,7 +101,7 @@ def test_polyversion_p1(ok_repo, untagged_repo, no_repo):
 
 def test_polyversion_p2(ok_repo):
     v = pvlib.polyversion(pname=proj2, repo_path=ok_repo,
-                          tag_frmt='{pname}-V{version}',
+                          tag_format='{pname}-V{version}',
                           tag_regex=r"""(?xmi)
                               ^(?P<pname>{pname})
                               -
@@ -128,7 +128,7 @@ def test_polyversion_vtags(vtags_repo):
     ## bool flag overriden
 
     v = pvlib.polyversion(pname='fobar', repo_path=vtags_repo, mono_project=False,
-                          tag_frmt=pvlib.vtag_frmt,
+                          tag_format=pvlib.vtag_format,
                           tag_regex=pvlib.vtag_regex)
     assert v.startswith(proj1_ver)
 

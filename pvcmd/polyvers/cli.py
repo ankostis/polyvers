@@ -213,7 +213,7 @@ class PolyversCmd(cmdlets.Cmd, yu.YAMLable):
         default_value=({
             'pname': '<PVTAG>',
             'tag_vprefixes': pvlib.tag_vprefixes,
-            'pvtag_frmt': '*-v*',
+            'pvtag_format': '*-v*',
             'pvtag_regex': tw.dedent(r"""
                 (?xmi)
                     ^(?P<pname>[A-Z0-9]|[A-Z0-9][A-Z0-9._-]*?[A-Z0-9])
@@ -223,7 +223,7 @@ class PolyversCmd(cmdlets.Cmd, yu.YAMLable):
             """)}, {
             'pname': '<VTAG>',
             'tag_vprefixes': pvlib.tag_vprefixes,
-            'pvtag_frmt': pvlib.vtag_frmt,
+            'pvtag_format': pvlib.vtag_format,
             'pvtag_regex': pvlib.vtag_regex,
         }),
         config=True,
@@ -451,7 +451,7 @@ class InitCmd(_SubCmd):
         #  bc program has does not hold such toplevel class.
         self.config.Project = trc.Config({
             'tag_vprefixes': tproj.tag_vprefixes,
-            'pvtag_frmt': tproj.pvtag_frmt,
+            'pvtag_format': tproj.pvtag_format,
             'pvtag_regex': tproj.pvtag_regex,
         })
 
@@ -600,7 +600,7 @@ PolyversCmd.flags = {  # type: ignore
     'monorepo': (
         {'Project': {  # type: ignore
             'pname': pvtags.MONOREPO,
-            'pvtag_frmt': pvlib.pvtag_frmt,
+            'pvtag_format': pvlib.pvtag_format,
             'pvtag_regex': pvlib.pvtag_regex,
         }},
         """
@@ -611,7 +611,7 @@ PolyversCmd.flags = {  # type: ignore
     'mono-project': (
         {'Project': {  # type: ignore
             'pname': pvtags.MONO_PROJECT,
-            'pvtag_frmt': pvlib.vtag_frmt,
+            'pvtag_format': pvlib.vtag_format,
             'pvtag_regex': pvlib.vtag_regex,
         }},
         """

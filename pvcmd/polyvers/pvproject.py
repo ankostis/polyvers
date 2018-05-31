@@ -266,7 +266,7 @@ class Project(cmdlets.Replaceable, cmdlets.Printable, yu.YAMLable, cmdlets.Spec)
         one for *version-tags* and one for *release-tags*, respectively.
     """)
 
-    pvtag_frmt = Unicode(
+    pvtag_format = Unicode(
         help="""
         The pattern to generate new *pvtags*.
 
@@ -277,11 +277,11 @@ class Project(cmdlets.Replaceable, cmdlets.Printable, yu.YAMLable, cmdlets.Spec)
         .. Important::
            If you change this, ensure the :func:`polyversion.polyversion()`
            gets invoked from project's sources with the same value
-           in `pvtag_frmt` kw-arg.
+           in `pvtag_format` kw-arg.
     """).tag(config=True)
 
     def _format_vtag(self, version, is_release=False):
-        return self.interp(self.pvtag_frmt,
+        return self.interp(self.pvtag_format,
                            version=version,
                            vprefix=self.tag_vprefixes[int(is_release)])
 
@@ -298,7 +298,7 @@ class Project(cmdlets.Replaceable, cmdlets.Printable, yu.YAMLable, cmdlets.Spec)
             {version} <-- '*'
         """
         vprefix = self.tag_vprefixes[int(is_release)]
-        return self.interp(self.pvtag_frmt,
+        return self.interp(self.pvtag_format,
                            vprefix=vprefix,
                            version='*',
                            _escaped_for='glob')
@@ -339,7 +339,7 @@ class Project(cmdlets.Replaceable, cmdlets.Printable, yu.YAMLable, cmdlets.Spec)
     def is_good(self):
         "If format patterns are missing, spurious NPEs will happen when using project."
         return bool(self.tag_vprefixes and
-                    self.pvtag_frmt and
+                    self.pvtag_format and
                     self.pvtag_regex)
 
     tag = Bool(
