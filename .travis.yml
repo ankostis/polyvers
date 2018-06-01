@@ -37,10 +37,10 @@ script:
   - polyversion --help
   - |
     if [ $TRAVIS_PYTHON_VERSION \> '3.5' ]; then
-        pip install -r requirements.txt
-        rm -rf build/*
-        python setup.py build bdist_wheel
-        pip install dist/polyvers-*.whl
+        pip install -r requirements.txt && \
+        rm -rf build/* && \
+        python setup.py build bdist_wheel && \
+        pip install dist/polyvers-*.whl && \
         polyvers --help
     fi
   - pip uninstall -y polyversion polyvers
@@ -51,9 +51,9 @@ script:
   - polyversion --help
   - |
     if [ $TRAVIS_PYTHON_VERSION \> '3.5' ]; then
-        pip install -e .[test]
-        polyvers --help
-        pytest pvlib --cov=polyversion --cov-report=term-missing
+        pip install -e .[test] && \
+        polyvers --help && \
+        pytest pvlib --cov=polyversion --cov-report=term-missing && \
         pytest pvcmd --cov=polyvers --cov-report=term-missing
     else
         pytest pvlib
