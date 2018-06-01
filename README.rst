@@ -45,11 +45,11 @@ Polyvers: Bump sub-project versions in Git monorepos independently
 
 A Python 3.6+ command-line tool to manage `PEP-440 version-ids
 <https://www.python.org/dev/peps/pep-0440/>`_ of dependent sub-projects
-hosted in a *Git* :term:`monorepos`, independently.
+hosted in a *Git* :term:`monorepo`\s, independently.
 
 The key features are:
 
-    - :term:`monorepos` support,
+    - :term:`monorepo`\s support,
     - :term:`setuptools integration`,
     - configurable :term:`version scheme`,
     - intuitive :term:`version-bump algebra`,
@@ -78,7 +78,7 @@ adds **+2 tags and +1 commits**:
 Additional capabilities and utilities:
 
 - It is still possible to use plain **version tags (vtags)** like ``v0.1.0``,
-  assuming you have a single project (called hereinafter a *mono-project*)
+  assuming you have a single project (called hereinafter a :term:`mono-project`)
 
 - A separate Python 2.7+ **polyversion** project, which contains API to extract
   sub-project's version from past tags (provided as a separate subproject
@@ -115,7 +115,7 @@ And you get the ``polyvers`` command:
 .. Note::
     Actually two projects are installed:
 
-    - **polyvers** cmd-line tool, for developing python :term:`monorepos`,
+    - **polyvers** cmd-line tool, for developing python :term:`monorepo`\s,
     - **polyversion**: the base python library used by projects developed
       with *polyvers* tool, so that their sources can discover their subproject-version
       on runtime from Git.
@@ -402,7 +402,8 @@ Features
         these ``+^~=`` modifiers.
         See :mod:`polyvers.versionmath` for more.
 
-    monorepos
+    monorepo
+    mono-project
         When your single project succeeds, problems like these are known only too well:
 
           Changes in **web-server** part depend on **core** features that cannot
@@ -440,7 +441,7 @@ Features
     pvtag
         Even in single-project repos, sharing code across branches may cause merge-conflicts
         due to the version-ids :term:`engrave`\d" in the sources.
-        In :term:`monorepos`, the versions proliferate, and so does the conflicts.
+        In :term:`monorepo`\s, the versions proliferate, and so does the conflicts.
 
         Contrary to `similar tools`_, static version-ids are engraved only in out-of-trunk
         (leaf) commits, and only when the sub-projects are released.
@@ -592,7 +593,7 @@ Similar Tools
         https://github.com/c4urself/bump2version
 
     releash
-        another :term:`monorepos` managing tool, that publishes also to PyPi:
+        another :term:`monorepo`s managing tool, that publishes also to PyPi:
         https://github.com/maartenbreddels/releash
 
     Git Bump
