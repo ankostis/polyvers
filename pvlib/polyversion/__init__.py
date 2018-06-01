@@ -148,7 +148,8 @@ def split_pvtag(pvtag, pvtag_regex):
         m = pvtag_regex.match(pvtag)
         if not m:
             raise ValueError(
-                "Unparseable *pvtag* from `pvtag_regex`!")
+                "Unparseable pvtag %r from pvtag_regex: %r!" %
+                (pvtag, pvtag_regex.pattern))
         mg = m.groupdict()
         return mg['pname'], mg['version'], mg['descid']
     except Exception as ex:
@@ -175,15 +176,15 @@ def version_from_descid(version, descid):
     return '%s+%s' % (version, local_part)
 
 
-def _interp_fnmatch(tag_format, pname, is_release=False):
+def _interp_fnmatch(tag_format, tag_vprefix, pname):
     return tag_format.format(pname=pname,
                              version='*',
-                             vprefix=tag_vprefixes[int(is_release)])
+                             vprefix=tag_vprefix)
 
 
-def _interp_regex(tag_regex, pname, is_release=False):
+def _interp_regex(tag_regex, tag_vprefix, pname):
     return tag_regex.format(pname=pname,
-                            vprefix=tag_vprefixes[int(is_release)])
+                            vprefix=tag_vprefix)
 
 
 def polyversion(**kw):
@@ -211,16 +212,16 @@ def polyversion(**kw):
         A path inside the git repo hosting the `pname` in question; if missing,
         derived from the calling stack.
     :param bool mono_project:
-      - false: (default) multiple sub-projects per git-repo.
+      - false: (default) :term:`monorepo`, ie multiple sub-projects per git-repo.
         Tags formatted by *pvtags* :data:`pvtag_format` & :data:`pvtag_regex`
         (like ``pname-v1.2.3``).
-      - true: only one project in git-repo
+      - true: :term:`mono-project`, ie only one project in git-repo
         Tags formatted as *vtags* :data:`vtag_format` & :data:`vtag_regex`.
         (like ``v1.2.3``).
     :param str tag_format:
         The :pep:`3101` pattern for creating *pvtags* (or *vtags*).
 
-        - It receives 2 parameters to interpolate: ``{pname}, {version} = '*'``.
+        - It receives 3 parameters to interpolate: ``{pname}, {vprefix}, {version} = '*'``.
         - It is used also to generate the match patterns for ``git describe --match <pattern>``
           command.
         - It overrides `mono_project` arg.
@@ -233,10 +234,13 @@ def polyversion(**kw):
         - ``descid`` (optional) anything following the dash('-') after
           the version in ``git-describe`` result.
 
-        - It is given a :pep:`3101` parameter ``{pname}`` to interpolate.
+        - It is given 2 :pep:`3101` parameters ``{pname}, {vprefix}`` to interpolate.
         - It overrides `mono_project` arg.
         - See :pep:`0426` for project-name characters and format.
         - See :data:`pvtag_regex` & :data:`vtag_regex`
+    :param str tag_vprefix:
+        Interpolation parameter for `tag_format` & `tag_regex`.
+        If None (default), it is taken from the 1st element of :data:`tag_vprefixes`.
     :param git_options:
         List of options(str) passed to ``git describe`` command.
     :return:
@@ -265,6 +269,7 @@ def polyversion(**kw):
     mono_project = kw.get('mono_project')
     tag_format = kw.get('tag_format')
     tag_regex = kw.get('tag_regex')
+    tag_vprefix = kw.get('tag_vprefix')
     git_options = kw.get('git_options', ())
 
     version = None
@@ -283,8 +288,11 @@ def polyversion(**kw):
 
     import re
 
-    tag_pattern = _interp_fnmatch(tag_format, pname)
-    tag_regex = re.compile(_interp_regex(tag_regex, pname))
+    tag_vprefix = (tag_vprefixes[0]
+                   if tag_vprefix is None else
+                   tag_vprefix)
+    tag_pattern = _interp_fnmatch(tag_format, tag_vprefix, pname)
+    tag_regex = re.compile(_interp_regex(tag_regex, tag_vprefix, pname))
     try:
         cmd = 'git describe'.split()
         cmd.extend(git_options)
@@ -443,25 +451,32 @@ class SetupKeyword(object):
         The `tag_format` and `tag_regex` args take precendance, if given.
     :ivar str tag_format:
         The :pep:`3101` pattern for creating *pvtags* (or *vtags*).
-          - It may interpolate 2 parameters: ``{pname}, {version} = '*'``.
-          - It is used also to generate the match patterns for
-            command ``git describe --match <pattern>``.
-          - It overrides `version_scheme` arg.
-          - See :data:`pvtag_format` & :data:`vtag_format`
+
+        - It receives 3 parameters to interpolate: ``{pname}, {vprefix}, {version} = '*'``.
+        - It is used also to generate the match patterns for ``git describe --match <pattern>``
+          command.
+        - It overrides `mono_project` arg.
+        - See :data:`pvtag_format` & :data:`vtag_format`
     :ivar regex tag_regex:
         The regex pattern breaking apart *pvtags*, with 3 named capturing groups:
-          - ``pname``,
-          - ``version`` (without the 'v'),
-          - ``descid`` (optional) anything following the dash('-') after
-            the version in ``git-describe`` result.
 
-          - It is given a :pep:`3101` parameter ``{pname}`` to interpolate.
-          - It overrides `version_scheme` arg.
-          - See :pep:`0426` for project-name characters and format.
-          - See :data:`pvtag_regex` & :data:`vtag_regex`
+        - ``pname``,
+        - ``version`` (without the 'v'),
+        - ``descid`` (optional) anything following the dash('-') after
+          the version in ``git-describe`` result.
+
+        - It is given 2 :pep:`3101` parameters ``{pname}, {vprefix}`` to interpolate.
+        - It overrides `mono_project` arg.
+        - See :pep:`0426` for project-name characters and format.
+        - See :data:`pvtag_regex` & :data:`vtag_regex`
+    :ivar str tag_vprefix:
+        Interpolation parameter for `tag_format` & `tag_regex`.
+        If None (default), it is taken from the 2nd element of :data:`tag_vprefixes`.
     :ivar git_options:
-        List of options(str) passed to ``git describe`` command.
-
+        List of options(str) passed to ``git describe`` command (empty by default).
+    :ivar bool skip_bdist_check:
+        TODO: when false,  any `bdist_*` command will abort if not run from
+        a :term:`release commit` [default: false]
     - First it tries to see if project contained in a distribution-archive
       (e.g. a "wheel"), and tries to derive the version from egg-infos.
       Then it falls through retrieving it from git tags.
@@ -501,15 +516,13 @@ class SetupKeyword(object):
     # Registered in `distutils.setup_keywords` *entry_point* of this project's
     #``setup.py``.
 
-    __slots__ = ('version_scheme tag_format '
-                 'tag_regex git_options'.split())
+    __slots__ = ('version_scheme tag_format tag_regex tag_vprefix '
+                 'git_options'.split())
 
-    def __init__(self, dist, attr, value):
+    def _parse_keyword(self, attr, value):
         from distutils.errors import DistutilsSetupError
 
-        if value is False:
-            return
-        elif value is True:
+        if value is True:
             value = {}
 
         good_keys = SetupKeyword.__slots__
@@ -532,6 +545,12 @@ class SetupKeyword(object):
                 "`%s.git_options` must be an iterable (got: %r)" %
                 (attr, self.git_options))
 
+    def __init__(self, dist, attr, value):
+        if value is False:
+            return
+
+        self._parse_keyword(attr, value)
+
         pname = dist.metadata.name
         version = _get_version_from_pkg_metadata(pname)
         if not version:
@@ -542,6 +561,9 @@ class SetupKeyword(object):
                 mono_project=self.version_scheme == 'mono-project',
                 tag_format=self.tag_format,
                 tag_regex=self.tag_regex,
+                tag_vprefix=(tag_vprefixes[1]
+                             if self.tag_vprefix is None else
+                             self.tag_vprefix),
                 git_options=self.git_options or (),
 
                 repo_path=osp.abspath('.'),

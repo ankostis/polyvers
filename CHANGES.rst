@@ -10,11 +10,19 @@ Changes
     - Dropped all positional-arguments from :func:`polyversion.polyversion()`;
       was error-prone.  They have all been converted to keyword-arguments.
 
-    - Renamed argument ``default --> default_version`` argument of
-      :func:`polyversion.polyversion()`.
+    - Renamed data in :mod:`polyversion`
+      (also applied for :class:`polyvers.pvproject.Project()`)::
 
-    - Renamed argument and data ``tag_frmt --> tag_format``
-      (affects :func:`polyversion.polyversion()` and :class:`polyvers.pvproject.Project()`).
+            pvtag_frmt  --> pvtag_format
+            vtag_frmt   --> vtag_format
+
+    - Changed arguments in :func:`polyversion.polyversion()`
+      (affect also :class:`polyvers.pvproject.Project()`)::
+
+          default     --> default_version
+          tag_frmt    --> tag_format
+          tag_frmt    --> tag_format
+                      --> tag_vprefix  (new)
 
     - REVERTED again the `0.0.2a9` default logic to raise when it version/time
       vannot be derived.  Now by default it raises, unless default-version or
