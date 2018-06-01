@@ -45,7 +45,7 @@ pvtag_format = '{pname}-{vprefix}{version}'
 #: Like :data:`pvtag_format` but for *mono-project* version-tags.
 vtag_format = '{vprefix}{version}'
 
-#: The default regex pattern breaking *monorepo* version-tags
+#: The default regex pattern breaking :term:`monorepo` version-tags
 #: and/or ``git-describe`` output into 3 capturing groups:
 #:
 #:   - ``pname``,
@@ -64,7 +64,7 @@ pvtag_regex = r"""(?xmi)
     {vprefix}(?P<version>\d[^-]*)
     (?:-(?P<descid>\d+-g[a-f\d]+))?$
 """
-#: Like :data:`pvtag_format` but for *mono-project* version-tags.
+#: Like :data:`pvtag_format` but for :term:`mono-project` version-tags.
 vtag_regex = r"""(?xmi)
     ^(?P<pname>)
     {vprefix}(?P<version>\d[^-]*)
@@ -437,10 +437,26 @@ def _get_version_from_pkg_metadata(package_name):
 
 class SetupKeyword(object):
     """
-    New *setuptools* kwd to find subproject version from PKG-INFO or git tags.
+    Two new *setuptools* kwds for deriving subproject versions from PKG-INFO or git tags.
 
-    The value to this keyword can be a boolean, or a dictionary with keys
-    roughly mimicing those in :func:`polyversion()`:
+    1) keyword: ``polyversion --> (bool | dict)``
+        When a dict, its keys roughly mimic those in :func:`polyversion()`,
+        and can be used like this:
+
+        .. code-block:: python
+
+            from setuptools import setup
+
+            setup(
+                project='myname',
+                version=''              # omit (or None) to abort if cannot auto-version
+                polyversion={           # dict or bool
+                    'mono-project': True, # false by default
+                    ...  # See `polyversion.SetupKeyword` class for more keys.
+                },
+                setup_requires=[..., 'polyversion'],
+                ...
+            )
 
     :ivar bool mono_project:
       - false: (default) :term:`monorepo`, ie multiple sub-projects per git-repo.
@@ -473,10 +489,10 @@ class SetupKeyword(object):
         Interpolation parameter for `tag_format` & `tag_regex`.
         If None (default), it is taken from the 2nd element of :data:`tag_vprefixes`.
     :ivar git_options:
-        List of options(str) passed to ``git describe`` command (empty by default).
-    :ivar bool skip_bdist_check:
-        TODO: when false,  any `bdist_*` command will abort if not run from
-        a :term:`release commit` [default: false]
+        a str or an iterator of (converted to str) options to pass
+        to ``git describe`` command (empty by default).  If a string,
+        it is splitted by spaces.
+
     - First it tries to see if project contained in a distribution-archive
       (e.g. a "wheel"), and tries to derive the version from egg-infos.
       Then it falls through retrieving it from git tags.
@@ -496,72 +512,133 @@ class SetupKeyword(object):
           there are no *vtags*, we set default-version to empty-string,
           to facilitate pip-installing these projects from sources.
 
-    Example:
+    2) Keyword: ``skip_polyversion_check --> bool``
+        When false (default),  any `bdist_*` (e.g. ``bdist_wheel``),
+        commands will abort if not run from a :term:`release tag`.
+        You may bypass this check when you really wish to create
+        binary distributions with non-engraved sources (although it might not
+        work correctly) by invoking the setup-script from command-line
+        like this::
 
-        .. code-block:: python
+            $ python setup.py bdist_wheel --skip-polyversion-check
 
-            from setuptools import setup
-
-            setup(
-                project='myname',
-                version=''              # omit (or None) to abort if cannot auto-version
-                polyversion={           # dict or bool
-                    'mono-project': True, # false by default
-                    ...  # See `polyversion.SetupKeyword` class for more keys.
-                },
-                setup_requires=[..., 'polyversion'],
-                ...
-            )
     """
     # Registered in `distutils.setup_keywords` *entry_point* of this project's
     #``setup.py``.
 
-    __slots__ = ('mono_project tag_format tag_regex tag_vprefix '
-                 'git_options'.split())
+    __slots__ = ('pname default_version '
+                 'mono_project tag_format tag_regex tag_vprefix '
+                 'repo_path git_options'.split())
 
-    def _parse_keyword(self, attr, value):
-        from distutils.errors import DistutilsSetupError
-
-        if value is True:
-            value = {}
+    def _parse_keyword(self, userdic, **kw_defaults):
+        """
+        :param kw_defaults:
+            override any `None` values in `userdic``
+        """
+        if userdic is True:
+            userdic = {}
 
         good_keys = SetupKeyword.__slots__
         try:
-            for k in set(good_keys) | set(value):
-                setattr(self, k, value.get(k))
-        except Exception:
-            raise DistutilsSetupError(
-                "`%s` must be boolean or a dict mapping!"
-                "\n available keys: %s\n  got: %r" %
-                (attr, ', '.join(good_keys), value))
+            attrvalues = dict.fromkeys(good_keys, None)
+            attrvalues.update(userdic)
+            for k, v in attrvalues.items():
+                setattr(self, k,
+                        kw_defaults.get(k)
+                        if v is None else
+                        v)
+        except Exception as ex:
+            raise ValueError(
+                "invalid polyversion args due to: %s"
+                "\n  validkeys: %s"
+                "\n  got: %r" %
+                (ex, ', '.join(good_keys), userdic))
 
-        if self.git_options and not isinstance(self.git_options, (tuple, list)):
-            raise DistutilsSetupError(
-                "`%s.git_options` must be an iterable (got: %r)" %
-                (attr, self.git_options))
+        if self.git_options:
+            if isinstance(self.git_options, str):
+                self.git_options = self.git_options.split()
+            else:
+                try:
+                    self.git_options = [str(s) for s in self.git_options]
+                except Exception as ex:
+                    raise ValueError(
+                        "invalid polyversion `git_options` due to: %s"
+                        "\n  must be a str or an iterable, got: %r" %
+                        (ex, self.git_options))
+
+    def polyversion(self, **kw):
+        "Call :func:`polyversion()` for my configs."
+        from copy import copy
+
+        clone = copy(self)
+        for k, v in kw.items():
+            setattr(clone, k, v)
+
+        return polyversion(
+            pname=clone.pname,
+            ## In case we cannot derrive version, use one provided by user (if any).
+            default_version=clone.default_version,
+            mono_project=clone.mono_project,
+            tag_format=clone.tag_format,
+            tag_regex=clone.tag_regex,
+            tag_vprefix=clone.tag_vprefix,
+            git_options=clone.git_options,
+            repo_path=clone.repo_path,
+        )
+
+    def _check_bdist_and_run_cmd(self, cmd):
+        "patching `bdist_XXX.run_command()` runs with `self` <-- `dist`."
+
+        if (cmd.startswith('bdist') and
+                not getattr(self, 'polyversion_skip_bdist_check', False)):
+            ver = self.polyversion_setup_kw.polyversion()
+            if not ver:
+                from distutils.errors import DistutilsSetupError
+                raise DistutilsSetupError(
+                    "Attempted to run '%s' from a non release-tag!"
+                    "\n  Use --skip-polyversion-check if you really want to build"
+                    "\n  a binary distribution package from non-engraved sources." %
+                    cmd)
+        self._polyversion_orig_run_cmd(cmd)
 
     def __init__(self, dist, attr, value):
+        if attr == 'skip_polyversion_check':
+            dist.polyversion_skip_bdist_check = bool(value)
+            return
+
         if value is False:
             return
 
-        self._parse_keyword(attr, value)
+        try:
+            self._parse_keyword(value,
+                                repo_path=osp.dirname(sys.argv[0]),
+                                git_options=()
+                                )
+        except ValueError as ex:
+            from distutils.errors import DistutilsSetupError
+            raise DistutilsSetupError(str(ex))
 
-        pname = dist.metadata.name
-        version = _get_version_from_pkg_metadata(pname)
+        self.pname = dist.metadata.name
+        version = _get_version_from_pkg_metadata(self.pname)
         if not version:
-            version = polyversion(
-                pname=pname,
-                ## In case we cannot derrive version, use one provided by user (if any).
-                default_version=dist.metadata.version or '',
-                mono_project=self.mono_project,
-                tag_format=self.tag_format,
-                tag_regex=self.tag_regex,
+            self.default_version = dist.metadata.version or ''
+            version = self.polyversion(
                 tag_vprefix=(tag_vprefixes[1]
                              if self.tag_vprefix is None else
                              self.tag_vprefix),
-                git_options=self.git_options or (),
-
-                repo_path=osp.abspath('.'),
+                repo_path=self.repo_path,
             )
 
         dist.metadata.version = version
+        dist.polyversion_setup_kw = self
+
+        ## Monkeypatch Distribution class for bdist-check
+        #  only once per Python-interpreter.
+        #
+        #  Note that it might fail with instance-patched `dist.run_command()`
+        #  that are not calling original method.
+        #
+        orig_func = type(dist).run_command
+        if orig_func is not SetupKeyword._check_bdist_and_run_cmd:
+            type(dist).run_command = SetupKeyword._check_bdist_and_run_cmd
+            type(dist)._polyversion_orig_run_cmd = orig_func

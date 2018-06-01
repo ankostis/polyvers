@@ -3,6 +3,7 @@
 #
 """Common pytest fixtures."""
 
+import py
 import pytest
 
 import subprocess as sbp
@@ -26,7 +27,7 @@ def today():
 ## IMMMUTABLE REPOS ##
 ######################
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope='session')
 def ok_repo(tmpdir_factory):
     repo_dir = tmpdir_factory.mktemp('repo')
     repo_dir.chdir()
@@ -51,7 +52,7 @@ def ok_repo(tmpdir_factory):
     return repo_dir
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope='session')
 def vtags_repo(tmpdir_factory):
     repo_dir = tmpdir_factory.mktemp('repo')
     repo_dir.chdir()
@@ -74,7 +75,35 @@ def vtags_repo(tmpdir_factory):
     return repo_dir
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope='session')
+def rtag_monorepo(tmpdir_factory, vtags_repo):
+    newrepo = tmpdir_factory.mktemp('rtag_monorepo')
+    newrepo_rel = vtags_repo.bestrelpath(newrepo)
+    vtags_repo.chdir()
+    cmds = """
+    git clone . %(newrepo)s
+    git -C %(newrepo)s commit --allow-empty  --no-edit -m r-c
+    git -C %(newrepo)s tag  proj1-r0.0.1 -m annotated
+    """ % {'newrepo': newrepo_rel}
+    for c in cmds.split('\n'):
+        c = c and c.strip()
+        if c:
+            sbp.check_call(c.split())
+
+    return newrepo
+
+
+@pytest.fixture()
+def mutable_mono_project(tmpdir, vtags_repo):
+    vtags_repo.chdir()
+    newrepo = tmpdir.mkdir('mutable_mono_project')
+    newrepo_rel = vtags_repo.bestrelpath(newrepo)
+    cmd = "git clone . %s" % newrepo_rel
+    sbp.check_call(cmd.split())
+    return newrepo
+
+
+@pytest.fixture(scope='session')
 def untagged_repo(tmpdir_factory):
     repo_dir = tmpdir_factory.mktemp('untagged')
     repo_dir.chdir()
@@ -92,7 +121,7 @@ def untagged_repo(tmpdir_factory):
     return repo_dir
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope='session')
 def empty_repo(tmpdir_factory):
     repo_dir = tmpdir_factory.mktemp('untagged')
     repo_dir.chdir()
@@ -109,6 +138,6 @@ def empty_repo(tmpdir_factory):
     return repo_dir
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope='session')
 def no_repo(tmpdir_factory):
     return tmpdir_factory.mktemp('norepo')
