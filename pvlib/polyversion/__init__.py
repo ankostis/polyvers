@@ -72,7 +72,7 @@ vtag_regex = r"""(?xmi)
 """
 
 
-def clean_cmd_result(res):  # type: (bytes) -> str
+def _clean_cmd_result(res):  # type: (bytes) -> str
     """
     :return:
         only if there is something in `res`, as utf-8 decoded string
@@ -111,7 +111,7 @@ def _my_run(cmd, cwd):
         print('%s\n  cmd: %s' % (err, cmd), file=sys.stderr)
         raise sbp.CalledProcessError(proc.returncode, cmd)
     else:
-        return clean_cmd_result(res)
+        return _clean_cmd_result(res)
 
 
 def _caller_module(nframes_back=2):
@@ -146,7 +146,7 @@ def _caller_fpath(nframes_back=2):
         del frame
 
 
-def split_pvtag(pvtag, pvtag_regex):
+def _split_pvtag(pvtag, pvtag_regex):
     try:
         m = pvtag_regex.match(pvtag)
         if not m:
@@ -161,7 +161,7 @@ def split_pvtag(pvtag, pvtag_regex):
         raise
 
 
-def version_from_descid(version, descid):
+def _version_from_descid(version, descid):
     """
     Combine ``git-describe`` parts in a :pep:`440` version with "local" part.
 
@@ -301,14 +301,14 @@ def polyversion(**kw):
         cmd.extend(git_options)
         cmd.append('--match=' + tag_pattern)
         pvtag = _my_run(cmd, cwd=repo_path)
-        matched_project, version, descid = split_pvtag(pvtag, tag_regex)
+        matched_project, version, descid = _split_pvtag(pvtag, tag_regex)
         if matched_project and matched_project != pname:
             #import traceback as tb
             #tb.print_stack()
             print("Matched  pvtag project '%s' different from expected '%s'!" %
                   (matched_project, pname), file=sys.stderr)
         if descid:
-            version = version_from_descid(version, descid)
+            version = _version_from_descid(version, descid)
     except:  # noqa;  E722"
         if default_version is None:
             raise
