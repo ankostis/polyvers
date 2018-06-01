@@ -442,16 +442,13 @@ class SetupKeyword(object):
     The value to this keyword can be a boolean, or a dictionary with keys
     roughly mimicing those in :func:`polyversion()`:
 
-    :ivar bool version_scheme:
-        A string-label selecting versioning scheme:
-          - monorepo: (default) multiple sub-projects per git-repo.
-            Tags formatted by *pvtags* :data:`pvtag_format` & :data:`pvtag_regex`
-            (like ``pname-v1.2.3``).
-          - mono-project:
-            Tags formatted as *vtags* :data:`vtag_format` & :data:`vtag_regex`.
-            (like ``v1.2.3``).
-
-        The `tag_format` and `tag_regex` args take precendance, if given.
+    :ivar bool mono_project:
+      - false: (default) :term:`monorepo`, ie multiple sub-projects per git-repo.
+        Tags formatted by *pvtags* :data:`pvtag_format` & :data:`pvtag_regex`
+        (like ``pname-v1.2.3``).
+      - true: :term:`mono-project`, ie only one project in git-repo
+        Tags formatted as *vtags* :data:`vtag_format` & :data:`vtag_regex`.
+        (like ``v1.2.3``).
     :ivar str tag_format:
         The :pep:`3101` pattern for creating *pvtags* (or *vtags*).
 
@@ -509,7 +506,7 @@ class SetupKeyword(object):
                 project='myname',
                 version=''              # omit (or None) to abort if cannot auto-version
                 polyversion={           # dict or bool
-                    'version_scheme: 'mono-project',
+                    'mono-project': True, # false by default
                     ...  # See `polyversion.SetupKeyword` class for more keys.
                 },
                 setup_requires=[..., 'polyversion'],
@@ -519,8 +516,8 @@ class SetupKeyword(object):
     # Registered in `distutils.setup_keywords` *entry_point* of this project's
     #``setup.py``.
 
-    __slots__ = ('version_scheme tag_format tag_regex tag_vprefix '
-                 'git_options'.split())
+    __slots__ = ('mono_project tag_format tag_regex tag_vprefix '
+                 'git_options skip_bdist_check'.split())
 
     def _parse_keyword(self, attr, value):
         from distutils.errors import DistutilsSetupError
@@ -537,11 +534,6 @@ class SetupKeyword(object):
                 "`%s` must be boolean or a dict mapping!"
                 "\n available keys: %s\n  got: %r" %
                 (attr, ', '.join(good_keys), value))
-
-        if self.version_scheme not in (None, 'monorepo', 'mono-project'):
-            raise DistutilsSetupError(
-                "`%s.version_scheme` must be one of ('monorepo' | 'mono-project', got: %r)" %
-                (attr, self.version_scheme))
 
         if self.git_options and not isinstance(self.git_options, (tuple, list)):
             raise DistutilsSetupError(
@@ -561,7 +553,7 @@ class SetupKeyword(object):
                 pname=pname,
                 ## In case we cannot derrive version, use one provided by user (if any).
                 default_version=dist.metadata.version or '',
-                mono_project=self.version_scheme == 'mono-project',
+                mono_project=self.mono_project,
                 tag_format=self.tag_format,
                 tag_regex=self.tag_regex,
                 tag_vprefix=(tag_vprefixes[1]

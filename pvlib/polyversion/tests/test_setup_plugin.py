@@ -12,7 +12,6 @@ import setuptools
     ([], r"`polyversion` must be boolean or a dict mapping!"),
     (object(), r"`polyversion` must be boolean or a dict mapping!"),
     ({'BAD': 'OK'}, r"`polyversion` must be boolean or a dict mapping!"),
-    ({'version_scheme': 'bad'}, r"`polyversion.version_scheme` must be one of "),
     ({'git_options': 'bad'}, r"`polyversion.git_options` must be an iterable"),
 
     (True, 'usage:'),
