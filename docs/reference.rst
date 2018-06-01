@@ -12,7 +12,8 @@ Polyversion (library)
 Module: :mod:`polyversion`
 ------------------------------------
 .. automodule:: polyversion
-   :members:
+   :members:    polyversion, polytime, SetupKeyword
+                vtag_format, vtag_regex, pvtag_format, pvtag_regex
 
 
 Polyvers (command-tool)
