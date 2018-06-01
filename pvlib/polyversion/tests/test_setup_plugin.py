@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
+import sys
+
 import pytest
 import setuptools
 
@@ -13,29 +15,14 @@ import setuptools
     ({'version_scheme': 'bad'}, r"`polyversion.version_scheme` must be one of "),
     ({'git_options': 'bad'}, r"`polyversion.git_options` must be an iterable"),
 
-    # Why sometimes getting 'invalid' msg ??
-    (True, (r"invalid command name", 'usage:')),
-    ({}, (r"invalid command name", 'usage:')),
+    (True, 'usage:'),
+    ({}, 'usage:'),
 ])
-def test_invalid_config(kw, exp):
-    with pytest.raises(SystemExit) as ex:
+def test_invalid_config(kw, exp, monkeypatch):
+    monkeypatch.setattr(sys, 'argv', ('setup.py', ))  # PY3 fails with "invalid cmd"
+    with pytest.raises(SystemExit, match=exp):
         setuptools.setup(
             project='pname',
             polyversion=kw,
             setup_requires=['polyversion'],
         )
-
-    ## Check if any msg match
-    #
-    if isinstance(exp, str):
-        exp = (exp, )
-    last_ex = None
-    for msg in exp:
-        try:
-            assert msg in str(ex)
-            return
-        except Exception as ex2:
-            last_ex = ex2
-
-    if last_ex:
-        raise last_ex
