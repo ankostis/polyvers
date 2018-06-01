@@ -6,7 +6,7 @@ Changes
 2018-05-30: polyversion-v0.1.0a0, polyversion-v0.1.0a0: *setuptools* plugin
 ===========================================================================
 
-- break:
+- Breaking changes:
     - Dropped all positional-arguments from :func:`polyversion.polyversion()`;
       was error-prone.  They have all been converted to keyword-arguments.
 
@@ -42,7 +42,7 @@ Changes
                         .+?(,
                         \ *[\n\r])+
 
-- feat:
+- Features:
     - The `polyversion` library function as a *setuptools* "plugin", and
       adds a new ``setup()`` keyword ``polyversion = (bool | dict)``
       (see :class:`polyversion.SetupKeyword` for its content), which you can use it
@@ -59,14 +59,17 @@ Changes
               ...
           )
 
-- doc:
+    - `bump` cmd: engrave also non-bumped projects, with their ``git describe``-derived
+       version (controlled by ``--BumpCmd.engrave_bumped_only`` flag.
+
+- Documentation:
     - usage: explain how to set your projects :pep:`0518` ``pyproject.toml``
       file & ``setup_requires`` keyword in ``setup.py`` in your script.
     - add `pbr`, `incremental` and `Zest.release` in "similar tools" section
       as  *setuptools* plugins.
     - re-wrote and shrinked opening section using glossary terms.
 
-- chore:
+- Chore development:
     - deps: don't pin `packaging==17.1`, any bigger +17 is fine for parsing
       version correctly.
 

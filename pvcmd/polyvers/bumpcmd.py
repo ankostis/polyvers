@@ -11,6 +11,8 @@ from typing import Tuple, Set, List  # noqa: F401 @UnusedImport, flake8 blind in
 
 from boltons.setutils import IndexedSet as iset
 
+import polyversion as pvlib
+
 from . import NOTICE, pvtags, pvproject, cli
 from ._vendor.traitlets.traitlets import Bool, Unicode
 from .cmdlet import cmdlets
@@ -99,6 +101,17 @@ class BumpCmd(cli._SubCmd):
     engrave_only = Bool(
         config=True,
         help="Don't commit/tag after engraving; good for debugging engravings"
+    )
+
+    engrave_bumped_only = Bool(
+        config=True,
+        help="""
+        "Don't engrave projects not involved in the bump.
+
+        When true, it leaves those projects in the release-commits with the code
+        to auto-derive their version, instead of engraving them with version
+        having possibly a local-part.
+        """
     )
 
     out_of_trunk_releases = Bool(
@@ -234,18 +247,29 @@ class BumpCmd(cli._SubCmd):
         if self.dry_run:
             self.log.warning('PRETEND commit: %s' % out)
 
-    def _prepare_project_current_version(self, prj,
-                                         version_bump: Optional[str]
-                                         ) -> Optional[str]:
-        prj.load_current_version_from_history()
-        pverbump = version_bump
-        if self.amend:
-            assert not pverbump, (
-                "cmd.run() checks that no ver given: %s" % pverbump)
-            pverbump = prj.current_version
-            prj.load_current_version_from_history(1)
+    def _prepare_project_for_bump(self, prj: pvproject.Project,
+                                  version_bump: Optional[str],
+                                  is_bumped: bool):
+        if is_bumped:
+            prj.load_current_version_from_history()
+            if self.amend:
+                assert not version_bump, (
+                    "cmd.run() checks that no ver given: %s" % version_bump)
+                version_bump = prj.current_version
+                prj.load_current_version_from_history(1)
 
-        return pverbump
+            ## Scream if version-bump fails pep440 validation.
+            prj.set_new_version(version_bump)
+        else:
+            ## TODO: parse Project.git_describe() instead of calling polyversion(non_bumped)!
+            latest_version = pvlib.polyversion(
+                pname=prj.pname,
+                tag_format=prj.pvtag_format,
+                tag_regex=prj.pvtag_regex,
+                tag_vprefix=prj.tag_vprefixes[0],  # rtags , out-of-trunk fail
+                repo_path=prj.basepath
+            )
+            prj.version = latest_version
 
     def _log_action_completed(self, projects, fproc):
         if self.log.isEnabledFor(NOTICE):
@@ -284,12 +308,15 @@ class BumpCmd(cli._SubCmd):
             version_bump = None
             bump_projects = projects
 
-        pvtags.populate_pvtags_history(*bump_projects)
+        engrave_projects = (bump_projects
+                            if self.engrave_bumped_only else
+                            projects)
 
-        for prj in bump_projects:
-            pverbump = self._prepare_project_current_version(prj, version_bump)
-            ## Scream if version-bump fails pep440 validation.
-            prj.set_new_version(pverbump)
+        pvtags.populate_pvtags_history(*bump_projects)
+        for prj in engrave_projects:
+            self._prepare_project_for_bump(prj,
+                                           version_bump,
+                                           prj in bump_projects)
 
         fproc = engrave.FileProcessor(parent=self)
         if not self.engrave_only:
@@ -299,7 +326,7 @@ class BumpCmd(cli._SubCmd):
 
         git_root = self.git_root.resolve(strict=True)
         with fu.chdir(git_root):
-            fproc.scan_projects(bump_projects, projects)
+            fproc.scan_projects(engrave_projects, projects)
 
         if fproc.nmatches() == 0:
             ## FIXME: check each project specifically for engraves.
@@ -312,7 +339,7 @@ class BumpCmd(cli._SubCmd):
         if self.engrave_only:
             with fu.chdir(git_root):
                 fproc.engrave_matches()
-            self._log_action_completed(bump_projects, fproc)
+            self._log_action_completed(engrave_projects, fproc)
             return
 
         ## Finally stop before serious damage happens,
