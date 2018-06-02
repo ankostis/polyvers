@@ -22,7 +22,7 @@ import textwrap as tw
 from . import vermath
 from ._vendor.traitlets import traitlets as trt
 from ._vendor.traitlets.traitlets import (
-    List as ListTrait, Tuple as TupleTrait, Union as UnionTrait)
+    List as ListTrait, Set as SetTrait, Tuple as TupleTrait, Union as UnionTrait)
 from ._vendor.traitlets.traitlets import Bool, Unicode, Instance
 from .cmdlet import cmdlets, autotrait
 from .cmdlet.slicetrait import Slice as SliceTrait
@@ -185,7 +185,7 @@ class Engrave(cmdlets.Replaceable, cmdlets.Printable, yu.YAMLable, cmdlets.Spec)
     name = Unicode(
         config=True,
         help="""
-        Describe it for readable printous.
+        Describe it for readable printouts, and refer to it from `Project.active_engraves` list.
         """)
 
     globs = ListTrait(
@@ -601,6 +601,21 @@ class Project(cmdlets.Replaceable, cmdlets.Printable, yu.YAMLable, cmdlets.Spec)
         config=True,
         help="""
         """)
+
+    enabled_engraves = SetTrait(
+        Unicode(),
+        config=True,
+        help="""
+        Reference by name Engraves that should be active.  If empty, all are active!
+        """
+    )
+
+    def active_engraves(self):
+        actives = self.enabled_engraves
+        if not actives:
+            return self.engraves
+
+        return [e for e in self.engraves if e.name in actives]
 
     default_version_bump: str = Unicode(  # type: ignore # noqa: E704 #@IgnorePep8
         '^1',
