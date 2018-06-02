@@ -177,6 +177,7 @@ class PolyversCmd(cmdlets.Cmd, yu.YAMLable):
         autotrait.AutoInstance(pvproject.Project),
         default_value=[{
             'engraves': [{
+                'name': 'setup.py',
                 'globs': ['**/setup.py'],
                 'grafts': [{
                     'regex': tw.dedent(r'''

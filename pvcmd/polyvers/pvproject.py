@@ -172,6 +172,12 @@ class Graft(cmdlets.Replaceable, cmdlets.Printable, yu.YAMLable, cmdlets.Spec):
 class Engrave(cmdlets.Replaceable, cmdlets.Printable, yu.YAMLable, cmdlets.Spec):
     """Muliple file-patterns to search'n replace."""
 
+    name = Unicode(
+        config=True,
+        help="""
+        Describe it for readable printous.
+        """)
+
     globs = ListTrait(
         Unicode(),
         read_only=True,
@@ -189,6 +195,11 @@ class Engrave(cmdlets.Replaceable, cmdlets.Printable, yu.YAMLable, cmdlets.Spec)
         Use `{appname} config desc Graft` to see its syntax.
         """
     )
+
+    def __str__(self):
+        if self.name:
+            return '%s(%s)' % (type(self).__name__, self.name)
+        return super().__str__()
 
 
 class Project(cmdlets.Replaceable, cmdlets.Printable, yu.YAMLable, cmdlets.Spec):
@@ -543,6 +554,7 @@ class Project(cmdlets.Replaceable, cmdlets.Printable, yu.YAMLable, cmdlets.Spec)
         ## TODO: add `Graft.desc`: "version must be in its own line."
         default_value=[
             {
+                'name': '__init__',
                 'globs': ['__init__.py'],
                 'grafts': [{
                     'regex': tw.dedent(r'''
@@ -562,6 +574,7 @@ class Project(cmdlets.Replaceable, cmdlets.Printable, yu.YAMLable, cmdlets.Spec)
                     'subst': r"__updated__\1'{release_date}'"
                 }],
             }, {
+                'name': 'readme',
                 'globs': ['README.rst'],
                 'grafts': [{
                     'regex': r'\|version\|',
