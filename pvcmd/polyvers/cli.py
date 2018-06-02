@@ -180,6 +180,7 @@ class PolyversCmd(cmdlets.Cmd, yu.YAMLable):
                 'name': 'setup.py',
                 'globs': ['**/setup.py'],
                 'grafts': [{
+                    'name': 'project-name',
                     'regex': tw.dedent(r'''
                         (?xm)
                             \b(name|PROJECT|APPNAME|APPLICATION)
