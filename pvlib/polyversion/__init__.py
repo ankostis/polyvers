@@ -322,6 +322,8 @@ def polyversion(**kw):
         a str or an iterator of (converted to str) options to pass
         to ``git describe`` command (empty by default).  If a string,
         it is splitted by spaces.
+    :param return_tag:
+        when true, return the full tag (not just the version part)
     :return:
         The version-id derived from the *pvtag*, or `default` if
         command failed/returned nothing, unless None, in which case, it raises.
@@ -352,6 +354,7 @@ def polyversion(**kw):
     vprefixes = kw.get('vprefixes')
     is_release = kw.get('is_release')
     git_options = kw.get('git_options')
+    return_tag = kw.get('return_tag')
 
     if not pname:
         pname = _caller_module_name()
@@ -376,10 +379,12 @@ def polyversion(**kw):
     if is_release is not None:
         vprefixes = (vprefixes[bool(is_release)], )
 
-    _tag, version, _descid = _git_describe_parsed(pname, default_version,
-                                                  tag_format, tag_regex,
-                                                  vprefixes,
-                                                  repo_path, git_options)
+    tag, version, _descid = _git_describe_parsed(pname, default_version,
+                                                 tag_format, tag_regex,
+                                                 vprefixes,
+                                                 repo_path, git_options)
+    if return_tag:
+        return tag
     return version
 
 
@@ -423,7 +428,7 @@ def run(*args):
     Describe the version of a *polyvers* projects from git tags.
 
     USAGE:
-        %(prog)s [PROJ-1] ...
+        %(prog)s [-l] [PROJ-1] ...
         %(prog)s [-v | -V ]     # print my version information
 
     See http://polyvers.readthedocs.io
@@ -455,12 +460,20 @@ def run(*args):
             __version__, __updated__, __file__))
         return
 
+    long_output = None
+    if '-l' in args:
+        long_output = True
+        args = list(args)
+        del args[args.index('-l')]
+
     if len(args) == 1:
-        res = polyversion(pname=args[0], repo_path=os.curdir)
+        res = polyversion(pname=args[0], repo_path=os.curdir,
+                          return_tag=long_output)
     else:
         res = '\n'.join('%s: %s' % (p, polyversion(pname=p,
                                                    default_version='',
-                                                   repo_path=os.curdir))
+                                                   repo_path=os.curdir,
+                                                   return_tag=long_output))
                         for p in args)
 
     if res:
