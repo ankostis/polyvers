@@ -33,7 +33,7 @@ script:
   ## Build WHEELS, install, smoketest. and uninstall.
   #
   - |
-    pip install -e ./pvlib && \
+    python pvlib/setup.py develop && \
     python pvlib/setup.py build bdist_wheel --skip-polyversion-check && \
     pip uninstall -y polyversion && \
     pip install dist/polyversion-*.whl && \
@@ -42,7 +42,7 @@ script:
   - |
     if [ $TRAVIS_PYTHON_VERSION \> '3.5' ]; then
         pip install -r requirements.txt && \
-        pip install -e . && \
+        python ./setup.py develop && \
         rm -rf build/* && \
         python setup.py build bdist_wheel --skip-polyversion-check && \
         pip install dist/polyvers-*.whl && \
