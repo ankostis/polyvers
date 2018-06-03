@@ -152,8 +152,8 @@ def run_setup(**kwds):
         },
         entry_points={
             'distutils.setup_keywords': [
-                'polyversion = polyversion:setuptools_pv_init_kw',
-                'skip_polyversion_check = polyversion:setuptools_skip_pv_check_kw',
+                'polyversion = polyversion.setuplugin:init_plugin_kw',
+                'skip_polyversion_check = polyversion.setuplugin:skip_plugin_check_kw',
             ],
             'console_scripts':
                 ['%(p)s = %(p)s.__main__:main' % {'p': PROJECT}]

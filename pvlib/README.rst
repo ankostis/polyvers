@@ -75,7 +75,7 @@ There are 4 ways to use this library:
 
 The `polyversion` library function as a *setuptools* "plugin", and
 adds two new ``setup()`` keywords for deriving subproject versions
-from PKG-INFO or git tags  (see :func:`polyversion.setuptools_pv_init_kw`):
+from PKG-INFO or git tags  (see :func:`polyversion.init_plugin_kw`):
 
 1. keyword: ``polyversion --> (bool | dict)``
     When a dict, its keys roughly mimic those in :func:`polyversion()`,
@@ -90,7 +90,7 @@ from PKG-INFO or git tags  (see :func:`polyversion.setuptools_pv_init_kw`):
             version=''              # omit (or None) to abort if cannot auto-version
             polyversion={           # dict or bool
                 'mono_project': True, # false by default
-                ...  # See `polyversion.setuptools_pv_init_kw()` for more keys.
+                ...  # See `polyversion.init_plugin_kw()` for more keys.
             },
             setup_requires=[..., 'polyversion'],
             ...

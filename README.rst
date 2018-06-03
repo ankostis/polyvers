@@ -148,7 +148,7 @@ then you need enter the following configurations into your build files::
 
 The `polyversion` library function as a *setuptools* "plugin", and
 adds a new ``setup()`` keyword ``polyversion = (bool | dict)``
-(see :func:`polyversion.setuptools_pv_init_kw` for its content), which you can use it
+(see :func:`polyversion.init_plugin_kw` for its content), which you can use it
 like this:
 
 .. code-block:: python
@@ -160,7 +160,7 @@ like this:
         version=''              # omit (or None) to abort if cannot auto-version
         polyversion={           # dict or bool
             'version_scheme: 'mono-project',
-            ...  # See `polyversion.setuptools_pv_init_kw()` for more keys.
+            ...  # See `polyversion.init_plugin_kw()` for more keys.
         },
         setup_requires=[..., 'polyversion'],
         ...
@@ -466,7 +466,7 @@ Features
     setuptools integration
         The `polyversion` library function as a *setuptools* "plugin", and
         adds a new ``setup()`` keyword ``polyversion = (bool | dict)``
-        (see :func:`polyversion.setuptools_pv_init_kw` for its content).
+        (see :func:`polyversion.init_plugin_kw` for its content).
 
     Marking dependent versions across sub-projects
         [TODO] When bumping the version of a sub-project the `"local" part of PEP-440
