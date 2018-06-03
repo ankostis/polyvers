@@ -2,17 +2,21 @@
 Reference
 =========
 
-
 Polyversion (library)
 =====================
 .. autosummary::
 
    polyversion
+   polyversion.polyversion
+   polyversion.polytime
+   polyversion.setuptools_pv_init_kw
+   polyversion.setuptools_skip_pv_check_kw
 
 Module: :mod:`polyversion`
 ------------------------------------
 .. automodule:: polyversion
-   :members:    polyversion, polytime, SetupKeyword
+   :members:    polyversion, polytime,
+                setuptools_pv_init_kw, setuptools_skip_pv_check_kw,
                 vtag_format, vtag_regex, pvtag_format, pvtag_regex
 
 
