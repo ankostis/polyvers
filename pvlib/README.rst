@@ -41,9 +41,17 @@ Polyversion: derive subproject versions from tags on Git monorepos
 The python 2.7+ library needed by (sub-)projects managed by `polyvers cmd
 <https://github.com/JRCSTU/polyvers>`_ to derive their version-ids on runtime from Git.
 
+Specifically, the configuration file ``.polyvers.yaml`` is NOT read -
+you have to repeat any non-default configurations as function/method keywords
+when calling this API.
+
 Here only a very rudimentary documentation is provided - consult `polyvers`
 documents provided in the link above.
 
+.. Note::
+    Only this library is (permissive) MIT-licensed, so it can be freely vendorized
+    by any program - the respective `polyvers` command-line tool is
+    "copylefted" under EUPLv1.2.
 
 .. _coord-end:
 
@@ -51,7 +59,8 @@ Quickstart
 ==========
 .. _usage:
 
-There are 3 ways to use this library:
+There are 4 ways to use this library:
+  - As a :term:`setuptools plugin`;
   - through its Python-API (to dynamically version your project);
   - through its barebone cmdline tool: ``polyversion``
     (installation required);
@@ -59,35 +68,45 @@ There are 3 ways to use this library:
     (no installation, but sources required; behaves identically
     to ``polyversion`` command).
 
-.. Note::
-    Only this library is (permissive) MIT-licensed, so it can be freely used
-    by any program - the respective `polyvers` command-line tool is
-    "copylefted" under EUPLv1.2.
 
-API usage
----------
+*setuptools* usage
+------------------
 .. currentmodule:: polyversion
 
 The `polyversion` library function as a *setuptools* "plugin", and
-adds a new ``setup()`` keyword ``polyversion = bool | dict``
-(see :class:`polyversion.SetupKeyword` for its content), which you can use it
-like this:
+adds two new ``setup()`` keywords for deriving subproject versions
+from PKG-INFO or git tags  (see :func:`polyversion.setuptools_pv_init_kw`):
 
-.. code-block:: python
+1. keyword: ``polyversion --> (bool | dict)``
+    When a dict, its keys roughly mimic those in :func:`polyversion()`,
+    and can be used like this:
 
-    from setuptools import setup
+    .. code-block:: python
 
-    setup(
-        project='myname',
-        version=''              # omit (or None) to abort if cannot auto-version
-        polyversion={           # dict or bool
-            'version_scheme: 'monorepo',
-            ...  # See `polyversion.SetupKeyword` class for more keys.
-        },
-        setup_requires=[..., 'polyversion'],
-        ...
-    )
+        from setuptools import setup
 
+        setup(
+            project='myname',
+            version=''              # omit (or None) to abort if cannot auto-version
+            polyversion={           # dict or bool
+                'mono_project': True, # false by default
+                ...  # See `polyversion.setuptools_pv_init_kw()` for more keys.
+            },
+            setup_requires=[..., 'polyversion'],
+            ...
+        )
+
+2. keyword: ``skip_polyversion_check --> bool``
+    When false (default),  any `bdist_*` (e.g. ``bdist_wheel``),
+    commands will abort if not run from a :term:`release tag`.
+    You may bypass this check and create a package with non-engraved sources
+    (although it might not work correctly) by invoking the setup-script
+    from command-line like this::
+
+        $ python setup.py bdist_wheel --skip-polyversion-check
+
+API usage
+---------
 An API sample of using also :func:`polytime()` from within your
 ``myproject.git/myproject/__init__.py`` file:
 
@@ -100,7 +119,7 @@ An API sample of using also :func:`polytime()` from within your
     ...
 
 .. Tip::
-   Depending on your repo's *versioning scheme* (eg you have a *mono-project* repo,
+   Depending on your repo's *versioning scheme* (eg you have a :term:`mono-project` repo,
    with version-tags simply like ``vX.Y.Z``), you must add in both invocations
    of :func:`polyversion.polyversion()` above the kw-arg ``mono_project=True``.
 
@@ -139,7 +158,9 @@ the full blown `polyvers` command tool) is given below:
     polyvers: 0.0.2a10
     polyversion: 0.0.2a9
 
-And various ways to use the standalone wheel from *bash*
+Standalone wheel
+----------------
+Various ways to use the standalone wheel from *bash*
 (these will still work without having installed anything):
 
 .. code-block:: console
