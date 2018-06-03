@@ -150,7 +150,11 @@ def _caller_fpath(nframes_back=2):
         del frame
 
 
-def _split_pvtag(pvtag, tag_regexes):
+def split_pvtag(pvtag, tag_regexes):
+    if not isinstance(tag_regexes, (list, tuple)):
+        raise ValueError("Expected `tag_regexes` as list-of-str, got: %r" %
+                         tag_regexes)
+
     for tregex in tag_regexes:
         try:
             m = tregex.match(pvtag)
@@ -239,7 +243,7 @@ def _git_describe_parsed(pname,
             cmd.extend(git_options)
         cmd.extend('--match=' + tp for tp in tag_patterns)
         pvtag = _my_run(cmd, cwd=repo_path)
-        matched_project, version, descid = _split_pvtag(pvtag, tag_regexes)
+        matched_project, version, descid = split_pvtag(pvtag, tag_regexes)
         if matched_project and matched_project != pname:
             log.warning("Matched  pvtag project '%s' different from expected '%s'!",
                         matched_project, pname)
