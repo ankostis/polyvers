@@ -70,13 +70,12 @@ def test_build_on_release_check(cmd, skip_check, rtagged, ex,
 
     monkeypatch.setattr(sys, 'argv', ('setup.py', cmd))
     if ex:
-        with pytest.raises(SystemExit, match=ex):
+        with pytest.raises(SystemExit, match=ex) as ex:
             call_setup(pvargs,
                        skip_polyversion_check=skip_check,
                        version='0.0.0')  # we don't check no `default_version`
         out, err = capsys.readouterr()
         assert not out and not err
-        assert " No names found, cannot describe anything" in caplog.text
     else:
         call_setup(pvargs,
                    skip_polyversion_check=skip_check,

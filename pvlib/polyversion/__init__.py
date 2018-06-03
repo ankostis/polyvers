@@ -25,13 +25,14 @@ import logging
 import sys
 
 import os.path as osp
+import subprocess as sbp
 
 
 __all__ = 'polyversion polytime'.split()
 
 
 log = logging.getLogger(__name__)
-_log_stack = {} if sys.version_info < (3, ) else {'stack_info': 1}
+_log_stack = {} if sys.version_info < (3, ) else {'stack_info': True}
 
 
 #: A 2-tuple containing 2 ``{vprefix}`` values for the patterns below,for
@@ -100,21 +101,42 @@ def rfc2822_tstamp(nowdt=None):
     return now
 
 
-def _my_run(cmd, cwd):
-    import subprocess as sbp
+class CalledProcessError(sbp.CalledProcessError):
+    """
+    "A :class:`sbp.CalledProcessError` that includes STDOUT/STDERR on its message.
+    """
+    def __init__(self, returncode, cmd, output=None, stderr=None):
+        try:
+            super(CalledProcessError, self).__init__(returncode, cmd, output, stderr)
+        except TypeError:
+            ## In PY2 Ex has no output/stderr attributes.
+            super(CalledProcessError, self).__init__(returncode, cmd)
+            self.output = self.stdout == output
+            self.stderr = stderr
 
+    def __str__(self):
+        out = getattr(self, 'stdout', None)  # strangely not always there...
+        err = getattr(self, 'stderr', None)
+        tail = ('\n  STDERR: %s' % err) if err else ''
+        tail += ('\n  STDOUT: %s' % out) if out else ''
+
+        err = super(CalledProcessError, self).__str__()
+
+        return err + tail
+
+
+def _my_run(cmd, cwd):
     "For commands with small output/stderr."
     if not isinstance(cmd, (list, tuple)):
         cmd = cmd.split()
     proc = sbp.Popen(cmd, stdout=sbp.PIPE, stderr=sbp.PIPE,
                      cwd=str(cwd), bufsize=-1)
-    res, err = proc.communicate()
+    out, err = proc.communicate()
 
     if proc.returncode != 0:
-        log.error('cmd %s failed(%i) with STDERR: %s', cmd, proc.returncode, err)
-        raise sbp.CalledProcessError(proc.returncode, cmd)
+        raise CalledProcessError(proc.returncode, cmd, out, err)
     else:
-        return _clean_cmd_result(res)
+        return _clean_cmd_result(out)
 
 
 def _caller_module_name(nframes_back=2):
@@ -333,7 +355,7 @@ def polyversion(**kw):
     :return:
         The version-id (or 3-tuple) derived from the *pvtag*, or `default` if
         command failed/returned nothing, unless None, in which case, it raises.
-    :raise sbp.CalledProcessError:
+    :raise CalledProcessError:
         if it cannot find any vtag and `default_version` is None
         (e.g. no git cmd/repo, no valid tags)
 
@@ -480,6 +502,9 @@ def run(*args):
     logging.basicConfig(
         level=logging.INFO,
         format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    if _log_stack:
+        ## Not in PY2, and not really needed from main.
+        _log_stack['stack_info'] = False
 
     if len(args) == 1:
         res = polyversion(pname=args[0], repo_path=os.curdir,
