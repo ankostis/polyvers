@@ -1,101 +1,93 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
+import re
 import sys
 
 import pytest
 import setuptools
-import subprocess as sbp
 
 
-_exp_bad_args = "error in setup command: invalid polyversion args due to: "
+_exp_bad_args = "error in pname setup command: invalid content in `polyversion` keyword due to: "
+_git_desc_cmd = re.escape(r"Command '['git', 'describe', '--match=pname-r*']'")
 
 
-def call_setup(pv, skip_check=None):
+def call_setup(pv, **kwds):
     setuptools.setup(
-        project='pname',
+        name='pname',
         polyversion=pv,
-        skip_polyversion_check=skip_check,
         setup_requires=['polyversion'],
-        packages=['pypak'],
+        py_modules=['pypak'],
+        **kwds
     )
 
 
 ## NOTE: Requires `polyversion` lib to be ``pip install -e pvlib``.
 @pytest.mark.parametrize('kw, exp', [
-    ([1], _exp_bad_args + "cannot convert dictionary"),
-    (object(), _exp_bad_args + "'object' object is not iterable"),
-    ({'BAD': 'OK'}, _exp_bad_args + "'SetupKeyword' object has no attribute 'BAD'"),
+    ([1], SystemExit(_exp_bad_args + "cannot convert dictionary")),
+    (object(), SystemExit(_exp_bad_args + "'object' object is not iterable")),
+    ({'BAD': 'OK'}, SystemExit(_exp_bad_args + r"extra keys \(BAD\)")),
     ({'git_options': True},
-     r"error in setup command: "
-     "invalid polyversion `git_options` due to: "
-     "'bool' object is not iterable"),
+     TypeError(r"invalid `git_options` due to: 'bool' object is not iterable")),
 
-    (True, None),
-    ({}, None),
-    ([], None),  # empty kv-pair list
+    (True, Exception(_git_desc_cmd)),  # no monorepo
+    ({}, Exception(_git_desc_cmd)),    # no monorepo
+    ([], Exception(_git_desc_cmd)),    # no monorepo, empty kv-pair list
+
+    ({'mono_project': True}, None),    # no monorepo, empty kv-pair list
 ])
-def test_invalid_config(kw, exp, ok_repo, monkeypatch):
+def test_invalid_config(kw, exp, rtagged_vtags_repo, monkeypatch):
     monkeypatch.setattr(sys, 'argv', ('setup.py', 'clean'))
-    ok_repo.chdir()
+    rtagged_vtags_repo.chdir()
 
     if exp:
-        with pytest.raises(SystemExit, match=exp):
+        with pytest.raises(type(exp), match=str(exp)):
             call_setup(kw)
     else:
         call_setup(kw)
 
 
-@pytest.mark.parametrize('cmd, skip_check, rtagged, screams', [
-    ('bdist', None, 0, True),
-    ('bdist_dumb', False, 0, True),
+@pytest.mark.parametrize('cmd, skip_check, rtagged, ex', [
+    ('bdist', None, 0, "Attempted to run 'bdist'"),
+    ('bdist_dumb', False, 0, "Attempted to run 'bdist_dumb'"),
 
-    ('clean', None, 0, False),
-    ('clean', True, 0, False),
-    ('clean', None, 1, False),
-    ('clean', True, 1, False),
+    ('clean', None, 0, None),
+    ('clean', True, 0, None),
+    ('clean', None, 1, None),
+    ('clean', True, 1, None),
 
-    ('bdist_dumb', None, 1, False),
-    ('bdist_dumb', True, 1, False),
+    ('bdist_dumb', None, 1, None),
+    ('bdist_dumb', True, 1, None),
 ])
-def test_build_on_release_check(cmd, skip_check, rtagged, screams,
-                                vtags_repo, rtagged_vtags_repo, monkeypatch):
-    if rtagged:
-        rtagged_vtags_repo.chdir()
-    else:
-        vtags_repo.chdir()
+def test_build_on_release_check(cmd, skip_check, rtagged, ex,
+                                vtags_repo, rtagged_vtags_repo,
+                                monkeypatch, capsys):
+    pvargs = {'mono_project': True}
+    myrepo = rtagged_vtags_repo if rtagged else vtags_repo
+    myrepo.chdir()
 
     monkeypatch.setattr(sys, 'argv', ('setup.py', cmd))
-    if screams:
-        with pytest.raises(SystemExit, match="Attempted to run '%s'" % cmd):
-            call_setup(True, skip_check)
+    if ex:
+        with pytest.raises(SystemExit, match=ex):
+            call_setup(pvargs,
+                       skip_polyversion_check=skip_check,
+                       version='0.0.0')  # we don't check no `default_version`
+        out, err = capsys.readouterr()
+        assert not out
+        assert " No names found, cannot describe anything" in err
     else:
-        call_setup(True, skip_check)
+        call_setup(pvargs,
+                   skip_polyversion_check=skip_check,
+                   version='0.0.0')
+        out, err = capsys.readouterr()
+        assert 'running %s' % cmd in out.strip()
 
-    monkeypatch.setattr(sys, 'argv', ('setup.py', 'clean'))
-
-    setuptools.setup(
-        project='pname',
-        polyversion=True,
-        skip_polyversion_check=False,
-        setup_requires=['polyversion'],
-    )
-
-    monkeypatch.setattr(sys, 'argv', ('setup.py', 'bdist'))
-
-    sbp.check_call('git commit --allow-empty  --no-edit -m r-c'.split())
-    sbp.check_call('git tag  proj1-r0.0.1 -m annotated'.split())
-
-    setuptools.setup(
-        project='pname',
-        polyversion=True,
-        skip_polyversion_check=True,
-        setup_requires=['polyversion'],
-    )
-
-    setuptools.setup(
-        project='pname',
-        polyversion=True,
-        skip_polyversion_check=True,
-        setup_requires=['polyversion'],
-    )
+        ## Test with cwd outside repo.
+        #
+        (myrepo / '..').chdir()
+        call_setup(pvargs,
+                   skip_polyversion_check=skip_check,
+                   version='0.0.0',
+                   package_dir={'': myrepo.basename})
+        out, err = capsys.readouterr()
+        assert 'running %s' % cmd in out.strip()
