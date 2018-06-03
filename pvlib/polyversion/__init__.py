@@ -423,14 +423,15 @@ def run(*args):
             cmdname = osp.basename(sys.argv[0])
             doc = tw.dedent('\n'.join(run.__doc__.split('\n')[1:7]))
             print(doc % {'prog': cmdname})
-            return 0
+            return
 
     if '-v' in args:
         print(__version__, end='')
-        return 0
+        return
     if '-V' in args:
-        print("version: %s\nupdated: %s" % (__version__, __updated__))
-        return 0
+        print("version: %s\nupdated: %s\nfile: %s" % (
+            __version__, __updated__, __file__))
+        return
 
     if len(args) == 1:
         res = polyversion(pname=args[0], repo_path=os.curdir)
