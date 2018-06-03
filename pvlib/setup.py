@@ -12,30 +12,6 @@ import os.path as osp
 
 mydir = osp.dirname(osp.realpath(__file__))
 
-#### Standalone-wheel Hack disabled, left here, just in case...
-#
-# ## This sub-project eats it's own dog-food, and
-# #  uses `polyversion` to derive its own version on runtime from Git tags.
-# #
-# #  For this reason the following hack is needed to start developing it
-# #  from git-sources: it bootstraps  ``pip install -e pvlib[test]``
-# #  when not any version of the `polyversion` lib is already installed on the system.
-# #
-# try:
-#     from polyversion import polyversion
-# except ImportError:
-#     import sys
-#     try:
-#         print(
-#             "Hack: pre-installing `polyversion` from standalone `pvlib.run` wheel,"
-#             "\n  in case broken release in 'pypi'.",
-#             file=sys.stderr)
-#         sys.path.append(osp.join(mydir, '..', 'bin', 'pvlib.run'))
-#         from polyversion import polyversion
-#     except Exception as ex:
-#         print("Hack failed :-(", file=sys.stderr)
-#         polyversion = lambda *_, **__: '0.0.0'
-
 
 def yield_rst_only_markup(lines):
     """
@@ -122,63 +98,91 @@ test_requirements = [
     #'mypy',
 ]
 PROJECT = 'polyversion'
-setup(
-    name=PROJECT,
-    version='0.0.0',
-    polyversion=True,
-    description="Polyvers's lib to derive subproject versions from tags on Git monorepos.",
-    long_description=long_desc,
-    author="Kostis Anagnostopoulos",
-    author_email='ankostis@gmail.com',
-    url='https://github.com/jrcstu/polyvers',
-    download_url='https://pypi.org/project/polyversion/',
-    project_urls={
-        'Documentation':
-        'http://polyvers.readthedocs.io/en/latest/usage.html#usage-of-polyversion-library',
-        'Source': 'https://github.com/jrcstu/polyvers',
-        'Tracker': 'https://github.com/jrcstu/polyvers/issues',
-    },
-    ## The ``package_dir={'': <sub-dir>}`` arg is needed for `py_modules` to work
-    #  when packaging sub-projects. But ``<sub-dir>`` must be relative to launch cwd,
-    #  or else, ``pip install -e <subdir>`` and/or ``python setup.py develop``
-    #  break.
-    #  Also tried chdir(mydir) at the top, but didn't work.
-    package_dir={'': osp.relpath(mydir)},
-    # packages=find_packages(osp.realpath(osp.join(mydir, 'polyversion')),
-    #                        exclude=['tests', 'tests.*']),
-    packages=['polyversion'],
-    license='MIT',
-    zip_safe=True,
-    platforms=['any'],
-    keywords="version-management configuration-management versioning "
-             "git monorepo tool library".split(),
-    classifiers=[
-        'Development Status :: 3 - Alpha',
-        'Intended Audience :: Developers',
-        'License :: OSI Approved :: MIT License',
-        'Natural Language :: English',
-        'Programming Language :: Python :: 2',
-        'Programming Language :: Python :: 2.6',
-        'Programming Language :: Python :: 3',
-        'Programming Language :: Python :: 3.4',
-        'Programming Language :: Python :: 3.5',
-        'Programming Language :: Python :: 3.6',
-        'Programming Language :: Python :: 3.7',
-    ],
-    test_suite='tests',
-    #python_requires='>=3.6',
-    setup_requires=['setuptools', 'wheel', 'polyversion'],
-    tests_require=test_requirements,
-    extras_require={
-        'test': test_requirements,
-        'setuptools': ['polyversion'],
-    },
-    entry_points={
-        'distutils.setup_keywords': [
-            'polyversion = polyversion:setuptools_pv_init_kw',
-            'skip_polyversion_check = polyversion:setuptools_skip_pv_check_kw',
+
+
+def run_setup(**kwds):
+    setup(
+        name=PROJECT,
+        description="Polyvers's lib to derive subproject versions from tags on Git monorepos.",
+        long_description=long_desc,
+        author="Kostis Anagnostopoulos",
+        author_email='ankostis@gmail.com',
+        url='https://github.com/jrcstu/polyvers',
+        download_url='https://pypi.org/project/polyversion/',
+        project_urls={
+            'Documentation':
+            'http://polyvers.readthedocs.io/en/latest/usage.html#usage-of-polyversion-library',
+            'Source': 'https://github.com/jrcstu/polyvers',
+            'Tracker': 'https://github.com/jrcstu/polyvers/issues',
+        },
+        ## The ``package_dir={'': <sub-dir>}`` arg is needed for `py_modules` to work
+        #  when packaging sub-projects. But ``<sub-dir>`` must be relative to launch cwd,
+        #  or else, ``pip install -e <subdir>`` and/or ``python setup.py develop``
+        #  break.
+        #  Also tried chdir(mydir) at the top, but didn't work.
+        package_dir={'': osp.relpath(mydir)},
+        # packages=find_packages(osp.realpath(osp.join(mydir, 'polyversion')),
+        #                        exclude=['tests', 'tests.*']),
+        packages=['polyversion'],
+        license='MIT',
+        zip_safe=True,
+        platforms=['any'],
+        keywords="version-management configuration-management versioning "
+                 "git monorepo tool library".split(),
+        classifiers=[
+            'Development Status :: 3 - Alpha',
+            'Intended Audience :: Developers',
+            'License :: OSI Approved :: MIT License',
+            'Natural Language :: English',
+            'Programming Language :: Python :: 2',
+            'Programming Language :: Python :: 2.6',
+            'Programming Language :: Python :: 3',
+            'Programming Language :: Python :: 3.4',
+            'Programming Language :: Python :: 3.5',
+            'Programming Language :: Python :: 3.6',
+            'Programming Language :: Python :: 3.7',
         ],
-        'console_scripts':
-            ['%(p)s = %(p)s.__main__:main' % {'p': PROJECT}]
-    },
-)
+        test_suite='tests',
+        #python_requires='>=3.6',
+        setup_requires=['setuptools', 'wheel', 'polyversion'],
+        tests_require=test_requirements,
+        extras_require={
+            'test': test_requirements,
+            'setuptools': ['polyversion'],
+        },
+        entry_points={
+            'distutils.setup_keywords': [
+                'polyversion = polyversion:setuptools_pv_init_kw',
+                'skip_polyversion_check = polyversion:setuptools_skip_pv_check_kw',
+            ],
+            'console_scripts':
+                ['%(p)s = %(p)s.__main__:main' % {'p': PROJECT}]
+        },
+        **kwds
+    )
+
+
+## Standalone-wheel Hack:
+#  This sub-project eats it's own dog-food, and
+#  uses `polyversion` *setuptools* plugin to derive its own version
+#  on runtime from Git tags.
+#
+#  But if it fails (e.g. when bootstraping and no `polyvers` exists in PyPi or
+#  bc the last released version was broken) the following hack will fallback using
+# a standalone wheel.
+try:
+    run_setup(
+        polyversion=True,
+    )
+except Exception as ex:
+    import sys
+    exmsg = str(ex)
+    if 'polyversion' not in exmsg or 'not recognized' not in exmsg:
+        raise
+
+    print("Hack: pre-installing `polyversion` from standalone `pvlib.run` wheel",
+          file=sys.stderr)
+    sys.path.insert(0, osp.join(mydir, '..', 'bin', 'pvlib.run'))
+    run_setup(
+        version='0.0.0'
+    )
