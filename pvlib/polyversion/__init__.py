@@ -241,13 +241,7 @@ def _git_describe_parsed(pname,
     return pvtag, version, descid
 
 
-def polyversion(*_noargs_,
-                pname=None,
-                default_version=None,        # if None, raise
-                mono_project=None,
-                tag_format=None, tag_regex=None,
-                tag_vprefix=None,            # no surprises, just use it
-                repo_path=None, git_options=None):
+def polyversion(**kw):
     """
     Report the *pvtag* of the `pname` in the git repo hosting the source-file calling this.
 
@@ -323,10 +317,14 @@ def polyversion(*_noargs_,
        function with elaborate error-handling :func:`polyvers.pvtags.descrivbe_project()`
        in the full-blown tool `polyvers`.
     """
-    if _noargs_:
-        raise TypeError(
-            "Function `polyversion()` takes no positional parameters, got: %s"
-            % _noargs_)
+    pname = kw.get('pname')
+    default_version = kw.get('default_version')
+    repo_path = kw.get('repo_path')
+    mono_project = kw.get('mono_project')
+    tag_format = kw.get('tag_format')
+    tag_regex = kw.get('tag_regex')
+    tag_vprefix = kw.get('tag_vprefix')
+    git_options = kw.get('git_options')
 
     if not pname:
         pname = _caller_module_name()
