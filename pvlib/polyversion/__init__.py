@@ -23,12 +23,16 @@ finally, the wheel can be executed like that::
 """
 from __future__ import print_function
 
+import logging
 import sys
 
 import os.path as osp
 
 
 __all__ = 'polyversion polytime'.split()
+
+
+log = logging.getLogger(__name__)
 
 
 #: A 2-tuple containing 2 ``{vprefix}`` values for the patterns below,for
@@ -108,7 +112,7 @@ def _my_run(cmd, cwd):
     res, err = proc.communicate()
 
     if proc.returncode != 0:
-        print('%s\n  cmd: %s' % (err, cmd), file=sys.stderr)
+        log.error('%s\n  cmd: %s', err, cmd)
         raise sbp.CalledProcessError(proc.returncode, cmd)
     else:
         return _clean_cmd_result(res)
@@ -156,8 +160,8 @@ def _split_pvtag(pvtag, pvtag_regex):
         mg = m.groupdict()
         return mg['pname'], mg['version'], mg['descid']
     except Exception as ex:
-        print("Matching pvtag '%s' failed due to: %s" %
-              (pvtag, ex), file=sys.stderr)
+        log.error("Matching pvtag '%s' failed due to: %s",
+                  pvtag, ex)
         raise
 
 
@@ -225,10 +229,8 @@ def _git_describe_parsed(pname,
         pvtag = _my_run(cmd, cwd=repo_path)
         matched_project, version, descid = _split_pvtag(pvtag, tag_regex)
         if matched_project and matched_project != pname:
-            #import traceback as tb
-            #tb.print_stack()
-            print("Matched  pvtag project '%s' different from expected '%s'!" %
-                  (matched_project, pname), file=sys.stderr)
+            log.warning("Matched  pvtag project '%s' different from expected '%s'!",
+                        matched_project, pname)
         if descid:
             version = _version_from_descid(version, descid)
     except:  # noqa:  E722
@@ -619,7 +621,7 @@ def _monkeypathed_run_command(dist, cmd):
                 rtag_err = str(ex)
 
             dist.polyversion_rtag_err = rtag_err
-             
+
         if rtag_err is not False:
             from distutils.errors import DistutilsSetupError
             raise DistutilsSetupError(
