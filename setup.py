@@ -13,28 +13,6 @@ from setuptools import setup, find_packages
 mydir = osp.dirname(osp.realpath(__file__))
 
 
-#### Standalone-wheel Hack disabled, left here, just in case...
-#
-# ## This sub-project eats it's own dog-food, and
-# #  uses `polyversion` to derive its own version on runtime from Git tags.
-# #
-# #  For this reason the following hack is needed to start developing it
-# #  from git-sources: it bootstraps  ``pip install -e pvlib[test]``
-# #  when not any version of the `polyversion` lib is already installed on the system.
-# #
-# try:
-#     from polyversion import polyversion
-# except ImportError:
-#     try:
-#         print("Hack: pre-installing `polyversion` from standalone `pvlib.run` wheel",
-#               file=sys.stderr)
-#         sys.path.append(osp.join(mydir, 'bin', 'pvlib.run'))
-#         from polyversion import polyversion
-#     except Exception as ex:
-#         print("Hack failed :-(", file=sys.stderr)
-#         polyversion = lambda *_, **__: '0.0.0'
-
-
 MIN_PYTHON = (3, 6)
 if sys.version_info < MIN_PYTHON:
     sys.exit("Sorry, Python >= %s is required, found: %s" %
@@ -145,53 +123,80 @@ test_requirements = [
 ]
 PROJECT = 'polyvers'
 
-setup(
-    name=PROJECT,
-    version='0.0.0',
-    polyversion=True,
-    description="Bump sub-project versions in Git monorepos independently.",
-    long_description=long_desc,
-    author="Kostis Anagnostopoulos",
-    author_email='ankostis@gmail.com',
-    url='https://github.com/jrcstu/polyvers',
-    download_url='https://pypi.org/project/polyvers/',
-    project_urls={
-        'Documentation': 'https://polyvers.readthedocs.io/',
-        'Source': 'https://github.com/jrcstu/polyvers',
-        'Tracker': 'https://github.com/jrcstu/polyvers/issues',
-        'Polyversion': 'https://pypi.org/project/polyversion/',
-    },
-    package_dir={'': 'pvcmd'},
-    packages=find_packages('pvcmd', exclude=['tests', 'tests.*']),
-    include_package_data=True,
-    # setup_requires=[   # pytest suggestion: https://docs.pytest.org/en/latest/goodpractices.html
-    #     #'polyversion',  @@ no, actually it is engraved-out from packages
-    #     'pytest-runner'
-    # ],
-    license='EUPL 1.2',
-    zip_safe=True,
-    platforms=['any'],
-    keywords="version-management configuration-management versioning "
-             "git monorepo tool library".split(),
-    classifiers=[
-        'Development Status :: 3 - Alpha',
-        'Intended Audience :: Developers',
-        'License :: OSI Approved :: European Union Public Licence 1.1 (EUPL 1.1)',
-        'Natural Language :: English',
-        'Programming Language :: Python :: 3',
-        'Programming Language :: Python :: 3.6',
-        'Programming Language :: Python :: 3.7',
-    ],
-    python_requires='>=3.6',
-    setup_requires=['setuptools', 'wheel', 'polyversion'],
-    install_requires=requirements,
-    tests_require=test_requirements,
-    extras_require={
-        'test': test_requirements,
-        'test:python_version>="3"': ['mypy']
-    },
-    test_suite='tests',
-    entry_points={
-        'console_scripts': [
-            '%(p)s = %(p)s.__main__:main' % {'p': PROJECT}]},
-)
+
+def run_setup(**kwds):
+    setup(
+        name=PROJECT,
+        description="Bump sub-project versions in Git monorepos independently.",
+        long_description=long_desc,
+        author="Kostis Anagnostopoulos",
+        author_email='ankostis@gmail.com',
+        url='https://github.com/jrcstu/polyvers',
+        download_url='https://pypi.org/project/polyvers/',
+        project_urls={
+            'Documentation': 'https://polyvers.readthedocs.io/',
+            'Source': 'https://github.com/jrcstu/polyvers',
+            'Tracker': 'https://github.com/jrcstu/polyvers/issues',
+            'Polyversion': 'https://pypi.org/project/polyversion/',
+        },
+        package_dir={'': 'pvcmd'},
+        packages=find_packages('pvcmd', exclude=['tests', 'tests.*']),
+        include_package_data=True,
+        # pytest suggestion: https://docs.pytest.org/en/latest/goodpractices.html
+        # setup_requires=[
+        #     #'polyversion',  @@ no, actually it is engraved-out from packages
+        #     'pytest-runner'
+        # ],
+        license='EUPL 1.2',
+        zip_safe=True,
+        platforms=['any'],
+        keywords="version-management configuration-management versioning "
+                 "git monorepo tool library".split(),
+        classifiers=[
+            'Development Status :: 3 - Alpha',
+            'Intended Audience :: Developers',
+            'License :: OSI Approved :: European Union Public Licence 1.1 (EUPL 1.1)',
+            'Natural Language :: English',
+            'Programming Language :: Python :: 3',
+            'Programming Language :: Python :: 3.6',
+            'Programming Language :: Python :: 3.7',
+        ],
+        python_requires='>=3.6',
+        setup_requires=['setuptools', 'wheel', 'polyversion'],
+        install_requires=requirements,
+        tests_require=test_requirements,
+        extras_require={
+            'test': test_requirements,
+            'test:python_version>="3"': ['mypy']
+        },
+        test_suite='tests',
+        entry_points={
+            'console_scripts': [
+                '%(p)s = %(p)s.__main__:main' % {'p': PROJECT}]},
+        **kwds
+    )
+
+
+## Standalone-wheel Hack:
+#  This sub-project eats it's own dog-food, and
+#  uses `polyversion` *setuptools* plugin to derive its own version
+#  on runtime from Git tags.
+#
+#  But if it fails (e.g. when bootstraping and no `polyvers` exists in PyPi or
+#  bc the last released version was broken) the following hack will fallback using
+# a standalone wheel.
+try:
+    run_setup(
+        polyversion=True,
+    )
+except Exception as ex:
+    exmsg = str(ex)
+    if 'polyversion' not in exmsg or 'not recognized' not in exmsg:
+        raise
+
+    print("Hack: pre-installing `polyversion` from standalone `pvlib.run` wheel",
+          file=sys.stderr)
+    sys.path.insert(0, osp.join(mydir, 'bin', 'pvlib.run'))
+    run_setup(
+        version='0.0.0'
+    )

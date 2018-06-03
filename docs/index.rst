@@ -12,7 +12,8 @@ Polyvers
     :caption: Table of Contents
     :name: mastertoc
 
-    usage
+    usage-pvcmd
+    usage-pvlib
     changes
     contributing
     reference

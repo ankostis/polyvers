@@ -32,14 +32,19 @@ script:
 
   ## Build WHEELS, install, smoketest. and uninstall.
   #
-  - python pvlib/setup.py build bdist_wheel
-  - pip install dist/polyversion-*.whl
-  - polyversion --help
+  - |
+    python pvlib/setup.py develop && \
+    python pvlib/setup.py build bdist_wheel --skip-polyversion-check && \
+    pip uninstall -y polyversion && \
+    pip install dist/polyversion-*.whl && \
+    polyversion --help
+
   - |
     if [ $TRAVIS_PYTHON_VERSION \> '3.5' ]; then
         pip install -r requirements.txt && \
+        python ./setup.py develop && \
         rm -rf build/* && \
-        python setup.py build bdist_wheel && \
+        python setup.py build bdist_wheel --skip-polyversion-check && \
         pip install dist/polyvers-*.whl && \
         polyvers --help
     fi
@@ -47,7 +52,7 @@ script:
 
   ## Install sources and PYTEST both pvlib & pvcmd with COVERAGE.
   #
-  - pip install -e pvlib[test]
+  - pip install -e ./pvlib[test]
   - polyversion --help
   - |
     if [ $TRAVIS_PYTHON_VERSION \> '3.5' ]; then

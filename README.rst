@@ -57,7 +57,7 @@ The key features are:
     - :term:`leaf release scheme`.
 
 
-The last feature departs from the logic of :term:`similar tools`.
+The last feature departs from the logic of :ref:`similar-tools`.
 Specifically, when bumping the version of sub-project(s), this tool
 adds **+2 tags and +1 commits**:
 
@@ -73,7 +73,10 @@ adds **+2 tags and +1 commits**:
         Leaf-commits & version/release-tags for the two sub-project's,
         as shown in this repo's git history.
 
-
+.. Note::
+  The reason for this feature is to allow exchange code across branches (for the
+  different sub-projects) without :term:`engravings` getting in your way as
+  merge-conflicts.
 
 Additional capabilities and utilities:
 
@@ -145,7 +148,7 @@ then you need enter the following configurations into your build files::
 
 The `polyversion` library function as a *setuptools* "plugin", and
 adds a new ``setup()`` keyword ``polyversion = (bool | dict)``
-(see :class:`polyversion.SetupKeyword` for its content), which you can use it
+(see :func:`polyversion.setuptools_pv_init_kw` for its content), which you can use it
 like this:
 
 .. code-block:: python
@@ -157,7 +160,7 @@ like this:
         version=''              # omit (or None) to abort if cannot auto-version
         polyversion={           # dict or bool
             'version_scheme: 'mono-project',
-            ...  # See `polyversion.SetupKeyword` class for more keys.
+            ...  # See `polyversion.setuptools_pv_init_kw()` for more keys.
         },
         setup_requires=[..., 'polyversion'],
         ...
@@ -373,7 +376,6 @@ Features
 .. include:: <xhtml1-lat1.txt>
 .. glossary::
 
-    Version scheme
     PEP 440 version ids
         While most versioning tools use `Semantic versioning
         <http://semver.org/>`_, python's ``distutils`` native library
@@ -399,8 +401,8 @@ Features
     version-bump algebra
         When bumping, the increment over the base-version can be specified with a
         "relative version", which is a combination of :pep:`0440` segments and
-        these ``+^~=`` modifiers.
-        See :mod:`polyvers.versionmath` for more.
+        one of these modifiers: ``+^~=``
+        See :mod:`polyvers.vermath` for more.
 
     monorepo
     mono-project
@@ -412,7 +414,7 @@ Features
           While downstream projects using **core** as a library complain about
           its bloated transitive dependencies (asking why *flask* library is needed??).
 
-        So the time to "split the project has come.  But from :term:`Lerna`:
+        So the time to "split the project" has come.  But from :term:`Lerna`:
 
           |laquo|\ Splitting up large codebases into separate independently versioned packages
           is extremely useful for code sharing. However, making changes across
@@ -431,16 +433,21 @@ Features
         .. [#] <https://medium.com/@maoberlehner/monorepos-in-the-wild-33c6eb246cb9
         .. [#] http://www.drmaciver.com/2016/10/why-you-should-use-a-single-repository-for-all-your-companys-projects/
 
+    version scheme
+        the pattern of a version-tags.
+        2x2 *versioning schemes* are pre-configured, for :term:`mono-project` and
+        :term:`monorepo` repositories, respectively:
+
+        - `v1.2.3` (and `r1.2.3` applied on :term:`leaf commit`\s)
+        - `project-v1.2.3` (and `project-r1.2.3` for :term:`leaf commit`\s)
+
     leaf release scheme
     out-of-trunk commit
     leaf commit
     release tag
-    vtag
     version tag
-    rtag
-    pvtag
-        Even in single-project repos, sharing code across branches may cause merge-conflicts
-        due to the version-ids :term:`engrave`\d" in the sources.
+        Even in single-project repos, sharing code across branches may cause
+        merge-conflicts due to the version-ids :term:`engrave`\d" in the sources.
         In :term:`monorepo`\s, the versions proliferate, and so does the conflicts.
 
         Contrary to `similar tools`_, static version-ids are engraved only in out-of-trunk
@@ -454,11 +461,12 @@ Features
         Default grep-like substitutions are included, which can be re-configured
         in the ``.polyvers.yaml`` config file.
 
+    setuptools
     setuptools plugin
     setuptools integration
         The `polyversion` library function as a *setuptools* "plugin", and
         adds a new ``setup()`` keyword ``polyversion = (bool | dict)``
-        (see :class:`polyversion.SetupKeyword` for its content).
+        (see :func:`polyversion.setuptools_pv_init_kw` for its content).
 
     Marking dependent versions across sub-projects
         [TODO] When bumping the version of a sub-project the `"local" part of PEP-440
@@ -508,7 +516,7 @@ Features TODO
              twine upload dist/*whl -s
 
     Lock release trains as "developmental"
-        Based on :term:`version algebra`, specific branches can be selected
+        Based on :term:`version-bump algebra`, specific branches can be selected
         always to be published into *PyPi* only as `PEP-440's "Developmental" releases
         <https://www.python.org/dev/peps/pep-0440/#developmental-releases>`_,
         meanining that users need top use ``pip install --pre`` to fetch
@@ -580,6 +588,8 @@ Known Limitations, Drawbacks & Workarounds
 - Set branch ``latest`` as default in GitHub to show :term:`engrave`\d sub-project version-ids.
 
 
+.. _similar-tools:
+
 Similar Tools
 =============
 .. glossary::
@@ -593,7 +603,7 @@ Similar Tools
         https://github.com/c4urself/bump2version
 
     releash
-        another :term:`monorepo`s managing tool, that publishes also to PyPi:
+        another :term:`monorepo`\s managing tool, that publishes also to PyPi:
         https://github.com/maartenbreddels/releash
 
     Git Bump

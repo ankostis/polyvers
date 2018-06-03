@@ -21,11 +21,11 @@ Changes
 
           default     --> default_version
           tag_frmt    --> tag_format
-          tag_frmt    --> tag_format
-                      --> tag_vprefix  (new)
+                      --> vprefixes   (new)
+                      --> is_release  (new)
 
     - REVERTED again the `0.0.2a9` default logic to raise when it version/time
-      vannot be derived.  Now by default it raises, unless default-version or
+      cannot be derived.  Now by default it raises, unless default-version or
       ``no_raise`` for :func:`polyversion.polytime()`.
 
     - Stopped engraving ``setup.py`` files ; clients should use *setuptools* plugin
@@ -44,23 +44,39 @@ Changes
 
 - Features:
     - The `polyversion` library function as a *setuptools* "plugin", and
-      adds a new ``setup()`` keyword ``polyversion = (bool | dict)``
-      (see :class:`polyversion.SetupKeyword` for its content), which you can use it
-      like this::
+      adds two new ``setup()`` keywords for deriving subproject versions
+      from PKG-INFO or git tags  (see :func:`polyversion.setuptools_pv_init_kw`):
 
-          setup(
-              project='myname',
-              version=''              # omit (or None) to abort if cannot auto-version
-              polyversion={           # dict or bool
-                  'version_scheme: 'monorepo',
-                  ...  # See `polyversion.SetupKeyword` class for more keys.
-              polyversion=True,  # or a dict, see `polyversion.SetupKeyword` class
-              setup_requires=[..., 'polyversion'],
-              ...
-          )
+      1. keyword: ``polyversion --> (bool | dict)``
+          When a dict, its keys roughly mimic those in :func:`polyversion()`,
+          and can be used like this:
 
-    - `bump` cmd: engrave also non-bumped projects, with their ``git describe``-derived
-       version (controlled by ``--BumpCmd.engrave_bumped_only`` flag.
+          .. code-block:: python
+
+              from setuptools import setup
+
+              setup(
+                  project='myname',
+                  version=''              # omit (or None) to abort if cannot auto-version
+                  polyversion={           # dict or bool
+                      'mono_project': True, # false by default
+                      ...  # See `polyversion.setuptools_pv_init_kw()` for more keys.
+                  },
+                  setup_requires=[..., 'polyversion'],
+                  ...
+              )
+
+      2. keyword: ``skip_polyversion_check --> bool``
+         When false (default),  any `bdist_*` (e.g. ``bdist_wheel``),
+         commands will abort if not run from a :term:`release tag`.
+         You may bypass this check and create a package with non-engraved sources
+         (although it might not work correctly) by invoking the setup-script
+         from command-line like this::
+
+             $ python setup.py bdist_wheel --skip-polyversion-check
+
+    - `bump` cmd: engrave also non-bumped projects with their ``git describe``-derived
+       version (controlled by ``--BumpCmd.engrave_bumped_only`` flag).
 
 - Documentation:
     - usage: explain how to set your projects :pep:`0518` ``pyproject.toml``

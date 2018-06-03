@@ -69,7 +69,7 @@ def test_caller_fpath():
 
 
 def test_caller_module():
-    caller_mod = pvlib._caller_module(1)
+    caller_mod = pvlib._caller_module_name(1)
     assert caller_mod == __name__.split('.')[-1]
 
 
