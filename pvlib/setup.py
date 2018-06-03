@@ -176,6 +176,7 @@ setup(
     entry_points={
         'distutils.setup_keywords': [
             'polyversion = polyversion:SetupKeyword',
+            'skip_polyversion_check = polyversion:SetupKeyword',
         ],
         'console_scripts':
             ['%(p)s = %(p)s.__main__:main' % {'p': PROJECT}]

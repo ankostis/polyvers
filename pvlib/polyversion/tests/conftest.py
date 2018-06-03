@@ -3,10 +3,16 @@
 #
 """Common pytest fixtures."""
 
-import py
 import pytest
 
 import subprocess as sbp
+
+
+def _exec_cmds(cmds):
+    for c in cmds.split('\n'):
+        c = c and c.strip()
+        if c:
+            sbp.check_call(c.split())
 
 
 @pytest.fixture()
@@ -31,7 +37,7 @@ def today():
 def ok_repo(tmpdir_factory):
     repo_dir = tmpdir_factory.mktemp('repo')
     repo_dir.chdir()
-    cmds = """
+    _exec_cmds("""
     git init
     git config user.email "test@example.com"
     git config user.name "Testing Bot"
@@ -43,11 +49,7 @@ def ok_repo(tmpdir_factory):
     git commit --allow-empty  --no-edit -m some_msg
     git commit --allow-empty  --no-edit -m some_msg
     git tag proj-2-V0.2.1
-    """
-    for c in cmds.split('\n'):
-        c = c and c.strip()
-        if c:
-            sbp.check_call(c.split())
+    """)
 
     return repo_dir
 
@@ -56,50 +58,38 @@ def ok_repo(tmpdir_factory):
 def vtags_repo(tmpdir_factory):
     repo_dir = tmpdir_factory.mktemp('repo')
     repo_dir.chdir()
-    cmds = """
+    _exec_cmds("""
     git init
     git config user.email "test@example.com"
     git config user.name "Testing Bot"
     git commit --allow-empty  --no-edit -m some_msg
     git tag v0.0.0 -m annotated
-    git commit --allow-empty  --no-edit -m some_msg
+    """)
+
+    (repo_dir / 'pypak.py').write('')
+
+    _exec_cmds("""
+    git add .
+    git commit --no-edit -m some_msg
     git commit --allow-empty  --no-edit -m some_msg
     git tag  v0.0.1 -m annotated
     git commit --allow-empty  --no-edit -m some_msg
-    """
-    for c in cmds.split('\n'):
-        c = c and c.strip()
-        if c:
-            sbp.check_call(c.split())
+    """)
 
     return repo_dir
 
 
 @pytest.fixture(scope='session')
-def rtag_monorepo(tmpdir_factory, vtags_repo):
+def rtagged_vtags_repo(tmpdir_factory, vtags_repo):
     newrepo = tmpdir_factory.mktemp('rtag_monorepo')
     newrepo_rel = vtags_repo.bestrelpath(newrepo)
     vtags_repo.chdir()
-    cmds = """
+    _exec_cmds("""
     git clone . %(newrepo)s
     git -C %(newrepo)s commit --allow-empty  --no-edit -m r-c
-    git -C %(newrepo)s tag  proj1-r0.0.1 -m annotated
-    """ % {'newrepo': newrepo_rel}
-    for c in cmds.split('\n'):
-        c = c and c.strip()
-        if c:
-            sbp.check_call(c.split())
+    git -C %(newrepo)s tag  r0.0.1 -m annotated
+    """ % {'newrepo': newrepo_rel})
 
-    return newrepo
-
-
-@pytest.fixture()
-def mutable_mono_project(tmpdir, vtags_repo):
-    vtags_repo.chdir()
-    newrepo = tmpdir.mkdir('mutable_mono_project')
-    newrepo_rel = vtags_repo.bestrelpath(newrepo)
-    cmd = "git clone . %s" % newrepo_rel
-    sbp.check_call(cmd.split())
     return newrepo
 
 
@@ -107,16 +97,12 @@ def mutable_mono_project(tmpdir, vtags_repo):
 def untagged_repo(tmpdir_factory):
     repo_dir = tmpdir_factory.mktemp('untagged')
     repo_dir.chdir()
-    cmds = """
+    _exec_cmds("""
     git init
     git config user.email "test@example.com"
     git config user.name "Testing Bot"
     git commit --allow-empty  --no-edit -m some_msg
-    """
-    for c in cmds.split('\n'):
-        c = c and c.strip()
-        if c:
-            sbp.check_call(c.split())
+    """)
 
     return repo_dir
 
@@ -125,15 +111,11 @@ def untagged_repo(tmpdir_factory):
 def empty_repo(tmpdir_factory):
     repo_dir = tmpdir_factory.mktemp('untagged')
     repo_dir.chdir()
-    cmds = """
+    _exec_cmds("""
     git init
     git config user.email "test@example.com"
     git config user.name "Testing Bot"
-    """
-    for c in cmds.split('\n'):
-        c = c and c.strip()
-        if c:
-            sbp.check_call(c.split())
+    """)
 
     return repo_dir
 

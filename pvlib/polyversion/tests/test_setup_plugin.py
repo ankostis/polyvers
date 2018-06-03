@@ -11,6 +11,16 @@ import subprocess as sbp
 _exp_bad_args = "error in setup command: invalid polyversion args due to: "
 
 
+def call_setup(pv, skip_check=None):
+    setuptools.setup(
+        project='pname',
+        polyversion=pv,
+        skip_polyversion_check=skip_check,
+        setup_requires=['polyversion'],
+        packages=['pypak'],
+    )
+
+
 ## NOTE: Requires `polyversion` lib to be ``pip install -e pvlib``.
 @pytest.mark.parametrize('kw, exp', [
     ([1], _exp_bad_args + "cannot convert dictionary"),
@@ -25,50 +35,42 @@ _exp_bad_args = "error in setup command: invalid polyversion args due to: "
     ({}, None),
     ([], None),  # empty kv-pair list
 ])
-def test_invalid_config(kw, exp, rtag_monorepo, monkeypatch):
-    monkeypatch.setattr(sys, 'argv', ('setup.py', 'clean'))  # PY3 fails with "invalid cmd"
-    rtag_monorepo.chdir()
+def test_invalid_config(kw, exp, ok_repo, monkeypatch):
+    monkeypatch.setattr(sys, 'argv', ('setup.py', 'clean'))
+    ok_repo.chdir()
 
-    if exp is None:
-        setuptools.setup(
-            project='pname',
-            polyversion=kw,
-            setup_requires=['polyversion'],
-        )
-    else:
+    if exp:
         with pytest.raises(SystemExit, match=exp):
-            setuptools.setup(
-                project='pname',
-                polyversion=kw,
-                setup_requires=['polyversion'],
-            )
+            call_setup(kw)
+    else:
+        call_setup(kw)
 
 
-def test_build_on_release_check(mutable_mono_project, monkeypatch):
-    monkeypatch.setattr(sys, 'argv', ('setup.py', 'bdist'))
-    mutable_mono_project.chdir()
+@pytest.mark.parametrize('cmd, skip_check, rtagged, screams', [
+    ('bdist', None, 0, True),
+    ('bdist_dumb', False, 0, True),
 
-    with pytest.raises(SystemExit, match="Attempted to run 'bdist'"):
-        setuptools.setup(
-            project='pname',
-            polyversion=True,
-            setup_requires=['polyversion'],
-        )
+    ('clean', None, 0, False),
+    ('clean', True, 0, False),
+    ('clean', None, 1, False),
+    ('clean', True, 1, False),
 
-    monkeypatch.setattr(sys, 'argv', ('setup.py', 'bdist_dumb'))
-    with pytest.raises(SystemExit, match="Attempted to run 'bdist_dumb'"):
-        setuptools.setup(
-            project='pname',
-            polyversion=True,
-            setup_requires=['polyversion'],
-        )
+    ('bdist_dumb', None, 1, False),
+    ('bdist_dumb', True, 1, False),
+])
+def test_build_on_release_check(cmd, skip_check, rtagged, screams,
+                                vtags_repo, rtagged_vtags_repo, monkeypatch):
+    if rtagged:
+        rtagged_vtags_repo.chdir()
+    else:
+        vtags_repo.chdir()
 
-    setuptools.setup(
-        project='pname',
-        polyversion=True,
-        skip_polyversion_check=True,
-        setup_requires=['polyversion'],
-    )
+    monkeypatch.setattr(sys, 'argv', ('setup.py', cmd))
+    if screams:
+        with pytest.raises(SystemExit, match="Attempted to run '%s'" % cmd):
+            call_setup(True, skip_check)
+    else:
+        call_setup(True, skip_check)
 
     monkeypatch.setattr(sys, 'argv', ('setup.py', 'clean'))
 

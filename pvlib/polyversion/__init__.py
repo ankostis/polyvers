@@ -23,6 +23,7 @@ finally, the wheel can be executed like that::
 """
 from __future__ import print_function
 
+from collections.abc import Mapping
 import sys
 
 import os.path as osp
@@ -435,7 +436,7 @@ def _get_version_from_pkg_metadata(package_name):
     return pkg_metadata.get('Version', None)
 
 
-class SetupKeyword(object):
+class SetupKeyword(Mapping):
     """
     Two new *setuptools* kwds for deriving subproject versions from PKG-INFO or git tags.
 
@@ -530,6 +531,15 @@ class SetupKeyword(object):
                  'mono_project tag_format tag_regex tag_vprefix '
                  'repo_path git_options'.split())
 
+    def __getitem__(self, k):
+        return getattr(self, k)
+
+    def __iter__(self):
+        return iter(self.__dict__)
+
+    def __len__(self):
+        return len(self.__dict__)
+
     def _parse_keyword(self, userdic, **kw_defaults):
         """
         :param kw_defaults:
@@ -587,7 +597,7 @@ class SetupKeyword(object):
         )
 
     def _check_bdist_and_run_cmd(self, cmd):
-        "patching `bdist_XXX.run_command()` runs with `self` <-- `dist`."
+        "patching `bdist_XXX.run_command()`, runs with `self` <-- `dist`."
 
         if (cmd.startswith('bdist') and
                 not getattr(self, 'polyversion_skip_bdist_check', False)):
