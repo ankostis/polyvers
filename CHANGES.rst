@@ -4,8 +4,14 @@ Changes
 
 .. towncrier release notes start
 
-2018-06-03: polyversion-v0.1.0a2, polyversion-v0.1.0a0: *setuptools* plugin
-===========================================================================
+2018-06-03: polyversion-v0.1.0a2
+================================
+- Canceled (like the previous 2), cannot release from r-tags because ``setup()``
+  reports version from v-tag.
+  A new setup-keyword needed: ``--is-polyversion-release``?
+- `v0.1.0a0` had been canceled for the same reason, but somewhere down the road,
+  the fix was reverted (bdist-check works for r-tag only).
+- `v0.1.0a1` just marked that our ``setup.py`` files ate our dog food.
 
 Breaking changes
 -----------------
