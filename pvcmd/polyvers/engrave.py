@@ -248,7 +248,7 @@ class FileProcessor(cmdlets.Spec):
                       ) -> GlobTruples:
         mybase = project.basepath
         glob_truples: GlobTruples = []
-        for eng in project.engraves:
+        for eng in project.active_engraves():
             with self.errlogged(
                 token='glob',
                 doing="globbing %.21s%s" % (eng, eng.globs)

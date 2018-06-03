@@ -22,7 +22,7 @@ import textwrap as tw
 from . import vermath
 from ._vendor.traitlets import traitlets as trt
 from ._vendor.traitlets.traitlets import (
-    List as ListTrait, Tuple as TupleTrait, Union as UnionTrait)
+    List as ListTrait, Set as SetTrait, Tuple as TupleTrait, Union as UnionTrait)
 from ._vendor.traitlets.traitlets import Bool, Unicode, Instance
 from .cmdlet import cmdlets, autotrait
 from .cmdlet.slicetrait import Slice as SliceTrait
@@ -54,6 +54,11 @@ def _slices_to_ids(slices, thelist):
 
 class Graft(cmdlets.Replaceable, cmdlets.Printable, yu.YAMLable, cmdlets.Spec):
     """Instructions on how to search'n replace some text."""
+
+    name = Unicode(
+        config=True,
+        help="Describe it for readable printouts.")
+
     regex: str = Unicode(  # type: ignore
         read_only=True,
         config=True,
@@ -168,9 +173,20 @@ class Graft(cmdlets.Replaceable, cmdlets.Printable, yu.YAMLable, cmdlets.Spec):
 
         return fbytes, offset
 
+    def __str__(self):
+        if self.name:
+            return '%s(%s)' % (type(self).__name__, self.name)
+        return super().__str__()
+
 
 class Engrave(cmdlets.Replaceable, cmdlets.Printable, yu.YAMLable, cmdlets.Spec):
     """Muliple file-patterns to search'n replace."""
+
+    name = Unicode(
+        config=True,
+        help="""
+        Describe it for readable printouts, and refer to it from `Project.active_engraves` list.
+        """)
 
     globs = ListTrait(
         Unicode(),
@@ -189,6 +205,11 @@ class Engrave(cmdlets.Replaceable, cmdlets.Printable, yu.YAMLable, cmdlets.Spec)
         Use `{appname} config desc Graft` to see its syntax.
         """
     )
+
+    def __str__(self):
+        if self.name:
+            return '%s(%s)' % (type(self).__name__, self.name)
+        return super().__str__()
 
 
 class Project(cmdlets.Replaceable, cmdlets.Printable, yu.YAMLable, cmdlets.Spec):
@@ -540,11 +561,12 @@ class Project(cmdlets.Replaceable, cmdlets.Printable, yu.YAMLable, cmdlets.Spec)
 
     engraves = ListTrait(
         autotrait.AutoInstance(Engrave),
-        ## TODO: add `Graft.desc`: "version must be in its own line."
         default_value=[
             {
+                'name': '__init__',
                 'globs': ['__init__.py'],
                 'grafts': [{
+                    'name': '__version__',
                     'regex': tw.dedent(r'''
                         (?xm)
                             ^__version__
@@ -553,6 +575,7 @@ class Project(cmdlets.Replaceable, cmdlets.Printable, yu.YAMLable, cmdlets.Spec)
                         '''),
                     'subst': r"__version__\1'{version}'"
                 }, {
+                    'name': '__updated__',
                     'regex': tw.dedent(r'''
                         (?xm)
                             ^__updated__
@@ -562,11 +585,14 @@ class Project(cmdlets.Replaceable, cmdlets.Printable, yu.YAMLable, cmdlets.Spec)
                     'subst': r"__updated__\1'{release_date}'"
                 }],
             }, {
+                'name': 'readme',
                 'globs': ['README.rst'],
                 'grafts': [{
+                    'name': '|version|',
                     'regex': r'\|version\|',
                     'subst': "{version}"
                 }, {
+                    'name': '|today|',
                     'regex': r'\|today\|',
                     'subst': "{release_date}"
                 }],
@@ -575,6 +601,21 @@ class Project(cmdlets.Replaceable, cmdlets.Printable, yu.YAMLable, cmdlets.Spec)
         config=True,
         help="""
         """)
+
+    enabled_engraves = SetTrait(
+        Unicode(),
+        config=True,
+        help="""
+        Reference by name Engraves that should be active.  If empty, all are active!
+        """
+    )
+
+    def active_engraves(self):
+        actives = self.enabled_engraves
+        if not actives:
+            return self.engraves
+
+        return [e for e in self.engraves if e.name in actives]
 
     default_version_bump: str = Unicode(  # type: ignore # noqa: E704 #@IgnorePep8
         '^1',
