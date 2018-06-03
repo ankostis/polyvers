@@ -1,2 +1,0 @@
-Adopt `towncrier` for compiling CHANGES.  So now each code change
-can describe its change in the same commit, without conflicts.

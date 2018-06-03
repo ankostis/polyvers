@@ -1,89 +1,99 @@
 =======
 Changes
 =======
+
 .. towncrier release notes start
 
-2018-05-30: polyversion-v0.1.0a0, polyversion-v0.1.0a0: *setuptools* plugin
+2018-06-03: polyversion-v0.1.0a2, polyversion-v0.1.0a0: *setuptools* plugin
 ===========================================================================
 
-- Breaking changes:
-    - Dropped all positional-arguments from :func:`polyversion.polyversion()`;
-      was error-prone.  They have all been converted to keyword-arguments.
+Breaking changes
+-----------------
+- Dropped all positional-arguments from :func:`polyversion.polyversion()`;
+  was error-prone.  They have all been converted to keyword-arguments.
 
-    - Renamed data in :mod:`polyversion`
-      (also applied for :class:`polyvers.pvproject.Project()`)::
+- Renamed data in :mod:`polyversion`
+  (also applied for :class:`polyvers.pvproject.Project()`)::
 
-            pvtag_frmt  --> pvtag_format
-            vtag_frmt   --> vtag_format
+        pvtag_frmt  --> pvtag_format
+        vtag_frmt   --> vtag_format
 
-    - Changed arguments in :func:`polyversion.polyversion()`
-      (affect also :class:`polyvers.pvproject.Project()`)::
+- Changed arguments in :func:`polyversion.polyversion()`
+  (affect also :class:`polyvers.pvproject.Project()`)::
 
-          default     --> default_version
-          tag_frmt    --> tag_format
-                      --> vprefixes   (new)
-                      --> is_release  (new)
+      default     --> default_version
+      tag_frmt    --> tag_format
+                  --> vprefixes   (new)
+                  --> is_release  (new)
 
-    - REVERTED again the `0.0.2a9` default logic to raise when it version/time
-      cannot be derived.  Now by default it raises, unless default-version or
-      ``no_raise`` for :func:`polyversion.polytime()`.
+- REVERTED again the `0.0.2a9` default logic to raise when it version/time
+  cannot be derived.  Now by default it raises, unless default-version or
+  ``no_raise`` for :func:`polyversion.polytime()`.
 
-    - Stopped engraving ``setup.py`` files ; clients should use *setuptools* plugin
-      to derive version for those files (see new features, below)).
-      For reference, this is the removed element from default :class:`~Project`'s
-      configuration (in YAML)::
+- Stopped engraving ``setup.py`` files ; clients should use *setuptools* plugin
+  to derive version for those files (see new features, below)).
+  For reference, this is the removed element from default :class:`~Project`'s
+  configuration (in YAML)::
 
-            globs: [setup.py]
-            grafts:
-                - regex: -|
-                    (?xm)
-                        \bversion
-                        (\ *=\ *)
-                        .+?(,
-                        \ *[\n\r])+
+        globs: [setup.py]
+        grafts:
+            - regex: -|
+                (?xm)
+                    \bversion
+                    (\ *=\ *)
+                    .+?(,
+                    \ *[\n\r])+
 
-- Features:
-    - The `polyversion` library function as a *setuptools* "plugin", and
-      adds two new ``setup()`` keywords for deriving subproject versions
-      from PKG-INFO or git tags  (see :func:`polyversion.setuptools_pv_init_kw`):
+Features
+--------
+- The `polyversion` library function as a *setuptools* "plugin", and
+  adds two new ``setup()`` keywords for deriving subproject versions
+  from PKG-INFO or git tags  (see :func:`polyversion.setuptools_pv_init_kw`):
 
-      1. keyword: ``polyversion --> (bool | dict)``
-          When a dict, its keys roughly mimic those in :func:`polyversion()`,
-          and can be used like this:
+  1. keyword: ``polyversion --> (bool | dict)``
+      When a dict, its keys roughly mimic those in :func:`polyversion()`,
+      and can be used like this:
 
-          .. code-block:: python
+      .. code-block:: python
 
-              from setuptools import setup
+          from setuptools import setup
 
-              setup(
-                  project='myname',
-                  version=''              # omit (or None) to abort if cannot auto-version
-                  polyversion={           # dict or bool
-                      'mono_project': True, # false by default
-                      ...  # See `polyversion.setuptools_pv_init_kw()` for more keys.
-                  },
-                  setup_requires=[..., 'polyversion'],
-                  ...
-              )
+          setup(
+              project='myname',
+              version=''              # omit (or None) to abort if cannot auto-version
+              polyversion={           # dict or bool
+                  'mono_project': True, # false by default
+                  ...  # See `polyversion.setuptools_pv_init_kw()` for more keys.
+              },
+              setup_requires=[..., 'polyversion'],
+              ...
+          )
 
-      2. keyword: ``skip_polyversion_check --> bool``
-         When false (default),  any `bdist_*` (e.g. ``bdist_wheel``),
-         commands will abort if not run from a :term:`release tag`.
-         You may bypass this check and create a package with non-engraved sources
-         (although it might not work correctly) by invoking the setup-script
-         from command-line like this::
+  2. keyword: ``skip_polyversion_check --> bool``
+     When false (default),  any `bdist_*` (e.g. ``bdist_wheel``),
+     commands will abort if not run from a :term:`release tag`.
+     You may bypass this check and create a package with non-engraved sources
+     (although it might not work correctly) by invoking the setup-script
+     from command-line like this::
 
-             $ python setup.py bdist_wheel --skip-polyversion-check
+         $ python setup.py bdist_wheel --skip-polyversion-check
 
-    - `bump` cmd: engrave also non-bumped projects with their ``git describe``-derived
-       version (controlled by ``--BumpCmd.engrave_bumped_only`` flag).
+- `bump` cmd: engrave also non-bumped projects with their ``git describe``-derived
+   version (controlled by ``--BumpCmd.engrave_bumped_only`` flag).
 
-- Documentation:
-    - usage: explain how to set your projects :pep:`0518` ``pyproject.toml``
-      file & ``setup_requires`` keyword in ``setup.py`` in your script.
-    - add `pbr`, `incremental` and `Zest.release` in "similar tools" section
-      as  *setuptools* plugins.
-    - re-wrote and shrinked opening section using glossary terms.
+- Assign names to engraves & grafts for readable printouts, and for refering to
+  them from the new `Project.enabled_engarves` list. (namengraves)
+
+Documentation changes
+---------------------
+
+- Adopt `towncrier` for compiling CHANGES. So now each code change can describe
+  its change in the same commit, without conflicts. (towncrier)
+- usage: explain how to set your projects :pep:`0518` ``pyproject.toml``
+  file & ``setup_requires`` keyword in ``setup.py`` in your script.
+- add `pbr`, `incremental` and `Zest.release` in "similar tools" section
+  as  *setuptools* plugins.
+- re-wrote and shrinked opening section using glossary terms.
 
 - Chore development:
     - deps: don't pin `packaging==17.1`, any bigger +17 is fine for parsing
