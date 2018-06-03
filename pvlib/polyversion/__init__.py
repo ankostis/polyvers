@@ -150,19 +150,22 @@ def _caller_fpath(nframes_back=2):
         del frame
 
 
-def _split_pvtag(pvtag, pvtag_regex):
-    try:
-        m = pvtag_regex.match(pvtag)
-        if not m:
-            raise ValueError(
-                "Unparseable pvtag %r from pvtag_regex: %r!" %
-                (pvtag, pvtag_regex.pattern))
-        mg = m.groupdict()
-        return mg['pname'], mg['version'], mg['descid']
-    except Exception as ex:
-        log.error("Matching pvtag '%s' failed due to: %s",
-                  pvtag, ex)
-        raise
+def _split_pvtag(pvtag, tag_regexes):
+    for tregex in tag_regexes:
+        try:
+            m = tregex.match(pvtag)
+            if m:
+                mg = m.groupdict()
+                return mg['pname'], mg['version'], mg['descid']
+        except Exception as ex:
+            log.error("Matching pvtag '%s' by '%s' failed due to: %s",
+                      pvtag, tregex.pattern, ex)
+            raise
+
+    raise ValueError(
+        "Unparseable pvtag %r from pvtag_regexes: %s!" %
+        (pvtag, ''.join('\n- %s' % tregex.pattern
+                        for tregex in tag_regexes)))
 
 
 def _version_from_descid(version, descid):
@@ -197,13 +200,18 @@ def _interp_regex(tag_regex, vprefix, pname):
 def _git_describe_parsed(pname,
                          default_version,        # if None, raise
                          tag_format, tag_regex,
-                         vprefix,                # no surprises, just use it
+                         vprefixes,
                          repo_path, git_options):
-    "Parse git-desc as `pvtag, version, descid` or raise when no `default_version`."
+    """
+    Parse git-desc as `pvtag, version, descid` or raise when no `default_version`.
+
+    :param vprefixes:
+        a sequence of str; no surprises, just make that many match-patterns
+    """
+    assert not isinstance(vprefixes, str), "req list-of-str, got: %r" % vprefixes
+
     import re
 
-    tag_pattern = _interp_fnmatch(tag_format, vprefix, pname)
-    tag_regex = re.compile(_interp_regex(tag_regex, vprefix, pname))
     if git_options:
         if isinstance(git_options, str):
             git_options = git_options.split()
@@ -215,6 +223,10 @@ def _git_describe_parsed(pname,
                     "invalid `git_options` due to: %s"
                     "\n  must be a str or an iterable, got: %r" %
                     (ex, git_options))
+    tag_patterns, tag_regexes = zip(
+        *((_interp_fnmatch(tag_format, vp, pname),
+           re.compile(_interp_regex(tag_regex, vp, pname)))
+          for vp in vprefixes))
 
     #
     ## Guard against git's runtime errors, below,
@@ -225,9 +237,9 @@ def _git_describe_parsed(pname,
         cmd = 'git describe'.split()
         if git_options:
             cmd.extend(git_options)
-        cmd.append('--match=' + tag_pattern)
+        cmd.extend('--match=' + tp for tp in tag_patterns)
         pvtag = _my_run(cmd, cwd=repo_path)
-        matched_project, version, descid = _split_pvtag(pvtag, tag_regex)
+        matched_project, version, descid = _split_pvtag(pvtag, tag_regexes)
         if matched_project and matched_project != pname:
             log.warning("Matched  pvtag project '%s' different from expected '%s'!",
                         matched_project, pname)
@@ -294,8 +306,11 @@ def polyversion(**kw):
     :param str vprefixes:
         a 2-element array of str - :data:`tag_vprefixes` assumed when not specified
     :param is_release:
-        used as boolean-index into :data:`tag_vprefixes`; when true,
-        r-tags as searched.
+        used as boolean-index into :data:`tag_vprefixes`:
+
+        - false: v-tags searched;
+        - true: r-tags searched;
+        - None: both tags searched.
     :param str repo_path:
         A path inside the git repo hosting the `pname` in question; if missing,
         derived from the calling stack
@@ -354,11 +369,12 @@ def polyversion(**kw):
         raise ValueError(
             "Args 'vprefixes' in `polyversion()` must be a 2 element str-array"
             ", got: %r" % (vprefixes, ))
-    vprefix = vprefixes[bool(is_release)]
+    if is_release is not None:
+        vprefixes = (vprefixes[bool(is_release)], )
 
     _tag, version, _descid = _git_describe_parsed(pname, default_version,
                                                   tag_format, tag_regex,
-                                                  vprefix,
+                                                  vprefixes,
                                                   repo_path, git_options)
     return version
 

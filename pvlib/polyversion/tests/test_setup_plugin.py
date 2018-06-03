@@ -11,7 +11,7 @@ import setuptools
 _exp_bad_args = \
     "error in pname setup command: invalid content in `polyversion` keyword due to: "
 _git_desc_cmd = re.escape(
-    r"Command '['git', 'describe', '--match=pname-v*']' returned non-zero")
+    r"Command '['git', 'describe', '--match=pname-v*', '--match=pname-r*']' returned non-zero")
 
 
 def call_setup(pv, **kwds):
@@ -63,7 +63,7 @@ def test_invalid_config(kw, exp, rtagged_vtags_repo, monkeypatch):
 ])
 def test_build_on_release_check(cmd, skip_check, rtagged, ex,
                                 vtags_repo, rtagged_vtags_repo,
-                                monkeypatch, capsys):
+                                monkeypatch, capsys, caplog):
     pvargs = {'mono_project': True}
     myrepo = rtagged_vtags_repo if rtagged else vtags_repo
     myrepo.chdir()
@@ -75,14 +75,15 @@ def test_build_on_release_check(cmd, skip_check, rtagged, ex,
                        skip_polyversion_check=skip_check,
                        version='0.0.0')  # we don't check no `default_version`
         out, err = capsys.readouterr()
-        assert not out
-        assert " No names found, cannot describe anything" in err
+        assert not out and not err
+        assert " No names found, cannot describe anything" in caplog.text
     else:
         call_setup(pvargs,
                    skip_polyversion_check=skip_check,
                    version='0.0.0')
         out, err = capsys.readouterr()
         assert 'running %s' % cmd in out.strip()
+        assert not err
 
         ## Test with cwd outside repo.
         #
@@ -93,3 +94,4 @@ def test_build_on_release_check(cmd, skip_check, rtagged, ex,
                    package_dir={'': myrepo.basename})
         out, err = capsys.readouterr()
         assert 'running %s' % cmd in out.strip()
+        assert not err

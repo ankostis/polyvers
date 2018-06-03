@@ -41,9 +41,9 @@ def test_split_pvtag_parsing(inp, exp):
         pname=r'[A-Z0-9]|[A-Z0-9][A-Z0-9._-]*?[A-Z0-9]'))
     if exp is None:
         with pytest.raises(ValueError):
-            pvlib._split_pvtag(inp, pvtag_regex)
+            pvlib._split_pvtag(inp, [pvtag_regex])
     else:
-        got = pvlib._split_pvtag(inp, pvtag_regex)
+        got = pvlib._split_pvtag(inp, [pvtag_regex])
         assert got == exp
 
 
@@ -208,13 +208,14 @@ def test_polytime_BAD_no_git_cmd(ok_repo, monkeypatch, today):
 ##   MAIN   ##
 ##############
 
-def test_MAIN_polyversions(ok_repo, untagged_repo, no_repo, capsys):
+def test_MAIN_polyversions(ok_repo, untagged_repo, no_repo, capsys, caplog):
     from polyversion import run
     ok_repo.chdir()
 
     run()
     out, err = capsys.readouterr()
     assert not out and not err
+    assert not caplog.text
 
     run(proj1)
     out, err = capsys.readouterr()
@@ -234,11 +235,15 @@ def test_MAIN_polyversions(ok_repo, untagged_repo, no_repo, capsys):
     with pytest.raises(sbp.CalledProcessError, match="'git', 'describe'"):
         run('foo')
     out, err = capsys.readouterr()
-    assert not out and 'fatal: No names found' in err
+    assert not out and not err
+    assert 'fatal: No names found' in caplog.text
+    caplog.clear()
+
     run('foo', 'bar')
     out, err = capsys.readouterr()
-    assert out == 'foo: \nbar: \n'
-    assert 'fatal: No names found' in err
+    assert out == 'foo: \nbar: \n' and not err
+    assert 'fatal: No names found' in caplog.text
+    caplog.clear()
 
     no_repo.chdir()
 
