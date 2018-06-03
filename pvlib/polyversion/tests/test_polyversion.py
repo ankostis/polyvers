@@ -221,11 +221,23 @@ def test_MAIN_polyversions(ok_repo, untagged_repo, no_repo, capsys, caplog):
     out, err = capsys.readouterr()
     assert out.startswith(proj1_ver) and not err
 
+    run(proj1, '-t')
+    out, err = capsys.readouterr()
+    assert not err
+    assert out.startswith(proj1)
+    assert proj1_ver[:-1] in out  # clip local-ver char
+
     run(proj1, 'foo')
     out, err = capsys.readouterr()
     assert re.match(
         r'proj1: 0\.0\.1\+2\.g[\da-f]+\nfoo:', out)
     #assert 'No names found' in caplog.text()
+
+    run('-t', proj1, 'foo')
+    out, err = capsys.readouterr()
+    #'proj1: proj1-v0.0.1-2-gccff299\nfoo: \n
+    assert re.match(
+        r'proj1: proj1-v0\.0\.1\-2-g[\da-f]+\nfoo:', out)
 
     untagged_repo.chdir()
 
@@ -240,6 +252,12 @@ def test_MAIN_polyversions(ok_repo, untagged_repo, no_repo, capsys, caplog):
     caplog.clear()
 
     run('foo', 'bar')
+    out, err = capsys.readouterr()
+    assert out == 'foo: \nbar: \n' and not err
+    assert 'fatal: No names found' in caplog.text
+    caplog.clear()
+
+    run('foo', '-t', 'bar')
     out, err = capsys.readouterr()
     assert out == 'foo: \nbar: \n' and not err
     assert 'fatal: No names found' in caplog.text

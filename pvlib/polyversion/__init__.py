@@ -322,10 +322,10 @@ def polyversion(**kw):
         a str or an iterator of (converted to str) options to pass
         to ``git describe`` command (empty by default).  If a string,
         it is splitted by spaces.
-    :param return_tag:
-        when true, return the full tag (not just the version part)
+    :param return_all:
+        when true, return the 3-tuple (tag, version, desc-id) (not just version)
     :return:
-        The version-id derived from the *pvtag*, or `default` if
+        The version-id (or 3-tuple) derived from the *pvtag*, or `default` if
         command failed/returned nothing, unless None, in which case, it raises.
     :raise sbp.CalledProcessError:
         if it cannot find any vtag and `default_version` is None
@@ -354,7 +354,7 @@ def polyversion(**kw):
     vprefixes = kw.get('vprefixes')
     is_release = kw.get('is_release')
     git_options = kw.get('git_options')
-    return_tag = kw.get('return_tag')
+    return_all = kw.get('return_all')
 
     if not pname:
         pname = _caller_module_name()
@@ -379,12 +379,12 @@ def polyversion(**kw):
     if is_release is not None:
         vprefixes = (vprefixes[bool(is_release)], )
 
-    tag, version, _descid = _git_describe_parsed(pname, default_version,
-                                                 tag_format, tag_regex,
-                                                 vprefixes,
-                                                 repo_path, git_options)
-    if return_tag:
-        return tag
+    tag, version, descid = _git_describe_parsed(pname, default_version,
+                                                tag_format, tag_regex,
+                                                vprefixes,
+                                                repo_path, git_options)
+    if return_all:
+        return tag, version, descid
     return version
 
 
@@ -428,7 +428,7 @@ def run(*args):
     Describe the version of a *polyvers* projects from git tags.
 
     USAGE:
-        %(prog)s [-l] [PROJ-1] ...
+        %(prog)s [-t] [PROJ-1] ...
         %(prog)s [-v | -V ]     # print my version information
 
     See http://polyvers.readthedocs.io
@@ -460,21 +460,30 @@ def run(*args):
             __version__, __updated__, __file__))
         return
 
-    long_output = None
-    if '-l' in args:
-        long_output = True
+    print_tag = None
+    if '-t' in args:
+        print_tag = True
         args = list(args)
-        del args[args.index('-l')]
+        del args[args.index('-t')]
 
     if len(args) == 1:
         res = polyversion(pname=args[0], repo_path=os.curdir,
-                          return_tag=long_output)
+                          return_all=print_tag)
+        # fetces either 1-triplet or screams.
+        if print_tag:
+            res = res[0]
+
     else:
-        res = '\n'.join('%s: %s' % (p, polyversion(pname=p,
-                                                   default_version='',
-                                                   repo_path=os.curdir,
-                                                   return_tag=long_output))
-                        for p in args)
+        versions = [(pname, polyversion(pname=pname,
+                                        default_version='',
+                                        repo_path=os.curdir,
+                                        return_all=print_tag))
+                    for pname in args]
+
+        if print_tag:
+            versions = [(pname, ver[0]) for pname, ver in versions]
+
+        res = '\n'.join('%s: %s' % (pname, ver or '') for pname, ver in versions)
 
     if res:
         print(res)
