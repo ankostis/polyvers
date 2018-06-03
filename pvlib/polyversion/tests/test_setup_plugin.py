@@ -8,8 +8,10 @@ import pytest
 import setuptools
 
 
-_exp_bad_args = "error in pname setup command: invalid content in `polyversion` keyword due to: "
-_git_desc_cmd = re.escape(r"Command '['git', 'describe', '--match=pname-r*']'")
+_exp_bad_args = \
+    "error in pname setup command: invalid content in `polyversion` keyword due to: "
+_git_desc_cmd = re.escape(
+    r"Command '['git', 'describe', '--match=pname-v*']' returned non-zero")
 
 
 def call_setup(pv, **kwds):

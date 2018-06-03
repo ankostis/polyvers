@@ -14,7 +14,7 @@ last *pvtag*.
 
 Also, this library function as a *setuptools* "plugin", and
 adds a new ``setup()`` keyword ``polyversion = (bool | dict)``
-(see :class:`SetupKeyword` for its content).
+(see :func:`setuptools_pv_init_kw` for its content).
 
 finally, the wheel can be executed like that::
 
@@ -179,27 +179,27 @@ def _version_from_descid(version, descid):
     return '%s+%s' % (version, local_part)
 
 
-def _interp_fnmatch(tag_format, tag_vprefix, pname):
+def _interp_fnmatch(tag_format, vprefix, pname):
     return tag_format.format(pname=pname,
                              version='*',
-                             vprefix=tag_vprefix)
+                             vprefix=vprefix)
 
 
-def _interp_regex(tag_regex, tag_vprefix, pname):
+def _interp_regex(tag_regex, vprefix, pname):
     return tag_regex.format(pname=pname,
-                            vprefix=tag_vprefix)
+                            vprefix=vprefix)
 
 
 def _git_describe_parsed(pname,
                          default_version,        # if None, raise
                          tag_format, tag_regex,
-                         tag_vprefix,            # no surprises, just use it
+                         vprefix,                # no surprises, just use it
                          repo_path, git_options):
     "Parse git-desc as `pvtag, version, descid` or raise when no `default_version`."
     import re
 
-    tag_pattern = _interp_fnmatch(tag_format, tag_vprefix, pname)
-    tag_regex = re.compile(_interp_regex(tag_regex, tag_vprefix, pname))
+    tag_pattern = _interp_fnmatch(tag_format, vprefix, pname)
+    tag_regex = re.compile(_interp_regex(tag_regex, vprefix, pname))
     if git_options:
         if isinstance(git_options, str):
             git_options = git_options.split()
@@ -262,9 +262,6 @@ def polyversion(**kw):
            there are no *vtags*, we set default-version to empty-string,
            to facilitate pip-installing these projects from sources.
 
-    :param str repo_path:
-        A path inside the git repo hosting the `pname` in question; if missing,
-        derived from the calling stack.
     :param bool mono_project:
       - false: (default) :term:`monorepo`, ie multiple sub-projects per git-repo.
         Tags formatted by *pvtags* :data:`pvtag_format` & :data:`pvtag_regex`
@@ -292,16 +289,24 @@ def polyversion(**kw):
         - It overrides `mono_project` arg.
         - See :pep:`0426` for project-name characters and format.
         - See :data:`pvtag_regex` & :data:`vtag_regex`
-    :param str tag_vprefix:
-        Interpolation parameter for `tag_format` & `tag_regex`.
-        If None (default), it is taken from the 1st element of :data:`tag_vprefixes`.
+    :param str vprefixes:
+        a 2-element array of str - :data:`tag_vprefixes` assumed when not specified
+    :param is_release:
+        used as boolean-index into :data:`tag_vprefixes`; when true,
+        r-tags as searched.
+    :param str repo_path:
+        A path inside the git repo hosting the `pname` in question; if missing,
+        derived from the calling stack
     :param git_options:
-        List of options(str) passed to ``git describe`` command.
+        a str or an iterator of (converted to str) options to pass
+        to ``git describe`` command (empty by default).  If a string,
+        it is splitted by spaces.
     :return:
         The version-id derived from the *pvtag*, or `default` if
         command failed/returned nothing, unless None, in which case, it raises.
-    :raise:
-        if it cannot find t=any vtag (e.g. no git cmd/repo, no valid tags)
+    :raise sbp.CalledProcessError:
+        if it cannot find any vtag and `default_version` is None
+        (e.g. no git cmd/repo, no valid tags)
 
     .. Tip::
         It is to be used, for example, in package ``__init__.py`` files like this::
@@ -314,7 +319,7 @@ def polyversion(**kw):
 
     .. Note::
        This is a python==2.7 & python<3.6 safe function; there is also the similar
-       function with elaborate error-handling :func:`polyvers.pvtags.descrivbe_project()`
+       function with elaborate error-handling :func:`polyvers.pvtags.describe_project()`
        in the full-blown tool `polyvers`.
     """
     pname = kw.get('pname')
@@ -323,7 +328,8 @@ def polyversion(**kw):
     mono_project = kw.get('mono_project')
     tag_format = kw.get('tag_format')
     tag_regex = kw.get('tag_regex')
-    tag_vprefix = kw.get('tag_vprefix')
+    vprefixes = kw.get('vprefixes')
+    is_release = kw.get('is_release')
     git_options = kw.get('git_options')
 
     if not pname:
@@ -338,12 +344,19 @@ def polyversion(**kw):
         if not repo_path:
             repo_path = '.'
 
-    tag_vprefix = (tag_vprefixes[0]
-                   if tag_vprefix is None else
-                   tag_vprefix)
+    ## Decide `vprefix` (v-tag or r-tag).
+    #
+    if vprefixes is None:
+        vprefixes = tag_vprefixes
+    if len(vprefixes) != 2:
+        raise ValueError(
+            "Args 'vprefixes' in `polyversion()` must be a 2 element str-array"
+            ", got: %r" % (vprefixes, ))
+    vprefix = vprefixes[bool(is_release)]
+
     _tag, version, _descid = _git_describe_parsed(pname, default_version,
                                                   tag_format, tag_regex,
-                                                  tag_vprefix,
+                                                  vprefix,
                                                   repo_path, git_options)
     return version
 
@@ -466,7 +479,7 @@ def _get_version_from_pkg_metadata(package_name):
 
 def _parse_kw_content(attr, kw_value):
     good_keys = set('mono_project tag_format tag_regex '
-                    'tag_vprefix repo_path git_options'.split())
+                    'vprefixes repo_path git_options'.split())
 
     try:
         pvargs = dict(kw_value)
@@ -486,16 +499,14 @@ def _parse_kw_content(attr, kw_value):
     return pvargs
 
 
-_sentinel = object()
-
-
-def _establish_setup_py_version(dist, tag_vprefix=None, repo_path=None, **pvargs):
+def _establish_setup_py_version(dist, repo_path=None, **pvargs):
     "Derive version from PKG-INFO or Git rtags, and trigger bdist-check in later case."
     pname = dist.metadata.name
 
     version = _get_version_from_pkg_metadata(pname)
     if not version:
-        ## Prepare pvargs for calling `polyversion()` below.
+        ## Prepare pvargs for calling `polyversion()` below,
+        #  and optionally in bdist-check.
         #
         #  If `pname` is None, `polyversion()` would call `_caller_module_name()`.
         #  which is nonsense from `setup()`.
@@ -505,32 +516,15 @@ def _establish_setup_py_version(dist, tag_vprefix=None, repo_path=None, **pvargs
         pvargs['repo_path'] = (repo_path or
                                (dist.package_dir and dist.package_dir.get('')) or
                                '.')
-        ## Search for r-tags by default.
-        pvargs['tag_vprefix'] = (tag_vprefixes[1]
-                                 if tag_vprefix is None else
-                                 tag_vprefix)
 
-        ## In order to avoid calling `polyversion()` twice,
-        #  once here and possbly another on bdist-check-if-rtag,
-        #  we have to know if rtag failed; so in case
-        #  the User doesn't like screams, we mask his `default_version`
-        #  with a sentinel.
-        #
-        if dist.metadata.version is not None:
-            pvargs['default_version'] = _sentinel
+        ## Store `pvargs` so bdist-check can rerun `polyversion()` for r-tags.
+        dist.polyversion_args = pvargs
 
-        ## Reset it always for bdist-check
-        #  (in case of multiple setup() calls in same interpreter).
-        dist.polyversion_rtag_has_failed = None
         version = polyversion(**pvargs)
 
-        if version is _sentinel:  # Git cmd has failed silently.
-            version = None
-            ## Store it always for bdist-check
-            dist.polyversion_rtag_has_failed = True
-
         ## Monkeypatch `Distribution.run_cmd()` only if not inside a package,
-        #  and only once per Python-interpreter.
+        #  and only once per dist-instance
+        #  (in case of setup() has already been called on that instance).
         #
         #  NOTE: We monekypatch even if user has disabled check,
         #  bc we can't now the kw order.
@@ -548,83 +542,40 @@ def setuptools_pv_init_kw(dist, attr, kw_value):
     """
     A :term:`setuptools` kwd for deriving subproject versions from PKG-INFO or git tags.
 
-    **SYNTAX:** ``'polyversion': (<bool> | <dict>)``
-
-    When a dict, its keys roughly mimic those in :func:`polyversion()`,
-    and can be used like this:
-
-    .. code-block:: python
-
-        from setuptools import setup
-
-        setup(
-            project='myname',
-            version=''              # omit (or None) to abort if cannot auto-version
-            polyversion={           # dict or bool
-                'mono_project': True, # false by default
-                ...  # See `polyversion.SetupKeyword` class for more keys.
-            },
-            setup_requires=[..., 'polyversion'],
-            ...
-        )
-
-    See also :func:`polyversion()` for keyword-dict's content.
-
     :param dist:
         class:`distutils.Distribution`
     :param str attr:
         the name of the keyword
     :param kw_value:
-        keyword's content
+        The content of the new ``setup(polyversion=...)`` keyword.
 
+        **SYNTAX:** ``'polyversion': (<bool> | <dict>)``
 
-    :ivar bool mono_project:
-      - false: (default) :term:`monorepo`, ie multiple sub-projects per git-repo.
-        Tags formatted by *pvtags* :data:`pvtag_format` & :data:`pvtag_regex`
-        (like ``pname-v1.2.3``).
-      - true: :term:`mono-project`, ie only one project in git-repo
-        Tags formatted as *vtags* :data:`vtag_format` & :data:`vtag_regex`.
-        (like ``v1.2.3``).
-    :ivar str tag_format:
-        The :pep:`3101` pattern for creating *pvtags* (or *vtags*).
+        When it is a dict, its keys roughly mimic those in :func:`polyversion()`
+        except those differences:
 
-        - It receives 3 parameters to interpolate: ``{pname}, {vprefix}, {version} = '*'``.
-        - It is used also to generate the match patterns for ``git describe --match <pattern>``
-          command.
-        - It overrides `mono_project` arg.
-        - See :data:`pvtag_format` & :data:`vtag_format`
-    :ivar regex tag_regex:
-        The regex pattern breaking apart *pvtags*, with 3 named capturing groups:
+        :param pname:
+            absent; derrived from ``setup(name=...)`` keyword
+        :param default_version:
+            absent; derrived from ``setup(version=...)`` keyword:
 
-        - ``pname``,
-        - ``version`` (without the 'v'),
-        - ``descid`` (optional) anything following the dash('-') after
-          the version in ``git-describe`` result.
+            - if `None`/not given, any problems will be raised,
+              and ``setup.py`` script wil abort
+            - if ``version`` is a (possibly empty) string,
+              this will be used in case version cannot be auto-retrived.
 
-        - It is given 2 :pep:`3101` parameters ``{pname}, {vprefix}`` to interpolate.
-        - It overrides `mono_project` arg.
-        - See :pep:`0426` for project-name characters and format.
-        - See :data:`pvtag_regex` & :data:`vtag_regex`
-    :ivar str tag_vprefix:
-        Interpolation parameter for `tag_format` & `tag_regex`.
-        If None (default), it is taken from the 2nd element of :data:`tag_vprefixes`.
-    :ivar git_options:
-        a str or an iterator of (converted to str) options to pass
-        to ``git describe`` command (empty by default).  If a string,
-        it is splitted by spaces.
+        :param is_release:
+            absent; always `False` when derriving the version,
+            and `True` when bdist-checking
+        :param repo_path:
+            if not given, derrived from ``setup(package_dirs={...})`` keyword
+            or '.' (and never from caller-stack).
 
-    - First it tries to see if project contained in a distribution-archive
+        See :func:`polyversion()` for keyword-dict's content.
+
+    - It tries first to see if project contained in a distribution-archive
       (e.g. a "wheel"), and tries to derive the version from egg-infos.
       Then it falls through retrieving it from git tags.
-
-    - The standard ``setup(version=<version>)`` keyword is passed in as
-      the value to ``polyversion.polyversion(default_version=<version>)``.
-
-      So if ``version`` is a (possibly empty) string, this will be used in case
-      version cannot be auto-retrived.
-
-      If ``version`` is omitted (or it is `None`), any problems will be raised,
-      and setup.script wil abort
 
       .. Tip::
           For cases where a shallow git-clone does not finds any *vtags*
@@ -648,15 +599,34 @@ def _monkeypathed_run_command(dist, cmd):
     """
     A ``distutils.run_command()`` that screams on `bdist...` cmds not from rtags.
     """
-    if (cmd.startswith('bdist') and
-            not getattr(dist, 'skip_polyversion_check', False) and
-            dist.polyversion_rtag_has_failed):
-        from distutils.errors import DistutilsSetupError
-        raise DistutilsSetupError(
-            "Attempted to run '%s' from a non release-tag!"
-            "\n  Use --skip-polyversion-check if you really want to build"
-            "\n  a binary distribution package from non-engraved sources." %
-            cmd)
+    if cmd.startswith('bdist') and not getattr(dist,
+                                               'skip_polyversion_check',
+                                               False):
+        ## Cache results to avoid multiple calls into `polyversion(r-tag)`.
+        #
+        rtag_err = getattr(dist, 'polyversion_rtag_err', None)
+        if rtag_err is None:
+            pvargs = dist.polyversion_args.copy()
+            pvargs['default_version'] = None  # scream if missing
+            pvargs['is_release'] = True
+
+            try:
+                polyversion(**pvargs)
+
+                rtag_err = False
+            except Exception as ex:
+                rtag_err = str(ex)
+
+            dist.polyversion_rtag_err = rtag_err
+             
+        if rtag_err is not False:
+            from distutils.errors import DistutilsSetupError
+            raise DistutilsSetupError(
+                "Attempted to run '%s' from a non release-tag?"
+                "\n  error: %s"
+                "\n  Use --skip-polyversion-check if you really want to build"
+                "\n  a binary distribution package from non-engraved sources." %
+                (cmd, rtag_err))
 
     return dist._polyversion_orig_run_cmd(cmd)
 

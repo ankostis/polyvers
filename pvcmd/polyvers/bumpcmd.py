@@ -249,8 +249,8 @@ class BumpCmd(cli._SubCmd):
 
     def _prepare_project_for_bump(self, prj: pvproject.Project,
                                   version_bump: Optional[str],
-                                  is_bumped: bool):
-        if is_bumped:
+                                  is_to_bump: bool):
+        if is_to_bump:
             prj.load_current_version_from_history()
             if self.amend:
                 assert not version_bump, (
@@ -266,7 +266,7 @@ class BumpCmd(cli._SubCmd):
                 pname=prj.pname,
                 tag_format=prj.pvtag_format,
                 tag_regex=prj.pvtag_regex,
-                tag_vprefix=prj.tag_vprefixes[0],  # rtags , out-of-trunk fail
+                vprefixes=prj.tag_vprefixes,
                 repo_path=prj.basepath
             )
             prj.version = latest_version
