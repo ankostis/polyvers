@@ -56,7 +56,6 @@ The key features are:
     - configurable :term:`engravings` and
     - :term:`leaf release scheme`.
 
-
 The last feature departs from the logic of :ref:`similar-tools`.
 Specifically, when bumping the version of sub-project(s), this tool
 adds **+2 tags and +1 commits**:
@@ -453,7 +452,7 @@ Features
         merge-conflicts due to the version-ids :term:`engrave`\d" in the sources.
         In :term:`monorepo`\s, the versions proliferate, and so does the conflicts.
 
-        Contrary to `similar tools`_, static version-ids are engraved only in out-of-trunk
+        Contrary to :ref:`similar tools`, static version-ids are engraved only in out-of-trunk
         (leaf) commits, and only when the sub-projects are released.
         In-trunk code is never touched, and version-ids are reported, on runtime, based
         on Git tags (like ``git-describe``), so they are always up-to-date.
@@ -601,10 +600,13 @@ Known Limitations, Drawbacks & Workarounds
 
 Similar Tools
 =============
+Bumped across these projects while building it...
+
 .. glossary::
 
     bumpversion
         The original **bumpversion** project; development stopped after 2015:
+        (recomended also by :term:`python guide`)
         https://github.com/peritus/bumpversion
 
     bump2version
@@ -644,11 +646,40 @@ Similar Tools
         add a new heading in your changelog, record the release date, svn/git/bzr/hg tag
         your project, perhaps upload it to pypi... *zest.releaser* takes care
         of the boring bits for you.
+        (recomended also by :term:`python guide`)
         http://zestreleaser.readthedocs.io/
 
     incremental
         a small *setuptools* plugin library that versions Python projects.
         https://github.com/twisted/incremental
+
+    changes
+        Manages the release of a Python Library (intuitive logo,
+        recomended also by :term:`python guide`):
+
+        - Auto generates changelog entries from commit messages
+        - CLI that follows Semantic Versioning principles to auto-increment the library version
+        - Runs the library tests
+        - Checks the package installation from a tarball and PyPi
+        - Uploads the distribution to PyPi
+        - Tags the GitHub repository
+
+        https://github.com/michaeljoseph/changes
+
+    setuptools_scm
+        managing versions in scm metadata instead of declaring them as
+        the version argument or in a scm managed file, apart from  handling
+        file finders for the supported scm’s.
+        (recomended also by :term:`python guide`)
+        https://pypi.org/project/setuptools_scm/
+
+        .. Note:
+            Interesting how this project parses ``git describe`` tags:
+            https://pypi.org/project/setuptools_scm/#default-versioning-scheme
+
+    python guide
+        There is a dedicated guide for this problem in pythons docs:
+        https://packaging.python.org/guides/single-sourcing-package-version/
 
 Find more than `34 similar projects in GitHub:
 <https://github.com/search?l=Python&o=desc&q=bump+version&s=updated&type=Repositories>`_
