@@ -150,6 +150,8 @@ def _caller_fpath(nframes_back=2):
 
 
 def split_pvtag(pvtag, tag_regexes):
+    ## TODO: parse descids like `setuptools_scm` plugin:
+    #  https://pypi.org/project/setuptools_scm/#default-versioning-scheme
     if not isinstance(tag_regexes, (list, tuple)):
         raise ValueError("Expected `tag_regexes` as list-of-str, got: %r" %
                          tag_regexes)
