@@ -446,7 +446,9 @@ Features
     out-of-trunk commit
     leaf commit
     release tag
+    r-tag
     version tag
+    v-tag
         Even in single-project repos, sharing code across branches may cause
         merge-conflicts due to the version-ids :term:`engrave`\d" in the sources.
         In :term:`monorepo`\s, the versions proliferate, and so does the conflicts.
@@ -468,6 +470,11 @@ Features
         The `polyversion` library function as a *setuptools* "plugin", and
         adds a new ``setup()`` keyword ``polyversion = (bool | dict)``
         (see :func:`polyversion.init_plugin_kw` for its content).
+
+    bdist-check
+        The :term:`setuptools plugin` aborts any `bdist...` commands if they
+        are not run from an :term:`r-tag` (unless ``--skip-polyversion-check``
+        flag is given in command line when running ``setup.py``).
 
     Marking dependent versions across sub-projects
         [TODO] When bumping the version of a sub-project the `"local" part of PEP-440
@@ -570,7 +577,7 @@ Known Limitations, Drawbacks & Workarounds
   ``pip install -e <subdir>`` and/or ``python setup.py develop``
   break.
 
-- (not related to this tool) When building projects with ``python setup.py bdist_wheel``,
+- (not related to this tool) When building projects with ``python setup.py bdist_XXX``,
   you have to clean up your build directory, or else, the distribution package
   will contain the sources from all previous subprojects.  That applies also
   when rebuilding a project between versions.
