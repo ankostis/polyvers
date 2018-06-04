@@ -30,8 +30,8 @@ Polyversion: derive subproject versions from tags on Git monorepos
 
 .. _coord-start:
 
-:version:       |version|
-:updated:       |today|
+:version:       0.1.0a4
+:updated:       2018-06-05T02:34:18.145054
 :Documentation: https://polyvers.readthedocs.io/en/latest/usage.html#usage-of-polyversion-library
 :repository:    https://github.com/JRCSTU/polyvers
 :pypi-repo:     https://pypi.org/project/polyversion/
