@@ -588,6 +588,7 @@ Known Limitations, Drawbacks & Workarounds
 - Set branch ``latest`` as default in GitHub to show :term:`engrave`\d sub-project version-ids.
 
 
+.. _contribute-section:
 .. _similar-tools:
 
 Similar Tools
