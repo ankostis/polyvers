@@ -111,7 +111,7 @@ def _my_run(cmd, cwd):
     res, err = proc.communicate()
 
     if proc.returncode != 0:
-        log.error('%s\n  cmd: %s', err, cmd)
+        log.error('cmd %s failed(%i) with STDERR: %s', cmd, proc.returncode, err)
         raise sbp.CalledProcessError(proc.returncode, cmd)
     else:
         return _clean_cmd_result(res)
