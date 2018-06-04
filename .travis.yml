@@ -30,19 +30,24 @@ script:
   - PYTHONPATH=./pvlib.run  python -m polyversion  -V
   - cd -
 
-  ## Build WHEELS, install, smoketest. and uninstall.
-  #
   - |
+    echo -e "\n## Build 'polyversion' WHEELS, install, smoketest, and uninstall."
     pip install -e ./pvlib && \
     python pvlib/setup.py build bdist_wheel && \
     pip uninstall -y polyversion && \
     pip install dist/polyversion-*.whl && \
-    polyversion --help && \
-    pip uninstall -y polyversion && \
-    pip install -e ./pvlib  # Let a in-git pvlib, not to scream next.
+    polyversion polyversion -t
+    ## Ignored pvlib errors excpected due wheel not from r-tag.
+
+  ## Let a in-git pvlib installed,
+  #  not to scream next step.
+  #
+  - pip uninstall -y polyversion && pip uninstall -y polyversion
+  - pip install -e ./pvlib
 
   - |
     if [ $TRAVIS_PYTHON_VERSION \> '3.5' ]; then
+        echo -e "\n## Build 'polyvers' WHEELS, install, smoketest, and uninstall."
         pip install -r requirements.txt && \
         pip install -e . && \
         rm -rf build/* && \
@@ -50,14 +55,17 @@ script:
         pip install dist/polyvers-*.whl && \
         polyvers --help
     fi
-  - pip uninstall -y polyversion polyvers
+  - pip uninstall -y polyversion polyvers && pip uninstall -y polyversion polyvers
 
   ## Install sources and PYTEST both pvlib & pvcmd with COVERAGE.
   #
-  - pip install -e ./pvlib[test]
-  - polyversion --help
+  - |
+    pip install -e ./pvlib[test] &&
+    polyversion --help
+
   - |
     if [ $TRAVIS_PYTHON_VERSION \> '3.5' ]; then
+        echo -e "\n## PYTEST both pvlib & pvcmd with COVERAGE."
         pip install -e .[test] && \
         polyvers --help && \
         pytest pvlib --cov=polyversion --cov-report=term-missing && \
