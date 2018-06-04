@@ -88,10 +88,13 @@ def _establish_setup_py_version(dist, repo_path=None, **pvargs):
         #  NOTE: We monekypatch even if user has disabled check,
         #  bc we can't now the kw order.
         #
-        orig_func = type(dist).run_command
+        ## NOTE: PY2 `type(dist)` is `<type 'instance'>` on PY2,
+        #  which does not have the method to patch.
+        DistClass = dist.__class__
+        orig_func = DistClass.run_command
         if orig_func is not _monkeypathed_run_command:
-            type(dist).run_command = _monkeypathed_run_command
-            type(dist)._polyversion_orig_run_cmd = orig_func
+            DistClass.run_command = _monkeypathed_run_command
+            DistClass._polyversion_orig_run_cmd = orig_func
 
     if version:
         dist.metadata.version = version
