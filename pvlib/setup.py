@@ -4,7 +4,6 @@
 from __future__ import print_function
 
 import re
-import sys
 
 from setuptools import setup
 
@@ -14,30 +13,32 @@ import os.path as osp
 mydir = osp.dirname(osp.realpath(__file__))
 
 
-## here we CANNOT FULLY EAT our own dog-food and use *setuptools* plugin:
-#  We do use `polyversion` to derive version on runtime from Git tags,
-#  BUT we cannot reliably control `easy_install` cached packages when
-#  *setuptools*'s `setup_requires` keyword gets processed:
-#  https://pip.pypa.io/en/stable/reference/pip_install/#controlling-setup-requires
+# ## here we CANNOT FULLY EAT our own dog-food and use *setuptools* plugin:
+# #  We do use `polyversion` to derive version on runtime from Git tags,
+# #  BUT we cannot reliably control `easy_install` cached packages when
+# #  *setuptools*'s `setup_requires` keyword gets processed:
+# #  https://pip.pypa.io/en/stable/reference/pip_install/#controlling-setup-requires
+# #
+# #  For this reason the following hack is needed to start developing it
+# #  from git-sources: it bootstraps  ``pip install -e pvlib[test]``
+# #  when not any *compatible" version of the `polyversion` lib is
+# #  already installed on the system.
+# #
+# try:
+#     from polyversion import __version__ as bver, polyversion
+#     if bver <= '0.1.0':
+#         raise ValueError('Expected `polyversion >= 1.0.1a3, got: %s' % bver)
+# except ImportError:
+#     try:
+#         import sys
 #
-#  For this reason the following hack is needed to start developing it
-#  from git-sources: it bootstraps  ``pip install -e pvlib[test]``
-#  when not any *compatible" version of the `polyversion` lib is
-#  already installed on the system.
-#
-try:
-    from polyversion import __version__ as bver, polyversion
-    if bver <= '0.1.0':
-        raise ValueError('Expected `polyversion >= 1.0.1a3, got: %s' % bver)
-except ImportError:
-    try:
-        print("Hack: pre-installing `polyversion` from standalone `pvlib.run` wheel",
-              file=sys.stderr)
-        sys.path.append(osp.join(mydir, 'bin', 'pvlib.run'))
-        from polyversion import polyversion
-    except Exception as ex:
-        print("Hack failed :-(", file=sys.stderr)
-        polyversion = lambda *_, **__: '0.0.0'
+#         print("Hack: pre-installing `polyversion` from standalone `pvlib.run` wheel",
+#               file=sys.stderr)
+#         sys.path.append(osp.join(mydir, 'bin', 'pvlib.run'))
+#         from polyversion import polyversion
+#     except Exception as ex:
+#         print("Hack failed :-(", file=sys.stderr)
+#         polyversion = lambda *_, **__: '0.0.0'
 
 
 def yield_rst_only_markup(lines):
@@ -131,7 +132,8 @@ setup(
     name=PROJECT,
     ## Provide a `default_version` for installing eg. in shallow clones,
     #  and `pname` or else it would be `__main__`.
-    version=polyversion(pname=PROJECT, default_version='0.0.0'),
+    version='0.0.0',
+    polyversion=True,
     description="Polyvers's lib to derive subproject versions from tags on Git monorepos.",
     long_description=long_desc,
     author="Kostis Anagnostopoulos",
@@ -173,7 +175,7 @@ setup(
     ],
     test_suite='tests',
     #python_requires='>=3.6',
-    setup_requires=['setuptools', 'wheel'],
+    setup_requires=['setuptools', 'wheel', 'polyversion'],
     tests_require=test_requirements,
     extras_require={
         'test': test_requirements,
