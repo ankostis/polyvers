@@ -3,6 +3,10 @@
 #
 """
 A *setuptools* plugin with x2 ``setup()`` kwds and monkeypatch all ``bdist...`` cmds.
+
+.. Tip::
+  Set `envvar[DISTUTILS_DEBUG]` to debug it.
+  From https://docs.python.org/3.7/distutils/setupscript.html#debugging-the-setup-script
 """
 from polyversion import polyversion
 
@@ -161,9 +165,29 @@ def _monkeypathed_run_command(dist, cmd):
     """
     A ``distutils.run_command()`` that screams on `bdist...` cmds not from rtags.
     """
-    if cmd.startswith('bdist') and not getattr(dist,
-                                               'skip_polyversion_check',
-                                               False):
+    ## Flag value may originate from 2 places:
+    #    - from `setup.py:setup()` kwd,
+    #    - from `setup.cfg:[global]` section.
+    #  Cast-bool would yield `True` on "False" str-value from the later!!
+    #
+    skip_check = getattr(dist, 'skip_polyversion_check', False)
+    skip_check_bval = bool(skip_check)
+    if skip_check_bval:
+        import distutils.util as dstutils
+
+        try:
+            skip_check_bval = dstutils.strtobool(str(skip_check))
+        except ValueError as ex:
+            import logging
+
+            skip_check_bval = False
+            logging.getLogger(__name__).warning(
+                "Invalid value '%s' for boolean `skip-polyversion-check` flag, "
+                "assuming False;"
+                "\n  expected: (y yes t true on 1) OR (n no f false off 0)",
+                skip_check)
+
+    if cmd.startswith('bdist') and not skip_check_bval:
         ## Cache results to avoid multiple calls into `polyversion(r-tag)`.
         #
         rtag_err = getattr(dist, 'polyversion_rtag_err', None)
@@ -208,8 +232,10 @@ def skip_plugin_check_kw(dist, _attr, kw_value):
 
         $ python setup.py bdist_wheel --skip-polyversion-check
 
-    Ignored, if `polyversion` kw is not enabled.
+    - Ignored, if `polyversion` kw is not enabled.
+    - Registered in `distutils.setup_keywords` *entry_point* of this project's
+      ``setup.py`` file.
     """
-    ## Registered in `distutils.setup_keywords` *entry_point*
-    #  of this project's ``setup.py``.
+    ## NOTE: this runs only if kw set in `setup.py:setup()`` - BUT
+    #  NOT from `setup.cfg:[global]` section!!
     dist.skip_polyversion_check = bool(kw_value)
