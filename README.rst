@@ -143,8 +143,9 @@ then you need enter the following configurations into your build files::
             +--...
 
 .. Tip::
-    Sample files can be derived from those in the `polyvers` subprojects
-    (where they eat their own dog food).
+    You may see different sample approaches for your setup-files by looking
+    into both `polyvers` & `polyversion` subprojects of this repo (because
+    they eat their own dog food).
 
 The `polyversion` library function as a *setuptools* "plugin", and
 adds a new ``setup()`` keyword ``polyversion = (bool | dict)``
