@@ -6,7 +6,14 @@ Changes
 
 2018-06-06: polyversion-v0.1.0a5
 ================================
-Bugfixing `polyversion` (`0.1.0a4` bumped to generate standalone wheel):
+- Disable standalone-wheel hack from ``pvlib/setup.py`` and rely on
+  *setuptools* plugin even for *polyversion* ONCE MORE.
+  (but no need to update standalone, which is a wheel, unaffected by that)
+
+
+2018-06-06: polyversion-v0.1.0a4
+================================
+Bugfixing `polyversion` (and generate a non-buggy standalone wheel):
 
 - FIX `polyversion` where it ignored ``setup(default_version`` keyword.
   (:git:`6519a1ba`)
