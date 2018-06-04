@@ -4,11 +4,12 @@ Changes
 
 .. towncrier release notes start
 
-2018-06-03: polyversion-v0.1.0a2
+2018-06-03: polyversion-v0.1.0a3
 ================================
-- Canceled (like the previous 2), cannot release from r-tags because ``setup()``
+- `v0.1.0a2`Canceled (like the previous 2), cannot release from r-tags because ``setup()``
   reports version from v-tag.
-  A new setup-keyword needed: ``--is-polyversion-release``?
+  Q: Is a new setup-keyword needed ``--is-polyversion-release``?
+  (A: no, just fetch both)
 - `v0.1.0a0` had been canceled for the same reason, but somewhere down the road,
   the fix was reverted (bdist-check works for r-tag only).
 - `v0.1.0a1` just marked that our ``setup.py`` files ate our dog food.
@@ -50,11 +51,15 @@ Breaking changes
                     .+?(,
                     \ *[\n\r])+
 
+- *polyversion* library searches both *v-tags* and *r-tags* (unless limited).
+  Previously, even checked-out on an *r-tag*, both ``polyversion`` command
+  and ``polyvers bump`` would ignore it, and report +1 from the *v-tag*!
+
 Features
 --------
 - The `polyversion` library function as a *setuptools* "plugin", and
   adds two new ``setup()`` keywords for deriving subproject versions
-  from PKG-INFO or git tags  (see :func:`polyversion.setuptools_pv_init_kw`):
+  from PKG-INFO or git tags  (see :func:`polyversion.init_plugin_kw`):
 
   1. keyword: ``polyversion --> (bool | dict)``
       When a dict, its keys roughly mimic those in :func:`polyversion()`,
@@ -69,7 +74,7 @@ Features
               version=''              # omit (or None) to abort if cannot auto-version
               polyversion={           # dict or bool
                   'mono_project': True, # false by default
-                  ...  # See `polyversion.setuptools_pv_init_kw()` for more keys.
+                  ...  # See `polyversion.init_plugin_kw()` for more keys.
               },
               setup_requires=[..., 'polyversion'],
               ...
@@ -89,6 +94,9 @@ Features
 
 - Assign names to engraves & grafts for readable printouts, and for refering to
   them from the new `Project.enabled_engarves` list. (namengraves)
+
+- ``polyversion -t`` command-line tool prints the full tag (not the version)
+  to make it easy to know if it is a v-tag or r-tag.
 
 Documentation changes
 ---------------------
