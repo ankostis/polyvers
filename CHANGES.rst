@@ -4,6 +4,18 @@ Changes
 
 .. towncrier release notes start
 
+2018-06-04: polyversion-v0.1.0a5
+================================
+Bugfixing `polyversion` (`0.1.0a4` bumped to generate standalone wheel):
+
+- FIX `polyversion` where it ignored ``setup(default_version`` keyword.
+  (:git:`6519a1ba`)
+- fix: `polyversion` stop eating half of its own dog food: cannot relibly use
+  :term:`setuptools plugin` for its installation. (:git:`56a894cde`)
+- Monkeypatching *distutils* for :term:`bdist-check` was failing in *PY2*
+  due to being an "old class". (:git:`1f72baec`)
+
+
 2018-06-03: polyversion-v0.1.0a3
 ================================
 - `v0.1.0a2`Canceled (like the previous 2), cannot release from r-tags because ``setup()``
@@ -81,8 +93,9 @@ Features
           )
 
   2. keyword: ``skip_polyversion_check --> bool``
-     When false (default),  any `bdist_*` (e.g. ``bdist_wheel``),
-     commands will abort if not run from a :term:`release tag`.
+     When true, disable :term:`bdist-check`, when false (default),
+     any `bdist_*` (e.g. ``bdist_wheel``), commands will abort if not run
+     from a :term:`release tag`.
      You may bypass this check and create a package with non-engraved sources
      (although it might not work correctly) by invoking the setup-script
      from command-line like this::
