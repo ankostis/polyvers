@@ -14,7 +14,6 @@
 # serve to show the default.
 
 import os
-import polyvers  # @ NOACTION
 import sys
 
 import os.path as osp
@@ -38,6 +37,10 @@ sys.path.insert(0, osp.join(project_root))
 sys.path.insert(0, osp.join(project_root, 'pvcmd'))
 sys.path.insert(0, osp.join(project_root, 'pvlib'))
 
+try:
+    import polyvers  # @ NOACTION for liclipse not to move!!
+except:
+    raise
 
 # -- General configuration ---------------------------------------------
 
