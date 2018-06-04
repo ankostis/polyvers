@@ -37,7 +37,9 @@ script:
     python pvlib/setup.py build bdist_wheel && \
     pip uninstall -y polyversion && \
     pip install dist/polyversion-*.whl && \
-    polyversion --help
+    polyversion --help && \
+    pip uninstall -y polyversion && \
+    pip install -e ./pvlib  # Let a in-git pvlib, not to scream next.
 
   - |
     if [ $TRAVIS_PYTHON_VERSION \> '3.5' ]; then
