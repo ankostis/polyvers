@@ -4,6 +4,7 @@
 from __future__ import print_function
 
 import re
+import sys
 
 from setuptools import setup
 
@@ -11,6 +12,32 @@ import os.path as osp
 
 
 mydir = osp.dirname(osp.realpath(__file__))
+
+
+## here we CANNOT FULLY EAT our own dog-food and use *setuptools* plugin:
+#  We do use `polyversion` to derive version on runtime from Git tags,
+#  BUT we cannot reliably control `easy_install` cached packages when
+#  *setuptools*'s `setup_requires` keyword gets processed:
+#  https://pip.pypa.io/en/stable/reference/pip_install/#controlling-setup-requires
+#
+#  For this reason the following hack is needed to start developing it
+#  from git-sources: it bootstraps  ``pip install -e pvlib[test]``
+#  when not any *compatible" version of the `polyversion` lib is
+#  already installed on the system.
+#
+try:
+    from polyversion import __version__ as bver, polyversion
+    if bver <= '0.1.0':
+        raise ValueError('Expected `polyversion >= 1.0.1a3, got: %s' % bver)
+except ImportError:
+    try:
+        print("Hack: pre-installing `polyversion` from standalone `pvlib.run` wheel",
+              file=sys.stderr)
+        sys.path.append(osp.join(mydir, 'bin', 'pvlib.run'))
+        from polyversion import polyversion
+    except Exception as ex:
+        print("Hack failed :-(", file=sys.stderr)
+        polyversion = lambda *_, **__: '0.0.0'
 
 
 def yield_rst_only_markup(lines):
@@ -102,8 +129,9 @@ PROJECT = 'polyversion'
 
 setup(
     name=PROJECT,
-    version='0.0.0',  # to install in shallow clones
-    polyversion=True,
+    ## Provide a `default_version` for installing eg. in shallow clones,
+    #  and `pname` or else it would be `__main__`.
+    version=polyversion(pname=PROJECT, default_version='0.0.0'),
     description="Polyvers's lib to derive subproject versions from tags on Git monorepos.",
     long_description=long_desc,
     author="Kostis Anagnostopoulos",
@@ -145,11 +173,10 @@ setup(
     ],
     test_suite='tests',
     #python_requires='>=3.6',
-    setup_requires=['setuptools', 'wheel', 'polyversion'],
+    setup_requires=['setuptools', 'wheel'],
     tests_require=test_requirements,
     extras_require={
         'test': test_requirements,
-        'setuptools': ['polyversion'],
     },
     entry_points={
         'distutils.setup_keywords': [
@@ -160,29 +187,3 @@ setup(
             ['%(p)s = %(p)s.__main__:main' % {'p': PROJECT}]
     },
 )
-
-
-# ## Standalone-wheel Hack:
-# #  This sub-project eats it's own dog-food, and
-# #  uses `polyversion` *setuptools* plugin to derive its own version
-# #  on runtime from Git tags.
-# #
-# #  But if it fails (e.g. when bootstraping and no `polyvers` exists in PyPi or
-# #  bc the last released version was broken) the following hack will fallback using
-# # a standalone wheel.
-# try:
-#     run_setup(
-#         polyversion=True,
-#     )
-# except Exception as ex:
-#     import sys
-#     exmsg = str(ex)
-#     if 'polyversion' not in exmsg or 'not recognized' not in exmsg:
-#         raise
-#
-#     print("Hack: pre-installing `polyversion` from standalone `pvlib.run` wheel",
-#           file=sys.stderr)
-#     sys.path.insert(0, osp.join(mydir, '..', 'bin', 'pvlib.run'))
-#     run_setup(
-#         version='0.0.0'
-#     )
