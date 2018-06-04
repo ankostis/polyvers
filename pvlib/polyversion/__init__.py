@@ -430,8 +430,8 @@ def polytime(**kw):
     return cdate
 
 
-__version__ = polyversion(default_version='0.0.0')
-__updated__ = polytime(no_raise=True)
+__version__ = '0.1.0a5'
+__updated__ = '2018-06-05T02:55:06.457783'
 
 
 def run(*args):
