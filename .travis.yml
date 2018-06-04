@@ -24,7 +24,7 @@ script:
   ## Check standalone `pvlib.run`
   #
   - cd bin
-  - ./pvlib.run
+  - ./pvlib.run -V
   - python ./pvlib.run --help
   - python ./pvlib.run -m polyversion  -v
   - PYTHONPATH=./pvlib.run  python -m polyversion  -V
@@ -51,7 +51,12 @@ script:
         pip install -r requirements.txt && \
         pip install -e . && \
         rm -rf build/* && \
-        python setup.py build bdist_wheel --skip-polyversion-check && \
+        if python setup.py bdist_wheel; then
+            "Building-wheel should have been prevented!"  # on purpose err
+        else
+            echo -e "[global]\nskip_polyversion_check = true" >> "$HOME/.pydistutils.cfg"
+            python setup.py bdist_wheel
+        fi && \
         pip install dist/polyvers-*.whl && \
         polyvers --help
     fi
