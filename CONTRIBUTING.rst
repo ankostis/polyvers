@@ -34,3 +34,4 @@ Tests & integrations
                         - `pyup.io <https://pyup.io>`_ (dependency-tracking)
 :commit-messages:       guidelines from *angular* repo:
                         https://github.com/angular/angular.js/blob/master/DEVELOPERS.md#-git-commit-guidelines
+:changes-aggregation:   `towncrier <https://pypi.org/project/towncrier/>`_

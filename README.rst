@@ -656,5 +656,7 @@ Credits
 
 - This package was created with Cookiecutter_ and the `audreyr/cookiecutter-pypackage`_ project template.
 
+- Using `towncrier <https://pypi.org/project/towncrier/>`_ for generating CHANGES.
+
 .. _Cookiecutter: https://github.com/audreyr/cookiecutter
 .. _`audreyr/cookiecutter-pypackage`: https://github.com/audreyr/cookiecutter-pypackage
