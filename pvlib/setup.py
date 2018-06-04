@@ -140,7 +140,7 @@ setup(
     download_url='https://pypi.org/project/polyversion/',
     project_urls={
         'Documentation':
-        'http://polyvers.readthedocs.io/en/latest/usage.html#usage-of-polyversion-library',
+        'http://polyvers.readthedocs.io/en/latest/usage-pvlib.html',
         'Source': 'https://github.com/jrcstu/polyvers',
         'Tracker': 'https://github.com/jrcstu/polyvers/issues',
     },

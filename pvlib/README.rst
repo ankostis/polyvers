@@ -32,7 +32,7 @@ Polyversion: derive subproject versions from tags on Git monorepos
 
 :version:       |version|
 :updated:       |today|
-:Documentation: https://polyvers.readthedocs.io/en/latest/usage.html#usage-of-polyversion-library
+:Documentation: http://polyvers.readthedocs.io/en/latest/usage-pvlib.html
 :repository:    https://github.com/JRCSTU/polyvers
 :pypi-repo:     https://pypi.org/project/polyversion/
 :copyright:     2018 JRC.C4(STU), European Commission (`JRC <https://ec.europa.eu/jrc/>`_)
