@@ -14,6 +14,7 @@
 # serve to show the default.
 
 import os
+import polyvers  # @ NOACTION
 import sys
 
 import os.path as osp
@@ -36,7 +37,6 @@ print("project_root: %s" % project_root)
 sys.path.insert(0, osp.join(project_root))
 sys.path.insert(0, osp.join(project_root, 'pvcmd'))
 sys.path.insert(0, osp.join(project_root, 'pvlib'))
-import polyvers  #@ NOACTION
 
 
 # -- General configuration ---------------------------------------------
@@ -49,6 +49,10 @@ import polyvers  #@ NOACTION
 extensions = ['sphinx.ext.autodoc',
               'sphinx.ext.viewcode',
               'sphinx.ext.autosummary',]
+
+extlinks = {
+    'git': ('https://github.com/JRCSTU/polyvers/commit/%s', 'commit-id '),
+}
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
