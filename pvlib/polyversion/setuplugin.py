@@ -182,7 +182,7 @@ def _monkeypathed_run_command(dist, cmd):
 
             skip_check_bval = False
             logging.getLogger(__name__).warning(
-                "Invalid value '%s' for boolean `skip-polyversion-check` flag, "
+                "Invalid value '%s' for boolean `skip_polyversion_check` option, "
                 "assuming False;"
                 "\n  expected: (y yes t true on 1) OR (n no f false off 0)",
                 skip_check)
@@ -208,10 +208,10 @@ def _monkeypathed_run_command(dist, cmd):
         if rtag_err is not False:
             from distutils.errors import DistutilsSetupError
             raise DistutilsSetupError(
-                "Attempted to run '%s' from a non release-tag?"
-                "\n  error: %s"
-                "\n  Use --skip-polyversion-check if you really want to build"
-                "\n  a binary distribution package from non-engraved sources." %
+                "Attempted to run '%s' from a non release-tag?\n  error: %s"
+                "\n  Add `skip_polyversion_check = true` in your `setup.cfg:[global]` section"
+                "\n  if you really want to build a binary distribution package "
+                "\n  from non-engraved sources." %
                 (cmd, rtag_err))
 
     return dist._polyversion_orig_run_cmd(cmd)
@@ -225,12 +225,13 @@ def skip_plugin_check_kw(dist, _attr, kw_value):
 
     When `<any>` evaluates to false (default),  any `bdist...` (e.g. ``bdist_wheel``),
     :term:`setuptools` commands will abort if not run from a :term:`release tag`.
-    You may bypass this check when you really wish to create
-    binary distributions with non-engraved sources (although it might not
-    work correctly) by invoking the setup-script from command-line
-    like this::
+    You may bypass this check and create a package with non-engraved sources
+    (although it might not work correctly) by adding `skip_polyversion_check` option
+    in your ``setup.cfg`` file, like this::
 
-        $ python setup.py bdist_wheel --skip-polyversion-check
+        [global]
+        skip_polyversion_check = true
+        ...
 
     - Ignored, if `polyversion` kw is not enabled.
     - Registered in `distutils.setup_keywords` *entry_point* of this project's

@@ -15,6 +15,17 @@ Bugfixing `polyversion` (`0.1.0a4` bumped to generate standalone wheel):
 - Monkeypatching *distutils* for :term:`bdist-check` was failing in *PY2*
   due to being an "old class". (:git:`1f72baec`)
 
+- doc: fixed recommendation about how to bypass :term:`bdist check` to this:
+
+    ...
+    You may bypass this check and create a package with non-engraved sources
+    (although it might not work correctly) by adding `skip_polyversion_check` option
+    in your ``setup.cfg`` file, like this::
+
+        [global]
+        skip_polyversion_check = true
+        ...
+
 
 2018-06-03: polyversion-v0.1.0a3
 ================================

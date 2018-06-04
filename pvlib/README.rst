@@ -101,10 +101,13 @@ from PKG-INFO or git tags  (see :func:`polyversion.init_plugin_kw`):
     any `bdist_*` (e.g. ``bdist_wheel``), commands will abort if not run
     from a :term:`release tag`.
     You may bypass this check and create a package with non-engraved sources
-    (although it might not work correctly) by invoking the setup-script
-    from command-line like this::
+    (although it might not work correctly) by adding `skip_polyversion_check` option
+    in your ``setup.cfg`` file, like this::
 
-        $ python setup.py bdist_wheel --skip-polyversion-check
+        [global]
+        skip_polyversion_check = true
+        ...
+
 
 API usage
 ---------
