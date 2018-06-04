@@ -25,18 +25,18 @@ build_wheels() {
     python pvlib/setup.py bdist_wheel
 }
 
-checkut_prev() {
+checkout_prev() {
+    echo "Abort, resoring branch."
     git checkout -
+    exit -1
 }
-trap checkut_prev ERR
-set -e
+trap checkout_prev ERR
 git checkout latest
 
 ./bin/lint.sh
 build_wheels
 
-set +e
-checkut_prev()
+git checkout -
 
 
 ## Create executable AND importable wheel::
