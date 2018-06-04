@@ -91,10 +91,9 @@ def _establish_setup_py_version(dist, repo_path=None, **pvargs):
         ## NOTE: PY2 `type(dist)` is `<type 'instance'>` on PY2,
         #  which does not have the method to patch.
         DistClass = dist.__class__
-        orig_func = DistClass.run_command
-        if orig_func is not _monkeypathed_run_command:
+        if not hasattr(DistClass, '_polyversion_orig_run_cmd'):
+            DistClass._polyversion_orig_run_cmd = DistClass.run_command
             DistClass.run_command = _monkeypathed_run_command
-            DistClass._polyversion_orig_run_cmd = orig_func
 
     if version:
         dist.metadata.version = version
