@@ -4,7 +4,7 @@ Changes
 
 .. towncrier release notes start
 
-2018-06-04: polyversion-v0.1.0a5
+2018-06-06: polyversion-v0.1.0a5
 ================================
 Bugfixing `polyversion` (`0.1.0a4` bumped to generate standalone wheel):
 
