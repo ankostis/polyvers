@@ -75,6 +75,7 @@ def _establish_setup_py_version(dist, repo_path=None, **pvargs):
         pvargs['repo_path'] = (repo_path or
                                (dist.package_dir and dist.package_dir.get('')) or
                                '.')
+        pvargs['default_version'] = dist.metadata.version
 
         ## Store `pvargs` so bdist-check can rerun `polyversion()` for r-tags.
         dist.polyversion_args = pvargs
