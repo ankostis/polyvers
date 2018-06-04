@@ -4,7 +4,7 @@
 
 PVLIB_SH="pvlib.run"
 
-my_dir=`dirname "$0"`
+my_dir="$(realpath "$(dirname "$0")")"
 cd $my_dir/..
 
 ## Stop work on dirty repos - need to switch branches.
@@ -15,13 +15,7 @@ if (git describe --dirty --all|grep dirty >/dev/null); then
     exit 1;
 fi
 
-
-set -e
-
-./bin/lint.sh
-
-git checkout latest
-
+build_wheels() {
     ./bin/check_readme.sh
 
     rm -rf build/* dist/*
@@ -29,10 +23,21 @@ git checkout latest
 
     rm -rf build/*  pvlib/build/*
     python pvlib/setup.py bdist_wheel
+}
 
-git checkout -
+checkut_prev() {
+    git checkout -
+}
+trap checkut_prev ERR
+set -e
+git checkout latest
+
+./bin/lint.sh
+build_wheels
 
 set +e
+checkut_prev()
+
 
 ## Create executable AND importable wheel::
 #      ./pvlib.run --help                           # from bash
