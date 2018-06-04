@@ -31,6 +31,7 @@ __all__ = 'polyversion polytime'.split()
 
 
 log = logging.getLogger(__name__)
+_log_stack = {} if sys.version_info < (3, ) else {'stack_info': 1}
 
 
 #: A 2-tuple containing 2 ``{vprefix}`` values for the patterns below,for
@@ -247,9 +248,14 @@ def _git_describe_parsed(pname,
                         matched_project, pname)
         if descid:
             version = _version_from_descid(version, descid)
-    except:  # noqa:  E722
+    except Exception as ex:
         if default_version is None:
             raise
+        else:
+            log.warning(
+                "polyversion(): falling back to default-version '%s' "
+                "due to ignored error: %s",
+                default_version, ex, **_log_stack)
 
     if not version:
         version = default_version
@@ -407,9 +413,14 @@ def polytime(**kw):
     cmd = "git log -n1 --format=format:%cD"
     try:
             cdate = _my_run(cmd, cwd=repo_path)
-    except:  # noqa:  E722
+    except Exception as ex:
         if not no_raise:
             raise
+        else:
+            log.warning(
+                "polytime(): falling back to current-time "
+                "due to ignored error: %s",
+                ex, **_log_stack)
 
     if not cdate:
         cdate = rfc2822_tstamp()
