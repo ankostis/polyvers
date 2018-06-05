@@ -169,7 +169,13 @@ def make_match_all_pvtags_project(**project_kw) -> pvproject.Project:
             ^(?P<pname>[A-Z0-9]|[A-Z0-9][A-Z0-9._-]*?[A-Z0-9])
             -
             v(?P<version>\d[^-]*)
-            (?:-(?P<descid>\d+-g[a-f\d]+))?$
+            (?:-(?P<descid>
+                    (?P<distance>\d+)
+                    -
+                    g
+                    (?P<hash>[a-f\d]+)
+                )
+            )?$
         """,
         **project_kw)
 

@@ -52,12 +52,17 @@ pvtag_format = '{pname}-{vprefix}{version}'
 vtag_format = '{vprefix}{version}'
 
 #: The default regex pattern breaking :term:`monorepo` version-tags
-#: and/or ``git-describe`` output into 3 capturing groups:
+#: and/or ``git-describe`` output into 3 capturing groups::
 #:
-#:   - ``pname``,
-#:   - ``version`` (without the ``{vprefix)``),
-#:   - ``descid`` (optional) anything following the dash('-') after
-#:     the version in ``git-describe`` result.
+#:                               ┌─────> descid   (optional) anything after the dash('-')
+#:                          ┌────┴────┐
+#:     polyversion-v0.1.0a5-10-g5f6f745
+#:     └────┬────┘ │└──┬──┘ └┤  └──┬──┘
+#:          │      │   │     │     └───> hash     (optional) commit-hash
+#:          │      │   │     └─────────> distance (optional) commit distance number
+#:          │      │   └───────────────> version  (without the `prefix`)
+#:          │      └───────────────────> vprefix
+#:          └──────────────────────────> pname
 #:
 #: It is given 2 :pep:`3101` interpolation parameters::
 #:
@@ -68,13 +73,25 @@ pvtag_regex = r"""(?xmi)
     ^(?P<pname>{pname})
     -
     {vprefix}(?P<version>\d[^-]*)
-    (?:-(?P<descid>\d+-g[a-f\d]+))?$
+    (?:-(?P<descid>
+            (?P<distance>\d+)
+            -
+            g
+            (?P<hash>[a-f\d]+)
+        )
+    )?$
 """
 #: Like :data:`pvtag_format` but for :term:`mono-project` version-tags.
 vtag_regex = r"""(?xmi)
     ^(?P<pname>)
     {vprefix}(?P<version>\d[^-]*)
-    (?:-(?P<descid>\d+-g[a-f\d]+))?$
+    (?:-(?P<descid>
+            (?P<distance>\d+)
+            -
+            g
+            (?P<hash>[a-f\d]+)
+        )
+    )?$
 """
 
 
@@ -192,7 +209,11 @@ def split_pvtag(pvtag, tag_regexes):
             m = tregex.match(pvtag)
             if m:
                 mg = m.groupdict()
-                return mg['pname'], mg['version'], mg['descid']
+                ver = mg['version']
+                desc = mg['descid']
+                if desc:
+                    ver = '%s.dev%s' % (ver, mg['distance'])
+                return mg['pname'], ver, mg['hash']
         except Exception as ex:
             raise ValueError("Matching pvtag '%s' by '%s' failed due to: %s",
                              pvtag, tregex.pattern, ex)
