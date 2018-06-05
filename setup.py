@@ -98,9 +98,9 @@ with open(osp.join(mydir, 'CHANGES.rst')) as history_file:
 
 
 long_desc = ''.join(yield_rst_only_markup((readme + ['\n\n'] + history)))
-
+polyversion_dep = 'polyversion >= 0.1.0a4'
 requirements = [
-    'polyversion',
+    polyversion_dep,
     'boltons',                  # for IndexSet
     'toolz',
     'rainbow_logging_handler',
@@ -163,7 +163,7 @@ setup(
         'Programming Language :: Python :: 3.7',
     ],
     python_requires='>=3.6',
-    setup_requires=['setuptools', 'wheel', 'polyversion'],
+    setup_requires=['setuptools', 'wheel', polyversion_dep],
     install_requires=requirements,
     tests_require=test_requirements,
     extras_require={
@@ -175,29 +175,3 @@ setup(
         'console_scripts': [
             '%(p)s = %(p)s.__main__:main' % {'p': PROJECT}]},
 )
-
-
-# ## Standalone-wheel Hack:
-# #  This sub-project eats it's own dog-food, and
-# #  uses `polyversion` *setuptools* plugin to derive its own version
-# #  on runtime from Git tags.
-# #
-# #  But if it fails (e.g. when bootstraping and no `polyvers` exists in PyPi or
-# #  bc the last released version was broken) the following hack will fallback using
-# # a standalone wheel.
-# try:
-#     run_setup(
-#         polyversion=True,
-#     )
-# except Exception as ex:
-#     raise
-#     exmsg = str(ex)
-#     if 'polyversion' not in exmsg or 'not recognized' not in exmsg:
-#         raise
-#
-#     print("Hack: pre-installing `polyversion` from standalone `pvlib.run` wheel",
-#           file=sys.stderr)
-#     sys.path.insert(0, osp.join(mydir, 'bin', 'pvlib.run'))
-#     run_setup(
-#         version='0.0.0'
-#     )
