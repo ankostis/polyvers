@@ -49,12 +49,12 @@ hosted in a *Git* :term:`monorepo`\s, independently.
 
 The key features are:
 
-    - :term:`monorepo`\s support,
-    - :term:`setuptools integration`,
-    - configurable :term:`version scheme`,
-    - intuitive :term:`version-bump algebra`,
-    - configurable :term:`engravings` and
-    - :term:`leaf release scheme`.
+- :term:`setuptools integration`,
+- x2 :term:`repo scheme`\s (:term:`monorepo`, :term:`mono-project`),
+- configurable :term:`version scheme`,
+- *leaf* :term:`release scheme`,
+- intuitive :term:`version-bump algebra` (TODO),
+- configurable :term:`engravings`.
 
 The last feature departs from the logic of :ref:`similar-tools`.
 Specifically, when bumping the version of sub-project(s), this tool
@@ -404,8 +404,13 @@ Features
         one of these modifiers: ``+^~=``
         See :mod:`polyvers.vermath` for more.
 
+    repo scheme
     monorepo
     mono-project
+        whether a git repo hosts a single or multiple subprojects
+
+        **Rational:**
+
         When your single project succeeds, problems like these are known only too well:
 
           Changes in **web-server** part depend on **core** features that cannot
@@ -434,14 +439,14 @@ Features
         .. [#] http://www.drmaciver.com/2016/10/why-you-should-use-a-single-repository-for-all-your-companys-projects/
 
     version scheme
-        the pattern of a version-tags.
+        the pattern for version-tags.
         2x2 *versioning schemes* are pre-configured, for :term:`mono-project` and
         :term:`monorepo` repositories, respectively:
 
         - `v1.2.3` (and `r1.2.3` applied on :term:`leaf commit`\s)
         - `project-v1.2.3` (and `project-r1.2.3` for :term:`leaf commit`\s)
 
-    leaf release scheme
+    release scheme
     out-of-trunk commit
     leaf commit
     release tag
@@ -452,7 +457,7 @@ Features
         merge-conflicts due to the version-ids :term:`engrave`\d" in the sources.
         In :term:`monorepo`\s, the versions proliferate, and so does the conflicts.
 
-        Contrary to :ref:`similar tools`, static version-ids are engraved only in out-of-trunk
+        Contrary to :ref:`similar-tools`, static version-ids are engraved only in out-of-trunk
         (leaf) commits, and only when the sub-projects are released.
         In-trunk code is never touched, and version-ids are reported, on runtime, based
         on Git tags (like ``git-describe``), so they are always up-to-date.
