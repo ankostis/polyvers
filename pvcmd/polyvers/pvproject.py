@@ -577,7 +577,8 @@ class Project(cmdlets.Replaceable, cmdlets.Printable, yu.YAMLable, cmdlets.Spec)
         default_value=[
             {
                 'name': 'setup.py',
-                'globs': ['setup.py'],
+                ## TODO: add global engrave/project Excludes
+                'globs': ['!*egg*', 'setup.py'],
                 'grafts': [{
                     'name': 'version-comma',
                     'regex': tw.dedent(r'''
@@ -591,7 +592,7 @@ class Project(cmdlets.Replaceable, cmdlets.Printable, yu.YAMLable, cmdlets.Spec)
                 }],
             }, {
                 'name': '__init__',
-                'globs': ['__init__.py'],
+                'globs': ['!*egg*', '__init__.py'],
                 'grafts': [{
                     'name': '__version__',
                     'regex': tw.dedent(r'''
@@ -613,7 +614,7 @@ class Project(cmdlets.Replaceable, cmdlets.Printable, yu.YAMLable, cmdlets.Spec)
                 }],
             }, {
                 'name': 'readme',
-                'globs': ['README.rst'],
+                'globs': ['!*egg*', 'README.rst'],
                 'grafts': [{
                     'name': '|version|',
                     'regex': r'\|version\|',
