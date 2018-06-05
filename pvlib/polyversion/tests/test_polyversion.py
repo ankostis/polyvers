@@ -240,6 +240,7 @@ def test_MAIN_polyversions(ok_repo, untagged_repo, no_repo, capsys, caplog):
         r'proj1: proj1-v0\.0\.1\-2-g[\da-f]+\nfoo:', out)
 
     untagged_repo.chdir()
+    git_err = '' if pvlib.PY2 else 'fatal: No names found'
 
     run()
     out, err = capsys.readouterr()
@@ -248,19 +249,19 @@ def test_MAIN_polyversions(ok_repo, untagged_repo, no_repo, capsys, caplog):
         run('foo')
     out, err = capsys.readouterr()
     assert not out and not err
-    assert 'fatal: No names found' in caplog.text
+    assert git_err in caplog.text
     caplog.clear()
 
     run('foo', 'bar')
     out, err = capsys.readouterr()
     assert out == 'foo: \nbar: \n' and not err
-    assert 'fatal: No names found' in caplog.text
+    assert git_err in caplog.text
     caplog.clear()
 
     run('foo', '-t', 'bar')
     out, err = capsys.readouterr()
     assert out == 'foo: \nbar: \n' and not err
-    assert 'fatal: No names found' in caplog.text
+    assert git_err in caplog.text
     caplog.clear()
 
     no_repo.chdir()
