@@ -15,7 +15,7 @@ import pytest
 import textwrap as tw
 
 from .conftest import (
-    check_text, make_setup_py_without_version, make_setup_py, make_init_py)
+    check_text, make_setup_py_without_version, make_setup_py)
 
 
 @pytest.fixture(autouse=True)
@@ -79,23 +79,7 @@ def test_bump_cmd_mono_project(mutable_repo, caplog, capsys):
     #
     caplog.clear()
     setupy_fpath = make_setup_py(mutable_repo, 'simple')
-    rc = cli.run('bump  -v --mono-project 0.0.1'.split())
-    assert rc == 1
-    check_text(
-        caplog.text,
-        require=[
-            'No version-engravings happened, bump aborted'
-        ], forbid=[
-            r"Bumped projects",
-            r"simple-0.0.0 --> 0.0.1",
-            "Cannot auto-discover (sub-)project",
-            "Cannot auto-discover versioning scheme,"
-        ])
-    out, err = capsys.readouterr()
-    assert not out and not err
 
-    init_fpath = make_init_py(mutable_repo, 'simple')
-    caplog.clear()
     rc = cli.run('bump  -v --mono-project 0.0.1'.split())
     # with capsys.disabled():
     #     print(caplog.text)
@@ -117,20 +101,13 @@ def test_bump_cmd_mono_project(mutable_repo, caplog, capsys):
     #     print(gitlog)
     exp = tw.dedent("""\
         chore(ver): bump simple-r0.0.0 -> 0.0.1  (tag: r0.0.1, latest)
-        added '__init__.py'  (HEAD -> master, tag: v0.0.1)
-        added 'setup.py'
+        added 'setup.py'  (HEAD -> master, tag: v0.0.1)
         some_msg  (origin/master, origin/HEAD)""")
-    check_text(gitlog, exp)
+    assert exp in gitlog
 
     cmd.git.checkout('latest')  # Branch-name from BumpCmd.release_branch.
     setuppy_text = setupy_fpath.read_text(encoding='utf-8')
-    assert re.search("version *= *'something there',", setuppy_text), setuppy_text
-
-    init_text = init_fpath.read_text(encoding='utf-8')
-    assert re.search("__version__   *= *'0.0.1'", init_text), init_text
-    # time: 2018-05-31T05:00:17.549448
-    assert re.search(r"__updated__   *= *'\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d.\d{6}",
-                     init_text), init_text
+    assert re.search("version *= *'0.0.1',", setuppy_text), setuppy_text
 
 
 def test_bump_cmd_monorepo(mutable_repo, caplog, capsys):
@@ -141,7 +118,7 @@ def test_bump_cmd_monorepo(mutable_repo, caplog, capsys):
     #
     caplog.clear()
     setupy_fpath = make_setup_py(mutable_repo, 'simple')
-    init_fpath = make_init_py(mutable_repo, 'simple')
+
     rc = cli.run('bump  -v --monorepo 0.0.1'.split())
     # with capsys.disabled():
     #     print(caplog.text)
@@ -163,20 +140,13 @@ def test_bump_cmd_monorepo(mutable_repo, caplog, capsys):
     #     print(gitlog)
     exp = tw.dedent("""\
         chore(ver): bump simple-r0.0.0 -> 0.0.1  (tag: simple-r0.0.1, latest)
-        added '__init__.py'  (HEAD -> master, tag: simple-v0.0.1)
-        added 'setup.py'
+        added 'setup.py'  (HEAD -> master, tag: simple-v0.0.1)
         some_msg  (origin/master, origin/HEAD)""")
-    check_text(gitlog, exp)
+    assert exp in gitlog
 
     cmd.git.checkout('latest')  # Branch-name from BumpCmd.release_branch.
     setuppy_text = setupy_fpath.read_text(encoding='utf-8')
-    assert re.search("version *= *'something there',", setuppy_text), setuppy_text
-
-    init_text = init_fpath.read_text(encoding='utf-8')
-    assert re.search("__version__   *= *'0.0.1'", init_text), init_text
-    # time: 2018-05-31T05:00:17.549448
-    assert re.search(r"__updated__   *= *'\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d.\d{6}",
-                     init_text), init_text
+    assert re.search("version *= *'0.0.1',", setuppy_text), setuppy_text
 
     # # FIXME: project fails with return mg['version']!
     # rc = cli.run('init'.split())

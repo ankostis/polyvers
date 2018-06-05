@@ -576,6 +576,20 @@ class Project(cmdlets.Replaceable, cmdlets.Printable, yu.YAMLable, cmdlets.Spec)
         autotrait.AutoInstance(Engrave),
         default_value=[
             {
+                'name': 'setup.py',
+                'globs': ['setup.py'],
+                'grafts': [{
+                    'name': 'version-comma',
+                    'regex': tw.dedent(r'''
+                        (?xm)
+                            \bversion
+                            (\ *=\ *)
+                            .+?(,
+                            \ *[\n\r])+
+                        '''),
+                    'subst': r"version\1'{version}'\2"
+                }],
+            }, {
                 'name': '__init__',
                 'globs': ['__init__.py'],
                 'grafts': [{
