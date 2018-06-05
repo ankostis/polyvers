@@ -16,7 +16,7 @@ Polyversion (library)
 Module: :mod:`polyversion`
 ------------------------------------
 .. automodule:: polyversion
-   :members:    polyversion, polytime,
+   :members:    polyversion, polytime, decide_vprefixes,
                 vtag_format, vtag_regex, pvtag_format, pvtag_regex
 
 Module: :mod:`polyversion.setuplugin`

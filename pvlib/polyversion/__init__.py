@@ -28,7 +28,7 @@ import os.path as osp
 import subprocess as sbp
 
 
-__all__ = 'polyversion polytime'.split()
+__all__ = 'polyversion polytime decide_vprefixes'.split()
 
 
 PY2 = sys.version_info < (3, )
@@ -293,6 +293,21 @@ def _git_describe_parsed(pname,
     return pvtag, version, descid
 
 
+def decide_vprefixes(vprefixes, is_release):
+    "Decide v-tag, r-tag or both; no surprises params, return always an array."
+
+    if vprefixes is None:
+        vprefixes = tag_vprefixes
+    if len(vprefixes) != 2:
+        raise ValueError(
+            "Args 'vprefixes' in `polyversion()` must be a 2 element str-array"
+            ", got: %r" % (vprefixes, ))
+    if is_release is not None:
+        vprefixes = (vprefixes[bool(is_release)], )
+
+    return vprefixes
+
+
 def polyversion(**kw):
     """
     Report the *pvtag* of the `pname` in the git repo hosting the source-file calling this.
@@ -344,7 +359,7 @@ def polyversion(**kw):
     :param str vprefixes:
         a 2-element array of str - :data:`tag_vprefixes` assumed when not specified
     :param is_release:
-        used as boolean-index into :data:`tag_vprefixes`:
+        a 3-state boolean used as index into :data:`tag_vprefixes`:
 
         - false: v-tags searched;
         - true: r-tags searched;
@@ -402,17 +417,7 @@ def polyversion(**kw):
         if not repo_path:
             repo_path = '.'
 
-    ## Decide `vprefix` (v-tag or r-tag).
-    #
-    if vprefixes is None:
-        vprefixes = tag_vprefixes
-    if len(vprefixes) != 2:
-        raise ValueError(
-            "Args 'vprefixes' in `polyversion()` must be a 2 element str-array"
-            ", got: %r" % (vprefixes, ))
-    if is_release is not None:
-        vprefixes = (vprefixes[bool(is_release)], )
-
+    vprefixes = decide_vprefixes(vprefixes, is_release)
     tag, version, descid = _git_describe_parsed(pname, default_version,
                                                 tag_format, tag_regex,
                                                 vprefixes,
