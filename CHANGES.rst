@@ -4,10 +4,20 @@ Changes
 
 .. towncrier release notes start
 
-2018-06-06: polyversion-v0.1.0a6
-================================
-+ ``polyversion`` command got a bit more civilized, and explain problems with
-  related stacktraces.
+2018-06-06: polyvers-v0.1.0a0, polyversion-v0.1.0a6
+====================================================
++ FEAT: reinstated :term:`engravings` on ``setup.py`` (dropped only for a while
+  in `2018-06-03: polyversion-v0.1.0a3`_ ), since, assuming clients have adopted
+  the new :term:`setuptools plugin` keyword, it is the `default_version` that
+  will be engraved, which is fine.
+
++ fix: report any version matched both from :term:`v-tag`\s and :term:`r-tag`'s.
+
++ fix: ``bump`` command does not engrave *egg*-related files.
+
++ ``polyversion`` command got a bit more civilized (with logging to explain
+  problems with related stacktraces.
+
 + dev: don't test building wheel on travis...too much fuzzz.
 
 
@@ -29,7 +39,7 @@ Bugfixing `polyversion` (and generate a non-buggy standalone wheel):
 - Monkeypatching *distutils* for :term:`bdist-check` was failing in *PY2*
   due to being an "old class". (:git:`1f72baec`)
 
-- doc: fixed recommendation about how to bypass :term:`bdist check` to this:
+- doc: fixed recommendation about how to bypass :term:`bdist-check` to this:
 
     ...
     You may bypass this check and create a package with non-engraved sources
