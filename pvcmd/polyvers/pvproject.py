@@ -424,17 +424,20 @@ class Project(cmdlets.Replaceable, cmdlets.Printable, yu.YAMLable, cmdlets.Spec)
             raise AssertionError("Call first `populate_pvtags_history()` on %s!")
         return self._pvtags_collected
 
-    def version_from_pvtag(self, pvtag: str) -> Optional[str]:
+    def version_from_pvtag(self, pvtag: str,
+                           is_release: Optional[bool] = None) -> Optional[str]:
         """Extract the version from a *pvtag*."""
-        m = self.tag_regex().match(pvtag)
-        if m:
-            mg = m.groupdict()
+        release_flags = [0, 1] if is_release is None else [bool(is_release), ]
+        for r in release_flags:
+            m = self.tag_regex(r).match(pvtag)
+            if m:
+                mg = m.groupdict()
 
-            return mg['version']
+                return mg['version']
 
     def git_describe(self, *git_args: str,
                      include_lightweight=False,
-                     is_release=False,
+                     is_release=None,
                      **git_flags: str):
         """
         Gets sub-project's version as derived from ``git describe`` on its *pvtag*.
@@ -443,7 +446,11 @@ class Project(cmdlets.Replaceable, cmdlets.Printable, yu.YAMLable, cmdlets.Spec)
             Consider also non-annotated tags when derriving description;
             equivalent to ``git describe --tags`` flag.
         :param is_release:
-            `False` for version-tags, `True` for release-tags
+            a 3-state boolean used as index into :data:`tag_vprefixes`:
+
+            - false: v-tags searched;
+            - true: r-tags searched;
+            - None: both tags searched.
         :param git_args:
             CLI options passed to ``git describe`` command.
             See :class:`.oscmd.PopenCmd` on how to specify cli options
@@ -478,14 +485,16 @@ class Project(cmdlets.Replaceable, cmdlets.Printable, yu.YAMLable, cmdlets.Spec)
         """
         from .import pvtags
 
-        tag_pattern = self.tag_fnmatch(is_release)
+        ## TODO: Project should reuse pvlib as entry-points
+        release_flags = [0, 1] if is_release is None else [bool(is_release), ]
+        tag_patterns = [self.tag_fnmatch(i) for i in release_flags]
 
         ## TODO: move to pvtags
         with pvtags.git_project_errors_handled(self.pname):
             out = cmd.git.describe._(
                 tags=(include_lightweight) or None,
                 *git_args,
-                **git_flags)(match=tag_pattern)
+                **git_flags)(*('--match=%s' % i for i in tag_patterns))
 
         version = out
 
@@ -493,10 +502,14 @@ class Project(cmdlets.Replaceable, cmdlets.Printable, yu.YAMLable, cmdlets.Spec)
         if 'all' in git_flags:
             version = version.lstrip('tags/')
 
-        if not self.version_from_pvtag(version):
+        if not self.version_from_pvtag(version, is_release):
             raise trt.TraitError(
-                "Project-version '%s' fetched by '%s' unparsable by regex: %s"
-                % (version, tag_pattern, self.tag_regex().pattern))
+                "Project-version '%s' fetched by %i patterns (%s) "
+                "was unparsable by regex:%s" %
+                (version,
+                 len(tag_patterns), ', '.join(tag_patterns),
+                 ','.join('\n%r' % self.tag_regex(r).pattern
+                          for r in release_flags)))
 
         return version
 
