@@ -502,39 +502,6 @@ Features
         - Always accurate version reported on runtime when run from git repos
           (never again wonder with which version your experimental-data were produced).
 
-Features TODO
--------------
-.. glossary::
-
-    pre/post release hooks
-        Possible to implement hooks as
-        `setuptools plugins
-        <http://setuptools.readthedocs.io/en/latest/setuptools.html#dynamic-discovery-of-services-and-plugins>`_.
-        to run, for example, housekeeping commands on all subprojects like
-        ``pip install -e <project>`` and immediately start working in "develop mode".
-
-         This functionality would also allow to *validate tests* before/after
-         every bump::
-
-             ## Pre-release hook
-             #
-             pytest tests
-
-
-             ## Post-release hook
-             #
-             rm -r dist/* build/*;
-             python setup.py sdist bdist_wheel
-             twine upload dist/*whl -s
-
-    Lock release trains as "developmental"
-        Based on :term:`version-bump algebra`, specific branches can be selected
-        always to be published into *PyPi* only as `PEP-440's "Developmental" releases
-        <https://www.python.org/dev/peps/pep-0440/#developmental-releases>`_,
-        meanining that users need top use ``pip install --pre`` to fetch
-        such release-trains.
-        This is a safeguard to avoid accidentally landing half-baked code to users.
-
 
 Known Limitations, Drawbacks & Workarounds
 ------------------------------------------
@@ -599,6 +566,7 @@ Known Limitations, Drawbacks & Workarounds
 
 - Set branch ``latest`` as default in GitHub to show :term:`engrave`\d sub-project version-ids.
 
+- See :ref:`to-dos`.
 
 .. _contribute-section:
 .. _similar-tools:

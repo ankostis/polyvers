@@ -2,6 +2,48 @@
 Changes
 =======
 
+.. _to-dos:
+
+TODOs
+=====
+- Parse ``git describe`` like `setuptools_scm plugin
+  <https://pypi.org/project/setuptools_scm/#default-versioning-scheme>`_ does.
+
+- Drop `pvcmd/pvtags.py`, and replace it with `polyversion`?
+
+- Configurable hooks - refactor :term:`engravings` as one of them.
+  to run, for example, housekeeping commands on all subprojects like
+  ``pip install -e <project>`` and immediately start working in "develop mode".
+
+  This would allow housekeeping commands and *validate tests*
+  before/after every bump::
+
+      ## Pre-release hook
+      #
+      pytest tests
+
+
+      ## Post-release hook
+      #
+      rm -r dist/* build/*;
+      python setup.py sdist bdist_wheel
+      twine upload dist/*whl -s
+
+- Add top-level engrave glob-excludes.
+
+- Refactor :term:`version-bump algebra` to support a single modifier per segment
+  (see ``multivermath`` branch).
+
+- Lock release-trains as "alpha/beta".., specific branches can be selected
+  Based on :term:`version-bump algebra`), this will force users to always
+  use ``pip install --pre`` to fetch such release-trains.
+  This is a safeguard to avoid accidentally landing half-baked code to users.
+
+- Retrofit `polyversion` library as a plugin of `polyvers` command.
+
+- Function as plugin for other 3rd-party projects, bake a cookiecutter
+
+
 .. towncrier release notes start
 
 2018-06-06: polyvers-v0.1.0a0, polyversion-v0.1.0a6
@@ -153,7 +195,7 @@ Documentation changes
   its change in the same commit, without conflicts. (towncrier)
 - usage: explain how to set your projects :pep:`0518` ``pyproject.toml``
   file & ``setup_requires`` keyword in ``setup.py`` in your script.
-- add `pbr`, `incremental` and `Zest.release` in "similar tools" section
+- add `pbr`, `incremental` and `Zest.release` in :ref:`similar-tools` section
   as  *setuptools* plugins.
 - re-wrote and shrinked opening section using glossary terms.
 
