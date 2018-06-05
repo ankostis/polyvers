@@ -191,9 +191,8 @@ def split_pvtag(pvtag, tag_regexes):
                 mg = m.groupdict()
                 return mg['pname'], mg['version'], mg['descid']
         except Exception as ex:
-            log.error("Matching pvtag '%s' by '%s' failed due to: %s",
-                      pvtag, tregex.pattern, ex)
-            raise
+            raise ValueError("Matching pvtag '%s' by '%s' failed due to: %s",
+                             pvtag, tregex.pattern, ex)
 
     raise ValueError(
         "Unparseable pvtag %r from pvtag_regexes: %s!" %
