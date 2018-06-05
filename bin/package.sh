@@ -1,6 +1,10 @@
 #!/bin/bash
 #
-## Build both polyvers packages
+## SYNTAX:
+#       package.sh  [--no-err]
+#
+#  Build both polyvers(-ion) packages, optionally ingoring lint/bdist-errors.
+#
 
 PVLIB_SH="pvlib.run"
 
@@ -15,6 +19,12 @@ if (git describe --dirty --all|grep dirty >/dev/null); then
     exit 1;
 fi
 
+if [[ "${@#--noerr}" = "$@" ]]; then
+    echo "+++Not aborting on errors."
+else
+    enable_err="set -eE"
+fi
+
 build_wheels() {
     ./bin/check_readme.sh
 
@@ -25,12 +35,16 @@ build_wheels() {
     python pvlib/setup.py bdist_wheel
 }
 
+## Conditionally CLEANLY fail on errors.
+#
 checkout_prev() {
-    echo "Abort, resoring branch."
+    echo "^^^Abort, resoring branch...."
     git checkout -
     exit -1
 }
 trap checkout_prev ERR
+$enable_err
+
 git checkout latest
 
 ./bin/lint.sh
