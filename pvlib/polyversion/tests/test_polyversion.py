@@ -240,7 +240,7 @@ def test_MAIN_polyversions(ok_repo, untagged_repo, no_repo, capsys, caplog):
         r'proj1: proj1-v0\.0\.1\-2-g[\da-f]+\nfoo:', out)
 
     untagged_repo.chdir()
-    git_err = '' if pvlib.PY2 else 'fatal: No names found'
+    git_err = '' if pvlib.PY_OLD_SBP else 'fatal: No names found'
 
     run()
     out, err = capsys.readouterr()

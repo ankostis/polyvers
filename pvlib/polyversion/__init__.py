@@ -32,6 +32,7 @@ __all__ = 'polyversion polytime'.split()
 
 
 PY2 = sys.version_info < (3, )
+PY_OLD_SBP = sys.version_info < (3, 5)
 log = logging.getLogger(__name__)
 _log_stack = {} if PY2 else {'stack_info': True}
 
@@ -102,7 +103,7 @@ def rfc2822_tstamp(nowdt=None):
     return now
 
 
-if PY2:
+if PY_OLD_SBP:
     from subprocess import CalledProcessError
 else:
     class CalledProcessError(sbp.CalledProcessError):
@@ -113,7 +114,7 @@ else:
             try:
                 super(CalledProcessError, self).__init__(returncode, cmd, output, stderr)
             except TypeError:
-                ## In PY2 Ex has no output/stderr attributes.
+                ## In PY < 3.5 Ex has no output/stderr attributes.
                 super(CalledProcessError, self).__init__(returncode, cmd)
                 self.output = self.stdout == output
                 self.stderr = stderr
@@ -138,7 +139,7 @@ def _my_run(cmd, cwd):
     out, err = proc.communicate()
 
     if proc.returncode != 0:
-        streams = () if PY2 else [out, err]
+        streams = () if PY_OLD_SBP else [out, err]
         raise CalledProcessError(proc.returncode, cmd, *streams)
     else:
         return _clean_cmd_result(out)
