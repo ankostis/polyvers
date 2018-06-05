@@ -4,6 +4,13 @@ Changes
 
 .. towncrier release notes start
 
+2018-06-06: polyversion-v0.1.0a6
+================================
++ ``polyversion`` command got a bit more civilized, and explain problems with
+  related stacktraces.
++ dev: don't test building wheel on travis...too much fuzzz.
+
+
 2018-06-06: polyversion-v0.1.0a5
 ================================
 - Disable standalone-wheel hack from ``pvlib/setup.py`` and rely on
