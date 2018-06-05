@@ -25,8 +25,8 @@ import subprocess as sbp
 def err_includes_stderr(self):
     import signal
 
-    tail = ('\n  STDERR: ' + self.stderr) if self.stderr else ''
-    tail += ('\n  STDOUT: ' + self.stdout) if self.stdout else ''
+    tail = ('\n  STDERR: %s' % self.stderr) if self.stderr else ''
+    tail += ('\n  STDOUT: %s' % self.stdout) if self.stdout else ''
 
     if self.returncode and self.returncode < 0:
         try:
