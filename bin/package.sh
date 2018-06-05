@@ -42,7 +42,8 @@ checkout_prev() {
     git checkout -
     exit -1
 }
-trap checkout_prev ERR
+
+trap checkout_prev EXIT
 $enable_err
 
 git checkout latest
@@ -51,6 +52,7 @@ git checkout latest
 build_wheels
 
 git checkout -
+trap '' EXIT
 
 
 ## Create executable AND importable wheel::
