@@ -477,6 +477,10 @@ def run(*args):
         args = list(args)
         del args[args.index('-t')]
 
+    logging.basicConfig(
+        level=logging.INFO,
+        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+
     if len(args) == 1:
         res = polyversion(pname=args[0], repo_path=os.curdir,
                           return_all=print_tag)
