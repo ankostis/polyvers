@@ -110,9 +110,10 @@ else:
         """
         "A :class:`sbp.CalledProcessError` that includes STDOUT/STDERR on its message.
         """
-        def __init__(self, returncode, cmd, output=None, stderr=None):
+        def __init__(self, returncode, cmd, output=None, stderr=None, cwd=None):
             try:
                 super(CalledProcessError, self).__init__(returncode, cmd, output, stderr)
+                self.cwd = cwd
             except TypeError:
                 ## In PY < 3.5 Ex has no output/stderr attributes.
                 super(CalledProcessError, self).__init__(returncode, cmd)
@@ -122,8 +123,10 @@ else:
         def __str__(self):
             out = getattr(self, 'stdout', None)  # strangely not always there...
             err = getattr(self, 'stderr', None)
+            cwd = getattr(self, 'cwd', None)
             tail = ('\n  STDERR: %s' % err) if err else ''
             tail += ('\n  STDOUT: %s' % out) if out else ''
+            tail += ('\n     CWD: %s' % cwd) if cwd else ''
 
             err = super(CalledProcessError, self).__str__()
 
@@ -139,7 +142,7 @@ def _my_run(cmd, cwd):
     out, err = proc.communicate()
 
     if proc.returncode != 0:
-        streams = () if PY_OLD_SBP else [out, err]
+        streams = () if PY_OLD_SBP else [out, err, cwd]
         raise CalledProcessError(proc.returncode, cmd, *streams)
     else:
         return _clean_cmd_result(out)

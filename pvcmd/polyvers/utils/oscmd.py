@@ -22,6 +22,7 @@ import subprocess as sbp
 
 #: Monkeypatch :class:`subprocess.CalledProcessError`
 #: to always print STDERR on errors.
+#: TODO: reuse from `polyversion, include CWD.
 def err_includes_stderr(self):
     import signal
 
