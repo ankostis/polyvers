@@ -568,6 +568,19 @@ Known Limitations, Drawbacks & Workarounds
 
 - See :ref:`to-dos`.
 
+Recipes
+=======
+Automatically sign tags:
+------------------------
+Add this to your ``~/.polyvers.yaml``:
+
+.. code-block:: yaml
+
+    BumpCmd:
+      sign_tags: true
+      sign_user: <username-or-keyid>
+
+
 .. _contribute-section:
 .. _similar-tools:
 
