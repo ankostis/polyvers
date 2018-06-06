@@ -98,8 +98,8 @@ Additional capabilities and utilities:
 
 Tutorial
 ========
-1. Install the tool
--------------------
+Install the tool
+----------------
 And you get the ``polyvers`` command:
 
 .. code-block:: console
@@ -123,8 +123,8 @@ And you get the ``polyvers`` command:
       on runtime from Git.
 
 
-2. Prepare project
-------------------
+Prepare project
+---------------
 Assuming our :term:`monorepo` project ``/monorepo.git/`` contains two sub-projects,
 then you need enter the following configurations into your build files::
 
@@ -192,8 +192,8 @@ and then you can simply import ``polyversion`` from your ``setup.py``:
     To properly install a :pep:`0518` project you need ``pip-v10+`` version.
 
 
-3. Initialize `polyvers`
-------------------------
+Initialize `polyvers`
+---------------------
 ...we let the tool auto-discover the mapping of *project folders ↔ project-names*
 and create a `traitlets configuration YAML-file <https://traitlets.readthedocs.io>`_
 named as  ``/monorepo.git/.polyvers.py``:
@@ -246,8 +246,8 @@ more gets displayed:
 ..where ``gitver`` would be the result of ``git-describe``.
 
 
-4. Bump versions
-----------------
+Bump versions
+-------------
 We can now use tool to set the same version to all sub-projects:
 
 .. code-block:: console
@@ -301,8 +301,8 @@ file modification for :term:`engrave`\ing the current version in the leaf "Relea
     $ git checkout  -  # to return to master.
 
 
-5. Engrave version in the sources
----------------------------------
+Engrave version in the sources
+------------------------------
 Usually programs report their version somehow when run, e.g. with ```cmd --version``.
 With *polyvers* we can derive the latest from the tags created in the previous step,
 using a code like this, usually in the file ``/mainprog/mainprog/__init__.py:``:
@@ -323,8 +323,8 @@ using a code like this, usually in the file ``/mainprog/mainprog/__init__.py:``:
 
 
 
-6. Bump sub-projects selectively
---------------------------------
+Bump sub-projects selectively
+-----------------------------
 Now let's add another dummy commit and then bump ONLY ONE sub-project:
 
 .. code-block:: console
