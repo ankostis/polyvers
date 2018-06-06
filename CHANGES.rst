@@ -2,6 +2,9 @@
 Changes
 =======
 
+.. contents:: Releases
+    :local:
+
 .. _to-dos:
 
 TODOs
@@ -42,7 +45,6 @@ TODOs
 - Retrofit `polyversion` library as a plugin of `polyvers` command.
 
 - Function as plugin for other 3rd-party projects, bake a cookiecutter
-
 
 .. towncrier release notes start
 
@@ -204,8 +206,8 @@ Documentation changes
       version correctly.
 
 
-0.0.2a10 (2018-05-24): polyvers
--------------------------------
+2018-05-24: 0.0.2a10: polyvers
+==============================
 - fix: slight change of default engraving for ``setup.py:version=...``.
 - Remove default versions from the sources of our-own-dog-food
   (affects installations for developing this tool).
@@ -215,16 +217,16 @@ Documentation changes
 - doc: expand section for installing and contributing into this project.
 - chore: tighten various test harnesses.
 
-0.0.2a9 (2018-05-24): polyversion
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2018-05-24: 0.0.2a9: polyversion
+--------------------------------
 2nd interim release to embed new ``bin/pvlib.run``.
 
 - INVERT by default ``polyversion()/polytime()`` functions not to raise
   if vtags missing.
 - fix: `pvlib.run` shebang to use ``#!/usr/bin/env python`` to work on linux.
 
-0.0.2a8 (2018-05-23): polyversion
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2018-05-23: 0.0.2a8: polyversion
+--------------------------------
 Interim release to embed new ``bin/pvlib.run``.
 
 - FIX ``polyversion`` barebone command (a utility for when not installing
@@ -234,8 +236,8 @@ Interim release to embed new ``bin/pvlib.run``.
 - doc: rudimentary explanation of how to use the lib on its own README.
 
 
-0.0.2a9.post0 (2018-05-23): polyvers
-------------------------------------
+2018-05-23: 0.0.2a9.post0: polyvers
+===================================
 - feat: add ``-C`` option to change project dir before running command.
 - ``init`` command:
     - fix: were creating invalid ``.polyvers.yaml`` configuration-file
@@ -247,21 +249,21 @@ Interim release to embed new ``bin/pvlib.run``.
 - various fixes.
 
 
-0.0.2a8 (2018-05-19): polyvers
-------------------------------
+2018-05-19: 0.0.2a8: polyvers
+=============================
 - FIX(bump): was engraving all projects and not limiting to those
   specified in the command-line - command's syntax slightly changed.
 - chore: Stop increasing `polyversion` version from now on.
 - doc: fix all sphinx errors and API reference.
 
-0.0.2a7 (2018-05-18)
-^^^^^^^^^^^^^^^^^^^^
+2018-05-18: 0.0.2a7
+-------------------
 Interim release to embed re-LICENSED ``pvlib/bin/pvlib.whl``,
 from EUPLv1.2-->MIT
 
 
-0.0.2a6 (2018-05-18)
---------------------
+2018-05-18: 0.0.2a6
+===================
 - ``bump`` command:
     - feat: ``--amend`` now works
     - feat: ``--engrave-only``.
@@ -270,8 +272,8 @@ from EUPLv1.2-->MIT
 - fix(engrave): don't waste cycles/log-messages on empty-matches (minor).
 
 
-0.0.2a5 (2018-05-18)
---------------------
+2018-05-18: 0.0.2a5
+===================
 Actually most changes happened in "interim" release `v0.0.2a2`, below.
 
 - feat: make a standalone polyversion-lib wheel to facilitate bootstrap
@@ -279,22 +281,22 @@ Actually most changes happened in "interim" release `v0.0.2a2`, below.
 - Add ``bin/package.sh`` that create the `pvlib` wheel as executable ``dist/pvlib.run``.
 - doc: fix rtd & pypi sites.
 
-0.0.2a4 (2018-05-18)
-^^^^^^^^^^^^^^^^^^^^
+2018-05-18: 0.0.2a4
+-------------------
 doc: bad PyPi landing page.
 
-0.0.2a3 (2018-05-17)
-^^^^^^^^^^^^^^^^^^^^
+2018-05-17: 0.0.2a3
+-------------------
 The `pvcmd` was actually broken so far; was missing `polyversion` lib
 dependency!
 
-0.0.2a2 (2018-05-17)
-^^^^^^^^^^^^^^^^^^^^
+2018-05-17: 0.0.2a2
+-------------------
 Interim release to produce executable wheel needed by next release.
 
 
-0.0.2a1 (2018-05-17)
---------------------
+2018-05-17: 0.0.2a1
+===================
 - 2nd release, own "mono-project" splitted into 2-project "monorepo":
   - **polyvers:** cmdline tool
   - **polyversion:** library code for program-sources to derive version from git-tags
@@ -306,11 +308,11 @@ Interim release to produce executable wheel needed by next release.
 - By default ``__init__.py``, ``setup.py`` and ``README.rst`` files are engraved
   with bumped version.
 
-0.0.2a0 (2018-05-16)
-^^^^^^^^^^^^^^^^^^^^
+2018-05-16: 0.0.2a0
+-------------------
 broken
 
 
-0.0.1a0 (2018-01-29)
---------------------
+2018-01-29: 0.0.1a0
+===================
 - First release on PyPI as *mono-project*
