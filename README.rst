@@ -529,17 +529,6 @@ Known Limitations, Drawbacks & Workarounds
             X.Y                 # Final release
     ...
 
-- WARNING: when you build your package for distribution (*wheel*, correct?)
-  remember to switch to the :term:`out-of-trunk commit`.
-  This is particularly important if your ``setup.py`` file  use ``polyversion()``
-  to derive its version.. Because if it fails for whatever reason
-  (``git`` command is missing, project not located in a git-repo, miss-configuration,
-  etc).
-
-  Check also that if you provide a ``default`` argument to facilitate development,
-  then you may actually build a package(*wheel*, ok?) with that "default" version.
-  So, always check you package's version before uploading it to *pypi*.
-
 - (not related to this tool) In ``setup.py`` script, the kw-argument
   ``package_dir={'': <sub-dir>}`` arg is needed for `py_modules` to work
   when packaging sub-projects (also useful with ``find_packages()``,
@@ -549,9 +538,9 @@ Known Limitations, Drawbacks & Workarounds
   break.
 
 - (not related to this tool) When building projects with ``python setup.py bdist_XXX``,
-  you have to clean up your build directory, or else, the distribution package
-  will contain the sources from all previous subprojects.  That applies also
-  when rebuilding a project between versions.
+  you have to clean up your build directory (e.g. ``python setup.py clean --all``)
+  or else, the distribution package will contain the sources from all previous
+  subprojects built.  That applies also when rebuilding a project between versions.
 
 - (not related to this tool) If you don't place a ``setup.py`` file at the root
   of your git-repo, then it becomes more cumbersome to ``pip`` `install directly
