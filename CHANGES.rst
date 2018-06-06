@@ -46,12 +46,14 @@ TODOs
 
 - Function as plugin for other 3rd-party projects, bake a cookiecutter
 
+
 .. towncrier release notes start
 
-2018-06-06: polyvers-v0.1.0a0, polyversion-v0.1.0a6
-====================================================
+
+2018-06-06: polyvers-v0.1.0a0, polyversion-v0.1.0a6: co2mpas-ready
+==================================================================
 + FEAT: reinstated :term:`engravings` on ``setup.py`` (dropped only for a while
-  in `2018-06-03: polyversion-v0.1.0a3`_ ), since, assuming clients have adopted
+  in `2018-06-03: polyversion-v0.1.0a3: setuptools`_ ), since, assuming clients have adopted
   the new :term:`setuptools plugin` keyword, it is the `default_version` that
   will be engraved, which is fine.
 
@@ -78,7 +80,7 @@ Bugfixing `polyversion` (and generate a non-buggy standalone wheel):
 
 - FIX `polyversion` where it ignored ``setup(default_version`` keyword.
   (:git:`6519a1ba`)
-- fix: `polyversion` stop eating half of its own dog food: cannot relibly use
+- fix: `polyversion` stop eating half of its own dog food: cannot reliably use
   :term:`setuptools plugin` for its installation. (:git:`56a894cde`)
 - Monkeypatching *distutils* for :term:`bdist-check` was failing in *PY2*
   due to being an "old class". (:git:`1f72baec`)
@@ -95,12 +97,13 @@ Bugfixing `polyversion` (and generate a non-buggy standalone wheel):
         ...
 
 
-2018-06-03: polyversion-v0.1.0a3
-================================
+2018-06-03: polyversion-v0.1.0a3: *setuptools*
+==============================================
 - `v0.1.0a2`Canceled (like the previous 2), cannot release from r-tags because ``setup()``
   reports version from v-tag.
-  Q: Is a new setup-keyword needed ``--is-polyversion-release``?
-  (A: no, just fetch both)
+
+    - Q: Is a new setup-keyword needed ``--is-polyversion-release``?
+    - A: no, just search both.
 - `v0.1.0a0` had been canceled for the same reason, but somewhere down the road,
   the fix was reverted (:term:`bdist-check` works for r-tag only).
 - `v0.1.0a1` just marked that our ``setup.py`` files ate our dog food.
@@ -262,8 +265,8 @@ Interim release to embed re-LICENSED ``pvlib/bin/pvlib.whl``,
 from EUPLv1.2-->MIT
 
 
-2018-05-18: 0.0.2a6
-===================
+2018-05-18: 0.0.2a6: ``bump``!
+==============================
 - ``bump`` command:
     - feat: ``--amend`` now works
     - feat: ``--engrave-only``.
@@ -295,8 +298,8 @@ dependency!
 Interim release to produce executable wheel needed by next release.
 
 
-2018-05-17: 0.0.2a1
-===================
+2018-05-17: 0.0.2a1: *monorepo*!
+================================
 - 2nd release, own "mono-project" splitted into 2-project "monorepo":
   - **polyvers:** cmdline tool
   - **polyversion:** library code for program-sources to derive version from git-tags
@@ -313,6 +316,6 @@ Interim release to produce executable wheel needed by next release.
 broken
 
 
-2018-01-29: 0.0.1a0
-===================
+2018-01-29: 0.0.1a0: *mono-project*
+===================================
 - First release on PyPI as *mono-project*
