@@ -31,6 +31,22 @@ script:
   - PYTHONPATH=./pvlib.run  python -m polyversion polyversion foo
   - cd -
 
+  ## Build and smoketest WHEELs
+  #
+  - sed -i 's/skip_polyversion_check = false/skip_polyversion_check = true/' setup.cfg
+  - |
+    python pvlib/setup.py build bdist_wheel && \
+    pip install dist/polyversion-*.whl && \
+    polyversion polyversion polyvers
+
+    if [ $TRAVIS_PYTHON_VERSION \> '3.5' ]; then
+        rm -rf build/* dist/*
+        python setup.py build bdist_wheel  && \
+        pip install dist/polyvers-*.whl && \
+        polyvers status -a
+    fi
+  - pip uninstall -y polyversion polyvers
+
   ## Install sources and PYTEST both pvlib & pvcmd with COVERAGE.
   #
   - |
