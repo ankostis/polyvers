@@ -591,8 +591,8 @@ class Project(cmdlets.Replaceable, cmdlets.Printable, yu.YAMLable, cmdlets.Spec)
                     'subst': r"version\1'{version}'\2"
                 }],
             }, {
-                'name': '__init__',
-                'globs': ['!*egg*', '__init__.py'],
+                'name': 'py-version',
+                'globs': ['!*egg*', '__init__.py', '_version.py'],
                 'grafts': [{
                     'name': '__version__',
                     'regex': tw.dedent(r'''
