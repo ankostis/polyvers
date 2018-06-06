@@ -478,7 +478,9 @@ Features
     bdist-check
         The :term:`setuptools plugin` aborts any `bdist...` commands if they
         are not run from an :term:`r-tag` (unless ``skip_polyversion_check = true``
-        option exists in your project's ``setup.cfg:[global]`` section.
+
+
+        option exists in your project's ``$CWD/setup.cfg:[global]`` section.
 
     Marking dependent versions across sub-projects
         [TODO] When bumping the version of a sub-project the `"local" part of PEP-440

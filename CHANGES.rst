@@ -90,7 +90,7 @@ Bugfixing `polyversion` (and generate a non-buggy standalone wheel):
     ...
     You may bypass this check and create a package with non-engraved sources
     (although it might not work correctly) by adding `skip_polyversion_check` option
-    in your ``setup.cfg`` file, like this::
+    in your ``$CWD/setup.cfg`` file, like this::
 
         [global]
         skip_polyversion_check = true

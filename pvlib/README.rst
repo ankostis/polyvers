@@ -102,7 +102,7 @@ from PKG-INFO or git tags  (see :func:`polyversion.init_plugin_kw`):
     from a :term:`release tag`.
     You may bypass this check and create a package with non-engraved sources
     (although it might not work correctly) by adding `skip_polyversion_check` option
-    in your ``setup.cfg`` file, like this::
+    in your ``$CWD/setup.cfg`` file, like this::
 
         [global]
         skip_polyversion_check = true
