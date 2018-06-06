@@ -50,7 +50,15 @@ TODOs
 .. towncrier release notes start
 
 
-2018-06-06: polyvers-v0.1.0a0, polyversion-v0.1.0a6: co2mpas-ready
+2018-06-06: polyvers-v0.1.0a1, polyversion-v0.1.0a7
+===================================================
+Mostly docs, combined release.
+
++ FEAT: reinstated :term:`engravings` on ``_version.py``
+  (see previous release for rational).
+
+
+2018-06-05: polyvers-v0.1.0a0, polyversion-v0.1.0a6: co2mpas-ready
 ==================================================================
 + FEAT: reinstated :term:`engravings` on ``setup.py`` (dropped only for a while
   in `2018-06-03: polyversion-v0.1.0a3: setuptools`_ ), since, assuming clients have adopted
@@ -67,14 +75,14 @@ TODOs
 + dev: don't test building wheel on travis...too much fuzzz.
 
 
-2018-06-06: polyversion-v0.1.0a5
+2018-06-05: polyversion-v0.1.0a5
 ================================
 - Disable standalone-wheel hack from ``pvlib/setup.py`` and rely on
   *setuptools* plugin even for *polyversion* ONCE MORE.
   (but no need to update standalone, which is a wheel, unaffected by that)
 
 
-2018-06-06: polyversion-v0.1.0a4
+2018-06-05: polyversion-v0.1.0a4
 ================================
 Bugfixing `polyversion` (and generate a non-buggy standalone wheel):
 
