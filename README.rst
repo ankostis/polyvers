@@ -56,7 +56,7 @@ The key features are:
 - intuitive :term:`version-bump algebra` (TODO),
 - configurable :term:`engravings`.
 
-The last feature departs from the logic of :ref:`similar-tools`.
+The *leaf version scheme* feature departs from the logic of :ref:`similar-tools`.
 Specifically, when bumping the version of sub-project(s), this tool
 adds **+2 tags and +1 commits**:
 
