@@ -46,6 +46,12 @@ TODOs
 
 - Function as plugin for other 3rd-party projects, bake a cookiecutter
 
+- FIX: `git < 2.15.0` was buggy with multiple match-patterns in command::
+
+      git describe --match=...  --match=...
+
+  https://github.com/git/git/blob/master/Documentation/RelNotes/2.15.0.txt
+
 
 .. towncrier release notes start
 

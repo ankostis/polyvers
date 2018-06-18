@@ -272,6 +272,7 @@ def _git_describe_parsed(pname,
         cmd = 'git describe'.split()
         if git_options:
             cmd.extend(git_options)
+        ## FIXME: buggy git < 2.15.0 ignores multiple match-patterns but the last
         cmd.extend('--match=' + tp for tp in tag_patterns)
         pvtag = _my_run(cmd, cwd=repo_path)
         matched_project, version, descid = split_pvtag(pvtag, tag_regexes)
