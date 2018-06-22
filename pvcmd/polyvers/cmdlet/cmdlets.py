@@ -682,15 +682,6 @@ class Cmd(trc.Application, Spec):
     ## HELP ##
     ##########
 
-    option_description = Unicode("""
-        Options are convenience aliases to configurable class-params,
-        as listed in the "Equivalent to" description-line of the aliases.
-        To see all configurable class-params for some <cmd>, use::
-            <cmd> --help-all
-        or view help for specific parameter using::
-            {appname} desc <class>.<param>
-    """.strip())
-
     def emit_description(self):
         ## Overridden for interpolating app-name.
         txt = self.description or self.__doc__ or _no_app_help_message % type(self)
@@ -699,6 +690,15 @@ class Cmd(trc.Application, Spec):
         for p in trc.wrap_paragraphs('%s: %s' % (cmd_line_chain(self), txt)):
             yield p
             yield ''
+
+    option_description = Unicode("""
+        Options are convenience aliases to configurable class-params,
+        as listed in the "Equivalent to" description-line of the aliases.
+        To see all configurable class-params for some <cmd>, use::
+            <cmd> --help-all
+        or view help for specific parameter using::
+            {appname} desc <class>.<param>
+    """.strip())
 
     def emit_options_help(self):
         """Yield the lines for the options part of the help."""
@@ -717,6 +717,30 @@ class Cmd(trc.Application, Spec):
             yield l
         for l in self.emit_alias_help():
             yield l
+        yield ''
+
+    subcommand_description = Unicode("""
+        Subcommands are launched as::
+            {cmd_chain} <subcmd> [args]
+    """)
+
+    def emit_subcommands_help(self):
+        """Yield the lines for the subcommand part of the help."""
+        if not self.subcommands:
+            return
+
+        header = "Subcommands"
+        yield header
+        yield '=' * len(header)
+        for p in trc.wrap_paragraphs(self.interp(self.subcommand_description,
+                                                 _stub_keys=True,
+                                                 _suppress_errors=True)):
+            yield p
+            yield ''
+        for subc, (cls, hlp) in self.subcommands.items():
+            yield subc
+            if hlp:
+                yield trc.indent(trc.dedent(hlp.strip()))
         yield ''
 
     def emit_examples(self):
