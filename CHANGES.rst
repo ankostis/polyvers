@@ -14,25 +14,29 @@ TODOs
 
 - Drop `pvcmd/pvtags.py`, and replace it with `polyversion`?
 
-- Configurable hooks - refactor :term:`engravings` as one of them.
-  to run, for example, housekeeping commands on all subprojects like
-  ``pip install -e <project>`` and immediately start working in "develop mode".
+- Engravings:  Not easy to extend!
 
-  This would allow housekeeping commands and *validate tests*
-  before/after every bump::
+  - Configurable hooks - refactor :term:`engravings` as one of them.
+    to run, for example, housekeeping commands on all subprojects like
+    ``pip install -e <project>`` and immediately start working in "develop mode".
 
-      ## Pre-release hook
-      #
-      pytest tests
+    This would allow housekeeping commands and *validate tests*
+    before/after every bump::
+
+        ## Pre-release hook
+        #
+        pytest tests
 
 
-      ## Post-release hook
-      #
-      rm -r dist/* build/*;
-      python setup.py sdist bdist_wheel
-      twine upload dist/*whl -s
+        ## Post-release hook
+        #
+        rm -r dist/* build/*;
+        python setup.py sdist bdist_wheel
+        twine upload dist/*whl -s
 
-- Add top-level engrave glob-excludes.
+  - Add top-level engrave glob-excludes.
+
+  - Use `astor <https://pypi.org/project/astor/>`_ grafter.
 
 - Refactor :term:`version-bump algebra` to support a single modifier per segment
   (see ``multivermath`` branch).
@@ -45,6 +49,8 @@ TODOs
 - Retrofit `polyversion` library as a plugin of `polyvers` command.
 
 - Function as plugin for other 3rd-party projects, bake a cookiecutter
+
+- Check what happens with `no-commit`, e.g. to temporarily package a wheel.
 
 - FIX: `git < 2.15.0` was buggy with multiple match-patterns in command::
 
