@@ -251,7 +251,7 @@ class FileProcessor(cmdlets.Spec):
         for eng in project.active_engraves():
             with self.errlogged(
                 token='glob',
-                doing="globbing %.21s%s" % (eng, eng.globs)
+                doing="globbing %.28s%s" % (eng, eng.globs)
             ):
                 globs = [project.interp(gs, _escaped_for='glob')
                          for gs in eng.globs
@@ -279,7 +279,7 @@ class FileProcessor(cmdlets.Spec):
         glob_truples = []
         for prj in projects:
             with self.errlogged(token='glob',
-                                doing="globbing %.21s" % prj):
+                                doing="globbing %.28s" % prj):
                 glob_truples.extend(self._glob_project(prj, other_bases))
 
         return self._reindex_glob_results_on_fpaths(glob_truples)
@@ -290,7 +290,7 @@ class FileProcessor(cmdlets.Spec):
             fbytes = self._read_file(fpath)
             for prj, eng, graft in graft_truple:
                 with self.errlogged(token='scan',
-                                    doing="scanning '%s' for %.21s.%.21s" %
+                                    doing="scanning '%s' for %.28s.%.28s" %
                                     (fpath, prj, eng)):
                     matches = graft.collect_matches(fbytes, prj)
                     self.log.debug(
@@ -355,7 +355,7 @@ class FileProcessor(cmdlets.Spec):
                 if not matches:
                     continue
                 with self.errlogged(token='subst',
-                                    doing="subst '%s' with %.21s.%.21s.%.21s" %
+                                    doing="subst '%s' with %.28s.%.28s.%.28s" %
                                     (fpath, prj, eng, graft)):
 
                     fbytes, graft_offset = graft.substitute_matches(
