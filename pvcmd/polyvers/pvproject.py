@@ -234,6 +234,8 @@ class Project(cmdlets.Replaceable, cmdlets.Printable, yu.YAMLable, cmdlets.Spec)
           """
     ).tag(printable=True)
 
+    printable_traits = 'pname basepath'.split()
+
     start_version_id = Unicode(
         '0.0.0',
         config=True,
