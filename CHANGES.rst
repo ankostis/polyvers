@@ -87,11 +87,12 @@ TODOs
 .. towncrier release notes start
 
 
-2018-06-06: polyvers-v0.1.0a1, polyversion-v0.1.0a7
-===================================================
-- FEAT: Introduce configurable *default version env-var* to fall-back on errors
-  to :envvar:`<pname>_VERSION` if it exists.
-  The presence of such a variable also sets ``polytime(no_raise=True)``.
+2018-06-27: polyversion-v0.1.1a0
+================================
+- FEAT: Introduce configurable :term:`default version env-var` to fall-back
+  to :envvar:`<pname>_VERSION` if it exists, in case of errors (e.g. no git).
+  The presence of such a variable also sets ``polytime(no_raise=True)``,
+  which now also support the ``pname`` and ``default_version_env_var`` kwds.
 
 
 2018-06-06: polyvers-v0.1.0a1, polyversion-v0.1.0a7
