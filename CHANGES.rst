@@ -58,6 +58,10 @@ TODOs
 
   https://github.com/git/git/blob/master/Documentation/RelNotes/2.15.0.txt
 
+- FEAT: Introduce configurable *default version env-var* to fall-back on errors
+  to :envvar:`<pname>_VERSION` if it exists.
+  The presence of such a variable also sets ``polytime(no_raise=True)``.
+
 
 .. towncrier release notes start
 
