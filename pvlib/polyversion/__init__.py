@@ -331,7 +331,9 @@ def polyversion(**kw):
            back in history, or simply because the project is new, and
            there are no *vtags*, we set default-version to empty-string,
            to facilitate pip-installing these projects from sources.
-
+    :param str default_version_env_var:
+        Override which env-var to read *version* from, if git cmd fails
+        [Default: ``<pname>_VERSION``]
     :param bool mono_project:
       - false: (default) :term:`monorepo`, ie multiple sub-projects per git-repo.
         Tags formatted by *pvtags* :data:`pvtag_format` & :data:`pvtag_regex`
@@ -376,6 +378,7 @@ def polyversion(**kw):
         it is splitted by spaces.
     :param return_all:
         when true, return the 3-tuple (tag, version, desc-id) (not just version)
+
     :return:
         The version-id (or 3-tuple) derived from the *pvtag*, or `default` if
         command failed/returned nothing, unless None, in which case, it raises.
@@ -411,6 +414,17 @@ def polyversion(**kw):
     if not pname:
         pname = _caller_module_name()
 
+    if not default_version:
+        import os
+
+        defver_envvar = kw.get('default_version_env_var', '%s_VERSION' % pname)
+        ## Ignore empty/none envvars
+        #  to preserve empty (but not none) `default-version` kwd.
+        #
+        env_ver = os.environ.get(defver_envvar)
+        if env_ver:
+            default_version = env_ver
+
     if tag_format is None:
         tag_format = vtag_format if mono_project else pvtag_format
     if tag_regex is None:
@@ -435,15 +449,39 @@ def polytime(**kw):
     The timestamp of last commit in git repo hosting the source-file calling this.
 
     :param str no_raise:
-        If true, never fail and return current-time
+        If true, never fail and return current-time.
+        Assumed true if a :term:`default version env-var` is found.
     :param str repo_path:
         A path inside the git repo hosting the project in question; if missing,
         derived from the calling stack.
+    :param str pname:
+        The project-name used only as the prefix for :term:`default version env-var`.
+        If not given, defaults to the *last segment of the module-name of the caller*.
+        Another alternative is to use directly the `default_version_env_var` kwd.
+
+        .. Attention::
+           when calling it from ``setup.py`` files, auto-deduction above
+           will not work;  you must supply a project name.
+    :param str default_version_env_var:
+        Override which env-var to read *version* from, if git cmd fails
+        [Default: ``<pname>_VERSION``]
+
     :return:
         the commit-date if in git repo, or now; :rfc:`2822` formatted
     """
+    import os
+
     no_raise = kw.get('no_raise', False)
     repo_path = kw.get('repo_path')
+    pname = kw.get('pname')
+
+    if not pname:
+        pname = _caller_module_name()
+
+    defver_envvar = kw.get('default_version_env_var', '%s_VERSION' % pname)
+
+    if os.environ.get(defver_envvar):
+        no_raise = True
 
     cdate = None
     if not repo_path:

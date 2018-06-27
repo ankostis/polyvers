@@ -149,6 +149,44 @@ def test_polyversion_BAD_no_commits(empty_repo):
     assert v == '<unused>'
 
 
+def test_polyversion_BAD_env_var(no_repo, empty_repo, untagged_repo,
+                                 monkeypatch):
+    monkeypatch.setenv('foo_VERSION', '1.2.3')
+    root = (no_repo / '/')
+
+    for repo in [no_repo, empty_repo, untagged_repo]:
+        root.chdir()
+        assert pvlib.polyversion(pname='foo', repo_path=repo) == '1.2.3'
+        pvlib.polytime(pname='foo', repo_path=repo)
+
+        repo.chdir()
+        assert pvlib.polyversion(pname='foo') == '1.2.3'
+        pvlib.polytime(pname='foo', repo_path=repo)
+
+
+def test_polyversion_BAD_custom_env_var(no_repo, empty_repo, untagged_repo,
+                                        monkeypatch):
+    monkeypatch.setenv('PPP', '1.2.3')
+    root = (no_repo / '/')
+
+    for repo in [no_repo, empty_repo, untagged_repo]:
+        root.chdir()
+        assert pvlib.polyversion(pname='foo', repo_path=repo,
+                                 default_version_env_var='PPP') == '1.2.3'
+        pvlib.polytime(pname='foo', repo_path=repo,
+                       default_version_env_var='PPP')
+        pvlib.polytime(repo_path=repo,
+                       default_version_env_var='PPP')
+
+        repo.chdir()
+        assert pvlib.polyversion(pname='foo',
+                                 default_version_env_var='PPP') == '1.2.3'
+        pvlib.polytime(pname='foo', repo_path=repo,
+                       default_version_env_var='PPP')
+        pvlib.polytime(repo_path=repo,
+                       default_version_env_var='PPP')
+
+
 @pytest.mark.skipif(sys.version_info < (3, ),
                     reason="FileNotFoundError not in PY27, OSError only.")
 def test_polyversion_BAD_no_git_cmd(ok_repo, monkeypatch):
