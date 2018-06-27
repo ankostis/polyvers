@@ -495,6 +495,14 @@ Features
         users need ``pip install --pre`` to install from such release-trains.
         This is a safeguard to avoid accidentally landing half-baked code to users.
 
+    default version env-var
+        From which env-var to read a project's *version* if git cmd fail.
+        It does not override any value given as ``default_version`` keyword
+        for :func:`polyversion.polyversion()`.
+        Also :func:`polyversion.polytime()` assumes keyword ``no_raise=True``
+        if such env-var is found.
+        [Default var-name: ``<pname>_VERSION``]
+
     Other Features
         - Highly configurable using `traitlets <https://traitlets.readthedocs.io>`_,
           with sensible defaults; it should be possible to start using the tool
