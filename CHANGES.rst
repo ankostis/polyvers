@@ -2,7 +2,33 @@
 Changes
 =======
 
-.. contents:: Releases
+.. *towncrier* instructions for the developers:
+
+    - Install cmd-line tool in your workstation::
+
+            pip install towncrier
+
+    - Add change-items in `changes.d/<issue>.<type>` files like that::
+
+          echo 'Fixed a thing!' > ./changes.d/1234.fix
+
+      Available change types:
+        - break
+        - feat
+        - drop
+        - fix
+        - change
+        - doc
+        - chore
+
+    - Generate new changes for the comming release::
+
+          towncrier --draft       # to preview
+          towncrier
+
+    - *towncrier*'s config file is `pyproject.toml`.
+
+. contents:: Releases
     :local:
 
 .. _to-dos:
@@ -58,12 +84,14 @@ TODOs
 
   https://github.com/git/git/blob/master/Documentation/RelNotes/2.15.0.txt
 
+.. towncrier release notes start
+
+
+2018-06-06: polyvers-v0.1.0a1, polyversion-v0.1.0a7
+===================================================
 - FEAT: Introduce configurable *default version env-var* to fall-back on errors
   to :envvar:`<pname>_VERSION` if it exists.
   The presence of such a variable also sets ``polytime(no_raise=True)``.
-
-
-.. towncrier release notes start
 
 
 2018-06-06: polyvers-v0.1.0a1, polyversion-v0.1.0a7

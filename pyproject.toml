@@ -39,6 +39,6 @@ template_template_fname  = '.towncrier_template.rst'
         showcontent = true
 
     [[tool.towncrier.type]]
-        directory = "misc"
+        directory = "chore"
         name = "Misc"
         showcontent = true
