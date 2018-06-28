@@ -87,8 +87,10 @@ TODOs
 .. towncrier release notes start
 
 
-2018-06-28: polyversion-v0.1.1a1
+2018-06-29: polyversion-v0.1.1a2
 ================================
+(change actually done in `v0.1.1a1`, just a minor user-msg in `a2`)
+
 - FIX: teach :term:`setuptools plugin` about :term:`default version env-var`.
   Now can ``pip install git+https://some.git.repo/but-from/non-engraved-branch``.
 
