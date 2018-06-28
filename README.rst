@@ -552,9 +552,15 @@ Known Limitations, Drawbacks & Workarounds
   or else, the distribution package will contain the sources from all previous
   subprojects built.  That applies also when rebuilding a project between versions.
 
-- Installing directly from git-repos needs an engraved branch (e.g. `latest`)::
+- Installing directly from git-repos needs an engraved branch (e.g. ``latest``)::
 
       pip install git+https://github.com/JRCSTU/polyvers@latest
+
+  If you still want to install non-engraved branhces (e.g. ``master``),
+  set the :term:`default version env-var`; so assuming the env-var has not been
+  customized to a different var-name, use it like this::
+
+      POLYVERSION_VERSION=0.1.1a0 pip install git+https://github.com/JRCSTU/polyvers
 
 - (not related to this tool) If you don't place a ``setup.py`` file at the root
   of your git-repo, then it becomes more cumbersome to ``pip`` `install directly
