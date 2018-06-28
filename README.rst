@@ -556,12 +556,14 @@ Known Limitations, Drawbacks & Workarounds
   of your git-repo, then it becomes more cumbersome to ``pip`` `install directly
   from remote URLs <https://pip.pypa.io/en/stable/reference/pip_install/#vcs-support>`_,
   like this:
+  (you must have used ``package_dir`` argument to ``setup()`` function or
+  in ``find_packages()``,  see `setuptools-docs
+  <http://setuptools.readthedocs.io/en/latest/setuptools.html#id10>`_).
   ::
 
-      pip install -e git+https://repo_url/#egg=pkg&subdirectory=pkg_dir
+      pip install "git+https://github.com/JRCSTU/polyvers@latest#egg=polyversion&subdirectory=pvlib"
 
-  You may use ``package_dir`` argument to ``setup()`` function
-  (see `setuptools-docs <http://setuptools.readthedocs.io/en/latest/setuptools.html#id10>`_).
+  Notice that the quotes are needed to escape the ``&`` char from bash.
 
 - Set branch ``latest`` as default in GitHub to show :term:`engrave`\d sub-project version-ids.
 
