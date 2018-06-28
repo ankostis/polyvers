@@ -552,6 +552,10 @@ Known Limitations, Drawbacks & Workarounds
   or else, the distribution package will contain the sources from all previous
   subprojects built.  That applies also when rebuilding a project between versions.
 
+- Installing directly from git-repos needs an engraved branch (e.g. `latest`)::
+
+      pip install git+https://github.com/JRCSTU/polyvers@latest
+
 - (not related to this tool) If you don't place a ``setup.py`` file at the root
   of your git-repo, then it becomes more cumbersome to ``pip`` `install directly
   from remote URLs <https://pip.pypa.io/en/stable/reference/pip_install/#vcs-support>`_,
