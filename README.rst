@@ -557,23 +557,33 @@ Known Limitations, Drawbacks & Workarounds
       pip install git+https://github.com/JRCSTU/polyvers@latest
 
   If you still want to install non-engraved branhces (e.g. ``master``),
-  set the :term:`default version env-var`; so assuming the env-var has not been
-  customized to a different var-name, use it like this::
+  set the :term:`default version env-var`; for example, since *polyvers* subproject
+  has not customized the name of its env-var, you may install the very latest
+  like this::
 
-      POLYVERSION_VERSION=0.1.1a0 pip install git+https://github.com/JRCSTU/polyvers
+      polyvers_VERSION=1.2.3 pip install git+https://github.com/JRCSTU/polyvers
+
+  .. Attention::
+    The version given in the env-var is irrelevant.
+    The installed version will still derive from git tags, and the local-part
+    from the actual git-commit.
 
 - (not related to this tool) If you don't place a ``setup.py`` file at the root
-  of your git-repo, then it becomes more cumbersome to ``pip`` `install directly
-  from remote URLs <https://pip.pypa.io/en/stable/reference/pip_install/#vcs-support>`_,
-  like this:
-  (you must have used ``package_dir`` argument to ``setup()`` function or
-  in ``find_packages()``,  see `setuptools-docs
-  <http://setuptools.readthedocs.io/en/latest/setuptools.html#id10>`_).
-  ::
+  of your git-repo (using ``package_dir`` argument to ``setup()``  function or
+  in ``find_packages()``,  according to `setuptools-docs
+  <http://setuptools.readthedocs.io/en/latest/setuptools.html#id10>`_), then
+  in order to ``pip install git+https://...`` directly from remote URLs
+  you have to use `this official trick
+  <https://pip.pypa.io/en/stable/reference/pip_install/#vcs-support>`_.
+  For example, to install *polyversion* subproject::
 
       pip install "git+https://github.com/JRCSTU/polyvers@latest#egg=polyversion&subdirectory=pvlib"
 
   Notice that the quotes are needed to escape the ``&`` char from bash.
+  Respectively, use this to install from the very latest::
+
+      polyversion_VERSION=1.2.3 pip install git+https://github.com/JRCSTU/polyvers#egg=polyversion&subdirectory=pvlib"
+
 
 - Set branch ``latest`` as default in GitHub to show :term:`engrave`\d sub-project version-ids.
 
