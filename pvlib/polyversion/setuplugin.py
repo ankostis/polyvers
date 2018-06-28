@@ -84,10 +84,10 @@ def _establish_setup_py_version(dist, repo_path=None, **pvargs):
 
         ## Respect version env-var both if default-version empty/none.
         #
+        defver_envvar = pvargs.get('default_version_env_var', '%s_VERSION' % pname)
         if not default_version:
             import os
 
-            defver_envvar = pvargs.get('default_version_env_var', '%s_VERSION' % pname)
             ## Ignore empty/none envvars
             #  to preserve empty (but not none) `default-version` kwd.
             #
@@ -113,8 +113,11 @@ def _establish_setup_py_version(dist, repo_path=None, **pvargs):
         #  which does not have the method to patch.
         DistClass = dist.__class__
         if not hasattr(DistClass, '_polyversion_orig_run_cmd'):
+            from functools import partialmethod
+
             DistClass._polyversion_orig_run_cmd = DistClass.run_command
-            DistClass.run_command = _monkeypathed_run_command
+            DistClass.run_command = partialmethod(_monkeypathed_run_command,
+                                                  defver_envvar=defver_envvar)
 
     if version:
         dist.metadata.version = version
@@ -177,7 +180,7 @@ def init_plugin_kw(dist, attr, kw_value):
     _establish_setup_py_version(dist, **pvargs)
 
 
-def _monkeypathed_run_command(dist, cmd):
+def _monkeypathed_run_command(dist, cmd, defver_envvar):
     """
     A ``distutils.run_command()`` that screams on `bdist...` cmds not from rtags.
     """
@@ -223,12 +226,15 @@ def _monkeypathed_run_command(dist, cmd):
 
         if rtag_err is not False:
             from distutils.errors import DistutilsSetupError
+
             raise DistutilsSetupError(
                 "Attempted to run '%s' from a non release-tag?\n  error: %s"
-                "\n  Add `skip_polyversion_check = true` in your `$CWD/setup.cfg:[global]` section"
-                "\n  if you really want to build a binary distribution package "
-                "\n  from non-engraved sources." %
-                (cmd, rtag_err))
+                "\n\n  If you really want to build a binary distribution package "
+                "\n  from non-engraved sources, you may either: "
+                "\n  - set `%s` env-var to some version, or "
+                "\n  - add `skip_polyversion_check = true` in your "
+                "`$CWD/setup.cfg:[global]` section " %
+                (cmd, rtag_err, defver_envvar))
 
     return dist._polyversion_orig_run_cmd(cmd)
 
