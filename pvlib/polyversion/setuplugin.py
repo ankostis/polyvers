@@ -42,7 +42,8 @@ def _get_version_from_pkg_metadata(package_name):
 
 def _parse_kw_content(attr, kw_value):
     good_keys = set('mono_project tag_format tag_regex '
-                    'vprefixes repo_path git_options'.split())
+                    'vprefixes repo_path git_options '
+                    'default_version_env_var'.split())
 
     try:
         pvargs = dict(kw_value)
@@ -79,7 +80,22 @@ def _establish_setup_py_version(dist, repo_path=None, **pvargs):
         pvargs['repo_path'] = (repo_path or
                                (dist.package_dir and dist.package_dir.get('')) or
                                '.')
-        pvargs['default_version'] = dist.metadata.version
+        default_version = dist.metadata.version
+
+        ## Respect version env-var both if default-version empty/none.
+        #
+        if not default_version:
+            import os
+
+            defver_envvar = pvargs.get('default_version_env_var', '%s_VERSION' % pname)
+            ## Ignore empty/none envvars
+            #  to preserve empty (but not none) `default-version` kwd.
+            #
+            env_ver = os.environ.get(defver_envvar)
+            if env_ver:
+                default_version = env_ver
+
+        pvargs['default_version'] = default_version
 
         ## Store `pvargs` so bdist-check can rerun `polyversion()` for r-tags.
         dist.polyversion_args = pvargs
@@ -121,20 +137,20 @@ def init_plugin_kw(dist, attr, kw_value):
         except those differences:
 
         :param pname:
-            absent; derrived from ``setup(name=...)`` keyword
+            absent; derived from ``setup(name=...)`` keyword
         :param default_version:
-            absent; derrived from ``setup(version=...)`` keyword:
+            absent; derived from ``setup(version=...)`` keyword:
 
             - if `None`/not given, any problems will be raised,
               and ``setup.py`` script wil abort
             - if ``version`` is a (possibly empty) string,
-              this will be used in case version cannot be auto-retrived.
+              this will be used in case version cannot be auto-retrieved.
 
         :param is_release:
-            absent; always `False` when derriving the version,
+            absent; always `False` when deriving the version,
             and `True` when bdist-checking
         :param repo_path:
-            if not given, derrived from ``setup(package_dirs={...})`` keyword
+            if not given, derived from ``setup(package_dirs={...})`` keyword
             or '.' (and never from caller-stack).
 
         See :func:`polyversion()` for keyword-dict's content.
