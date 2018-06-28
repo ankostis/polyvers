@@ -113,7 +113,18 @@ def _establish_setup_py_version(dist, repo_path=None, **pvargs):
         #  which does not have the method to patch.
         DistClass = dist.__class__
         if not hasattr(DistClass, '_polyversion_orig_run_cmd'):
-            from functools import partialmethod
+            try:
+                from functools import partialmethod
+            except ImportError:
+                ## From https://gist.github.com/carymrobbins/8940382
+                from functools import partial
+
+                class partialmethod(partial):
+                    def __get__(self, instance, owner):
+                        if instance is None:
+                            return self
+                        return partial(self.func, instance,
+                                       *(self.args or ()), **(self.keywords or {}))
 
             DistClass._polyversion_orig_run_cmd = DistClass.run_command
             DistClass.run_command = partialmethod(_monkeypathed_run_command,
