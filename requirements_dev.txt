@@ -9,4 +9,5 @@ Sphinx==1.7.5
 pytest==3.6.2
 pytest-runner==4.2
 pytest-cov==2.5.1
+pytest-incremental==0.4.2
 mypy==0.610; python_version >= '3.4'

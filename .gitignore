@@ -60,3 +60,7 @@ target/
 
 # pyenv python configuration file
 .python-version
+
+## pytest.incremental
+/.pytest-incremental.*
+/deps.json

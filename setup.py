@@ -116,6 +116,7 @@ test_requirements = [
     'pytest >= 3.5.0',  # caplog.clear() fixed (pytest-dev/pytest#3297)
     'pytest-runner',
     'pytest-cov',
+    'pytest-incremental',
     'flake8',
     'flake8-builtins',
     'flake8-mutable',
