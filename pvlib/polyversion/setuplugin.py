@@ -8,36 +8,10 @@ A *setuptools* plugin with x2 ``setup()`` kwds and monkeypatch all ``bdist...`` 
   Set `envvar[DISTUTILS_DEBUG]` to debug it.
   From https://docs.python.org/3.7/distutils/setupscript.html#debugging-the-setup-script
 """
-from polyversion import polyversion
+from polyversion import polyversion, get_version_from_pkg_metadata
 
 
 __all__ = 'init_plugin_kw skip_plugin_check_kw'.split()
-
-
-def _get_version_from_pkg_metadata(package_name):
-    """Get the version from package metadata if present.
-
-    This looks for PKG-INFO if present (for sdists), and if not looks
-    for METADATA (for wheels) and failing that will return None.
-    """
-    import email
-
-    pkg_metadata_filenames = ['PKG-INFO', 'METADATA']
-    pkg_metadata = {}
-    for filename in pkg_metadata_filenames:
-        try:
-            pkg_metadata_file = open(filename, 'r')
-        except (IOError, OSError):
-            continue
-        try:
-            pkg_metadata = email.message_from_file(pkg_metadata_file)
-        except email.errors.MessageError:
-            continue
-
-    # Check to make sure we're in our own dir
-    if pkg_metadata.get('Name', None) != package_name:
-        return None
-    return pkg_metadata.get('Version', None)
 
 
 def _parse_kw_content(attr, kw_value):
@@ -67,7 +41,7 @@ def _establish_setup_py_version(dist, repo_path=None, **pvargs):
     "Derive version from PKG-INFO or Git rtags, and trigger bdist-check in later case."
     pname = dist.metadata.name
 
-    version = _get_version_from_pkg_metadata(pname)
+    version = get_version_from_pkg_metadata(pname)
     if not version:
         ## Prepare pvargs for calling `polyversion()` below,
         #  and optionally in bdist-check.
