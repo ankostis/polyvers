@@ -148,6 +148,32 @@ def _my_run(cmd, cwd):
         return _clean_cmd_result(out)
 
 
+def get_version_from_pkg_metadata(package_name):
+    """Get the version from package metadata if present.
+
+    This looks for PKG-INFO if present (for sdists), and if not looks
+    for METADATA (for wheels) and failing that will return None.
+    """
+    import email
+
+    pkg_metadata_filenames = ['PKG-INFO', 'METADATA']
+    pkg_metadata = {}
+    for filename in pkg_metadata_filenames:
+        try:
+            pkg_metadata_file = open(filename, 'r')
+        except (IOError, OSError):
+            continue
+        try:
+            pkg_metadata = email.message_from_file(pkg_metadata_file)
+        except email.errors.MessageError:
+            continue
+
+    # Check to make sure we're in our own dir
+    if pkg_metadata.get('Name', None) != package_name:
+        return None
+    return pkg_metadata.get('Version', None)
+
+
 def _caller_module_name(nframes_back=2):
     import inspect
 
