@@ -96,16 +96,16 @@ from PKG-INFO or git tags  (see :func:`polyversion.init_plugin_kw`):
             ...
         )
 
-2. keyword: ``skip_polyversion_check --> bool``
-    When true, disable :term:`bdist-check`, when false (default),
-    any `bdist_*` (e.g. ``bdist_wheel``), commands will abort if not run
-    from a :term:`release tag`.
-    You may bypass this check and create a package with non-engraved sources
-    (although it might not work correctly) by adding `skip_polyversion_check` option
-    in your ``$CWD/setup.cfg`` file, like this::
+2. keyword: ``polyversion_check_bdist_enabled --> bool``
+    When it is true, the :term:`bdist-check` is enabled, and any `bdist_*` setup-commands
+    (e.g. ``bdist_wheel``) will abort if not run from :term:`engrave`\d sources
+    (ie from an :term:`release tag`).
+
+    To enable this check without editing the sources, add the following into
+    your ``$CWD/setup.cfg`` file::
 
         [global]
-        skip_polyversion_check = true
+        polyversion_check_bdist_enabled = true
         ...
 
 

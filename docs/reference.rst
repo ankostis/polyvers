@@ -11,7 +11,7 @@ Polyversion (library)
    polyversion.polytime
    polyversion.setuplugin
    polyversion.setuplugin.init_plugin_kw
-   polyversion.setuplugin.skip_plugin_check_kw
+   polyversion.setuplugin.check_bdist_kw
 
 Module: :mod:`polyversion`
 ------------------------------------
@@ -19,11 +19,12 @@ Module: :mod:`polyversion`
    :members:    polyversion, polytime,
                 decide_vprefixes,
                 vtag_format, vtag_regex, pvtag_format, pvtag_regex
+                pkg_metadata_version
 
 Module: :mod:`polyversion.setuplugin`
 ---------------------------------------
 .. automodule:: polyversion.setuplugin
-   :members:    init_plugin_kw, skip_plugin_check_kw
+   :members:    init_plugin_kw, check_bdist_kw
 
 
 Polyvers (command-tool)

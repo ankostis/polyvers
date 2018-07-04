@@ -11,7 +11,7 @@ A *setuptools* plugin with x2 ``setup()`` kwds and monkeypatch all ``bdist...`` 
 from polyversion import polyversion, pkg_metadata_version
 
 
-__all__ = 'init_plugin_kw skip_plugin_check_kw'.split()
+__all__ = 'init_plugin_kw check_bdist_kw'.split()
 
 
 def _parse_kw_content(attr, kw_value):
@@ -176,24 +176,24 @@ def _monkeypathed_run_command(dist, cmd, defver_envvar):
     #    - from `setup.cfg:[global]` section.
     #  Cast-bool would yield `True` on "False" str-value from the later!!
     #
-    skip_check = getattr(dist, 'skip_polyversion_check', True)
-    skip_check_bval = bool(skip_check)
-    if skip_check_bval:
+    run_check = getattr(dist, 'polyversion_check_bdist_enabled', False)
+    run_check_bval = bool(run_check)
+    if run_check_bval:
         import distutils.util as dstutils
 
         try:
-            skip_check_bval = dstutils.strtobool(str(skip_check))
+            run_check_bval = dstutils.strtobool(str(run_check))
         except ValueError as ex:
             import logging
 
-            skip_check_bval = False
+            run_check_bval = False
             logging.getLogger(__name__).warning(
-                "Invalid value '%s' for boolean `skip_polyversion_check` option, "
+                "Invalid value '%s' for boolean `polyversion_check_bdist_enabled` option, "
                 "assuming False;"
                 "\n  expected: (y yes t true on 1) OR (n no f false off 0)",
-                skip_check)
+                run_check)
 
-    if cmd.startswith('bdist') and not skip_check_bval:
+    if cmd.startswith('bdist') and run_check_bval:
         ## Cache results to avoid multiple calls into `polyversion(r-tag)`.
         #
         rtag_err = getattr(dist, 'polyversion_rtag_err', None)
@@ -219,27 +219,27 @@ def _monkeypathed_run_command(dist, cmd, defver_envvar):
                 "\n\n  If you really want to build a binary distribution package "
                 "\n  from non-engraved sources, you may either: "
                 "\n  - set `%s` env-var to some version, or "
-                "\n  - add `skip_polyversion_check = true` in your "
+                "\n  - set `polyversion_check_bdist_enabled = false` in your "
                 "`$CWD/setup.cfg:[global]` section " %
                 (cmd, rtag_err, defver_envvar))
 
     return dist._polyversion_orig_run_cmd(cmd)
 
 
-def skip_plugin_check_kw(dist, _attr, kw_value):
+def check_bdist_kw(dist, _attr, kw_value):
     """
     A *setuptools* kwd for aborting `bdist...` commands if not on r-tag.
 
-    **SYNTAX:** ``'skip_polyversion_check': <any>``
+    **SYNTAX:** ``'polyversion_check_bdist_enabled': <any>``
 
     When `<any>` evaluates to false (default),  any `bdist...` (e.g. ``bdist_wheel``),
     :term:`setuptools` commands will abort if not run from a :term:`release tag`.
-    You may bypass this check and create a package with non-engraved sources
-    (although it might not work correctly) by adding `skip_polyversion_check` option
-    in your ``$CWD/setup.cfg`` file, like this::
+
+    By default it this check is bypassed.  To enable it, without editing your sources
+    add this in your ``$CWD/setup.cfg`` file::
 
         [global]
-        skip_polyversion_check = true
+        polyversion_check_bdist_enabled = true
         ...
 
     - Ignored, if `polyversion` kw is not enabled.
@@ -248,4 +248,4 @@ def skip_plugin_check_kw(dist, _attr, kw_value):
     """
     ## NOTE: code here runs only if kw set in `setup.py:setup()`` - BUT
     #  NOT from `$CWD/setup.cfg:[global]` section!!
-    dist.skip_polyversion_check = bool(kw_value)
+    dist.polyversion_check_bdist_enabled = bool(kw_value)

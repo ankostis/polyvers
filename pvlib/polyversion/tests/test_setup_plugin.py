@@ -49,9 +49,11 @@ def test_invalid_config(kw, exp, rtagged_vtags_repo, monkeypatch):
         call_setup(kw)
 
 
-@pytest.mark.parametrize('cmd, skip_check, rtagged, ex', [
-    ('bdist', None, 0, "Attempted to run 'bdist'"),
-    ('bdist_dumb', False, 0, "Attempted to run 'bdist_dumb'"),
+@pytest.mark.parametrize('cmd, check_enabled, rtagged, ex', [
+    ('bdist', True, 0, "Attempted to run 'bdist'"),
+    ('bdist_dumb', True, 0, "Attempted to run 'bdist_dumb'"),
+
+    ('bdist_wheel', None, 0, None),
 
     ('clean', None, 0, None),
     ('clean', True, 0, None),
@@ -61,9 +63,9 @@ def test_invalid_config(kw, exp, rtagged_vtags_repo, monkeypatch):
     ('bdist_dumb', None, 1, None),
     ('bdist_dumb', True, 1, None),
 ])
-def test_build_on_release_check(cmd, skip_check, rtagged, ex,
+def test_build_on_release_check(cmd, check_enabled, rtagged, ex,
                                 vtags_repo, rtagged_vtags_repo,
-                                monkeypatch, capsys, caplog):
+                                monkeypatch, capsys):
     pvargs = {'mono_project': True}
     myrepo = rtagged_vtags_repo if rtagged else vtags_repo
     myrepo.chdir()
@@ -72,13 +74,13 @@ def test_build_on_release_check(cmd, skip_check, rtagged, ex,
     if ex:
         with pytest.raises(SystemExit, match=ex) as ex:
             call_setup(pvargs,
-                       skip_polyversion_check=skip_check,
+                       polyversion_check_bdist_enabled=check_enabled,
                        version='0.0.0')  # we don't check no `default_version`
         out, err = capsys.readouterr()
         assert not out and not err
     else:
         call_setup(pvargs,
-                   skip_polyversion_check=skip_check,
+                   polyversion_check_bdist_enabled=check_enabled,
                    version='0.0.0')
         out, err = capsys.readouterr()
         assert 'running %s' % cmd in out.strip()
@@ -88,7 +90,7 @@ def test_build_on_release_check(cmd, skip_check, rtagged, ex,
         #
         (myrepo / '..').chdir()
         call_setup(pvargs,
-                   skip_polyversion_check=skip_check,
+                   polyversion_check_bdist_enabled=check_enabled,
                    version='0.0.0',
                    package_dir={'': myrepo.basename})
         out, err = capsys.readouterr()

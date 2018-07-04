@@ -154,7 +154,7 @@ setup(
     entry_points={
         'distutils.setup_keywords': [
             'polyversion = polyversion.setuplugin:init_plugin_kw',
-            'skip_polyversion_check = polyversion.setuplugin:skip_plugin_check_kw',
+            'polyversion_check_bdist_enabled = polyversion.setuplugin:check_bdist_kw',
         ],
         'console_scripts':
             ['%(p)s = %(p)s.__main__:main' % {'p': PROJECT}]

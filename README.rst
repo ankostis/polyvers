@@ -476,11 +476,16 @@ Features
         (see :func:`polyversion.init_plugin_kw` for its content).
 
     bdist-check
-        The :term:`setuptools plugin` aborts any `bdist...` commands if they
-        are not run from an :term:`r-tag` (unless ``skip_polyversion_check = true``
+        When the ``setuptools:setup()`` keyword ``polyversion_check_bdist_enabled = True``
+        the :term:`setuptools plugin` aborts any `bdist...` commands if they
+        are not run from :term:`engrave`\d sources, (ie from an :term:`r-tag`).
 
+        To enable this check without editing the sources, add the following into
+        your ``$CWD/setup.cfg`` file::
 
-        option exists in your project's ``$CWD/setup.cfg:[global]`` section.
+            [global]
+            polyversion_check_bdist_enabled = true
+            ...
 
     Marking dependent versions across sub-projects
         [TODO] When bumping the version of a sub-project the `"local" part of PEP-440
