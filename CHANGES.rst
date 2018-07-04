@@ -86,8 +86,9 @@ TODOs
 
 .. towncrier release notes start
 
-2018-07-04: polyversion-v0.2.0a0
+2018-07-04: polyversion-v0.2.0a1
 ================================
+( Version `v0.2.0a0` not in pypi, consumed for standalone ``bin/pvlib.run``)
 
 Features
 --------
