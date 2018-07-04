@@ -146,7 +146,7 @@ setup(
     ],
     test_suite='tests',
     #python_requires='>=3.6',
-    setup_requires=['setuptools', 'wheel', 'polyversion >= 0.1.0a4'],
+    setup_requires=['setuptools', 'wheel', 'polyversion >= 0.2.0a2'],
     tests_require=test_requirements,
     extras_require={
         'test': test_requirements,

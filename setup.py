@@ -98,7 +98,7 @@ with open(osp.join(mydir, 'CHANGES.rst')) as history_file:
 
 
 long_desc = ''.join(yield_rst_only_markup((readme + ['\n\n'] + history)))
-polyversion_dep = 'polyversion >= 0.1.0a4'
+polyversion_dep = 'polyversion >= 0.2.0a2'
 requirements = [
     polyversion_dep,
     'boltons',                  # for IndexSet
