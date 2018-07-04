@@ -283,7 +283,7 @@ def _git_describe_parsed(pname,
                          default_version,        # if None, raise
                          tag_format, tag_regex,
                          vprefixes,
-                         repo_path, git_options):
+                         basepath, git_options):
     """
     Parse git-desc as `pvtag, version, descid` or raise when no `default_version`.
 
@@ -321,7 +321,7 @@ def _git_describe_parsed(pname,
             cmd.extend(git_options)
         ## FIXME: buggy git < 2.15.0 ignores multiple match-patterns but the last
         cmd.extend('--match=' + tp for tp in tag_patterns)
-        pvtag = _my_run(cmd, cwd=repo_path)
+        pvtag = _my_run(cmd, cwd=basepath)
         matched_project, version, descid = split_pvtag(pvtag, tag_regexes)
         if matched_project and matched_project != pname:
             log.warning("Matched  pvtag project '%s' different from expected '%s'!",
@@ -416,9 +416,9 @@ def polyversion(**kw):
         - false: v-tags searched;
         - true: r-tags searched;
         - None: both tags searched.
-    :param str repo_path:
-        A path inside the git repo hosting the `pname` in question; if missing,
-        derived from the calling stack
+    :param str basepath:
+        The path of the outermost package inside the git repo hosting the project;
+        if missing, assumed as the dirname of the calling code's package.
     :param git_options:
         a str or an iterator of (converted to str) options to pass
         to ``git describe`` command (empty by default).  If a string,
@@ -449,7 +449,7 @@ def polyversion(**kw):
     """
     pname = kw.get('pname')
     default_version = kw.get('default_version')
-    repo_path = kw.get('repo_path')
+    basepath = kw.get('basepath')
     mono_project = kw.get('mono_project')
     tag_format = kw.get('tag_format')
     tag_regex = kw.get('tag_regex')
@@ -461,12 +461,12 @@ def polyversion(**kw):
     if not pname:
         pname = _caller_module_name()
 
-    if not repo_path:
-        repo_path = _caller_fpath()
-        if not repo_path:
-            repo_path = '.'
+    if not basepath:
+        basepath = _caller_fpath()
+        if not basepath:
+            basepath = '.'
 
-    version = get_version_from_pkg_metadata(pname, repo_path)
+    version = get_version_from_pkg_metadata(pname, basepath)
     if version:
         if return_all:
             return None, version, None
@@ -492,7 +492,7 @@ def polyversion(**kw):
     tag, version, descid = _git_describe_parsed(pname, default_version,
                                                 tag_format, tag_regex,
                                                 vprefixes,
-                                                repo_path, git_options)
+                                                basepath, git_options)
     if return_all:
         return tag, version, descid
     return version
@@ -505,9 +505,9 @@ def polytime(**kw):
     :param str no_raise:
         If true, never fail and return current-time.
         Assumed true if a :term:`default version env-var` is found.
-    :param str repo_path:
-        A path inside the git repo hosting the project in question; if missing,
-        derived from the calling stack.
+    :param str basepath:
+        The path of the outermost package inside the git repo hosting the project;
+        if missing, assumed as the dirname of the calling code's package.
     :param str pname:
         The project-name used only as the prefix for :term:`default version env-var`.
         If not given, defaults to the *last segment of the module-name of the caller*.
@@ -526,24 +526,24 @@ def polytime(**kw):
     import os
 
     no_raise = kw.get('no_raise', False)
-    repo_path = kw.get('repo_path')
+    basepath = kw.get('basepath')
     pname = kw.get('pname')
 
     if not pname:
         pname = _caller_module_name()
 
-    if not repo_path:
-        repo_path = _caller_fpath()
+    if not basepath:
+        basepath = _caller_fpath()
 
     cdate = None
-    if not get_version_from_pkg_metadata(pname, repo_path):
+    if not get_version_from_pkg_metadata(pname, basepath):
         defver_envvar = kw.get('default_version_env_var', '%s_VERSION' % pname)
         if os.environ.get(defver_envvar):
             no_raise = True
 
         cmd = "git log -n1 --format=format:%cD"
         try:
-                cdate = _my_run(cmd, cwd=repo_path)
+                cdate = _my_run(cmd, cwd=basepath)
         except Exception as ex:
             if not no_raise:
                 raise
@@ -614,7 +614,7 @@ def run(*args):
         _log_stack['stack_info'] = False
 
     if len(args) == 1:
-        res = polyversion(pname=args[0], repo_path=os.curdir,
+        res = polyversion(pname=args[0], basepath=os.curdir,
                           return_all=print_tag)
         # fetces either 1-triplet or screams.
         if print_tag:
@@ -623,7 +623,7 @@ def run(*args):
     else:
         versions = [(pname, polyversion(pname=pname,
                                         default_version='',
-                                        repo_path=os.curdir,
+                                        basepath=os.curdir,
                                         return_all=print_tag))
                     for pname in args]
 

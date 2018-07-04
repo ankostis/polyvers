@@ -267,7 +267,7 @@ class BumpCmd(cli._SubCmd):
                 tag_format=prj.pvtag_format,
                 tag_regex=prj.pvtag_regex,
                 vprefixes=prj.tag_vprefixes,
-                repo_path=prj.basepath
+                basepath=prj.basepath
             )
             prj.version = latest_version
 

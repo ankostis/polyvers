@@ -16,7 +16,7 @@ __all__ = 'init_plugin_kw skip_plugin_check_kw'.split()
 
 def _parse_kw_content(attr, kw_value):
     good_keys = set('mono_project tag_format tag_regex '
-                    'vprefixes repo_path git_options '
+                    'vprefixes basepath git_options '
                     'default_version_env_var'.split())
 
     try:
@@ -37,11 +37,11 @@ def _parse_kw_content(attr, kw_value):
     return pvargs
 
 
-def _establish_setup_py_version(dist, repo_path=None, **pvargs):
+def _establish_setup_py_version(dist, basepath=None, **pvargs):
     "Derive version from PKG-INFO or Git rtags, and trigger bdist-check in later case."
     pname = dist.metadata.name
 
-    basepath = (repo_path or
+    basepath = (basepath or
                 (dist.package_dir and dist.package_dir.get('')) or
                 '.')
 
@@ -55,7 +55,7 @@ def _establish_setup_py_version(dist, repo_path=None, **pvargs):
         pvargs['pname'] = pname or '<UNKNOWN>'
         ## Avoid also `_caller_path()`.
         #  I confirm, `setuptools.find_packages()` assume '.'.
-        pvargs['repo_path'] = basepath
+        pvargs['basepath'] = basepath
         default_version = dist.metadata.version
 
         ## Respect version env-var both if default-version empty/none.
@@ -139,7 +139,7 @@ def init_plugin_kw(dist, attr, kw_value):
         :param is_release:
             absent; always `False` when deriving the version,
             and `True` when bdist-checking
-        :param repo_path:
+        :param basepath:
             if not given, derived from ``setup(package_dirs={...})`` keyword
             or '.' (and never from caller-stack).
 
