@@ -160,20 +160,24 @@ def pkg_metadata_version(pname, basepath=None):
     :return:
       `None` if nothing found
 
-    It will retrive the version from these filepaths (and in this order):
+    It will retrieve the version from these ``<basepath>`` filepaths (see :pep:`0376`),
+    and in this order:
 
-      - PKG-INFO (for sdists),
-      - METADATA (for wheels),
-      - ../<pname>-<version>.egg-info (for installed packages in `site-packages`)
+      - ``PKG-INFO``: when launched from within for *sdists*,
+      - ``METADATA``: when launched from within for *wheels*.
+      - ``../<pname>-<version>.dist-info/METADATA``: for packages
+        installed in PYTHONPATH from a *wheel*.
+      - ``../<pname>-<version>.egg-info/PKG-INFO``: for packages
+        installed in PYTHONPATH from an *(bdist) egg*.
     """
     import email
     import glob
 
     pkg_metadata_fpaths = [
-        'PKG-INFO', 'METADATA',
-        ## Try sibling dir if install in `site-packages/`.
-        osp.join('..', '%s-*.egg-info' % pname, 'PKG-INFO'),
-        osp.join('..', '%s-*.dist-info' % pname, 'METADATA'),
+        'PKG-INFO',
+        'METADATA',
+        osp.join('..', '%s-*.egg-info' % pname, 'PKG-INFO'),   # egg
+        osp.join('..', '%s-*.dist-info' % pname, 'METADATA'),  # wheel
     ]
     pkg_metadata = {}
     for fpath in pkg_metadata_fpaths:
