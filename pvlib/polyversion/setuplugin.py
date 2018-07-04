@@ -8,7 +8,7 @@ A *setuptools* plugin with x2 ``setup()`` kwds and monkeypatch all ``bdist...`` 
   Set `envvar[DISTUTILS_DEBUG]` to debug it.
   From https://docs.python.org/3.7/distutils/setupscript.html#debugging-the-setup-script
 """
-from polyversion import polyversion, get_version_from_pkg_metadata
+from polyversion import polyversion, pkg_metadata_version
 
 
 __all__ = 'init_plugin_kw skip_plugin_check_kw'.split()
@@ -45,7 +45,7 @@ def _establish_setup_py_version(dist, basepath=None, **pvargs):
                 (dist.package_dir and dist.package_dir.get('')) or
                 '.')
 
-    version = get_version_from_pkg_metadata(pname, basepath)
+    version = pkg_metadata_version(pname, basepath)
     if not version:
         ## Prepare pvargs for calling `polyversion()` below,
         #  and optionally in bdist-check.

@@ -148,7 +148,7 @@ def _my_run(cmd, cwd):
         return _clean_cmd_result(out)
 
 
-def get_version_from_pkg_metadata(pname, basepath=None):
+def pkg_metadata_version(pname, basepath=None):
     """Get the version from package metadata if present.
 
     :param pname:
@@ -466,7 +466,7 @@ def polyversion(**kw):
         if not basepath:
             basepath = '.'
 
-    version = get_version_from_pkg_metadata(pname, basepath)
+    version = pkg_metadata_version(pname, basepath)
     if version:
         if return_all:
             return None, version, None
@@ -536,7 +536,7 @@ def polytime(**kw):
         basepath = _caller_fpath()
 
     cdate = None
-    if not get_version_from_pkg_metadata(pname, basepath):
+    if not pkg_metadata_version(pname, basepath):
         defver_envvar = kw.get('default_version_env_var', '%s_VERSION' % pname)
         if os.environ.get(defver_envvar):
             no_raise = True
