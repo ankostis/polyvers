@@ -86,9 +86,12 @@ TODOs
 
 .. towncrier release notes start
 
-2018-07-04: polyversion-v0.2.0a1
+2018-07-04: polyversion-v0.2.0a2
 ================================
-( Version `v0.2.0a0` not in pypi, consumed for standalone ``bin/pvlib.run``)
+- Version `v0.2.0a0` not in pypi, consumed for standalone ``bin/pvlib.run``.
+- Version `v0.2.0a1` were not finding sbling-dir versions if ``pip install git+...``,
+  and had not replaced all skip-bdist flags.
+
 
 Features
 --------
