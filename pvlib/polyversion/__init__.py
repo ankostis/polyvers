@@ -172,18 +172,20 @@ def pkg_metadata_version(pname, basepath=None):
     pkg_metadata_fpaths = [
         'PKG-INFO', 'METADATA',
         ## Try sibling dir if install in `site-packages/`.
-        osp.join('..', '%s-*.egg-info' % pname, 'PKG-INFO')
+        osp.join('..', '%s-*.egg-info' % pname, 'PKG-INFO'),
+        osp.join('..', '%s-*.dist-info' % pname, 'METADATA'),
     ]
     pkg_metadata = {}
     for fpath in pkg_metadata_fpaths:
+        fpath = osp.join(str(basepath) or '.', fpath)
         try:
-            matches = glob.glob(osp.join(str(basepath) or '.', fpath))
+            matches = glob.glob(fpath)
             if len(matches) == 1:
                 fpath = matches[0]
             else:
                 if len(matches) > 1:
                     log.debug("Many matches while searching version in '%s': %s",
-                              fpath, matches)
+                              osp.realpath(fpath), matches)
                 continue
 
             pkg_metadata_file = open(fpath, 'r',
@@ -191,13 +193,13 @@ def pkg_metadata_version(pname, basepath=None):
                                      errors='ignore')
         except (IOError, OSError) as ex:
             log.debug("Ignored error while searching version in '%s': %s",
-                      fpath, ex)
+                      osp.realpath(fpath), ex)
             continue
         try:
             pkg_metadata = email.message_from_file(pkg_metadata_file)
         except email.errors.MessageError as ex:
             log.debug("Ignored error while searching version in '%s': %s",
-                      fpath, ex)
+                      osp.realpath(fpath), ex)
             continue
 
     # Check to make sure we're in our own dir
