@@ -1,3 +1,0 @@
-Rename :term:`setuptools` flag from ``skip_polyversion_check --> polyversion_check_bdist_enabled``
-to flip its default logic (not checking by default), since non-engraved wheels
-install ust fine now.
