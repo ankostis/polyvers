@@ -148,30 +148,51 @@ def _my_run(cmd, cwd):
         return _clean_cmd_result(out)
 
 
-def get_version_from_pkg_metadata(package_name):
+def get_version_from_pkg_metadata(pname, basepath=None):
     """Get the version from package metadata if present.
 
+    :param pname:
+        package-name
     This looks for PKG-INFO if present (for sdists), and if not looks
     for METADATA (for wheels) and failing that will return None.
     """
     import email
+    import glob
 
-    pkg_metadata_filenames = ['PKG-INFO', 'METADATA']
+    pkg_metadata_fpaths = [
+        'PKG-INFO', 'METADATA',
+        ## Try sibling dir if install in `site-packages/`.
+        osp.join('..', '%s-*.egg-info' % pname, 'PKG-INFO')
+    ]
     pkg_metadata = {}
-    for filename in pkg_metadata_filenames:
+    for fpath in pkg_metadata_fpaths:
         try:
-            pkg_metadata_file = open(filename, 'r')
-        except (IOError, OSError):
+            matches = glob.glob(osp.join(str(basepath) or '.', fpath))
+            if len(matches) == 1:
+                fpath = matches[0]
+            else:
+                if len(matches) > 1:
+                    log.debug("Many matches while searching version in '%s': %s",
+                              fpath, matches)
+                continue
+
+            pkg_metadata_file = open(fpath, 'r',
+                                     encoding='utf-8',
+                                     errors='ignore')
+        except (IOError, OSError) as ex:
+            log.debug("Ignored error while searching version in '%s': %s",
+                      fpath, ex)
             continue
         try:
             pkg_metadata = email.message_from_file(pkg_metadata_file)
-        except email.errors.MessageError:
+        except email.errors.MessageError as ex:
+            log.debug("Ignored error while searching version in '%s': %s",
+                      fpath, ex)
             continue
 
     # Check to make sure we're in our own dir
-    if pkg_metadata.get('Name', None) != package_name:
-        return None
-    return pkg_metadata.get('Version', None)
+    if pkg_metadata.get('Name', None) == pname:
+        return pkg_metadata.get('Version', None)
 
 
 def _caller_module_name(nframes_back=2):
@@ -440,6 +461,17 @@ def polyversion(**kw):
     if not pname:
         pname = _caller_module_name()
 
+    if not repo_path:
+        repo_path = _caller_fpath()
+        if not repo_path:
+            repo_path = '.'
+
+    version = get_version_from_pkg_metadata(pname, repo_path)
+    if version:
+        if return_all:
+            return None, version, None
+        return version
+
     if not default_version:
         import os
 
@@ -455,10 +487,6 @@ def polyversion(**kw):
         tag_format = vtag_format if mono_project else pvtag_format
     if tag_regex is None:
         tag_regex = vtag_regex if mono_project else pvtag_regex
-    if not repo_path:
-        repo_path = _caller_fpath()
-        if not repo_path:
-            repo_path = '.'
 
     vprefixes = decide_vprefixes(vprefixes, is_release)
     tag, version, descid = _git_describe_parsed(pname, default_version,
@@ -504,25 +532,26 @@ def polytime(**kw):
     if not pname:
         pname = _caller_module_name()
 
-    defver_envvar = kw.get('default_version_env_var', '%s_VERSION' % pname)
-
-    if os.environ.get(defver_envvar):
-        no_raise = True
-
-    cdate = None
     if not repo_path:
         repo_path = _caller_fpath()
-    cmd = "git log -n1 --format=format:%cD"
-    try:
-            cdate = _my_run(cmd, cwd=repo_path)
-    except Exception as ex:
-        if not no_raise:
-            raise
-        else:
-            log.warning(
-                "polytime(): falling back to current-time "
-                "due to ignored error: %s",
-                ex, **_log_stack)
+
+    cdate = None
+    if not get_version_from_pkg_metadata(pname, repo_path):
+        defver_envvar = kw.get('default_version_env_var', '%s_VERSION' % pname)
+        if os.environ.get(defver_envvar):
+            no_raise = True
+
+        cmd = "git log -n1 --format=format:%cD"
+        try:
+                cdate = _my_run(cmd, cwd=repo_path)
+        except Exception as ex:
+            if not no_raise:
+                raise
+            else:
+                log.warning(
+                    "polytime(): falling back to current-time "
+                    "due to ignored error: %s",
+                    ex, **_log_stack)
 
     if not cdate:
         cdate = rfc2822_tstamp()

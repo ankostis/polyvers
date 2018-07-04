@@ -41,7 +41,11 @@ def _establish_setup_py_version(dist, repo_path=None, **pvargs):
     "Derive version from PKG-INFO or Git rtags, and trigger bdist-check in later case."
     pname = dist.metadata.name
 
-    version = get_version_from_pkg_metadata(pname)
+    basepath = (repo_path or
+                (dist.package_dir and dist.package_dir.get('')) or
+                '.')
+
+    version = get_version_from_pkg_metadata(pname, basepath)
     if not version:
         ## Prepare pvargs for calling `polyversion()` below,
         #  and optionally in bdist-check.
@@ -51,9 +55,7 @@ def _establish_setup_py_version(dist, repo_path=None, **pvargs):
         pvargs['pname'] = pname or '<UNKNOWN>'
         ## Avoid also `_caller_path()`.
         #  I confirm, `setuptools.find_packages()` assume '.'.
-        pvargs['repo_path'] = (repo_path or
-                               (dist.package_dir and dist.package_dir.get('')) or
-                               '.')
+        pvargs['repo_path'] = basepath
         default_version = dist.metadata.version
 
         ## Respect version env-var both if default-version empty/none.
