@@ -86,6 +86,35 @@ TODOs
 
 .. towncrier release notes start
 
+2018-07-04: polyversion-v0.2.0a0
+================================
+
+Features
+--------
+
+- Teach non-engraved projects how to retrieve polyversion when pip-installed:
+
+  - The functions :func:`.polyversion.polyversion()` & :func:`polyversion..polytime()`
+    now attempt to fetch version from package/site-package infos.
+  - And the function doing this  :func:`polyversion.pkg_metadata_version()`
+    retrofitted to:
+
+    - search  for `<pname-<version>.egg-info/PKG-INFO` in `baspath` sibling folder
+      (before searching PKG-INFO, METADATA in `basepath`),
+    - so now `basepath` always needed in  `polyversion()/polytime()` functions
+      to locate sibling dir.
+
+
+Breaking Changes
+----------------
+
+- Rename :term:`setuptools` flag from ``skip_polyversion_check -->
+  polyversion_check_bdist_enabled`` to flip its default logic (not checking by
+  default), since non-engraved wheels install just fine now.
+- Rename the keyword of ``polyversion()``/``polytime()`` functions from
+  ``repo_path --> basepath`` to denote its importance for retrieving the version
+  of installed projects from sibling dirs inside  ``PYTHONPATH/site-packages/``.
+
 
 2018-06-29: polyversion-v0.1.1a3
 ================================

@@ -9,6 +9,7 @@ Polyversion (library)
    polyversion
    polyversion.polyversion
    polyversion.polytime
+   polyversion.pkg_metadata_version
    polyversion.setuplugin
    polyversion.setuplugin.init_plugin_kw
    polyversion.setuplugin.check_bdist_kw

@@ -153,8 +153,18 @@ def pkg_metadata_version(pname, basepath=None):
 
     :param pname:
         package-name
-    This looks for PKG-INFO if present (for sdists), and if not looks
-    for METADATA (for wheels) and failing that will return None.
+    :param basepath:
+        The path of the outermost package inside the git repo hosting the project
+        if missing, cwd assumed.
+
+    :return:
+      `None` if nothing found
+
+    It will retrive the version from these filepaths (and in this order):
+
+      - PKG-INFO (for sdists),
+      - METADATA (for wheels),
+      - ../<pname>-<version>.egg-info (for installed packages in `site-packages`)
     """
     import email
     import glob
