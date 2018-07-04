@@ -42,7 +42,7 @@ test_script:
   ## Build and smoketest WHEELs
   #
   # Only $CWD/setup.cfg is read
-  - sed -i 's/skip_polyversion_check = false/skip_polyversion_check = true/' setup.cfg
+  - sed -i 's/polyversion_check_bdist_enabled = true/polyversion_check_bdist_enabled = false/' setup.cfg
   - python pvlib/setup.py build bdist_wheel
 
   ## Install sources and PYTEST both pvlib & pvcmd.
