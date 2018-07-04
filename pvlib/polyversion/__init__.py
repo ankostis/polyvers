@@ -22,6 +22,7 @@ Finally, the wheel can be executed like that::
 from __future__ import print_function
 
 import logging
+import os
 import sys
 
 import os.path as osp
@@ -489,8 +490,6 @@ def polyversion(**kw):
         return version
 
     if not default_version:
-        import os
-
         defver_envvar = kw.get('default_version_env_var', '%s_VERSION' % pname)
         ## Ignore empty/none envvars
         #  to preserve empty (but not none) `default-version` kwd.
@@ -539,8 +538,6 @@ def polytime(**kw):
     :return:
         the commit-date if in git repo, or now; :rfc:`2822` formatted
     """
-    import os
-
     no_raise = kw.get('no_raise', False)
     basepath = kw.get('basepath')
     pname = kw.get('pname')
@@ -575,6 +572,26 @@ def polytime(**kw):
     return cdate
 
 
+def _init_logging():
+    level = os.environ.get('POLYVERSION_LOG_LEVEL')
+    if level:
+        try:
+            level = int(level)
+        except ValueError:
+            pass
+    else:
+        level = logging.INFO
+
+    logging.basicConfig(
+        level=level,
+        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+
+
+## Initialize logging before my own version-setting.
+#
+if 'POLYVERSION_LOG_LEVEL' in os.environ:
+    _init_logging()
+
 __version__ = polyversion(default_version='0.0.0')
 __updated__ = polytime(no_raise=True)
 
@@ -595,6 +612,8 @@ def run(*args):
     - Invokes :func:`polyversion.run()` with ``sys.argv[1:]``.
     - In order to set cmd-line arguments, invoke directly the function above.
     - With a single project, it raises any problems (e.g. no tags).
+    - Use env-var[POLYVERSION_LOG_LEVEL] to control verbosity
+      (0: show all, 10: DEBUG, 30: INFO, 40: WARN, 50: ERROR, 60=FATAL).
     """
     import os
 
@@ -622,9 +641,8 @@ def run(*args):
         args = list(args)
         del args[args.index('-t')]
 
-    logging.basicConfig(
-        level=logging.INFO,
-        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    _init_logging()
+
     if _log_stack:
         ## Not in PY2, and not really needed from main.
         _log_stack['stack_info'] = False
