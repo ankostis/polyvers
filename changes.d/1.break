@@ -1,0 +1,2 @@
+Flip flag's ``skip_polyversion_check`` default value `false -> true` (not checking),
+since wheels are possible to install now.

@@ -176,7 +176,7 @@ def _monkeypathed_run_command(dist, cmd, defver_envvar):
     #    - from `setup.cfg:[global]` section.
     #  Cast-bool would yield `True` on "False" str-value from the later!!
     #
-    skip_check = getattr(dist, 'skip_polyversion_check', False)
+    skip_check = getattr(dist, 'skip_polyversion_check', True)
     skip_check_bval = bool(skip_check)
     if skip_check_bval:
         import distutils.util as dstutils
