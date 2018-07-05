@@ -86,6 +86,17 @@ TODOs
 
 .. towncrier release notes start
 
+
+2018-07-05: polyversion-v0.2.1a0
+================================
+- Feature: The :envvar:`POLYVERSION_LOG_LEVEL` control *polyversion* verbosity.
+  Run ``polyversion -h`` fo help.
+- Change: minor reordering when searching version from package-metadata.
+- fix: add standalone ``bin/pvlib.run`` from last release.
+- fix: :func:~polyversion()`/:func:~polytime()` are guessing ``basepath`` keyword
+  from the path of caller's top-package (not just from caller's fpath).
+
+
 2018-07-04: polyversion-v0.2.0a2
 ================================
 - Version `v0.2.0a0` not in pypi, consumed for standalone ``bin/pvlib.run``.
