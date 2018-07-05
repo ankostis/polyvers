@@ -234,16 +234,19 @@ def _caller_module_name(nframes_back=2):
         del frame
 
 
-def _caller_fpath(nframes_back=2):
+def _caller_basepath(nframes_back=2):
     import inspect
 
     frame = inspect.currentframe()
     try:
         for _ in range(nframes_back):
             frame = frame.f_back
-        fpath = inspect.getframeinfo(frame).filename
+        mod = inspect.getmodule(frame)
 
-        return osp.dirname(fpath)
+        topackage = __import__(mod.__name__.split('.')[0])
+        basepath = osp.dirname(inspect.getfile(topackage))
+
+        return basepath
     finally:
         del frame
 
@@ -483,7 +486,7 @@ def polyversion(**kw):
         pname = _caller_module_name()
 
     if not basepath:
-        basepath = _caller_fpath()
+        basepath = _caller_basepath()
         if not basepath:
             basepath = '.'
 
@@ -550,7 +553,7 @@ def polytime(**kw):
         pname = _caller_module_name()
 
     if not basepath:
-        basepath = _caller_fpath()
+        basepath = _caller_basepath()
 
     cdate = None
     if not pkg_metadata_version(pname, basepath):

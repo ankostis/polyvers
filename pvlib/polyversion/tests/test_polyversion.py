@@ -58,10 +58,11 @@ def test_fnmatch_format(inp, exp):
 
 
 def test_caller_fpath():
-    caller_dir = pvlib._caller_fpath(1)
-    assert caller_dir == osp.dirname(__file__)
+    caller_dir = pvlib._caller_basepath(1)
+    exp = osp.join(osp.dirname(__file__), '..')
+    assert os.stat(caller_dir) == os.stat(exp)
 
-    caller_dir = pvlib._caller_fpath(0)
+    caller_dir = pvlib._caller_basepath(0)
     exp = osp.join(osp.dirname(__file__), '..')
     ## Windows misses `osp.samefile()`,
     # see https://stackoverflow.com/questions/8892831/
