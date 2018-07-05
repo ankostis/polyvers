@@ -599,8 +599,8 @@ def _init_logging():
 if 'POLYVERSION_LOG_LEVEL' in os.environ:
     _init_logging()
 
-__version__ = polyversion(default_version='0.0.0')
-__updated__ = polytime(no_raise=True)
+__version__ = '0.2.1a0'
+__updated__ = '2018-07-05T11:41:47.848168'
 
 
 def run(*args):
