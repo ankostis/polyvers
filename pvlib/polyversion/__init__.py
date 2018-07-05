@@ -189,27 +189,31 @@ def pkg_metadata_version(pname, basepath=None):
                 fpath = matches[0]
             else:
                 if len(matches) > 1:
-                    log.debug("Many matches while searching version in '%s': %s",
-                              osp.realpath(fpath), matches)
+                    log.warning("Many matches while searching version in '%s': %s",
+                                osp.realpath(fpath), matches)
                 continue
 
             pkg_metadata_file = open(fpath, 'r',
                                      encoding='utf-8',
                                      errors='ignore')
         except (IOError, OSError) as ex:
-            log.debug("Ignored error while searching version in '%s': %s",
-                      osp.realpath(fpath), ex)
+            log.warning("Ignored error while searching version in '%s': %s",
+                        osp.realpath(fpath), ex)
             continue
         try:
             pkg_metadata = email.message_from_file(pkg_metadata_file)
         except email.errors.MessageError as ex:
-            log.debug("Ignored error while searching version in '%s': %s",
-                      osp.realpath(fpath), ex)
+            log.warning("Ignored error while searching version in '%s': %s",
+                        osp.realpath(fpath), ex)
             continue
 
     # Check to make sure we're in our own dir
-    if pkg_metadata.get('Name', None) == pname:
+    meta_pname = pkg_metadata.get('Name', None)
+    if meta_pname == pname:
         return pkg_metadata.get('Version', None)
+    elif meta_pname is not None:
+        log.warning("Skipping version '%s' from foreign project '%s' (expecting '%s').",
+                    pkg_metadata.get('Version', None), meta_pname, pname)
 
 
 def _caller_module_name(nframes_back=2):
