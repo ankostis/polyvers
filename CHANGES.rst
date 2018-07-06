@@ -87,6 +87,12 @@ TODOs
 .. towncrier release notes start
 
 
+2018-07-06: polyvers-v0.1.1a0
+=============================
+FIX: engravings were applied unsorted (based on their start-point) and offsets
+were miss-located when switching graft in a same file.
+
+
 2018-07-05: polyversion-v0.2.1a0
 ================================
 - Feature: The :envvar:`POLYVERSION_LOG_LEVEL` control *polyversion* verbosity.
