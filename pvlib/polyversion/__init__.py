@@ -149,6 +149,13 @@ def _my_run(cmd, cwd):
         return _clean_cmd_result(out)
 
 
+def _parse_metadata(fp):
+    ## Method found in :mod:`pkginfo.distribution`.
+    from email.parser import Parser
+
+    return Parser().parse(fp, headersonly=True)
+
+
 def pkg_metadata_version(pname, basepath=None):
     """Get the version from package metadata if present.
 
@@ -171,8 +178,8 @@ def pkg_metadata_version(pname, basepath=None):
       - ``METADATA``: when launched from within for *wheels*.
       - ``PKG-INFO``: when launched from within for *sdists*,
     """
-    import email
     import glob
+    import io
 
     pkg_metadata_fpaths = [
         osp.join('..', '%s-*.dist-info' % pname, 'METADATA'),  # wheel
@@ -193,21 +200,16 @@ def pkg_metadata_version(pname, basepath=None):
                                 osp.realpath(fpath), matches)
                 continue
 
-            pkg_metadata_file = open(fpath, 'r',
-                                     encoding='utf-8',
-                                     errors='ignore')
-        except (IOError, OSError) as ex:
-            log.warning("Ignored error while searching version in '%s': %s",
-                        osp.realpath(fpath), ex)
-            continue
-        try:
-            pkg_metadata = email.message_from_file(pkg_metadata_file)
-        except email.errors.MessageError as ex:
-            log.warning("Ignored error while searching version in '%s': %s",
-                        osp.realpath(fpath), ex)
-            continue
+            with io.open(fpath, 'r', errors='ignore') as fp:
+                pkg_metadata = _parse_metadata(fp)
 
-    # Check to make sure we're in our own dir
+            break
+        except Exception as ex:
+            log.warning("Ignored error while searching version in '%s': %s",
+                        osp.realpath(fpath), ex)
+
+    ## Check to make sure we're in our own dir
+    #
     meta_pname = pkg_metadata.get('Name', None)
     if meta_pname == pname:
         return pkg_metadata.get('Version', None)
