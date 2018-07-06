@@ -148,28 +148,25 @@ class Graft(cmdlets.Replaceable, cmdlets.Printable, yu.YAMLable, cmdlets.Spec):
             match_indices = _slices_to_ids(slices, matches)
             return [matches[i] for i in match_indices]
 
-    def substitute_matches(self,
-                           fbytes: bytes,
-                           matches: List[Match],
-                           offset: int,
-                           project: 'Project',
-                           ) -> Tuple[bytes, int]:
+    def substitute_match(self,
+                         fbytes: bytes,
+                         match: Match,
+                         offset: int,
+                         project: 'Project',
+                         ) -> Tuple[bytes, int]:
         """
         :return:
             the substituted fbytes
         """
         if self.subst:
             subst = self.subst_resolved(project)
-            for m in matches:
-                if subst is not None:
-                    with self.errlogged(token='subst',
-                                        doing="substituting %s --> %s" %
-                                        (subst, m)):
-                        new_text = m.expand(subst)
-                        head = fbytes[:m.start() + offset]
-                        tail = fbytes[m.end() + offset:]
-                        fbytes = head + new_text + tail
-                        offset += len(new_text) - (m.end() - m.start())
+            if subst is not None:
+                mstart, mend = match.span()
+                new_text = match.expand(subst)
+                head = fbytes[:mstart + offset]
+                tail = fbytes[mend + offset:]
+                fbytes = head + new_text + tail
+                offset += len(new_text) - (mend - mstart)
 
         return fbytes, offset
 

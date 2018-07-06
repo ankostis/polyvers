@@ -262,11 +262,9 @@ class PolyversCmd(cmdlets.Cmd, yu.YAMLable):
         #  pair (pname <--> path) matched.
         #
         pname_path_pairs: List[Tuple[str, Path]] = [
-            (m.groupdict()['pname'].decode('utf-8'),
-             fpath.parent / (prj.basepath or '.'))
+            (match.groupdict()['pname'].decode('utf-8'), fpath.parent / (prj.basepath or '.'))
             for fpath, mqruples in match_map.items()
-            for prj, _eng, _graft, matches in mqruples
-            for m in matches]
+            for prj, _eng, _graft, match in mqruples]
         unique_pname_paths = iset(pname_path_pairs)
 
         ## check basepath conflicts.

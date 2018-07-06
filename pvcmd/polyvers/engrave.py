@@ -174,7 +174,7 @@ GraftsMap = Dict[Path, List[Tuple[pvproject.Project,
 MatchQruple = Tuple[pvproject.Project,
                     pvproject.Engrave,
                     pvproject.Graft,
-                    List[Match]]
+                    Match]
 MatchMap = Dict[Path, List[MatchQruple]]
 
 
@@ -232,9 +232,7 @@ class FileProcessor(cmdlets.Spec):
 #                                                 ListTrait(Instance(Match))))))
 
     def nmatches(self):
-        return sum(len(matches)
-                   for qruple in self.match_map.values()
-                   for _prj, _eng, _graft, matches in qruple)
+        return sum(len(qruple) for qruple in self.match_map.values())
 
     def grafted_files(self, all_searched=False) -> List[Path]:
         return sorted(fpath
@@ -306,16 +304,17 @@ class FileProcessor(cmdlets.Spec):
                             "Sliced %i out of %i matches in file '%s' for %s.",
                             len(sliced_matches), len(matches), fpath, graft)
 
-                match_map[fpath].append((prj, eng, graft, matches))
+                match_map[fpath].extend((prj, eng, graft, m)
+                                        for m in matches)
 
         return match_map or {}
 
     def _drop_overlapping_matches(self, match_map: MatchMap) -> MatchMap:
+        """Sorts also matches on the starting-points."""
         good_match_map = {}
         for fpath, mqruples in match_map.items():
-            all_file_matches = [m
-                                for _prj, _eng, _graft, matches in mqruples
-                                for m in matches]
+            mqruples = sorted(mqruples, key=lambda mq: mq[-1].start())
+            all_file_matches = [mq[-1] for mq in mqruples]
 
             bad_matches = overlapped_matches(all_file_matches, no_touch=True)
             if bad_matches:
@@ -325,11 +324,9 @@ class FileProcessor(cmdlets.Spec):
                     len(bad_matches), len(all_file_matches), fpath,
                     ', '.join(str(s) for s in bad_matches))
 
-            for prj, eng, graft, matches in mqruples:
-                good_match_map[fpath] = [(prj, eng, graft,
-                                          [m for m in matches
-                                           if m not in bad_matches])
-                                         for prj, eng, graft, matches in mqruples]
+            good_match_map[fpath] = [mq
+                                     for mq in mqruples
+                                     if mq[-1] not in bad_matches]
 
         return good_match_map
 
@@ -348,23 +345,24 @@ class FileProcessor(cmdlets.Spec):
 
     def engrave_matches(self):
         match_map = self.match_map
-        for fpath, match_qruple in match_map.items():
+        for fpath, mqruples in match_map.items():
+            if not mqruples:
+                continue
+
             fbytes = self._read_file(fpath)
             offset = 0  # File growth/shrink as substituted?
-            for prj, eng, graft, matches in match_qruple:
-                if not matches:
-                    continue
+            for prj, eng, graft, match in mqruples:
                 with self.errlogged(token='subst',
-                                    doing="subst '%s' with %.28s.%.28s.%.28s" %
-                                    (fpath, prj, eng, graft)):
+                                    doing="subst '%s' with %.28s.%.28s.%.28s.%.28s" %
+                                    (fpath, prj, eng, graft, match)):
 
-                    fbytes, graft_offset = graft.substitute_matches(
-                        fbytes, matches, offset, prj)
-                    offset += graft_offset
-                    self.log.debug("Substituted %i matches in %i-bytes text of file '%s': "
-                                   "\n  %s\n  %s\n  %s \n  %s",
-                                   len(matches), len(fbytes), fpath,
-                                   matches, graft, eng, prj)
+                    fbytes, offset = graft.substitute_match(
+                        fbytes, match, offset, prj)
+                    self.log.debug(
+                        "Substituted match in %i(%+i)-bytes file '%s': "
+                        "\n  %s\n  %s\n  %s \n  %s",
+                        len(fbytes), offset, fpath,
+                        match, graft, eng, prj)
 
             self._set_file_bytes(fpath, fbytes)
 
