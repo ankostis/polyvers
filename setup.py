@@ -128,7 +128,7 @@ setup(
     name=PROJECT,
     # Some default, to install in shallow clones.
     # (<this> comment must be in a separate line!)
-    version='0.0.0',
+    version='0.1.1a0',
     polyversion=True,
     description="Bump sub-project versions in Git monorepos independently.",
     long_description=long_desc,
