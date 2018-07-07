@@ -341,6 +341,34 @@ def _git_describe(cmd, tag_patterns, repopath):
     return pvtag
 
 
+def _validate_git_options(git_options):
+    if isinstance(git_options, str):
+        git_options = git_options.split()
+    else:
+        try:
+            git_options = [str(s) for s in git_options]
+        except Exception as ex:
+            raise TypeError(
+                "invalid `git_options` due to: %s"
+                "\n  must be a str or an iterable, got: %r" %
+                (ex, git_options))
+
+    return git_options
+
+
+def _make_tag_patterns(pname,
+                       tag_format, tag_regex,
+                       vprefixes):
+    import re
+
+    tag_patterns, tag_regexes = zip(
+        *((_interp_fnmatch(tag_format, vp, pname),
+           re.compile(_interp_regex(tag_regex, vp, pname)))
+          for vp in vprefixes))
+
+    return tag_patterns, tag_regexes
+
+
 def _git_describe_parsed(pname,
                          default_version,        # if None, raise
                          tag_format, tag_regex,
@@ -354,24 +382,9 @@ def _git_describe_parsed(pname,
     """
     assert not isinstance(vprefixes, str), "req list-of-str, got: %r" % vprefixes
 
-    import re
-
-    if git_options:
-        if isinstance(git_options, str):
-            git_options = git_options.split()
-        else:
-            try:
-                git_options = [str(s) for s in git_options]
-            except Exception as ex:
-                raise TypeError(
-                    "invalid `git_options` due to: %s"
-                    "\n  must be a str or an iterable, got: %r" %
-                    (ex, git_options))
-    tag_patterns, tag_regexes = zip(
-        *((_interp_fnmatch(tag_format, vp, pname),
-           re.compile(_interp_regex(tag_regex, vp, pname)))
-          for vp in vprefixes))
-
+    git_options = git_options and _validate_git_options(git_options)
+    tag_patterns, tag_regexes = _make_tag_patterns(
+        pname, tag_format, tag_regex, vprefixes)
     #
     ## Guard against git's runtime errors, below,
     #  and not configuration-ones, above.
