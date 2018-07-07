@@ -687,7 +687,7 @@ def run(*args):
     _init_logging()
 
     if len(args) == 1:
-        res = polyversion(pname=args[0], basepath=os.curdir,
+        res = polyversion(pname=args[0], basepath='.',
                           return_all=print_tag)
         # fetces either 1-triplet or screams.
         if print_tag:
@@ -696,7 +696,7 @@ def run(*args):
     else:
         versions = [(pname, polyversion(pname=pname,
                                         default_version='',
-                                        basepath=os.curdir,
+                                        basepath='.',
                                         return_all=print_tag))
                     for pname in args]
 
