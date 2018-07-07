@@ -12,7 +12,7 @@ The main structures of *polyvers*::
     Project 1-->* Engrave 1-->* Graft
 """
 from pathlib import Path
-from typing import List, Optional, Tuple, Match, Sequence, Union, Pattern
+from typing import List, Optional, Match, Sequence, Union, Pattern
 import logging
 import re
 
@@ -147,28 +147,6 @@ class Graft(cmdlets.Replaceable, cmdlets.Printable, yu.YAMLable, cmdlets.Spec):
 
             match_indices = _slices_to_ids(slices, matches)
             return [matches[i] for i in match_indices]
-
-    def substitute_match(self,
-                         fbytes: bytes,
-                         match: Match,
-                         offset: int,
-                         project: 'Project',
-                         ) -> Tuple[bytes, int]:
-        """
-        :return:
-            the substituted fbytes
-        """
-        if self.subst:
-            subst = self.subst_resolved(project)
-            if subst is not None:
-                mstart, mend = match.span()
-                new_text = match.expand(subst)
-                head = fbytes[:mstart + offset]
-                tail = fbytes[mend + offset:]
-                fbytes = head + new_text + tail
-                offset += len(new_text) - (mend - mstart)
-
-        return fbytes, offset
 
     def __str__(self):
         if self.name:

@@ -343,6 +343,30 @@ class FileProcessor(cmdlets.Spec):
 
         return match_map
 
+    def _graft_match(self,
+                     graft: pvproject.Graft,
+                     fbytes: bytes,
+                     match: Match,
+                     offset: int,
+                     project: 'pvproject.Project',
+                     ) -> Tuple[bytes, int]:
+        """
+        :param graft:
+            a graft with a non-null :attr:`pvproject.Graft.subst`
+        :return:
+            the substituted fbytes
+        """
+        subst = graft.subst_resolved(project)
+        if subst is not None:
+            mstart, mend = match.span()
+            new_text = match.expand(subst)
+            head = fbytes[:mstart + offset]
+            tail = fbytes[mend + offset:]
+            fbytes = head + new_text + tail
+            offset += len(new_text) - (mend - mstart)
+
+        return fbytes, offset
+
     def engrave_matches(self):
         match_map = self.match_map
         for fpath, mqruples in match_map.items():
@@ -351,13 +375,15 @@ class FileProcessor(cmdlets.Spec):
 
             fbytes = self._read_file(fpath)
             offset = 0  # File growth/shrink as substituted?
-            for prj, eng, graft, match in mqruples:
+            for prj, eng, graft, match in (mq
+                                           for mq in mqruples
+                                           if mq[2].subst):
                 with self.errlogged(token='subst',
                                     doing="subst '%s' with %.28s.%.28s.%.28s.%.28s" %
                                     (fpath, prj, eng, graft, match)):
 
-                    fbytes, offset = graft.substitute_match(
-                        fbytes, match, offset, prj)
+                    fbytes, offset = self._graft_match(
+                        graft, fbytes, match, offset, prj)
                     self.log.debug(
                         "Substituted match in %i(%+i)-bytes file '%s': "
                         "\n  %s\n  %s\n  %s \n  %s",
