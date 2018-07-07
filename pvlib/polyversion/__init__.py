@@ -397,7 +397,7 @@ def _git_describe_parsed(pname,
             log.warning(
                 "polyversion(): falling back to default-version '%s' "
                 "due to ignored error: %s",
-                default_version, ex, **_log_stack)
+                default_version, ex, exc_info=1)
 
     if not version:
         version = default_version
@@ -609,7 +609,7 @@ def polytime(**kw):
                 log.warning(
                     "polytime(): falling back to current-time "
                     "due to ignored error: %s",
-                    ex, **_log_stack)
+                    ex, exc_info=1)
 
     if not cdate:
         cdate = rfc2822_tstamp()
@@ -685,10 +685,6 @@ def run(*args):
         del args[args.index('-t')]
 
     _init_logging()
-
-    if _log_stack:
-        ## Not in PY2, and not really needed from main.
-        _log_stack['stack_info'] = False
 
     if len(args) == 1:
         res = polyversion(pname=args[0], basepath=os.curdir,
