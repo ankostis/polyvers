@@ -78,13 +78,18 @@ TODOs
 
 - Check what happens with `no-commit`, e.g. to temporarily package a wheel.
 
+.. towncrier release notes start
+
+
+2018-07-08: polyversion-v0.2.2a0
+================================
 - FIX: `git < 2.15.0` was buggy with multiple match-patterns in command::
 
       git describe --match=...  --match=...
 
-  https://github.com/git/git/blob/master/Documentation/RelNotes/2.15.0.txt
+  (see https://github.com/git/git/blob/master/Documentation/RelNotes/2.15.0.txt)
 
-.. towncrier release notes start
+  The ``polyvers`` cmd still affected by this.
 
 
 2018-07-06: polyvers-v0.1.1a0
