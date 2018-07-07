@@ -33,7 +33,6 @@ __all__ = 'polyversion polytime decide_vprefixes'.split()
 
 
 PY2 = sys.version_info < (3, )
-PY_OLD_SBP = sys.version_info < (3, 5)
 log = logging.getLogger(__name__)
 _log_stack = {} if PY2 else {'stack_info': True}
 
@@ -104,34 +103,31 @@ def rfc2822_tstamp(nowdt=None):
     return now
 
 
-if PY_OLD_SBP:
-    from subprocess import CalledProcessError
-else:
-    class CalledProcessError(sbp.CalledProcessError):
-        """
-        "A :class:`sbp.CalledProcessError` that includes STDOUT/STDERR on its message.
-        """
-        def __init__(self, returncode, cmd, output=None, stderr=None, cwd=None):
-            try:
-                super(CalledProcessError, self).__init__(returncode, cmd, output, stderr)
-                self.cwd = cwd
-            except TypeError:
-                ## In PY < 3.5 Ex has no output/stderr attributes.
-                super(CalledProcessError, self).__init__(returncode, cmd)
-                self.output = self.stdout == output
-                self.stderr = stderr
+class MyCalledProcessError(sbp.CalledProcessError):
+    """
+    "A :class:`sbp.CalledProcessError` that includes STDOUT/STDERR on its message.
+    """
+    def __init__(self, returncode, cmd, output=None, stderr=None, cwd=None):
+        try:
+            super(MyCalledProcessError, self).__init__(returncode, cmd, output, stderr)
+            self.cwd = cwd
+        except TypeError:
+            ## In PY < 3.5 Ex has no output/stderr attributes.
+            super(MyCalledProcessError, self).__init__(returncode, cmd)
+            self.output = self.stdout = output
+            self.stderr = stderr
 
-        def __str__(self):
-            out = getattr(self, 'stdout', None)  # strangely not always there...
-            err = getattr(self, 'stderr', None)
-            cwd = getattr(self, 'cwd', None)
-            tail = ('\n  STDERR: %s' % err) if err else ''
-            tail += ('\n  STDOUT: %s' % out) if out else ''
-            tail += ('\n     CWD: %s' % cwd) if cwd else ''
+    def __str__(self):
+        out = getattr(self, 'stdout', None)  # strangely not always there...
+        err = getattr(self, 'stderr', None)
+        cwd = getattr(self, 'cwd', None)
+        tail = ('\n  STDERR: %s' % err) if err else ''
+        tail += ('\n  STDOUT: %s' % out) if out else ''
+        tail += ('\n     CWD: %s' % cwd) if cwd else ''
 
-            err = super(CalledProcessError, self).__str__()
+        err = super(MyCalledProcessError, self).__str__()
 
-            return err + tail
+        return err + tail
 
 
 def _my_run(cmd, cwd):
@@ -143,8 +139,7 @@ def _my_run(cmd, cwd):
     out, err = proc.communicate()
 
     if proc.returncode != 0:
-        streams = () if PY_OLD_SBP else [out, err, cwd]
-        raise CalledProcessError(proc.returncode, cmd, *streams)
+        raise MyCalledProcessError(proc.returncode, cmd, out, err, cwd)
     else:
         return _clean_cmd_result(out)
 
@@ -624,8 +619,6 @@ def run(*args):
     - Use env-var[POLYVERSION_LOG_LEVEL] to control verbosity
       (0: show all, 10: DEBUG, 30: INFO, 40: WARN, 50: ERROR, 60=FATAL).
     """
-    import os
-
     for o in ('-h', '--help'):
 
         if o in args:
