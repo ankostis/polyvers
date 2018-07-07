@@ -130,7 +130,7 @@ class MyCalledProcessError(sbp.CalledProcessError):
         return err + tail
 
 
-def _my_run(cmd, cwd):
+def _my_run(cmd, cwd='.'):
     "For commands with small output/stderr."
     if not isinstance(cmd, (list, tuple)):
         cmd = cmd.split()
@@ -300,6 +300,47 @@ def _interp_regex(tag_regex, vprefix, pname):
                             vprefix=vprefix)
 
 
+def _git_version():
+    def _int(i):
+        try:
+            i = int(i)
+        except ValueError:
+            pass
+        return i
+
+    gitver = _my_run(['git', 'version'])
+    ## Git's versions like ``'git version 2.17.0.windows.1'``
+    ver = gitver.lstrip('git version ')
+    return tuple(_int(i) for i in ver.split('.'))
+
+
+def _is_git_describe_accept_signle_pattern():
+    """Buggy git < 2.15.0 ignores multiple match-patterns but the last."""
+    return _git_version()[:2] < (2, 15)
+
+
+def _git_describe(cmd, tag_patterns, basepath):
+    if _is_git_describe_accept_signle_pattern():
+        for i, tp in enumerate(tag_patterns):
+            try:
+                pvtag = _my_run(cmd + ['--match=%s' % tp], cwd=basepath)
+                break
+            ## Catching overriden MyCalledProcessError here
+            #  bc error we want to ignore is raised after communicate
+            except MyCalledProcessError as ex:
+                ## Raise only at the very last pattern.
+                #
+                if ('No names found, cannot describe anything' not in str(ex) or
+                        i >= len(tag_patterns) - 1):
+                    raise
+
+    else:
+        cmd.extend('--match=' + tp for tp in tag_patterns)
+        pvtag = _my_run(cmd, cwd=basepath)
+
+    return pvtag
+
+
 def _git_describe_parsed(pname,
                          default_version,        # if None, raise
                          tag_format, tag_regex,
@@ -340,9 +381,9 @@ def _git_describe_parsed(pname,
         cmd = 'git describe'.split()
         if git_options:
             cmd.extend(git_options)
-        ## FIXME: buggy git < 2.15.0 ignores multiple match-patterns but the last
-        cmd.extend('--match=' + tp for tp in tag_patterns)
-        pvtag = _my_run(cmd, cwd=basepath)
+
+        pvtag = _git_describe(cmd, tag_patterns, basepath)
+
         matched_project, version, descid = split_pvtag(pvtag, tag_regexes)
         if matched_project and matched_project != pname:
             log.warning("Matched  pvtag project '%s' different from expected '%s'!",

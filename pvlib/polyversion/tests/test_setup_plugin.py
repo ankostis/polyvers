@@ -12,6 +12,8 @@ _exp_bad_args = \
     "error in pname setup command: invalid content in `polyversion` keyword due to: "
 _git_desc_cmd = re.escape(
     r"Command '['git', 'describe', '--match=pname-v*', '--match=pname-r*']' returned non-zero")
+_git_desc_cmd_old_git = re.escape(
+    r"Command '['git', 'describe', '--match=pname-r*']' returned non-zero")
 
 
 def call_setup(pv, **kwds):
@@ -46,6 +48,32 @@ def test_invalid_config(kw, exp, rtagged_vtags_repo, monkeypatch):
         with pytest.raises(type(exp), match=str(exp)):
             call_setup(kw)
     else:
+        call_setup(kw)
+
+
+## NOTE: Requires `polyversion` lib to be ``pip install -e pvlib``.
+@pytest.mark.parametrize('kw', [
+    True,  # no monorepo
+    {},    # no monorepo
+    [],    # no monorepo, empty kv-pair list
+])
+def test_invalid_config_old_git(kw, rtagged_vtags_repo, monkeypatch):
+    ## Actually this is testing `polyversion._git_describe()` order!s`
+    import polyversion
+
+    monkeypatch.setattr(sys, 'argv', ('setup.py', 'clean'))
+    rtagged_vtags_repo.chdir()
+
+    monkeypatch.setattr(polyversion, '_is_git_describe_accept_signle_pattern',
+                        (lambda: True))
+    with pytest.raises(polyversion.MyCalledProcessError,
+                       match=_git_desc_cmd_old_git):
+        call_setup(kw)
+
+    monkeypatch.setattr(polyversion, '_is_git_describe_accept_signle_pattern',
+                        (lambda: False))
+    with pytest.raises(polyversion.MyCalledProcessError,
+                       match=_git_desc_cmd):
         call_setup(kw)
 
 
