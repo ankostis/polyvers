@@ -141,8 +141,10 @@ def init_plugin_kw(dist, attr, kw_value):
             and `True` when bdist-checking
         :param basepath:
             if not given, derived from ``setup(package_dirs={...})`` keyword
-            or '.' (and never from caller-stack).
-
+            or '.' (which it  must point to ``setup.py``'s dir) and never discovered
+            from caller-stack.
+            If you use :func:`setuptools.find_packages()`, the 1st arg to that func
+            must be identical to this argument.
         See :func:`polyversion()` for keyword-dict's content.
 
     - It tries first to see if project contained in a distribution-archive

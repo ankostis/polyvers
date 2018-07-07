@@ -151,19 +151,19 @@ def _parse_metadata(fp):
     return Parser().parse(fp, headersonly=True)
 
 
-def pkg_metadata_version(pname, basepath=None):
+def pkg_metadata_version(pname, srcpath=None):
     """Get the version from package metadata if present.
 
     :param pname:
         package-name
-    :param basepath:
+    :param srcpath:
         The path of the outermost package inside the git repo hosting the project
         if missing, cwd assumed.
 
     :return:
       `None` if nothing found
 
-    It will retrieve the version from these ``<basepath>`` filepaths (see :pep:`0376`),
+    It will retrieve the version from these ``<srcpath>`` filepaths (see :pep:`0376`),
     and in this order:
 
       - ``../<pname>-<version>.dist-info/METADATA``: for packages
@@ -184,7 +184,7 @@ def pkg_metadata_version(pname, basepath=None):
     ]
     pkg_metadata = {}
     for fpath in pkg_metadata_fpaths:
-        fpath = osp.join(str(basepath) or '.', fpath)
+        fpath = osp.join(str(srcpath) or '.', fpath)
         try:
             matches = glob.glob(fpath)
             if len(matches) == 1:
@@ -231,7 +231,7 @@ def _caller_module_name(nframes_back=2):
         del frame
 
 
-def _caller_basepath(nframes_back=2):
+def _caller_srcpath(nframes_back=2):
     import inspect
 
     frame = inspect.currentframe()
@@ -241,9 +241,9 @@ def _caller_basepath(nframes_back=2):
         mod = inspect.getmodule(frame)
 
         topackage = __import__(mod.__name__.split('.')[0])
-        basepath = osp.dirname(inspect.getfile(topackage))
+        srcpath = osp.dirname(inspect.getfile(topackage))
 
-        return basepath
+        return srcpath
     finally:
         del frame
 
@@ -319,11 +319,11 @@ def _is_git_describe_accept_signle_pattern():
     return _git_version()[:2] < (2, 15)
 
 
-def _git_describe(cmd, tag_patterns, basepath):
+def _git_describe(cmd, tag_patterns, repopath):
     if _is_git_describe_accept_signle_pattern():
         for i, tp in enumerate(tag_patterns):
             try:
-                pvtag = _my_run(cmd + ['--match=%s' % tp], cwd=basepath)
+                pvtag = _my_run(cmd + ['--match=%s' % tp], cwd=repopath)
                 break
             ## Catching overriden MyCalledProcessError here
             #  bc error we want to ignore is raised after communicate
@@ -336,7 +336,7 @@ def _git_describe(cmd, tag_patterns, basepath):
 
     else:
         cmd.extend('--match=' + tp for tp in tag_patterns)
-        pvtag = _my_run(cmd, cwd=basepath)
+        pvtag = _my_run(cmd, cwd=repopath)
 
     return pvtag
 
@@ -345,7 +345,7 @@ def _git_describe_parsed(pname,
                          default_version,        # if None, raise
                          tag_format, tag_regex,
                          vprefixes,
-                         basepath, git_options):
+                         repopath, git_options):
     """
     Parse git-desc as `pvtag, version, descid` or raise when no `default_version`.
 
@@ -382,7 +382,7 @@ def _git_describe_parsed(pname,
         if git_options:
             cmd.extend(git_options)
 
-        pvtag = _git_describe(cmd, tag_patterns, basepath)
+        pvtag = _git_describe(cmd, tag_patterns, repopath)
 
         matched_project, version, descid = split_pvtag(pvtag, tag_regexes)
         if matched_project and matched_project != pname:
@@ -479,8 +479,9 @@ def polyversion(**kw):
         - true: r-tags searched;
         - None: both tags searched.
     :param str basepath:
-        The path of the outermost package inside the git repo hosting the project;
-        if missing, assumed as the dirname of the calling code's package.
+        The path of the topmost package inside the git repo hosting the project;
+        if missing, assumed as the dir of the calling code's top-package.
+        Used also as git's repo-path.
     :param git_options:
         a str or an iterator of (converted to str) options to pass
         to ``git describe`` command (empty by default).  If a string,
@@ -524,7 +525,7 @@ def polyversion(**kw):
         pname = _caller_module_name()
 
     if not basepath:
-        basepath = _caller_basepath()
+        basepath = _caller_srcpath()
         if not basepath:
             basepath = '.'
 
@@ -566,8 +567,9 @@ def polytime(**kw):
         If true, never fail and return current-time.
         Assumed true if a :term:`default version env-var` is found.
     :param str basepath:
-        The path of the outermost package inside the git repo hosting the project;
-        if missing, assumed as the dirname of the calling code's package.
+        The path of the topmost package inside the git repo hosting the project;
+        if missing, assumed as the dir of the calling code's top-package.
+        Used also as git's repo-path.
     :param str pname:
         The project-name used only as the prefix for :term:`default version env-var`.
         If not given, defaults to the *last segment of the module-name of the caller*.
@@ -591,7 +593,7 @@ def polytime(**kw):
         pname = _caller_module_name()
 
     if not basepath:
-        basepath = _caller_basepath()
+        basepath = _caller_srcpath()
 
     cdate = None
     if not pkg_metadata_version(pname, basepath):
