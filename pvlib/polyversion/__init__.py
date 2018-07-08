@@ -279,20 +279,20 @@ def _caller_srcpath(nframes_back=2):
         del frame
 
 
-def split_pvtag(pvtag, tag_regexes):
+def split_pvtag(pvtag, gitdesc_regexes):
     """Parse git-describe outpout for crafting versions like `setuptools_scm` plugin:
 
       https://pypi.org/project/setuptools_scm/#default-versioning-scheme
 
       :return:
-          a dict with all :data:`pvtag_regex` named groups:
+          a dict with all `gitdesc_regexes` named groups:
          (pname, version, descid, dist, scm, hexid)
       """
-    if not isinstance(tag_regexes, (list, tuple)):
-        raise ValueError("Expected `tag_regexes` as list-of-str, got: %r" %
-                         tag_regexes)
+    if not isinstance(gitdesc_regexes, (list, tuple)):
+        raise ValueError("Expected `gitdesc_regexes` as list-of-str, got: %r" %
+                         gitdesc_regexes)
 
-    for tregex in tag_regexes:
+    for tregex in gitdesc_regexes:
         try:
             m = tregex.match(pvtag)
             if m:
@@ -307,9 +307,9 @@ def split_pvtag(pvtag, tag_regexes):
                              (pvtag, tregex.pattern, ex))
 
     raise ValueError(
-        "Unparseable pvtag %r from pvtag_regexes: %s!" %
+        "Unparseable pvtag %r from gitdesc_regexes: %s!" %
         (pvtag, ''.join('\n- %s' % tregex.pattern
-                        for tregex in tag_regexes)))
+                        for tregex in gitdesc_regexes)))
 
 
 def _version_from_parts(version, descid, distance, hexid, dirty,

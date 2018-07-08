@@ -41,15 +41,15 @@ split_pvtag_validation_patterns = [
 
 @pytest.mark.parametrize('inp, exp', split_pvtag_validation_patterns)
 def test_split_pvtag_parsing(inp, exp):
-    pvtag_regex = re.compile(pvlib._interp_regex(
+    gitdesc_regex = re.compile(pvlib._interp_regex(
         pvlib.pvtag_regex,
         'v',
         pname=r'[A-Z0-9]|[A-Z0-9][A-Z0-9._-]*?[A-Z0-9]'))
     if exp is None:
         with pytest.raises(ValueError):
-            pvlib.split_pvtag(inp, [pvtag_regex])
+            pvlib.split_pvtag(inp, [gitdesc_regex])
     else:
-        got = pvlib.split_pvtag(inp, [pvtag_regex])
+        got = pvlib.split_pvtag(inp, [gitdesc_regex])
         assert got == exp
 
 
