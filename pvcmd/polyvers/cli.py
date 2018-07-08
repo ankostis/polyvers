@@ -215,7 +215,7 @@ class PolyversCmd(cmdlets.Cmd, yu.YAMLable):
         default_value=({
             'pname': '<PVTAG>',
             'tag_vprefixes': pvlib.tag_vprefixes,
-            'pvtag_format': '*-v*',
+            'pv_format': '*-v*',
             'gitdesc_repat': tw.dedent(r"""
                 (?xmi)
                     ^(?P<pname>[A-Z0-9]|[A-Z0-9][A-Z0-9._-]*?[A-Z0-9])
@@ -225,7 +225,7 @@ class PolyversCmd(cmdlets.Cmd, yu.YAMLable):
             """)}, {
             'pname': '<VTAG>',
             'tag_vprefixes': pvlib.tag_vprefixes,
-            'pvtag_format': pvlib.vtag_format,
+            'pv_format': pvlib.v_format,
             'gitdesc_repat': tw.dedent(r"""
                 (?xmi)
                     ^(?P<pname>)
@@ -294,22 +294,22 @@ class PolyversCmd(cmdlets.Cmd, yu.YAMLable):
         Guess whether *monorepo* or *mono-project* versioning schema applies.
 
         :return:
-            one of :func:`pvtags.make_vtag_project`, :func:`pvtags.make_pvtag_project`
+            one of :func:`pvtags.make_v_project`, :func:`pvtags.make_pv_project`
         """
-        pvtag_proj, vtag_proj = self.autodiscover_version_scheme_projects
-        pvtags.populate_pvtags_history(pvtag_proj, vtag_proj)
+        pv_proj, v_proj = self.autodiscover_version_scheme_projects
+        pvtags.populate_pvtags_history(pv_proj, v_proj)
 
-        if bool(pvtag_proj.pvtags_history) ^ bool(vtag_proj.pvtags_history):
-            return (pvtags.make_pvtag_project(parent=self)
-                    if pvtag_proj.pvtags_history else
-                    pvtags.make_vtag_project(parent=self))
+        if bool(pv_proj.vtags_history) ^ bool(v_proj.vtags_history):
+            return (pvtags.make_pv_project(parent=self)
+                    if pv_proj.vtags_history else
+                    pvtags.make_v_project(parent=self))
         else:
             raise cmdlets.CmdException(
                 "Cannot auto-discover versioning scheme, "
                 "missing or contradictive versioning-tags:\n%s"
                 "\n\n  Try --monorepo/--mono-project flags." %
-                yu.ydumps({'pvtags': pvtag_proj.pvtags_history,
-                          'vtags': vtag_proj.pvtags_history}))
+                yu.ydumps({'pvtags': pv_proj.vtags_history,
+                          'vtags': v_proj.vtags_history}))
 
     def bootstrapp_projects(self) -> None:
         """
@@ -455,7 +455,7 @@ class InitCmd(_SubCmd):
         #  bc program has does not hold such toplevel class.
         self.config.Project = trc.Config({
             'tag_vprefixes': tproj.tag_vprefixes,
-            'pvtag_format': tproj.pvtag_format,
+            'pv_format': tproj.pv_format,
             'gitdesc_repat': tproj.gitdesc_repat,
         })
 
@@ -533,7 +533,7 @@ class StatusCmd(_SubCmd):
         return [{'pname': p.pname,
                  'basepath': str(p.basepath),
                  'gitver': _git_desc_without_screams(p),
-                 'history': p.pvtags_history}
+                 'history': p.vtags_history}
                 for p in projects]
 
     def run(self, *pnames):
@@ -604,7 +604,7 @@ PolyversCmd.flags = {  # type: ignore
     'monorepo': (
         {'Project': {  # type: ignore
             'pname': pvtags.MONOREPO,
-            'pvtag_format': pvlib.pvtag_format,
+            'pv_format': pvlib.pv_format,
             'gitdesc_repat': pvlib.pv_gitdesc_repat,
         }},
         """
@@ -615,7 +615,7 @@ PolyversCmd.flags = {  # type: ignore
     'mono-project': (
         {'Project': {  # type: ignore
             'pname': pvtags.MONO_PROJECT,
-            'pvtag_format': pvlib.vtag_format,
+            'pv_format': pvlib.v_format,
             'gitdesc_repat': pvlib.v_gitdesc_repat,
         }},
         """

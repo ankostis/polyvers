@@ -264,7 +264,7 @@ class BumpCmd(cli._SubCmd):
             ## TODO: parse Project.git_describe() instead of calling polyversion(non_bumped)!
             latest_version = pvlib.polyversion(
                 pname=prj.pname,
-                tag_format=prj.pvtag_format,
+                tag_format=prj.pv_format,
                 gitdesc_repat=prj.gitdesc_repat,
                 vprefixes=prj.tag_vprefixes,
                 basepath=prj.basepath

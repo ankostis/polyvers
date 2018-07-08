@@ -19,7 +19,7 @@ Module: :mod:`polyversion`
 .. automodule:: polyversion
    :members:    polyversion, polytime,
                 decide_vprefixes,
-                vtag_format, v_gitdesc_repat, pvtag_format, pv_gitdesc_repat
+                v_format, v_gitdesc_repat, pv_format, pv_gitdesc_repat
                 pkg_metadata_version
 
 Module: :mod:`polyversion.setuplugin`

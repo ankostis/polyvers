@@ -138,8 +138,8 @@ def git_restore_point(restore_head=False, heads=True, tags=True):
                 _restore_refs(old_refs, new_refs)
 
 
-def make_pvtag_project(pname: str = MONOREPO,
-                       **project_kw) -> pvproject.Project:
+def make_pv_project(pname: str = MONOREPO,
+                    **project_kw) -> pvproject.Project:
     """
     Make a :class:`Project` for a subprojects hosted at git monorepos.
 
@@ -148,7 +148,7 @@ def make_pvtag_project(pname: str = MONOREPO,
     return pvproject.Project(
         pname=pname,
         tag_vprefixes=pvlib.tag_vprefixes,
-        pvtag_format=pvlib.pvtag_format,
+        pv_format=pvlib.pv_format,
         gitdesc_repat=pvlib.pv_gitdesc_repat,
         **project_kw)
 
@@ -164,7 +164,7 @@ def make_match_all_pvtags_project(**project_kw) -> pvproject.Project:
     return pvproject.Project(
         pname='<PVTAG>',
         tag_vprefixes=pvlib.tag_vprefixes,
-        pvtag_format='*-v*',
+        pv_format='*-v*',
         gitdesc_repat=r"""(?xmi)
             ^(?P<pname>[A-Z0-9]|[A-Z0-9][A-Z0-9._-]*?[A-Z0-9])
             -
@@ -174,8 +174,8 @@ def make_match_all_pvtags_project(**project_kw) -> pvproject.Project:
         **project_kw)
 
 
-def make_vtag_project(pname: str = MONO_PROJECT,
-                      **project_kw) -> pvproject.Project:
+def make_v_project(pname: str = MONO_PROJECT,
+                   **project_kw) -> pvproject.Project:
     """
     Make a :class:`Project` for a single project hosted at git repos root (not "monorepos").
 
@@ -184,7 +184,7 @@ def make_vtag_project(pname: str = MONO_PROJECT,
     simple_project = pvproject.Project(
         pname=pname,
         tag_vprefixes=pvlib.tag_vprefixes,
-        pvtag_format=pvlib.vtag_format,
+        pv_format=pvlib.v_format,
         gitdesc_repat=pvlib.v_gitdesc_repat,
         **project_kw)
 
@@ -199,8 +199,8 @@ def make_match_all_vtags_project(**project_kw) -> pvproject.Project:
     to capture *vtags* not captured by any other project.
     """
     # Note: `pname` ignored by patterns, used only for labeling.
-    return make_vtag_project(pname='<VTAG>',
-                             **project_kw)
+    return make_v_project(pname='<VTAG>',
+                          **project_kw)
 
 
 def _fetch_all_tags(tag_patterns: List[str],
@@ -262,7 +262,7 @@ def populate_pvtags_history(*projects: pvproject.Project,
                             include_lightweight=False,
                             is_release=False):
     """
-    Updates :attr:`pvtags_history` on given `projects` (if any) in ascending order.
+    Updates :attr:`vtags_history` on given `projects` (if any) in ascending order.
 
     :param projects:
         the projects to search *pvtags* for

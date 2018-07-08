@@ -110,7 +110,7 @@ def test_bootstrapp_projects_explicit(no_repo, empty_repo, caplog):
     ## Specify: VScheme
     #
     cfg = trc.Config()
-    cfg.Project.pvtag_format = cfg.Project.gitdesc_repat = 'some'
+    cfg.Project.pv_format = cfg.Project.gitdesc_repat = 'some'
     cmd = cli.PolyversCmd(config=cfg)
     caplog.clear()
     with pytest.raises(cmdlets.CmdException,
@@ -253,7 +253,7 @@ def test_init_cmd_mono_project(mutable_vtags_repo, caplog):
 
     os.remove(exp_fpath)
     cfg = trc.Config()
-    cfg.Project.pvtag_format = cfg.Project.gitdesc_repat = 'some'
+    cfg.Project.pv_format = cfg.Project.gitdesc_repat = 'some'
     cfg.PolyversCmd.pdata = {'foo': 'foo_path'}
     rc = cli.run('init --mono-project --doc -v'.split(), config=cfg)
     assert rc == 0
