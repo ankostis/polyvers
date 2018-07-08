@@ -51,12 +51,12 @@ The key features are:
 
 - :term:`setuptools integration`,
 - x2 :term:`repo scheme`\s (:term:`monorepo`, :term:`mono-project`),
-- configurable :term:`version scheme`,
+- configurable :term:`tag scheme`,
 - *leaf* :term:`release scheme`,
 - intuitive :term:`version-bump algebra` (TODO),
 - configurable :term:`engravings`.
 
-The *leaf version scheme* feature departs from the logic of :ref:`similar-tools`.
+The *leaf commit release scheme* feature departs from all :ref:`similar-tools`.
 Specifically, when bumping the version of sub-project(s), this tool
 adds **+2 tags and +1 commits**:
 
@@ -76,6 +76,9 @@ adds **+2 tags and +1 commits**:
   The reason for this feature is to allow exchange code across branches (for the
   different sub-projects) without :term:`engravings` getting in your way as
   merge-conflicts.
+
+  Additionally, *ex-post* versioning of an older commit (by tagging it)
+  does not mandate a history re-write of the later ones.
 
 Additional capabilities and utilities:
 
@@ -438,10 +441,12 @@ Features
         .. [#] <https://medium.com/@maoberlehner/monorepos-in-the-wild-33c6eb246cb9
         .. [#] http://www.drmaciver.com/2016/10/why-you-should-use-a-single-repository-for-all-your-companys-projects/
 
+    tag scheme
     version scheme
-        the pattern for version-tags.
-        2x2 *versioning schemes* are pre-configured, for :term:`mono-project` and
-        :term:`monorepo` repositories, respectively:
+        The pattern for version-tags from which current versions are derrived.
+        By default, 2x2 *versioning schemes* are pre-configured,
+        one for :term:`mono-project` and one for :term:`monorepo` repositories,
+        respectively:
 
         - `v1.2.3` (and `r1.2.3` applied on :term:`leaf commit`\s)
         - `project-v1.2.3` (and `project-r1.2.3` for :term:`leaf commit`\s)
