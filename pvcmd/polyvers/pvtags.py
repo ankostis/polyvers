@@ -149,7 +149,7 @@ def make_pvtag_project(pname: str = MONOREPO,
         pname=pname,
         tag_vprefixes=pvlib.tag_vprefixes,
         pvtag_format=pvlib.pvtag_format,
-        pvtag_regex=pvlib.pvtag_regex,
+        pvtag_regex=pvlib.pv_gitdesc_repat,
         **project_kw)
 
 
@@ -185,7 +185,7 @@ def make_vtag_project(pname: str = MONO_PROJECT,
         pname=pname,
         tag_vprefixes=pvlib.tag_vprefixes,
         pvtag_format=pvlib.vtag_format,
-        pvtag_regex=pvlib.vtag_regex,
+        pvtag_regex=pvlib.v_gitdesc_repat,
         **project_kw)
 
     return simple_project

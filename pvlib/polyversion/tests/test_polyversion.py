@@ -42,7 +42,7 @@ split_pvtag_validation_patterns = [
 @pytest.mark.parametrize('inp, exp', split_pvtag_validation_patterns)
 def test_split_pvtag_parsing(inp, exp):
     gitdesc_regex = re.compile(pvlib._interp_regex(
-        pvlib.pvtag_regex,
+        pvlib.pv_gitdesc_repat,
         'v',
         pname=r'[A-Z0-9]|[A-Z0-9][A-Z0-9._-]*?[A-Z0-9]'))
     if exp is None:
@@ -168,7 +168,7 @@ def test_polyversion_vtags(vtags_repo):
 
     v = pvlib.polyversion(pname='fobar', basepath=vtags_repo, mono_project=False,
                           tag_format=pvlib.vtag_format,
-                          tag_regex=pvlib.vtag_regex)
+                          tag_regex=pvlib.v_gitdesc_repat)
     assert v.startswith(proj1_ver)
 
 

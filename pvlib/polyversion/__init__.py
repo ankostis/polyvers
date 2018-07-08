@@ -69,7 +69,7 @@ vtag_format = '{vprefix}{version}'
 #:
 #: - See :pep:`0426` for project-name characters and format.
 #: - See https://pypi.org/project/setuptools_scm/#default-versioning-scheme
-pvtag_regex = r"""(?xmi)
+pv_gitdesc_repat = r"""(?xmi)
     ^(?P<pname>{pname})
     -
     {vprefix}
@@ -89,7 +89,7 @@ pvtag_regex = r"""(?xmi)
     $
 """
 #: Like :data:`pvtag_format` but for :term:`mono-project` version-tags.
-vtag_regex = r"""(?xmi)
+v_gitdesc_repat = r"""(?xmi)
     ^(?P<pname>)
     {vprefix}
     (?P<version>\d[^-]*)
@@ -532,10 +532,10 @@ def polyversion(**kw):
         [Default: ``<pname>_VERSION``]
     :param bool mono_project:
       - false: (default) :term:`monorepo`, ie multiple sub-projects per git-repo.
-        Tags formatted by *pvtags* :data:`pvtag_format` & :data:`pvtag_regex`
+        Tags formatted by *pvtags* :data:`pvtag_format` & :data:`pv_gitdesc_repat`
         (like ``pname-v1.2.3``).
       - true: :term:`mono-project`, ie only one project in git-repo
-        Tags formatted as *vtags* :data:`vtag_format` & :data:`vtag_regex`.
+        Tags formatted as *vtags* :data:`vtag_format` & :data:`v_gitdesc_repat`.
         (like ``v1.2.3``).
     :param str tag_format:
         The :pep:`3101` pattern for creating *pvtags* (or *vtags*).
@@ -556,7 +556,7 @@ def polyversion(**kw):
         - It is given 2 :pep:`3101` parameters ``{pname}, {vprefix}`` to interpolate.
         - It overrides `mono_project` arg.
         - See :pep:`0426` for project-name characters and format.
-        - See :data:`pvtag_regex` & :data:`vtag_regex`
+        - See :data:`pv_gitdesc_repat` & :data:`v_gitdesc_repat`
     :param str vprefixes:
         a 2-element array of str - :data:`tag_vprefixes` assumed when not specified
     :param is_release:
@@ -639,7 +639,7 @@ def polyversion(**kw):
     if tag_format is None:
         tag_format = vtag_format if mono_project else pvtag_format
     if tag_regex is None:
-        tag_regex = vtag_regex if mono_project else pvtag_regex
+        tag_regex = v_gitdesc_repat if mono_project else pv_gitdesc_repat
 
     vprefixes = decide_vprefixes(vprefixes, is_release)
     tag, version, descid = _git_describe_parsed(pname, default_version,

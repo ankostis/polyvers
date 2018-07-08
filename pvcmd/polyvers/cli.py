@@ -605,7 +605,7 @@ PolyversCmd.flags = {  # type: ignore
         {'Project': {  # type: ignore
             'pname': pvtags.MONOREPO,
             'pvtag_format': pvlib.pvtag_format,
-            'pvtag_regex': pvlib.pvtag_regex,
+            'pvtag_regex': pvlib.pv_gitdesc_repat,
         }},
         """
         Select *pvtags* version-scheme, suitable for monorepos hosting multiple sub-projects.
@@ -616,7 +616,7 @@ PolyversCmd.flags = {  # type: ignore
         {'Project': {  # type: ignore
             'pname': pvtags.MONO_PROJECT,
             'pvtag_format': pvlib.vtag_format,
-            'pvtag_regex': pvlib.vtag_regex,
+            'pvtag_regex': pvlib.v_gitdesc_repat,
         }},
         """
         Select *vtags* version-scheme, suitable for repos hosting a single project.

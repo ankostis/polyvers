@@ -88,7 +88,7 @@ def test_Project_defaults(monorepocfg):
     proj = Project(config=monorepocfg)
 
     assert proj.pvtag_format == pvlib.pvtag_format
-    assert proj.pvtag_regex == pvlib.pvtag_regex
+    assert proj.pvtag_regex == pvlib.pv_gitdesc_repat
     assert proj.tag_fnmatch() == '-v*'
 
 
