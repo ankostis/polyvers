@@ -265,7 +265,7 @@ class BumpCmd(cli._SubCmd):
             latest_version = pvlib.polyversion(
                 pname=prj.pname,
                 tag_format=prj.pvtag_format,
-                tag_regex=prj.pvtag_regex,
+                gitdesc_repat=prj.pvtag_regex,
                 vprefixes=prj.tag_vprefixes,
                 basepath=prj.basepath
             )

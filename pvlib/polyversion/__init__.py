@@ -367,9 +367,9 @@ def _interp_fnmatch(tag_format, vprefix, pname):
                              vprefix=vprefix)
 
 
-def _interp_regex(tag_regex, vprefix, pname):
-    return tag_regex.format(pname=pname,
-                            vprefix=vprefix)
+def _interp_regex(gitdesc_repat, vprefix, pname):
+    return gitdesc_repat.format(pname=pname,
+                                vprefix=vprefix)
 
 
 def _git_version():
@@ -429,21 +429,22 @@ def _validate_git_options(git_options):
 
 
 def _make_tag_patterns(pname,
-                       tag_format, tag_regex,
+                       tag_format, gitdesc_repat,
                        vprefixes):
     import re
 
-    tag_patterns, tag_regexes = zip(
+    ## TODO: a single regex should parse both v/r tags.
+    tag_patterns, gitdesc_regexes = zip(
         *((_interp_fnmatch(tag_format, vp, pname),
-           re.compile(_interp_regex(tag_regex, vp, pname)))
+           re.compile(_interp_regex(gitdesc_repat, vp, pname)))
           for vp in vprefixes))
 
-    return tag_patterns, tag_regexes
+    return tag_patterns, gitdesc_regexes
 
 
 def _git_describe_parsed(pname,
                          default_version,        # if None, raise
-                         tag_format, tag_regex,
+                         tag_format, gitdesc_repat,
                          vprefixes,
                          repopath, git_options):
     """
@@ -455,11 +456,11 @@ def _git_describe_parsed(pname,
     assert not isinstance(vprefixes, str), "req list-of-str, got: %r" % vprefixes
 
     git_options = git_options and _validate_git_options(git_options)
-    tag_patterns, tag_regexes = _make_tag_patterns(
-        pname, tag_format, tag_regex, vprefixes)
+    tag_patterns, gitdesc_regexes = _make_tag_patterns(
+        pname, tag_format, gitdesc_repat, vprefixes)
     #
-    ## Guard against git's runtime errors, below,
-    #  and not configuration-ones, above.
+    ## Allow configuration errors, above, to bubble,
+    #  while guard git's runtime-errors below (no?).
     #
     pvtag = version = descid = None
     try:
@@ -469,7 +470,7 @@ def _git_describe_parsed(pname,
 
         pvtag = _git_describe(cmd, tag_patterns, repopath)
 
-        parts = split_pvtag(pvtag, tag_regexes)
+        parts = split_pvtag(pvtag, gitdesc_regexes)
         matched_pname = parts[0]
         version = parts[1]
         rest_parts = parts[2:]
@@ -545,7 +546,7 @@ def polyversion(**kw):
           command.
         - It overrides `mono_project` arg.
         - See :data:`pvtag_format` & :data:`vtag_format`
-    :param regex tag_regex:
+    :param regex gitdesc_repat:
         The regex pattern breaking apart *pvtags*, with 3 named capturing groups:
 
         - ``pname``,
@@ -602,7 +603,7 @@ def polyversion(**kw):
     basepath = kw.get('basepath')
     mono_project = kw.get('mono_project')
     tag_format = kw.get('tag_format')
-    tag_regex = kw.get('tag_regex')
+    gitdesc_repat = kw.get('gitdesc_repat')
     vprefixes = kw.get('vprefixes')
     is_release = kw.get('is_release')
     git_options = kw.get('git_options')
@@ -638,12 +639,12 @@ def polyversion(**kw):
 
     if tag_format is None:
         tag_format = vtag_format if mono_project else pvtag_format
-    if tag_regex is None:
-        tag_regex = v_gitdesc_repat if mono_project else pv_gitdesc_repat
+    if gitdesc_repat is None:
+        gitdesc_repat = v_gitdesc_repat if mono_project else pv_gitdesc_repat
 
     vprefixes = decide_vprefixes(vprefixes, is_release)
     tag, version, descid = _git_describe_parsed(pname, default_version,
-                                                tag_format, tag_regex,
+                                                tag_format, gitdesc_repat,
                                                 vprefixes,
                                                 basepath, git_options)
     if return_all:

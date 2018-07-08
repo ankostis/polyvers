@@ -15,7 +15,7 @@ __all__ = 'init_plugin_kw check_bdist_kw'.split()
 
 
 def _parse_kw_content(attr, kw_value):
-    good_keys = set('mono_project tag_format tag_regex '
+    good_keys = set('mono_project tag_format gitdesc_repat '
                     'vprefixes basepath git_options '
                     'default_version_env_var'.split())
 

@@ -140,7 +140,7 @@ def test_polyversion_p1(ok_repo, untagged_repo, no_repo):
 def test_polyversion_p2(ok_repo):
     v = pvlib.polyversion(pname=proj2, basepath=ok_repo,
                           tag_format='{pname}-V{version}',
-                          tag_regex=r"""(?xmi)
+                          gitdesc_repat=r"""(?xmi)
                               ^(?P<pname>{pname})
                               -
                               V(?P<version>\d[^-]*)
@@ -168,7 +168,7 @@ def test_polyversion_vtags(vtags_repo):
 
     v = pvlib.polyversion(pname='fobar', basepath=vtags_repo, mono_project=False,
                           tag_format=pvlib.vtag_format,
-                          tag_regex=pvlib.v_gitdesc_repat)
+                          gitdesc_repat=pvlib.v_gitdesc_repat)
     assert v.startswith(proj1_ver)
 
 
