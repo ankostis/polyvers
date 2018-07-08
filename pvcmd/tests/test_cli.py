@@ -304,8 +304,21 @@ def test_init_cmd_mono_project(mutable_vtags_repo, caplog):
         |-
             (?xmi)
                 ^(?P<pname>)
-                {vprefix}(?P<version>\d[^-]*)
-                (?:-(?P<descid>\d+-g[a-f\d]+))?$''')
+                {vprefix}
+                (?P<version>\d[^-]*)
+                (?:
+                    -
+                    (?P<descid>
+                        (?P<distance>\d+)
+                        -
+                        (?P<hexid>
+                            g
+                            [a-f\d]+
+                        )
+                    )
+                )?
+                (?P<dirty>-dirty)?
+                $''')
     check_text(got, exp_value)
 
     os.remove(exp_fpath)

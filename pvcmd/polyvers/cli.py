@@ -226,8 +226,12 @@ class PolyversCmd(cmdlets.Cmd, yu.YAMLable):
             'pname': '<VTAG>',
             'tag_vprefixes': pvlib.tag_vprefixes,
             'pvtag_format': pvlib.vtag_format,
-            'pvtag_regex': pvlib.vtag_regex,
-        }),
+            'pvtag_regex': tw.dedent(r"""
+                (?xmi)
+                    ^(?P<pname>)
+                    v(?P<version>\d[^-]*)
+                    (?:-(?P<descid>\d+-g[a-f\d]+))?$
+            """)}),
         config=True,
         help="""
         A pair of Projects with patterns/regexps matching *pvtags* or *vtags*, respectively.

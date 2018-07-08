@@ -35,9 +35,6 @@ Changes
 
 TODOs
 =====
-- Parse ``git describe`` like `setuptools_scm plugin
-  <https://pypi.org/project/setuptools_scm/#default-versioning-scheme>`_ does.
-
 - Drop `pvcmd/pvtags.py`, and replace it with `polyversion`?
 
 - Engravings:  Not easy to extend!
