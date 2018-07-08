@@ -33,7 +33,7 @@ def monorepocfg():
     cfg = trc.Config({
         'Project': {
             'pvtag_format': template_project.pvtag_format,
-            'pvtag_regex': template_project.pvtag_regex,
+            'gitdesc_repat': template_project.gitdesc_repat,
         }})
 
     return cfg
@@ -49,7 +49,7 @@ def project2():
     return Project(
         pname=pname2,
         pvtag_format='{pname}-V{version}',
-        pvtag_regex=r"""(?xmi)
+        gitdesc_repat=r"""(?xmi)
             ^(?P<pname>{pname})
             -
             V(?P<version>\d[^-]*)
@@ -65,7 +65,7 @@ def foo(monorepocfg):
 def test_Project_regex_check():
     with pytest.raises(trt.TraitError,
                        match=r'missing \), unterminated subpattern'):
-        Project(pvtag_regex="(")
+        Project(gitdesc_repat="(")
 
 
 def test_Project_version_from_pvtag(foo):
@@ -82,13 +82,13 @@ def test_Project_defaults(monorepocfg):
     proj = Project()
 
     assert proj.pvtag_format == ''
-    assert proj.pvtag_regex == ''
+    assert proj.gitdesc_repat == ''
     assert proj.tag_fnmatch() == ''
 
     proj = Project(config=monorepocfg)
 
     assert proj.pvtag_format == pvlib.pvtag_format
-    assert proj.pvtag_regex == pvlib.pv_gitdesc_repat
+    assert proj.gitdesc_repat == pvlib.pv_gitdesc_repat
     assert proj.tag_fnmatch() == '-v*'
 
 
@@ -97,13 +97,13 @@ def test_pvtag_Project_interpolations():
 
     assert 'foo' in proj.tag_fnmatch()
     assert proj.tag_fnmatch().endswith('v*')
-    assert 'foo' in proj.tag_regex().pattern
-    assert not re.search(r'1.2.3', proj.tag_regex().pattern)
+    assert 'foo' in proj.gitdesc_regex().pattern
+    assert not re.search(r'1.2.3', proj.gitdesc_regex().pattern)
 
     proj = pvtags.make_pvtag_project(pname='f*o')
 
     assert 'f[*]o' in proj.tag_fnmatch()
-    assert r'f\*o' in proj.tag_regex().pattern
+    assert r'f\*o' in proj.gitdesc_regex().pattern
 
 
 def test_vtag_Project_interpolations():
@@ -114,8 +114,8 @@ def test_vtag_Project_interpolations():
 
     assert 'foo' not in proj.tag_fnmatch()
     assert proj.tag_fnmatch().endswith('v*')
-    assert 'foo' not in proj.tag_regex().pattern
-    assert not re.search(r'1.2.3', proj.tag_regex().pattern)
+    assert 'foo' not in proj.gitdesc_regex().pattern
+    assert not re.search(r'1.2.3', proj.gitdesc_regex().pattern)
 
 
 def test_populate_pvtags_history_per_project(ok_repo, project1, project2, foo):
@@ -257,7 +257,7 @@ def test_git_describe_bad(ok_repo, no_repo, foo):
 def test_git_describe_mismatch_version(ok_repo, project1):
     ok_repo.chdir()
 
-    project1.pvtag_regex = """
+    project1.gitdesc_repat = """
         ^(?P<pname>BADNAME)
         -
         v(?P<version>\d[^-]*)

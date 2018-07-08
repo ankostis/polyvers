@@ -301,10 +301,10 @@ class Project(cmdlets.Replaceable, cmdlets.Printable, yu.YAMLable, cmdlets.Spec)
                            version='*',
                            _escaped_for='glob')
 
-    pvtag_regex = Unicode(
+    gitdesc_repat = Unicode(
         help="""
         The regex pattern breaking *pvtags* and/or ``git-describe`` output
-        into 3 named capturing groups:
+        into named capturing groups:
         - ``pname``,
         - ``version`` (without the 'v'),
         - ``descid`` (optional) anything following the dash('-') after
@@ -318,11 +318,11 @@ class Project(cmdlets.Replaceable, cmdlets.Printable, yu.YAMLable, cmdlets.Spec)
         .. Important::
            If you change this, ensure the :func:`polyversion.polyversion()`
            gets invoked from project's sources with the same value
-           in `pvtag_regex` kw-arg.
+           in `gitdesc_repat` kw-arg.
     """).tag(config=True)
 
-    @trt.validate('pvtag_regex')
-    def _is_valid_pvtag_regex(self, proposal):
+    @trt.validate('gitdesc_repat')
+    def _is_valid_gitdesc_repat(self, proposal):
         value = proposal.value
         try:
             for vprefix in self.tag_vprefixes:
@@ -338,7 +338,7 @@ class Project(cmdlets.Replaceable, cmdlets.Printable, yu.YAMLable, cmdlets.Spec)
         "If format patterns are missing, spurious NPEs will happen when using project."
         return bool(self.tag_vprefixes and
                     self.pvtag_format and
-                    self.pvtag_regex)
+                    self.gitdesc_repat)
 
     tag = Bool(
         config=True,
@@ -372,15 +372,15 @@ class Project(cmdlets.Replaceable, cmdlets.Printable, yu.YAMLable, cmdlets.Spec)
             {ikeys}
         """)
 
-    def tag_regex(self, is_release=False) -> Pattern:
+    def gitdesc_regex(self, is_release=False) -> Pattern:
         """
-        Interpolate and compile as regex.
+        Interpolate and compile :attr:`gitdesc_repat` as regex.
 
         :param is_release:
             `False` for version-tags, `True` for release-tags
         """
         vprefix = self.tag_vprefixes[int(is_release)]
-        regex = self.interp(self.pvtag_regex,
+        regex = self.interp(self.gitdesc_repat,
                             vprefix=vprefix,
                             _escaped_for='regex')
         return re.compile(regex)
@@ -406,7 +406,7 @@ class Project(cmdlets.Replaceable, cmdlets.Printable, yu.YAMLable, cmdlets.Spec)
         """Extract the version from a *pvtag*."""
         release_flags = [0, 1] if is_release is None else [bool(is_release), ]
         for r in release_flags:
-            m = self.tag_regex(r).match(pvtag)
+            m = self.gitdesc_regex(r).match(pvtag)
             if m:
                 mg = m.groupdict()
 
@@ -485,7 +485,7 @@ class Project(cmdlets.Replaceable, cmdlets.Printable, yu.YAMLable, cmdlets.Spec)
                 "was unparsable by regex:%s" %
                 (version,
                  len(tag_patterns), ', '.join(tag_patterns),
-                 ','.join('\n%r' % self.tag_regex(r).pattern
+                 ','.join('\n%r' % self.gitdesc_regex(r).pattern
                           for r in release_flags)))
 
         return version

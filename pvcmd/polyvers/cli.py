@@ -216,7 +216,7 @@ class PolyversCmd(cmdlets.Cmd, yu.YAMLable):
             'pname': '<PVTAG>',
             'tag_vprefixes': pvlib.tag_vprefixes,
             'pvtag_format': '*-v*',
-            'pvtag_regex': tw.dedent(r"""
+            'gitdesc_repat': tw.dedent(r"""
                 (?xmi)
                     ^(?P<pname>[A-Z0-9]|[A-Z0-9][A-Z0-9._-]*?[A-Z0-9])
                     -
@@ -226,7 +226,7 @@ class PolyversCmd(cmdlets.Cmd, yu.YAMLable):
             'pname': '<VTAG>',
             'tag_vprefixes': pvlib.tag_vprefixes,
             'pvtag_format': pvlib.vtag_format,
-            'pvtag_regex': tw.dedent(r"""
+            'gitdesc_repat': tw.dedent(r"""
                 (?xmi)
                     ^(?P<pname>)
                     v(?P<version>\d[^-]*)
@@ -456,7 +456,7 @@ class InitCmd(_SubCmd):
         self.config.Project = trc.Config({
             'tag_vprefixes': tproj.tag_vprefixes,
             'pvtag_format': tproj.pvtag_format,
-            'pvtag_regex': tproj.pvtag_regex,
+            'gitdesc_repat': tproj.gitdesc_repat,
         })
 
         _t = yu._dump_trait_help.set(self.doc)
@@ -605,7 +605,7 @@ PolyversCmd.flags = {  # type: ignore
         {'Project': {  # type: ignore
             'pname': pvtags.MONOREPO,
             'pvtag_format': pvlib.pvtag_format,
-            'pvtag_regex': pvlib.pv_gitdesc_repat,
+            'gitdesc_repat': pvlib.pv_gitdesc_repat,
         }},
         """
         Select *pvtags* version-scheme, suitable for monorepos hosting multiple sub-projects.
@@ -616,7 +616,7 @@ PolyversCmd.flags = {  # type: ignore
         {'Project': {  # type: ignore
             'pname': pvtags.MONO_PROJECT,
             'pvtag_format': pvlib.vtag_format,
-            'pvtag_regex': pvlib.v_gitdesc_repat,
+            'gitdesc_repat': pvlib.v_gitdesc_repat,
         }},
         """
         Select *vtags* version-scheme, suitable for repos hosting a single project.

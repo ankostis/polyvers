@@ -149,7 +149,7 @@ def make_pvtag_project(pname: str = MONOREPO,
         pname=pname,
         tag_vprefixes=pvlib.tag_vprefixes,
         pvtag_format=pvlib.pvtag_format,
-        pvtag_regex=pvlib.pv_gitdesc_repat,
+        gitdesc_repat=pvlib.pv_gitdesc_repat,
         **project_kw)
 
 
@@ -165,7 +165,7 @@ def make_match_all_pvtags_project(**project_kw) -> pvproject.Project:
         pname='<PVTAG>',
         tag_vprefixes=pvlib.tag_vprefixes,
         pvtag_format='*-v*',
-        pvtag_regex=r"""(?xmi)
+        gitdesc_repat=r"""(?xmi)
             ^(?P<pname>[A-Z0-9]|[A-Z0-9][A-Z0-9._-]*?[A-Z0-9])
             -
             v(?P<version>\d[^-]*)
@@ -185,7 +185,7 @@ def make_vtag_project(pname: str = MONO_PROJECT,
         pname=pname,
         tag_vprefixes=pvlib.tag_vprefixes,
         pvtag_format=pvlib.vtag_format,
-        pvtag_regex=pvlib.v_gitdesc_repat,
+        gitdesc_repat=pvlib.v_gitdesc_repat,
         **project_kw)
 
     return simple_project
