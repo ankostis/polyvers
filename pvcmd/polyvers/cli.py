@@ -234,7 +234,7 @@ class PolyversCmd(cmdlets.Cmd, yu.YAMLable):
             """)}),
         config=True,
         help="""
-        A pair of Projects with patterns/regexps matching *pvtags* or *vtags*, respectively.
+        A pair of Projects with patterns/regexps for *pv_vtags* or *v_vtags*, respectively.
 
         - Needed when a) no configuration file is given (or has partial infos),
           and b) when constructing/updating the configuration file.
@@ -297,7 +297,7 @@ class PolyversCmd(cmdlets.Cmd, yu.YAMLable):
             one of :func:`pvtags.make_v_project`, :func:`pvtags.make_pv_project`
         """
         pv_proj, v_proj = self.autodiscover_version_scheme_projects
-        pvtags.populate_pvtags_history(pv_proj, v_proj)
+        pvtags.populate_vtags_history(pv_proj, v_proj)
 
         if bool(pv_proj.vtags_history) ^ bool(v_proj.vtags_history):
             return (pvtags.make_pv_project(parent=self)
@@ -308,8 +308,8 @@ class PolyversCmd(cmdlets.Cmd, yu.YAMLable):
                 "Cannot auto-discover versioning scheme, "
                 "missing or contradictive versioning-tags:\n%s"
                 "\n\n  Try --monorepo/--mono-project flags." %
-                yu.ydumps({'pvtags': pv_proj.vtags_history,
-                          'vtags': v_proj.vtags_history}))
+                yu.ydumps({'pv_tags': pv_proj.vtags_history,
+                          'v_vtags': v_proj.vtags_history}))
 
     def bootstrapp_projects(self) -> None:
         """
@@ -352,7 +352,7 @@ class PolyversCmd(cmdlets.Cmd, yu.YAMLable):
 
             self.projects = [template_project.replace(pname=pname,
                                                       basepath=basepath,
-                                                      _pvtags_collected=None)
+                                                      _vtags_collected=None)
                              for pname, basepath in pdata.items()]
             ## Set discovered projects in `config` for InitCmd.
             self.config.PolyversCmd.projects = [
@@ -545,7 +545,7 @@ class StatusCmd(_SubCmd):
                         if p.pname in pnames]
 
         ## TODO: extract method to classify pre-populated histories.
-        pvtags.populate_pvtags_history(*projects)
+        pvtags.populate_vtags_history(*projects)
         if self.all:
             res = self._fetch_all(projects)
         else:
@@ -608,7 +608,7 @@ PolyversCmd.flags = {  # type: ignore
             'gitdesc_repat': pvlib.pv_gitdesc_repat,
         }},
         """
-        Select *pvtags* version-scheme, suitable for monorepos hosting multiple sub-projects.
+        Select *vtags* version-scheme, suitable for monorepos hosting multiple sub-projects.
         """
         ## TODO: Conflicting vscheme flags possible!
     ),

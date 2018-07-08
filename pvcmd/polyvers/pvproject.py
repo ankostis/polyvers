@@ -191,7 +191,7 @@ class Project(cmdlets.Replaceable, cmdlets.Printable, yu.YAMLable, cmdlets.Spec)
     """Configurations for projects, in general, and specifically for each one."""
     pname = Unicode(
         config=True,
-        help="""The name of the project, used in interpolations and pvtags, among others."""
+        help="""The name of the project, used in interpolations and vtags, among others."""
     ).tag(printable=True)
 
     basepath = Instance(
@@ -214,7 +214,7 @@ class Project(cmdlets.Replaceable, cmdlets.Printable, yu.YAMLable, cmdlets.Spec)
     start_version_id = Unicode(
         '0.0.0',
         config=True,
-        help="""If no pvtag found, use this as the base for relative versions.""")
+        help="""If no *vtag* found, use this as the base for relative versions.""")
 
     current_version = vermath.Pep440Version(
         None, allow_none=True,
@@ -237,7 +237,7 @@ class Project(cmdlets.Replaceable, cmdlets.Printable, yu.YAMLable, cmdlets.Spec)
     def load_current_version_from_history(self, vtag_index=0):
         try:
             tag = self.vtags_history[vtag_index]
-            self.current_version = self.version_from_pvtag(tag)
+            self.current_version = self.version_from_vtag(tag)
         except IndexError:
             self.log.debug("No vtags history for %s.", self)
             self.current_version = self.start_version_id
@@ -266,7 +266,7 @@ class Project(cmdlets.Replaceable, cmdlets.Printable, yu.YAMLable, cmdlets.Spec)
 
     pv_format = Unicode(
         help="""
-        The pattern to generate new *pvtags*.
+        The pattern to generate new *vtags*.
 
         It is interpolated with this class's traits as :pep:`3101` parameters;
         among others ``{pname}`` and ``{version}``; use ``{ikeys}`` to receive
@@ -285,7 +285,7 @@ class Project(cmdlets.Replaceable, cmdlets.Printable, yu.YAMLable, cmdlets.Spec)
 
     def tag_fnmatch(self, is_release=False):
         """
-        The glob-pattern finding *pvtags* with ``git describe --match <pattern>`` cmd.
+        The glob-pattern finding *vtags* with ``git describe --dirty --match <pattern>`` cmd.
 
         :param is_release:
             `False` for version-tags, `True` for release-tags
@@ -303,7 +303,7 @@ class Project(cmdlets.Replaceable, cmdlets.Printable, yu.YAMLable, cmdlets.Spec)
 
     gitdesc_repat = Unicode(
         help="""
-        The regex pattern breaking *pvtags* and/or ``git-describe`` output
+        The regex pattern breaking *vtags* and/or ``git-describe`` output
         into named capturing groups:
         - ``pname``,
         - ``version`` (without the 'v'),
@@ -385,28 +385,28 @@ class Project(cmdlets.Replaceable, cmdlets.Printable, yu.YAMLable, cmdlets.Spec)
                             _escaped_for='regex')
         return re.compile(regex)
 
-    _pvtags_collected = ListTrait(
+    _vtags_collected = ListTrait(
         Unicode(), allow_none=True, default_value=None,
-        help="Populated internally by `populate_pvtags_history()`.")
+        help="Populated internally by `populate_vtags_history()`.")
 
     @property
     def vtags_history(self) -> List[str]:
         """
-        Return the full *pvtag* history for the project, if any.
+        Return the full *vtag* history for the project, if any.
 
         :raise AssertionError:
-           If used before :func:`populate_pvtags_history()` applied on this project.
+           If used before :func:`populate_vtags_history()` applied on this project.
         """
-        if self._pvtags_collected is None:
-            raise AssertionError("Call first `populate_pvtags_history()` on %s!")
-        return self._pvtags_collected
+        if self._vtags_collected is None:
+            raise AssertionError("Call first `populate_vtags_history()` on %s!")
+        return self._vtags_collected
 
-    def version_from_pvtag(self, pvtag: str,
-                           is_release: Optional[bool] = None) -> Optional[str]:
-        """Extract the version from a *pvtag*."""
+    def version_from_vtag(self, vtag: str,
+                          is_release: Optional[bool] = None) -> Optional[str]:
+        """Extract the version from a *vtag*."""
         release_flags = [0, 1] if is_release is None else [bool(is_release), ]
         for r in release_flags:
-            m = self.gitdesc_regex(r).match(pvtag)
+            m = self.gitdesc_regex(r).match(vtag)
             if m:
                 mg = m.groupdict()
 
@@ -417,7 +417,7 @@ class Project(cmdlets.Replaceable, cmdlets.Printable, yu.YAMLable, cmdlets.Spec)
                      is_release=None,
                      **git_flags: str):
         """
-        Gets sub-project's version as derived from ``git describe`` on its *pvtag*.
+        Gets sub-project's version as derived from ``git describe`` on its *vtag*.
 
         :param include_lightweight:
             Consider also non-annotated tags when derriving description;
@@ -439,9 +439,9 @@ class Project(cmdlets.Replaceable, cmdlets.Printable, yu.YAMLable, cmdlets.Spec)
               using python functions, e.g. ``(all=True)``.
             - See https://git-scm.com/docs/git-describe
         :return:
-            the *pvtag* of the current project, or raise
+            the *vtag* of the current project, or raise
         :raise GitVoidError:
-            if sub-project is not *pvtagged*.
+            if sub-project is not *vtagged*.
         :raise NoGitRepoError:
             if CWD not within a git repo.
         :raise sbp.CalledProcessError:
@@ -449,7 +449,7 @@ class Project(cmdlets.Replaceable, cmdlets.Printable, yu.YAMLable, cmdlets.Spec)
 
         .. Tip::
            There is also the python==2.7 & python<3.6 safe :func:`polyvers.polyversion()``
-           for extracting just the version part from a *pvtag*; use this one
+           for extracting just the version part from a *vtag*; use this one
            from within project sources.
 
         .. Tip::
@@ -479,7 +479,7 @@ class Project(cmdlets.Replaceable, cmdlets.Printable, yu.YAMLable, cmdlets.Spec)
         if 'all' in git_flags:
             version = version.lstrip('tags/')
 
-        if not self.version_from_pvtag(version, is_release):
+        if not self.version_from_vtag(version, is_release):
             raise trt.TraitError(
                 "Project-version '%s' fetched by %i patterns (%s) "
                 "was unparsable by regex:%s" %

@@ -47,9 +47,9 @@ def test_split_pv_parsing(inp, exp):
         pname=r'[A-Z0-9]|[A-Z0-9][A-Z0-9._-]*?[A-Z0-9]'))
     if exp is None:
         with pytest.raises(ValueError):
-            pvlib.split_pvtag(inp, [gitdesc_regex])
+            pvlib.split_vtag(inp, [gitdesc_regex])
     else:
-        got = pvlib.split_pvtag(inp, [gitdesc_regex])
+        got = pvlib.split_vtag(inp, [gitdesc_regex])
         assert got == exp
 
 

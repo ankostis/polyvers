@@ -457,6 +457,7 @@ Features
     release tag
     r-tag
     version tag
+    vtag
     v-tag
         Even in single-project repos, sharing code across branches may cause
         merge-conflicts due to the version-ids :term:`engrave`\d" in the sources.

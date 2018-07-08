@@ -152,7 +152,7 @@ the full blown `polyvers` command tool) is given below:
       File "/pyenv/site-packages/pvlib/polyversion/__init__.py", line 340, in run
         res = polyversion(args[0], repo_path=os.curdir)
       File "/pyenv/site-packages/pvlib/polyversion/__init__.py", line 262, in polyversion
-        pvtag = _my_run(cmd, cwd=repo_path)
+        vtag = _my_run(cmd, cwd=repo_path)
       File "/pyenv/site-packages/pvlib/polyversion/__init__.py", line 106, in _my_run
         raise sbp.CalledProcessError(proc.returncode, cmd)
     subprocess.CalledProcessError: Command '['git', 'describe', '--match=cf-v*']' returned non-zero exit status 128.

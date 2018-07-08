@@ -68,8 +68,8 @@ def test_Project_regex_check():
         Project(gitdesc_repat="(")
 
 
-def test_Project_version_from_pvtag(foo):
-    v = foo.version_from_pvtag('foo-v1.0.0-2-gbaba0')
+def test_Project_version_from_vtag(foo):
+    v = foo.version_from_vtag('foo-v1.0.0-2-gbaba0')
     assert v == '1.0.0'
 
 
@@ -118,24 +118,24 @@ def test_v_Project_interpolations():
     assert not re.search(r'1.2.3', proj.gitdesc_regex().pattern)
 
 
-def test_populate_pvtags_history_per_project(ok_repo, project1, project2, foo):
+def test_populate_vtags_history_per_project(ok_repo, project1, project2, foo):
     ok_repo.chdir()
 
     with pytest.raises(AssertionError):
         project1.vtags_history
 
-    pvtags.populate_pvtags_history(project1)
+    pvtags.populate_vtags_history(project1)
     assert project1.vtags_history == ['proj1-v0.0.1', 'proj1-v0.0.0']
 
-    pvtags.populate_pvtags_history(project2)
+    pvtags.populate_vtags_history(project2)
     assert project2.vtags_history == []
-    pvtags.populate_pvtags_history(project2, include_lightweight=True)
+    pvtags.populate_vtags_history(project2, include_lightweight=True)
     assert project2.vtags_history == ['proj-2-V0.2.1', 'proj-2-V0.2.0']
 
     ## Ensure no side-effects.
     assert project1.vtags_history == ['proj1-v0.0.1', 'proj1-v0.0.0']
 
-    pvtags.populate_pvtags_history(foo)
+    pvtags.populate_vtags_history(foo)
     assert foo.vtags_history == []
 
     ## Ensure no side-effects.
@@ -143,55 +143,55 @@ def test_populate_pvtags_history_per_project(ok_repo, project1, project2, foo):
     assert project2.vtags_history == ['proj-2-V0.2.1', 'proj-2-V0.2.0']
 
 
-def test_populate_pvtags_history_multi_projects(ok_repo, project1, project2, foo):
+def test_populate_vtags_history_multi_projects(ok_repo, project1, project2, foo):
     ok_repo.chdir()
 
-    pvtags.populate_pvtags_history(project1, project2, foo,
-                                   include_lightweight=True)
+    pvtags.populate_vtags_history(project1, project2, foo,
+                                  include_lightweight=True)
     assert project1.vtags_history == ['proj1-v0.0.1', 'proj1-v0.0.0']
     assert project2.vtags_history == ['proj-2-V0.2.1', 'proj-2-V0.2.0']
     assert foo.vtags_history == []
 
 
-def test_fetch_pvtags_history_no_tags(untagged_repo, empty_repo, foo):
+def test_fetch_vtags_history_no_tags(untagged_repo, empty_repo, foo):
     untagged_repo.chdir()
 
-    pvtags.populate_pvtags_history(foo)
+    pvtags.populate_vtags_history(foo)
     assert foo.vtags_history == []
 
     empty_repo.chdir()
 
-    pvtags.populate_pvtags_history(foo)
+    pvtags.populate_vtags_history(foo)
     assert foo.vtags_history == []
 
 
-def test_fetch_pvtags_history_BAD(no_repo, foo):
+def test_fetch_vtags_history_BAD(no_repo, foo):
     no_repo.chdir()
 
     with pytest.raises(pvtags.NoGitRepoError):
-        pvtags.populate_pvtags_history(foo)
+        pvtags.populate_vtags_history(foo)
 
 
 @pytest.mark.skipif(sys.version_info < (3, ),
                     reason="FileNotFoundError not in PY27, OSError only.")
-def test_fetch_pvtags_history_git_not_in_path(foo, monkeypatch):
+def test_fetch_vtags_history_git_not_in_path(foo, monkeypatch):
     monkeypatch.setenv('PATH', '')
 
     with pytest.raises(FileNotFoundError):
-        pvtags.populate_pvtags_history(foo)
+        pvtags.populate_vtags_history(foo)
 
 
 def test_project_matching_all_pvtags(ok_repo, project1):
     ok_repo.chdir()
 
     all_pvtags = pvtags.make_match_all_pvtags_project()
-    pvtags.populate_pvtags_history(all_pvtags)
+    pvtags.populate_vtags_history(all_pvtags)
     assert all_pvtags.pname == '<PVTAG>'
     assert all_pvtags.vtags_history == ['proj1-v0.0.1', 'proj1-v0.0.0']
 
     all_vtags = pvtags.make_match_all_vtags_project()
     assert all_vtags.pname == '<VTAG>'
-    pvtags.populate_pvtags_history(all_vtags)
+    pvtags.populate_vtags_history(all_vtags)
     assert all_vtags.vtags_history == []
 
 
@@ -205,18 +205,18 @@ def test_simple_project(mutable_pvtags_repo, project2, caplog):
     cmd.git.tag('v12.0', m='hh')
     all_vtags = pvtags.make_match_all_vtags_project()
     caplog.clear()
-    pvtags.populate_pvtags_history(all_vtags)
+    pvtags.populate_vtags_history(all_vtags)
     assert all_vtags.vtags_history == ['v12.0']
     assert BAD_TAG not in caplog.text
 
-    pvtags.populate_pvtags_history(all_vtags, include_lightweight=True)
+    pvtags.populate_vtags_history(all_vtags, include_lightweight=True)
     assert all_vtags.vtags_history == ['v12.0', 'v123']
 
-    ## Check both pvtag & vtag formats.
+    ## Check both vtag & vtag formats.
 
     all_pvtags = pvtags.make_match_all_pvtags_project()
-    pvtags.populate_pvtags_history(project2, all_pvtags, all_vtags,
-                                   include_lightweight=True)
+    pvtags.populate_vtags_history(project2, all_pvtags, all_vtags,
+                                  include_lightweight=True)
     assert all_vtags.vtags_history == ['v12.0', 'v123']
     assert all_pvtags.vtags_history == ['proj1-v0.0.1', 'proj1-v0.0.0']
     assert project2.vtags_history == ['proj-2-V0.2.1', 'proj-2-V0.2.0']

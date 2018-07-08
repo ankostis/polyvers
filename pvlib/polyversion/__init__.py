@@ -4,13 +4,13 @@
 """
 Python-2.7-safe, no-deps code to discover sub-project versions in Git *polyvers* monorepos.
 
-The *polyvers* version-configuration tool is generating **pvtags** like::
+The *polyvers* version-configuration tool is generating **vtags** like::
 
     proj-foo-v0.1.0
 
 And assuming :func:`polyversion()` is invoked from within a Git repo, it may return
 either ``0.1.0`` or ``0.1.0+2.gcaffe00``, if 2 commits have passed since
-last *pvtag*.
+last *vtag*.
 
 Also, this library function as a *setuptools* "plugin" (see :mod:`setuplugin`).
 
@@ -279,7 +279,7 @@ def _caller_srcpath(nframes_back=2):
         del frame
 
 
-def split_pvtag(pvtag, gitdesc_regexes):
+def split_vtag(vtag, gitdesc_regexes):
     """Parse git-describe outpout for crafting versions like `setuptools_scm` plugin:
 
       https://pypi.org/project/setuptools_scm/#default-versioning-scheme
@@ -294,7 +294,7 @@ def split_pvtag(pvtag, gitdesc_regexes):
 
     for tregex in gitdesc_regexes:
         try:
-            m = tregex.match(pvtag)
+            m = tregex.match(vtag)
             if m:
                 mg = m.groupdict()
                 return (mg['pname'], mg['version'],
@@ -303,13 +303,13 @@ def split_pvtag(pvtag, gitdesc_regexes):
                         mg.get('dirty')
                         )
         except Exception as ex:
-            raise ValueError("Matching pvtag '%s' by '%s' failed due to: %s" %
-                             (pvtag, tregex.pattern, ex))
+            raise ValueError("Matching vtag '%s' by '%s' failed due to: %s" %
+                             (vtag, tregex.pattern, ex))
 
     raise ValueError(
-        "Unparseable pvtag %r from gitdesc_regexes: %s!" %
-        (pvtag, ''.join('\n- %s' % tregex.pattern
-                        for tregex in gitdesc_regexes)))
+        "Unparseable vtag %r from gitdesc_regexes: %s!" %
+        (vtag, ''.join('\n- %s' % tregex.pattern
+                       for tregex in gitdesc_regexes)))
 
 
 def _version_from_parts(version, descid, distance, hexid, dirty,
@@ -323,7 +323,7 @@ def _version_from_parts(version, descid, distance, hexid, dirty,
         anythng after the project and ``'-v`'`` i,
         e.g it is ``1.7.4.post0``. ``foo-project-v1.7.4.post0-2-g79ceebf8``
     :param: descid:
-        (optional) the part after the *pvtag* and the 1st dash('-'), which
+        (optional) the part after the *vtag* and the 1st dash('-'), which
         may have any format, or folow git's format; in that case, the `distance` and
         `hexid` should be defined.
     :return:
@@ -395,7 +395,7 @@ def _git_describe(cmd, tag_patterns, repopath):
     if _is_git_describe_accept_signle_pattern():
         for i, tp in enumerate(tag_patterns):
             try:
-                pvtag = _my_run(cmd + ['--match=%s' % tp], cwd=repopath)
+                vtag = _my_run(cmd + ['--match=%s' % tp], cwd=repopath)
                 break
             ## Catching overriden MyCalledProcessError here
             #  bc error we want to ignore is raised after communicate
@@ -408,9 +408,9 @@ def _git_describe(cmd, tag_patterns, repopath):
 
     else:
         cmd.extend('--match=' + tp for tp in tag_patterns)
-        pvtag = _my_run(cmd, cwd=repopath)
+        vtag = _my_run(cmd, cwd=repopath)
 
-    return pvtag
+    return vtag
 
 
 def _validate_git_options(git_options):
@@ -448,7 +448,7 @@ def _git_describe_parsed(pname,
                          vprefixes,
                          repopath, git_options):
     """
-    Parse git-desc as `pvtag, version, descid` or raise when no `default_version`.
+    Parse git-desc as *vtag*, version, descid` or raise when no `default_version`.
 
     :param vprefixes:
         a sequence of str; no surprises, just make that many match-patterns
@@ -462,20 +462,20 @@ def _git_describe_parsed(pname,
     ## Allow configuration errors, above, to bubble,
     #  while guard git's runtime-errors below (no?).
     #
-    pvtag = version = descid = None
+    vtag = version = descid = None
     try:
         cmd = 'git describe --dirty'.split()
         if git_options:
             cmd.extend(git_options)
 
-        pvtag = _git_describe(cmd, tag_patterns, repopath)
+        vtag = _git_describe(cmd, tag_patterns, repopath)
 
-        parts = split_pvtag(pvtag, gitdesc_regexes)
+        parts = split_vtag(vtag, gitdesc_regexes)
         matched_pname = parts[0]
         version = parts[1]
         rest_parts = parts[2:]
         if matched_pname and matched_pname != pname:
-            log.warning("Matched  pvtag project '%s' different from expected '%s'!",
+            log.warning("Matched  vtag project '%s' different from expected '%s'!",
                         matched_pname, pname)
         version = _version_from_parts(version, *rest_parts, repopath=repopath)
     except Exception as ex:
@@ -490,7 +490,7 @@ def _git_describe_parsed(pname,
     if not version:
         version = default_version
 
-    return pvtag, version, descid
+    return vtag, version, descid
 
 
 def decide_vprefixes(vprefixes, is_release):
@@ -510,10 +510,10 @@ def decide_vprefixes(vprefixes, is_release):
 
 def polyversion(**kw):
     """
-    Report the *pvtag* of the `pname` in the git repo hosting the source-file calling this.
+    Report the *vtag* of the `pname` in the git repo hosting the source-file calling this.
 
     :param str pname:
-        The project-name, used as the prefix of pvtags when searching them.
+        The project-name, used as the prefix of vtags when searching them.
         If not given, defaults to the *last segment of the module-name of the caller*.
 
         .. Attention::
@@ -533,13 +533,13 @@ def polyversion(**kw):
         [Default: ``<pname>_VERSION``]
     :param bool mono_project:
       - false: (default) :term:`monorepo`, ie multiple sub-projects per git-repo.
-        Tags formatted by *pvtags* :data:`pv_format` & :data:`pv_gitdesc_repat`
+        Tags formatted by *vtags* :data:`pv_format` & :data:`pv_gitdesc_repat`
         (like ``pname-v1.2.3``).
       - true: :term:`mono-project`, ie only one project in git-repo
         Tags formatted as *vtags* :data:`v_format` & :data:`v_gitdesc_repat`.
         (like ``v1.2.3``).
     :param str tag_format:
-        The :pep:`3101` pattern for creating *pvtags* (or *vtags*).
+        The :pep:`3101` pattern for creating *vtags* (or *vtags*).
 
         - It receives 3 parameters to interpolate: ``{pname}, {vprefix}, {version} = '*'``.
         - It is used also to generate the match patterns for ``git describe --match <pattern>``
@@ -547,7 +547,7 @@ def polyversion(**kw):
         - It overrides `mono_project` arg.
         - See :data:`pv_format` & :data:`v_format`
     :param regex gitdesc_repat:
-        The regex pattern breaking apart *pvtags*, with 3 named capturing groups:
+        The regex pattern breaking apart *vtags*, with 3 named capturing groups:
 
         - ``pname``,
         - ``version`` (without the 'v'),
@@ -578,7 +578,7 @@ def polyversion(**kw):
         when true, return the 3-tuple (tag, version, desc-id) (not just version)
 
     :return:
-        The version-id (or 3-tuple) derived from the *pvtag*, or `default` if
+        The version-id (or 3-tuple) derived from the *vtag*, or `default` if
         command failed/returned nothing, unless None, in which case, it raises.
     :raise CalledProcessError:
         if it cannot find any vtag and `default_version` is None

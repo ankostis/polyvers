@@ -312,7 +312,7 @@ class BumpCmd(cli._SubCmd):
                             if self.engrave_bumped_only else
                             projects)
 
-        pvtags.populate_pvtags_history(*bump_projects)
+        pvtags.populate_vtags_history(*bump_projects)
         for prj in engrave_projects:
             self._prepare_project_for_bump(prj,
                                            version_bump,
