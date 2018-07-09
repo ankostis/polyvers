@@ -19,7 +19,7 @@ import os.path as osp
 import polyversion as pvlib
 import textwrap as tw
 
-from . import APPNAME, __version__, __updated__, pvtags, pvproject
+from . import APPNAME, __version__, __updated__, gitag, pvproject
 from ._vendor import traitlets as trt
 from ._vendor.traitlets import config as trc
 from ._vendor.traitlets.traitlets import (
@@ -155,7 +155,7 @@ class PolyversCmd(cmdlets.Cmd, yu.YAMLable):
             self._git_root = fu.find_git_root()
 
             if not self._git_root:
-                raise pvtags.NoGitRepoError(
+                raise gitag.NoGitRepoError(
                     "Current-dir '%s' is not inside a git-repo!" %
                     Path().resolve())
 
@@ -215,7 +215,7 @@ class PolyversCmd(cmdlets.Cmd, yu.YAMLable):
         default_value=({
             'pname': '<PVTAG>',
             'tag_vprefixes': pvlib.tag_vprefixes,
-            'pv_format': '*-v*',
+            'tag_format': '*-v*',
             'gitdesc_repat': tw.dedent(r"""
                 (?xmi)
                     ^(?P<pname>[A-Z0-9]|[A-Z0-9][A-Z0-9._-]*?[A-Z0-9])
@@ -225,7 +225,7 @@ class PolyversCmd(cmdlets.Cmd, yu.YAMLable):
             """)}, {
             'pname': '<VTAG>',
             'tag_vprefixes': pvlib.tag_vprefixes,
-            'pv_format': pvlib.v_format,
+            'tag_format': pvlib.mp_tag_format,
             'gitdesc_repat': tw.dedent(r"""
                 (?xmi)
                     ^(?P<pname>)
@@ -234,7 +234,7 @@ class PolyversCmd(cmdlets.Cmd, yu.YAMLable):
             """)}),
         config=True,
         help="""
-        A pair of Projects with patterns/regexps for *pv_vtags* or *v_vtags*, respectively.
+        A pair of Projects with patterns/regexps for *pp_vtags* or *mp_vtags*, respectively.
 
         - Needed when a) no configuration file is given (or has partial infos),
           and b) when constructing/updating the configuration file.
@@ -294,22 +294,22 @@ class PolyversCmd(cmdlets.Cmd, yu.YAMLable):
         Guess whether *monorepo* or *mono-project* versioning schema applies.
 
         :return:
-            one of :func:`pvtags.make_v_project`, :func:`pvtags.make_pv_project`
+            one of :func:`gitag.make_mp_project`, :func:`gitag.make_pp_project`
         """
-        pv_proj, v_proj = self.autodiscover_version_scheme_projects
-        pvtags.populate_vtags_history(pv_proj, v_proj)
+        pp_proj, mp_proj = self.autodiscover_version_scheme_projects
+        gitag.populate_vtags_history(pp_proj, mp_proj)
 
-        if bool(pv_proj.vtags_history) ^ bool(v_proj.vtags_history):
-            return (pvtags.make_pv_project(parent=self)
-                    if pv_proj.vtags_history else
-                    pvtags.make_v_project(parent=self))
+        if bool(pp_proj.vtags_history) ^ bool(mp_proj.vtags_history):
+            return (gitag.make_pp_project(parent=self)
+                    if pp_proj.vtags_history else
+                    gitag.make_mp_project(parent=self))
         else:
             raise cmdlets.CmdException(
                 "Cannot auto-discover versioning scheme, "
                 "missing or contradictive versioning-tags:\n%s"
                 "\n\n  Try --monorepo/--mono-project flags." %
-                yu.ydumps({'pv_tags': pv_proj.vtags_history,
-                          'v_vtags': v_proj.vtags_history}))
+                yu.ydumps({'pp_tags': pp_proj.vtags_history,
+                          'mp_vtags': mp_proj.vtags_history}))
 
     def bootstrapp_projects(self) -> None:
         """
@@ -359,10 +359,10 @@ class PolyversCmd(cmdlets.Cmd, yu.YAMLable):
                 {'pname': pname, 'basepath': basepath}
                 for pname, basepath in pdata.items()]
 
-        if len(self.projects) > 1 and template_project.pname == pvtags.MONO_PROJECT:
+        if len(self.projects) > 1 and template_project.pname == gitag.MONO_PROJECT:
             self.log.warning(
                 "Incompatible *vtags* version-scheme with %s sub-projects!"
-                "\n  You may ether switch to *pvtags* (see `--monorepo`) or "
+                "\n  You may ether switch to *vtags* (see `--monorepo`) or "
                 "\n  override projects to a single one (see `--pdata`). "
                 "\n\n  You can then make the choice permanent using `init` cmd.",
                 len(self.projects))
@@ -455,7 +455,7 @@ class InitCmd(_SubCmd):
         #  bc program has does not hold such toplevel class.
         self.config.Project = trc.Config({
             'tag_vprefixes': tproj.tag_vprefixes,
-            'pv_format': tproj.pv_format,
+            'tag_format': tproj.tag_format,
             'gitdesc_repat': tproj.gitdesc_repat,
         })
 
@@ -507,7 +507,7 @@ _status_all_help = """
 def _git_desc_without_screams(proj):
     try:
         return proj.git_describe()
-    except pvtags.GitVoidError as _:
+    except gitag.GitVoidError as _:
         return None
 
 
@@ -545,7 +545,7 @@ class StatusCmd(_SubCmd):
                         if p.pname in pnames]
 
         ## TODO: extract method to classify pre-populated histories.
-        pvtags.populate_vtags_history(*projects)
+        gitag.populate_vtags_history(*projects)
         if self.all:
             res = self._fetch_all(projects)
         else:
@@ -603,9 +603,9 @@ PolyversCmd.flags = {  # type: ignore
 
     'monorepo': (
         {'Project': {  # type: ignore
-            'pname': pvtags.MONOREPO,
-            'pv_format': pvlib.pv_format,
-            'gitdesc_repat': pvlib.pv_gitdesc_repat,
+            'pname': gitag.MONOREPO,
+            'tag_format': pvlib.pp_tag_format,
+            'gitdesc_repat': pvlib.pp_gitdesc_repat,
         }},
         """
         Select *vtags* version-scheme, suitable for monorepos hosting multiple sub-projects.
@@ -614,9 +614,9 @@ PolyversCmd.flags = {  # type: ignore
     ),
     'mono-project': (
         {'Project': {  # type: ignore
-            'pname': pvtags.MONO_PROJECT,
-            'pv_format': pvlib.v_format,
-            'gitdesc_repat': pvlib.v_gitdesc_repat,
+            'pname': gitag.MONO_PROJECT,
+            'tag_format': pvlib.mp_tag_format,
+            'gitdesc_repat': pvlib.mp_gitdesc_repat,
         }},
         """
         Select *vtags* version-scheme, suitable for repos hosting a single project.

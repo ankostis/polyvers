@@ -45,12 +45,12 @@ Polyvers: Bump sub-project versions in Git monorepos independently
 
 A Python 3.6+ command-line tool to manage `PEP-440 version-ids
 <https://www.python.org/dev/peps/pep-0440/>`_ of dependent sub-projects
-hosted in a *Git* :term:`monorepo`\s, independently.
+hosted in a *Git* :term:`monorepo`\s (or :term:`poly-project`\s), independently.
 
 The key features are:
 
 - :term:`setuptools integration`,
-- x2 :term:`repo scheme`\s (:term:`monorepo`, :term:`mono-project`),
+- x2 :term:`repo scheme`\s (:term:`poly-project`, :term:`mono-project`),
 - configurable :term:`tag scheme`,
 - *leaf* :term:`release scheme`,
 - intuitive :term:`version-bump algebra` (TODO),
@@ -120,7 +120,7 @@ And you get the ``polyvers`` command:
 .. Note::
     Actually two projects are installed:
 
-    - **polyvers** cmd-line tool, for developing python :term:`monorepo`\s,
+    - **polyvers** cmd-line tool, for developing python :term:`poly-project`\s,
     - **polyversion**: the base python library used by projects developed
       with *polyvers* tool, so that their sources can discover their subproject-version
       on runtime from Git.
@@ -128,7 +128,7 @@ And you get the ``polyvers`` command:
 
 Prepare project
 ---------------
-Assuming our :term:`monorepo` project ``/monorepo.git/`` contains two sub-projects,
+Assuming our :term:`poly-project` project ``/monorepo.git/`` contains two sub-projects,
 then you need enter the following configurations into your build files::
 
     /monorepo.git/
@@ -408,9 +408,32 @@ Features
         See :mod:`polyvers.vermath` for more.
 
     repo scheme
-    monorepo
+        Whether a git repo hosts a :term:`mono-project` or a :term:`poly-project`.
+        Accompanied by a respective :term:`tag scheme`.
+
+    tag scheme
+    version scheme
+        The pattern for :term:`version tag`\s from which project versions are derrived.
+        By default, 2x2 *versioning schemes* are pre-configured:
+
+        - for :term:`mono-project`\s: `v1.2.3` (and `r1.2.3` applied on :term:`leaf commit`\s)
+        - for :term:`poly-project`: `project-v1.2.3` (and `project-r1.2.3`
+          for :term:`leaf commit`\s)
+
+    vtag
+    version tag
+        either a :term:`v-tag` or an :term:`r-tag`
+
     mono-project
-        whether a git repo hosts a single or multiple subprojects
+    mp-vtag
+        A Git repo hosting a single project, using a :term:`tag scheme`
+        for its :term:`vtag`\s, like ``v1.2.3``.
+
+    monorepo
+    poly-project
+    pp-vtag
+        A git repo hosting multiple subprojects, using :term:`tag scheme`
+        for its :term:`vtag`\s, like ``projname-v1.2.3``.
 
         **Rational:**
 
@@ -441,27 +464,15 @@ Features
         .. [#] <https://medium.com/@maoberlehner/monorepos-in-the-wild-33c6eb246cb9
         .. [#] http://www.drmaciver.com/2016/10/why-you-should-use-a-single-repository-for-all-your-companys-projects/
 
-    tag scheme
-    version scheme
-        The pattern for version-tags from which current versions are derrived.
-        By default, 2x2 *versioning schemes* are pre-configured,
-        one for :term:`mono-project` and one for :term:`monorepo` repositories,
-        respectively:
-
-        - `v1.2.3` (and `r1.2.3` applied on :term:`leaf commit`\s)
-        - `project-v1.2.3` (and `project-r1.2.3` for :term:`leaf commit`\s)
-
     release scheme
     out-of-trunk commit
     leaf commit
     release tag
     r-tag
-    version tag
-    vtag
     v-tag
         Even in single-project repos, sharing code across branches may cause
         merge-conflicts due to the version-ids :term:`engrave`\d" in the sources.
-        In :term:`monorepo`\s, the versions proliferate, and so does the conflicts.
+        In :term:`poly-project`\s, the versions proliferate, and so does the conflicts.
 
         Contrary to :ref:`similar-tools`, static version-ids are engraved only in out-of-trunk
         (leaf) commits, and only when the sub-projects are released.
@@ -632,7 +643,7 @@ Bumped across these projects while building it...
         https://github.com/c4urself/bump2version
 
     releash
-        another :term:`monorepo`\s managing tool, that publishes also to PyPi:
+        another :term:`poly-project`\s managing tool, that publishes also to PyPi:
         https://github.com/maartenbreddels/releash
 
     Git Bump

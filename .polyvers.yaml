@@ -40,7 +40,7 @@ PolyversCmd:
 #
 Project:
 
-  # The pattern to generate new *pvtags*.
+  # The pattern to generate new *vtags*.
   #
   #  It is interpolated with this class's traits as :pep:`3101` parameters; among
   # others ``{pname}`` and ``{version}``; use ``{ikeys}`` to receive all available
@@ -49,11 +49,11 @@ Project:
   #  .. WARNING::
   #    If you change this, ensure the :func:`polyversion.polyversion()`
   #    gets invoked from project's sources with the same value
-  #    in `pvtag_frmt` kw-arg.
+  #    in `vtag_frmt` kw-arg.
   # Default:
-  pvtag_format: '{pname}-{vprefix}{version}'
+  vtag_format: '{pname}-{vprefix}{version}'
 
-  # The regex pattern breaking *pvtags* and/or ``git-describe`` output
+  # The regex pattern breaking *vtags* and/or ``git-describe`` output
   # into 3 named capturing groups:
   # - ``pname``,
   # - ``version`` (without the 'v'),
@@ -67,11 +67,25 @@ Project:
   #  .. WARNING::
   #    If you change this, ensure the :func:`polyversion.polyversion()`
   #    gets invoked from project's sources with the same value
-  #    in `pvtag_regex` kw-arg.
+  #    in `vtag_regex` kw-arg.
   # Default:
-  pvtag_regex: |-
+  gitdesc_regex: |-
     (?xmi)
-        ^(?P<pname>{pname})
+    ^
+    (?P<pname>{pname})
+    -
+    {vprefix}
+    (?P<version>\d[^-]*)
+    (?:
         -
-        {vprefix}(?P<version>\d[^-]*)
-        (?:-(?P<descid>\d+-g[a-f\d]+))?$
+        (?P<descid>
+            (?P<distance>\d+)
+            -
+            (?P<hexid>
+                g
+                [a-f\d]+
+            )
+        )
+    )?
+    (?P<dirty>-dirty)?
+    $

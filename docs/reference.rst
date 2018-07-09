@@ -19,7 +19,7 @@ Module: :mod:`polyversion`
 .. automodule:: polyversion
    :members:    polyversion, polytime,
                 decide_vprefixes,
-                v_format, v_gitdesc_repat, pv_format, pv_gitdesc_repat
+                mp_tag_format, mp_gitdesc_repat, pp_tag_format, pp_gitdesc_repat
                 pkg_metadata_version
 
 Module: :mod:`polyversion.setuplugin`
@@ -36,7 +36,7 @@ Polyvers (command-tool)
    polyvers.cli
    polyvers.bumpcmd
    polyvers.pvproject
-   polyvers.pvtags
+   polyvers.gitag
    polyvers.engrave
    polyvers.vermath
    polyvers.cmdlet.cfgcmd
@@ -63,9 +63,9 @@ Module: :mod:`polyvers.pvproject`
 .. automodule:: polyvers.pvproject
    :members:
 
-Module: :mod:`polyvers.pvtags`
+Module: :mod:`polyvers.gitag`
 -------------------------------
-.. automodule:: polyvers.pvtags
+.. automodule:: polyvers.gitag
    :members:
 
 Module: :mod:`polyvers.engrave`

@@ -344,13 +344,13 @@ def mutable_repo(untagged_repo, tmpdir_factory):
 
 
 @pytest.fixture()
-def mutable_vtags_repo(vtags_repo, tmpdir_factory):
+def mutable_mp_repo(vtags_repo, tmpdir_factory):
     mutable_repo = tmpdir_factory.mktemp('mutable_mono_project')
     return clone_repo(vtags_repo, mutable_repo)
 
 
 @pytest.fixture()
-def mutable_pvtags_repo(ok_repo, tmpdir_factory):
+def mutable_pp_repo(ok_repo, tmpdir_factory):
     mutable_repo = tmpdir_factory.mktemp('mutable_monorepo')
     return clone_repo(ok_repo, mutable_repo)
 

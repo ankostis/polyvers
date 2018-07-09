@@ -130,9 +130,9 @@ def exec_cmd(cmd,
                                          if isinstance(ex.stderr, bytes) else
                                          ex.stderr):
                 import os
-                from .. import pvtags
+                from .. import gitag
 
-                raise pvtags.NoGitRepoError(
+                raise gitag.NoGitRepoError(
                     "Current-dir '%s' is not within a git repository!" %
                     os.curdir) from ex
             raise

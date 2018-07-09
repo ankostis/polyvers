@@ -6,7 +6,7 @@
 # You may not use this work except in compliance with the Licence.
 # You may obtain a copy of the Licence at: http://ec.europa.eu/idabc/eupl
 #
-from polyvers import cli, __version__, __updated__, pvproject, pvtags
+from polyvers import cli, __version__, __updated__, pvproject, gitag
 from polyvers._vendor.traitlets import config as trc
 from polyvers.cmdlet import cmdlets
 from polyvers.utils import yamlutil as yu
@@ -90,7 +90,7 @@ def test_bootstrapp_projects_explicit(no_repo, empty_repo, caplog):
     ## No GIT
     #
     cmd = cli.PolyversCmd()
-    with pytest.raises(pvtags.NoGitRepoError):
+    with pytest.raises(gitag.NoGitRepoError):
         cmd.bootstrapp_projects()
 
     empty_repo.chdir()
@@ -110,7 +110,7 @@ def test_bootstrapp_projects_explicit(no_repo, empty_repo, caplog):
     ## Specify: VScheme
     #
     cfg = trc.Config()
-    cfg.Project.pv_format = cfg.Project.gitdesc_repat = 'some'
+    cfg.Project.tag_format = cfg.Project.gitdesc_repat = 'some'
     cmd = cli.PolyversCmd(config=cfg)
     caplog.clear()
     with pytest.raises(cmdlets.CmdException,
@@ -228,22 +228,22 @@ def check_bootstrapp_projects_autodiscover(myrepo, caplog, vscheme):
         is_regex=True)
 
 
-def test_bootstrapp_projects_autodiscover_mono_project(mutable_vtags_repo, caplog):
-    check_bootstrapp_projects_autodiscover(mutable_vtags_repo, caplog,
-                                           pvtags.MONO_PROJECT)
+def test_bootstrapp_projects_autodiscover_mono_project(mutable_mp_repo, caplog):
+    check_bootstrapp_projects_autodiscover(mutable_mp_repo, caplog,
+                                           gitag.MONO_PROJECT)
     check_text(
         caplog.text,
         require=["Incompatible *vtags* version-scheme with 2 sub-projects"])
 
 
-def test_bootstrapp_projects_autodiscover_monorepo(mutable_pvtags_repo, caplog):
-    check_bootstrapp_projects_autodiscover(mutable_pvtags_repo, caplog,
-                                           pvtags.MONOREPO)
+def test_bootstrapp_projects_autodiscover_monorepo(mutable_pp_repo, caplog):
+    check_bootstrapp_projects_autodiscover(mutable_pp_repo, caplog,
+                                           gitag.MONOREPO)
 
 
-def test_init_cmd_mono_project(mutable_vtags_repo, caplog):
-    mutable_vtags_repo.chdir()
-    exp_fpath = (mutable_vtags_repo / '.polyvers.yaml')
+def test_init_cmd_mono_project(mutable_mp_repo, caplog):
+    mutable_mp_repo.chdir()
+    exp_fpath = (mutable_mp_repo / '.polyvers.yaml')
 
     rc = cli.run('init --pdata f=g -v'.split())
     assert rc == 0
@@ -253,7 +253,7 @@ def test_init_cmd_mono_project(mutable_vtags_repo, caplog):
 
     os.remove(exp_fpath)
     cfg = trc.Config()
-    cfg.Project.pv_format = cfg.Project.gitdesc_repat = 'some'
+    cfg.Project.tag_format = cfg.Project.gitdesc_repat = 'some'
     cfg.PolyversCmd.pdata = {'foo': 'foo_path'}
     rc = cli.run('init --mono-project --doc -v'.split(), config=cfg)
     assert rc == 0
@@ -303,7 +303,8 @@ def test_init_cmd_mono_project(mutable_vtags_repo, caplog):
     exp_value = tw.dedent(r'''
         |-
             (?xmi)
-                ^(?P<pname>)
+                ^
+                (?P<pname>)
                 {vprefix}
                 (?P<version>\d[^-]*)
                 (?:
@@ -334,7 +335,7 @@ def test_init_cmd_mono_project(mutable_vtags_repo, caplog):
 #     mutable_repo.chdir()
 
 
-def test_status_cmd_vtags(mutable_repo, caplog, capsys):
+def test_status_cmd_mp(mutable_repo, caplog, capsys):
     mutable_repo.chdir()
 
     ##############
@@ -409,7 +410,7 @@ def test_status_cmd_vtags(mutable_repo, caplog, capsys):
     assert not yu.yloads(out)
 
 
-def test_status_cmd_pvtags(mutable_repo, caplog, capsys):
+def test_status_cmd_pp(mutable_repo, caplog, capsys):
     mutable_repo.chdir()
 
     ##############

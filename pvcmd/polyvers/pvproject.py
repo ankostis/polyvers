@@ -264,7 +264,7 @@ class Project(cmdlets.Replaceable, cmdlets.Printable, yu.YAMLable, cmdlets.Spec)
         one for *version-tags* and one for *release-tags*, respectively.
     """)
 
-    pv_format = Unicode(
+    tag_format = Unicode(
         help="""
         The pattern to generate new *vtags*.
 
@@ -275,11 +275,11 @@ class Project(cmdlets.Replaceable, cmdlets.Printable, yu.YAMLable, cmdlets.Spec)
         .. Important::
            If you change this, ensure the :func:`polyversion.polyversion()`
            gets invoked from project's sources with the same value
-           in `pv_format` kw-arg.
+           in `tag_format` kw-arg.
     """).tag(config=True)
 
     def _format_vtag(self, version, is_release=False):
-        return self.interp(self.pv_format,
+        return self.interp(self.tag_format,
                            version=version,
                            vprefix=self.tag_vprefixes[int(is_release)])
 
@@ -296,7 +296,7 @@ class Project(cmdlets.Replaceable, cmdlets.Printable, yu.YAMLable, cmdlets.Spec)
             {version} <-- '*'
         """
         vprefix = self.tag_vprefixes[int(is_release)]
-        return self.interp(self.pv_format,
+        return self.interp(self.tag_format,
                            vprefix=vprefix,
                            version='*',
                            _escaped_for='glob')
@@ -337,7 +337,7 @@ class Project(cmdlets.Replaceable, cmdlets.Printable, yu.YAMLable, cmdlets.Spec)
     def is_good(self):
         "If format patterns are missing, spurious NPEs will happen when using project."
         return bool(self.tag_vprefixes and
-                    self.pv_format and
+                    self.tag_format and
                     self.gitdesc_repat)
 
     tag = Bool(
@@ -460,14 +460,14 @@ class Project(cmdlets.Replaceable, cmdlets.Printable, yu.YAMLable, cmdlets.Spec)
            where ``--tags`` is needed to consider also non-annotated tags,
            as ``git tag`` does.
         """
-        from .import pvtags
+        from .import gitag
 
         ## TODO: Project should reuse pvlib as entry-points
         release_flags = [0, 1] if is_release is None else [bool(is_release), ]
         tag_patterns = [self.tag_fnmatch(i) for i in release_flags]
 
-        ## TODO: move to pvtags
-        with pvtags.git_project_errors_handled(self.pname):
+        ## TODO: move to vtags
+        with gitag.git_project_errors_handled(self.pname):
             out = cmd.git.describe._(
                 tags=(include_lightweight) or None,
                 *git_args,
@@ -510,9 +510,9 @@ class Project(cmdlets.Replaceable, cmdlets.Printable, yu.YAMLable, cmdlets.Spec)
            where ``--tags`` is needed to consider also unannotated tags,
            as ``git tag`` does.
         """
-        from .import pvtags
+        from .import gitag
 
-        with pvtags.git_project_errors_handled(self.pname):
+        with gitag.git_project_errors_handled(self.pname):
             out = cmd.git.log(n=1, format='format:%cD')  # TODO: traitize log-date format
 
         return out
@@ -527,10 +527,10 @@ class Project(cmdlets.Replaceable, cmdlets.Printable, yu.YAMLable, cmdlets.Spec)
             `False` for version-tags, `True` for release-tags
         """
         import subprocess as sbp
-        from . import pvtags
+        from . import gitag
 
         tag_name = self._format_vtag(self.version, is_release)
-        ## TODO: move all git-cmds to pvtags?
+        ## TODO: move all git-cmds to vtags?
         try:
             out = cmd.git.tag(
                 tag_name,
@@ -544,7 +544,7 @@ class Project(cmdlets.Replaceable, cmdlets.Printable, yu.YAMLable, cmdlets.Spec)
                 self.log.warning('PRETEND tag: %s' % out)
         except sbp.CalledProcessError as ex:
             if "already exists" in str(ex.stderr):
-                raise pvtags.GitError(
+                raise gitag.GitError(
                     "Cannot bump, tag '%s' already exists!"
                     "\n  Add `--force=tag` if you must, or you can --amend." % tag_name)
             raise

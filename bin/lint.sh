@@ -12,7 +12,7 @@ mypy \
     pvcmd/polyvers/cmdlet/errlog.py \
     pvcmd/polyvers/pvproject.py \
     pvcmd/polyvers/engrave.py \
-    pvcmd/polyvers/pvtags.py \
+    pvcmd/polyvers/gitag.py \
     pvcmd/polyvers/cli.py \
     pvcmd/polyvers/bumpcmd.py
 let err+=$?

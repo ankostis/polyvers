@@ -138,7 +138,7 @@ def git_restore_point(restore_head=False, heads=True, tags=True):
                 _restore_refs(old_refs, new_refs)
 
 
-def make_pv_project(pname: str = MONOREPO,
+def make_pp_project(pname: str = MONOREPO,
                     **project_kw) -> pvproject.Project:
     """
     Make a :class:`Project` for a subprojects hosted at git monorepos.
@@ -148,12 +148,12 @@ def make_pv_project(pname: str = MONOREPO,
     return pvproject.Project(
         pname=pname,
         tag_vprefixes=pvlib.tag_vprefixes,
-        pv_format=pvlib.pv_format,
-        gitdesc_repat=pvlib.pv_gitdesc_repat,
+        tag_format=pvlib.pp_tag_format,
+        gitdesc_repat=pvlib.pp_gitdesc_repat,
         **project_kw)
 
 
-def make_match_all_pvtags_project(**project_kw) -> pvproject.Project:
+def make_match_all_pp_vtags_project(**project_kw) -> pvproject.Project:
     """
     Make a :class:`Project` capturing any *vtag*.
 
@@ -164,7 +164,7 @@ def make_match_all_pvtags_project(**project_kw) -> pvproject.Project:
     return pvproject.Project(
         pname='<PVTAG>',
         tag_vprefixes=pvlib.tag_vprefixes,
-        pv_format='*-v*',
+        tag_format='*-v*',
         gitdesc_repat=r"""(?xmi)
             ^(?P<pname>[A-Z0-9]|[A-Z0-9][A-Z0-9._-]*?[A-Z0-9])
             -
@@ -174,24 +174,24 @@ def make_match_all_pvtags_project(**project_kw) -> pvproject.Project:
         **project_kw)
 
 
-def make_v_project(pname: str = MONO_PROJECT,
-                   **project_kw) -> pvproject.Project:
+def make_mp_project(pname: str = MONO_PROJECT,
+                    **project_kw) -> pvproject.Project:
     """
     Make a :class:`Project` for a single project hosted at git repos root (not "monorepos").
 
-    - Project versioned with tags simple *v_vtags* (not *pv_vtags*) like ``v0.1.0``.
+    - Project versioned with tags simple *mp_vtags* (not *pp_vtags*) like ``v0.1.0``.
     """
     simple_project = pvproject.Project(
         pname=pname,
         tag_vprefixes=pvlib.tag_vprefixes,
-        pv_format=pvlib.v_format,
-        gitdesc_repat=pvlib.v_gitdesc_repat,
+        tag_format=pvlib.mp_tag_format,
+        gitdesc_repat=pvlib.mp_gitdesc_repat,
         **project_kw)
 
     return simple_project
 
 
-def make_match_all_vtags_project(**project_kw) -> pvproject.Project:
+def make_match_all_mp_vtags_project(**project_kw) -> pvproject.Project:
     """
     Make a :class:`Project` capturing any simple *vtag* (e.g. ``v0.1.0``).
 
@@ -199,8 +199,8 @@ def make_match_all_vtags_project(**project_kw) -> pvproject.Project:
     to capture *vtags* not captured by any other project.
     """
     # Note: `pname` ignored by patterns, used only for labeling.
-    return make_v_project(pname='<VTAG>',
-                          **project_kw)
+    return make_mp_project(pname='<VTAG>',
+                           **project_kw)
 
 
 def _fetch_all_tags(tag_patterns: List[str],
@@ -248,7 +248,8 @@ def _fetch_annotated_tags(tag_patterns: Sequence[str],
     return tags
 
 
-def _replace_pvtags_in_projects(
+## TODO: is `_replace_vtags_in_projects()` not needed anywhere??
+def _replace_vtags_in_projects(
         projects: List[pvproject.Project],
         vtags_by_pname: Dict[str, List[str]]) -> List[pvproject.Project]:
     "Merge the 2 inputs in a list of cloned Projects with their vtags replaced."

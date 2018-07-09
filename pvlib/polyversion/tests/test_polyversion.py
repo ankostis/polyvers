@@ -22,7 +22,7 @@ proj2 = 'proj-2'
 proj2_ver = '0.2.1'
 
 
-split_pv_patterns = [
+split_pp_vtag_patterns = [
     ('proj', None),
     ('proj-1.0.5', None),
     ('proj-1-0.5', None),
@@ -39,10 +39,10 @@ split_pv_patterns = [
 ]
 
 
-@pytest.mark.parametrize('inp, exp', split_pv_patterns)
-def test_split_pv_parsing(inp, exp):
+@pytest.mark.parametrize('inp, exp', split_pp_vtag_patterns)
+def test_split_pp_vtag_parsing(inp, exp):
     gitdesc_regex = re.compile(pvlib._interp_regex(
-        pvlib.pv_gitdesc_repat,
+        pvlib.pp_gitdesc_repat,
         'v',
         pname=r'[A-Z0-9]|[A-Z0-9][A-Z0-9._-]*?[A-Z0-9]'))
     if exp is None:
@@ -53,13 +53,13 @@ def test_split_pv_parsing(inp, exp):
         assert got == exp
 
 
-@pytest.mark.parametrize('inp, exp', split_pv_patterns)
+@pytest.mark.parametrize('inp, exp', split_pp_vtag_patterns)
 def test_fnmatch_format(inp, exp):
     if exp is None:
         pass
     else:
         project = exp[0]
-        frmt = pvlib._interp_fnmatch(pvlib.pv_format, 'v', project)
+        frmt = pvlib._interp_fnmatch(pvlib.pp_tag_format, 'v', project)
         assert fnmatch.fnmatch(inp, frmt)
 
 
@@ -167,8 +167,8 @@ def test_polyversion_vtags(vtags_repo):
     ## bool flag overriden
 
     v = pvlib.polyversion(pname='fobar', basepath=vtags_repo, mono_project=False,
-                          tag_format=pvlib.v_format,
-                          gitdesc_repat=pvlib.v_gitdesc_repat)
+                          tag_format=pvlib.mp_tag_format,
+                          gitdesc_repat=pvlib.mp_gitdesc_repat)
     assert v.startswith(proj1_ver)
 
 

@@ -6,7 +6,7 @@
 # You may not use this work except in compliance with the Licence.
 # You may obtain a copy of the Licence at: http://ec.europa.eu/idabc/eupl
 
-from polyvers import pvtags
+from polyvers import gitag
 from polyvers._vendor import traitlets as trt
 from polyvers._vendor.traitlets import config as trc
 from polyvers.pvproject import Project
@@ -20,19 +20,19 @@ import polyversion as pvlib
 
 
 pname1 = 'proj1'
-p1_pvtag = 'proj1-v0.0.1-2-g'
+p1_vtag = 'proj1-v0.0.1-2-g'
 pname2 = 'proj-2'
-p2_pvtag = 'proj-2-V0.2.1'
+p2_vtag = 'proj-2-V0.2.1'
 
-search_all = pvtags.make_match_all_pvtags_project()
+search_all = gitag.make_match_all_pp_vtags_project()
 
 
 @pytest.fixture
 def monorepocfg():
-    template_project = pvtags.make_pv_project()
+    template_project = gitag.make_pp_project()
     cfg = trc.Config({
         'Project': {
-            'pv_format': template_project.pv_format,
+            'tag_format': template_project.tag_format,
             'gitdesc_repat': template_project.gitdesc_repat,
         }})
 
@@ -48,7 +48,7 @@ def project1(monorepocfg):
 def project2():
     return Project(
         pname=pname2,
-        pv_format='{pname}-V{version}',
+        tag_format='{pname}-V{version}',
         gitdesc_repat=r"""(?xmi)
             ^(?P<pname>{pname})
             -
@@ -73,7 +73,7 @@ def test_Project_version_from_vtag(foo):
     assert v == '1.0.0'
 
 
-def test_new_Project_raises_pvtags_unpopulated(project1):
+def test_new_Project_raises_vtags_unpopulated(project1):
     with pytest.raises(AssertionError):
         project1.vtags_history
 
@@ -81,36 +81,36 @@ def test_new_Project_raises_pvtags_unpopulated(project1):
 def test_Project_defaults(monorepocfg):
     proj = Project()
 
-    assert proj.pv_format == ''
+    assert proj.tag_format == ''
     assert proj.gitdesc_repat == ''
     assert proj.tag_fnmatch() == ''
 
     proj = Project(config=monorepocfg)
 
-    assert proj.pv_format == pvlib.pv_format
-    assert proj.gitdesc_repat == pvlib.pv_gitdesc_repat
+    assert proj.tag_format == pvlib.pp_tag_format
+    assert proj.gitdesc_repat == pvlib.pp_gitdesc_repat
     assert proj.tag_fnmatch() == '-v*'
 
 
-def test_pv_Project_interpolations():
-    proj = pvtags.make_pv_project(pname='foo', version='1.2.3')
+def test_pp_Project_interpolations():
+    proj = gitag.make_pp_project(pname='foo', version='1.2.3')
 
     assert 'foo' in proj.tag_fnmatch()
     assert proj.tag_fnmatch().endswith('v*')
     assert 'foo' in proj.gitdesc_regex().pattern
     assert not re.search(r'1.2.3', proj.gitdesc_regex().pattern)
 
-    proj = pvtags.make_pv_project(pname='f*o')
+    proj = gitag.make_pp_project(pname='f*o')
 
     assert 'f[*]o' in proj.tag_fnmatch()
     assert r'f\*o' in proj.gitdesc_regex().pattern
 
 
-def test_v_Project_interpolations():
+def test_mp_Project_interpolations():
     with pytest.raises(trt.TraitError, match="Invalid version: '1.2.3"):
-        pvtags.make_v_project(version='1.2.3(-: ')
+        gitag.make_mp_project(version='1.2.3(-: ')
 
-    proj = pvtags.make_v_project(version='1.2.3')
+    proj = gitag.make_mp_project(version='1.2.3')
 
     assert 'foo' not in proj.tag_fnmatch()
     assert proj.tag_fnmatch().endswith('v*')
@@ -124,18 +124,18 @@ def test_populate_vtags_history_per_project(ok_repo, project1, project2, foo):
     with pytest.raises(AssertionError):
         project1.vtags_history
 
-    pvtags.populate_vtags_history(project1)
+    gitag.populate_vtags_history(project1)
     assert project1.vtags_history == ['proj1-v0.0.1', 'proj1-v0.0.0']
 
-    pvtags.populate_vtags_history(project2)
+    gitag.populate_vtags_history(project2)
     assert project2.vtags_history == []
-    pvtags.populate_vtags_history(project2, include_lightweight=True)
+    gitag.populate_vtags_history(project2, include_lightweight=True)
     assert project2.vtags_history == ['proj-2-V0.2.1', 'proj-2-V0.2.0']
 
     ## Ensure no side-effects.
     assert project1.vtags_history == ['proj1-v0.0.1', 'proj1-v0.0.0']
 
-    pvtags.populate_vtags_history(foo)
+    gitag.populate_vtags_history(foo)
     assert foo.vtags_history == []
 
     ## Ensure no side-effects.
@@ -146,8 +146,8 @@ def test_populate_vtags_history_per_project(ok_repo, project1, project2, foo):
 def test_populate_vtags_history_multi_projects(ok_repo, project1, project2, foo):
     ok_repo.chdir()
 
-    pvtags.populate_vtags_history(project1, project2, foo,
-                                  include_lightweight=True)
+    gitag.populate_vtags_history(project1, project2, foo,
+                                 include_lightweight=True)
     assert project1.vtags_history == ['proj1-v0.0.1', 'proj1-v0.0.0']
     assert project2.vtags_history == ['proj-2-V0.2.1', 'proj-2-V0.2.0']
     assert foo.vtags_history == []
@@ -156,20 +156,20 @@ def test_populate_vtags_history_multi_projects(ok_repo, project1, project2, foo)
 def test_fetch_vtags_history_no_tags(untagged_repo, empty_repo, foo):
     untagged_repo.chdir()
 
-    pvtags.populate_vtags_history(foo)
+    gitag.populate_vtags_history(foo)
     assert foo.vtags_history == []
 
     empty_repo.chdir()
 
-    pvtags.populate_vtags_history(foo)
+    gitag.populate_vtags_history(foo)
     assert foo.vtags_history == []
 
 
 def test_fetch_vtags_history_BAD(no_repo, foo):
     no_repo.chdir()
 
-    with pytest.raises(pvtags.NoGitRepoError):
-        pvtags.populate_vtags_history(foo)
+    with pytest.raises(gitag.NoGitRepoError):
+        gitag.populate_vtags_history(foo)
 
 
 @pytest.mark.skipif(sys.version_info < (3, ),
@@ -178,47 +178,47 @@ def test_fetch_vtags_history_git_not_in_path(foo, monkeypatch):
     monkeypatch.setenv('PATH', '')
 
     with pytest.raises(FileNotFoundError):
-        pvtags.populate_vtags_history(foo)
+        gitag.populate_vtags_history(foo)
 
 
-def test_project_matching_all_pvtags(ok_repo, project1):
+def test_project_matching_all_pp_vtags(ok_repo, project1):
     ok_repo.chdir()
 
-    all_pvtags = pvtags.make_match_all_pvtags_project()
-    pvtags.populate_vtags_history(all_pvtags)
-    assert all_pvtags.pname == '<PVTAG>'
-    assert all_pvtags.vtags_history == ['proj1-v0.0.1', 'proj1-v0.0.0']
+    all_vtags = gitag.make_match_all_pp_vtags_project()
+    gitag.populate_vtags_history(all_vtags)
+    assert all_vtags.pname == '<PVTAG>'
+    assert all_vtags.vtags_history == ['proj1-v0.0.1', 'proj1-v0.0.0']
 
-    all_vtags = pvtags.make_match_all_vtags_project()
+    all_vtags = gitag.make_match_all_mp_vtags_project()
     assert all_vtags.pname == '<VTAG>'
-    pvtags.populate_vtags_history(all_vtags)
+    gitag.populate_vtags_history(all_vtags)
     assert all_vtags.vtags_history == []
 
 
-def test_simple_project(mutable_pvtags_repo, project2, caplog):
+def test_simple_project(mutable_pp_repo, project2, caplog):
     BAD_TAG = 'irrelevant_tag'
-    mutable_pvtags_repo.chdir()
+    mutable_pp_repo.chdir()
     caplog.set_level(0)
 
     cmd.git.tag(BAD_TAG, m='ggg')
     cmd.git.tag('v123')
     cmd.git.tag('v12.0', m='hh')
-    all_vtags = pvtags.make_match_all_vtags_project()
+    all_mp_tags = gitag.make_match_all_mp_vtags_project()
     caplog.clear()
-    pvtags.populate_vtags_history(all_vtags)
-    assert all_vtags.vtags_history == ['v12.0']
+    gitag.populate_vtags_history(all_mp_tags)
+    assert all_mp_tags.vtags_history == ['v12.0']
     assert BAD_TAG not in caplog.text
 
-    pvtags.populate_vtags_history(all_vtags, include_lightweight=True)
-    assert all_vtags.vtags_history == ['v12.0', 'v123']
+    gitag.populate_vtags_history(all_mp_tags, include_lightweight=True)
+    assert all_mp_tags.vtags_history == ['v12.0', 'v123']
 
     ## Check both vtag & vtag formats.
 
-    all_pvtags = pvtags.make_match_all_pvtags_project()
-    pvtags.populate_vtags_history(project2, all_pvtags, all_vtags,
-                                  include_lightweight=True)
-    assert all_vtags.vtags_history == ['v12.0', 'v123']
-    assert all_pvtags.vtags_history == ['proj1-v0.0.1', 'proj1-v0.0.0']
+    all_pp_tags = gitag.make_match_all_pp_vtags_project()
+    gitag.populate_vtags_history(project2, all_pp_tags, all_mp_tags,
+                                 include_lightweight=True)
+    assert all_mp_tags.vtags_history == ['v12.0', 'v123']
+    assert all_pp_tags.vtags_history == ['proj1-v0.0.1', 'proj1-v0.0.0']
     assert project2.vtags_history == ['proj-2-V0.2.1', 'proj-2-V0.2.0']
 
 
@@ -230,27 +230,27 @@ def test_git_describe_ok(ok_repo, project1, project2):
     ok_repo.chdir()
 
     v = project1.git_describe()
-    assert v.startswith(p1_pvtag)
+    assert v.startswith(p1_vtag)
 
-    with pytest.raises(pvtags.GitVoidError):
+    with pytest.raises(gitag.GitVoidError):
         ## Not annotated does not show up.
         project2.git_describe()
 
     v = project2.git_describe(include_lightweight=True)
-    assert v == p2_pvtag
+    assert v == p2_vtag
     v = project2.git_describe(all=True)
-    assert v == p2_pvtag
+    assert v == p2_vtag
 
 
 def test_git_describe_bad(ok_repo, no_repo, foo):
     ok_repo.chdir()
 
-    with pytest.raises(pvtags.GitVoidError):
+    with pytest.raises(gitag.GitVoidError):
         foo.git_describe()
 
     no_repo.chdir()
 
-    with pytest.raises(pvtags.NoGitRepoError):
+    with pytest.raises(gitag.NoGitRepoError):
         foo.git_describe()
 
 
@@ -300,12 +300,12 @@ def test_last_commit_tstamp_untagged(untagged_repo, today, foo):
 def test_last_commit_tstamp_BAD(empty_repo, no_repo, foo):
     empty_repo.chdir()
 
-    with pytest.raises(pvtags.GitVoidError):
+    with pytest.raises(gitag.GitVoidError):
         foo.last_commit_tstamp()
 
     no_repo.chdir()
 
-    with pytest.raises(pvtags.NoGitRepoError):
+    with pytest.raises(gitag.NoGitRepoError):
         foo.last_commit_tstamp()
 
 
@@ -323,7 +323,7 @@ def test_git_restore_point(mutable_repo):
 
     ## no rollback without errors
     #
-    with pvtags.git_restore_point():
+    with gitag.git_restore_point():
         cmd.git.commit(m='some msg', allow_empty=True)
         exp_point = cmd.git.rev_parse.HEAD()
     assert cmd.git.rev_parse.HEAD() == exp_point
@@ -331,13 +331,13 @@ def test_git_restore_point(mutable_repo):
     ## rollback
     #
     with pytest.raises(ValueError, match='Opa!'):
-        with pvtags.git_restore_point():
+        with gitag.git_restore_point():
             cmd.git.commit(m='some msg', allow_empty=True)
             raise ValueError('Opa!')
     assert cmd.git.rev_parse.HEAD() == exp_point
 
     ## rollback forced
     #
-    with pvtags.git_restore_point(True):
+    with gitag.git_restore_point(True):
         cmd.git.commit(m='some msg', allow_empty=True)
     assert cmd.git.rev_parse.HEAD() == exp_point

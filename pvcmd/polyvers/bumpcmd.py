@@ -13,7 +13,7 @@ from boltons.setutils import IndexedSet as iset
 
 import polyversion as pvlib
 
-from . import NOTICE, pvtags, pvproject, cli
+from . import NOTICE, gitag, pvproject, cli
 from ._vendor.traitlets.traitlets import Bool, Unicode
 from .cmdlet import cmdlets
 from .utils import fileutil as fu
@@ -195,10 +195,10 @@ class BumpCmd(cli._SubCmd):
         from https://stackoverflow.com/a/2659808/548792
         give false positives!
         """
-        ## TODO: move all git-cmds to pvtags?
+        ## TODO: move all git-cmds to gitag?
         out = cmd.git.describe(dirty=True, all=True)
         if out.endswith('dirty'):
-            raise pvtags.GitError("Dirty working directory, bump aborted.")
+            raise gitag.GitError("Dirty working directory, bump aborted.")
 
     def _filter_projects_by_pnames(self, projects, version, *pnames):
         """Separate `version` from `pnames`, scream if unknown pnames."""
@@ -237,7 +237,7 @@ class BumpCmd(cli._SubCmd):
 
     def _commit_new_release(self, msg,
                             projects: Sequence[pvproject.Project]):
-        ## TODO: move all git-cmds to pvtags?
+        ## TODO: move all git-cmds to gitag?
         out = cmd.git.commit(message=msg,  # --message=fo bar FAILS!
                              all=True,
                              sign=self.sign_commmits or None,
@@ -264,7 +264,7 @@ class BumpCmd(cli._SubCmd):
             ## TODO: parse Project.git_describe() instead of calling polyversion(non_bumped)!
             latest_version = pvlib.polyversion(
                 pname=prj.pname,
-                tag_format=prj.pv_format,
+                tag_format=prj.tag_format,
                 gitdesc_repat=prj.gitdesc_repat,
                 vprefixes=prj.tag_vprefixes,
                 basepath=prj.basepath
@@ -312,7 +312,7 @@ class BumpCmd(cli._SubCmd):
                             if self.engrave_bumped_only else
                             projects)
 
-        pvtags.populate_vtags_history(*bump_projects)
+        gitag.populate_vtags_history(*bump_projects)
         for prj in engrave_projects:
             self._prepare_project_for_bump(prj,
                                            version_bump,
@@ -346,11 +346,11 @@ class BumpCmd(cli._SubCmd):
         #  (but only after havin run some validation to run, above).
         self._stop_if_git_dirty()
 
-        with pvtags.git_restore_point(restore_head=self.dry_run):
+        with gitag.git_restore_point(restore_head=self.dry_run):
             with fu.chdir(git_root):
                 fproc.engrave_matches()
 
-            ## TODO: move all git-cmds to pvtags?
+            ## TODO: move all git-cmds to gitag?
             if self.out_of_trunk_releases:
                 for proj in bump_projects:
                     msg = self._make_commit_message(*bump_projects, is_release=False)
@@ -359,8 +359,8 @@ class BumpCmd(cli._SubCmd):
                         sign_tag=self.sign_tags,
                         sign_user=self.sign_user)
 
-                with pvtags.git_restore_point(restore_head=True,
-                                              heads=False, tags=False):
+                with gitag.git_restore_point(restore_head=True,
+                                             heads=False, tags=False):
                     if self.release_branch:
                         cmd.git.checkout._(B=True)(self.release_branch)
                     else:
