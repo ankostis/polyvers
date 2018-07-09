@@ -635,3 +635,72 @@ class Project(cmdlets.Replaceable, cmdlets.Printable, yu.YAMLable, cmdlets.Spec)
                 "Expected a relative version for '%s.%s', but got '%s'!"
                 "\n  Relative versions start either with '+' or '^'." %
                 change.owner, change.trait.name, change.new)
+
+
+MONOREPO = '<monorepo>'
+MONO_PROJECT = '<mono-project>'
+
+
+def make_pp_project(pname: str = MONOREPO,
+                    **project_kw) -> Project:
+    """
+    Make a :class:`Project` for a subprojects hosted at git monorepos.
+
+    - Project versioned with *vtags* like ``foo-project-v0.1.0``.
+    """
+    return Project(
+        pname=pname,
+        tag_vprefixes=pvlib.tag_vprefixes,
+        tag_format=pvlib.pp_tag_format,
+        gitdesc_repat=pvlib.pp_gitdesc_repat,
+        **project_kw)
+
+
+def make_match_all_pp_vtags_project(**project_kw) -> Project:
+    """
+    Make a :class:`Project` capturing any *vtag*.
+
+    Useful as a "catch-all" last project in :func:`populate_vtags_history()`,
+    to capture *vtags* not captured by any other project.
+    """
+    # Note: `pname` ignored by patterns, used only for labeling.
+    return Project(
+        pname='<PVTAG>',
+        tag_vprefixes=pvlib.tag_vprefixes,
+        tag_format='*-v*',
+        gitdesc_repat=r"""(?xmi)
+            ^(?P<pname>[A-Z0-9]|[A-Z0-9][A-Z0-9._-]*?[A-Z0-9])
+            -
+            v(?P<version>\d[^-]*)
+            (?:-(?P<descid>\d+-g[a-f\d]+))?$
+        """,
+        **project_kw)
+
+
+def make_mp_project(pname: str = MONO_PROJECT,
+                    **project_kw) -> Project:
+    """
+    Make a :class:`Project` for a single project hosted at git repos root (not "monorepos").
+
+    - Project versioned with tags simple *mp_vtags* (not *pp_vtags*) like ``v0.1.0``.
+    """
+    simple_project = Project(
+        pname=pname,
+        tag_vprefixes=pvlib.tag_vprefixes,
+        tag_format=pvlib.mp_tag_format,
+        gitdesc_repat=pvlib.mp_gitdesc_repat,
+        **project_kw)
+
+    return simple_project
+
+
+def make_match_all_mp_vtags_project(**project_kw) -> Project:
+    """
+    Make a :class:`Project` capturing any simple *vtag* (e.g. ``v0.1.0``).
+
+    Useful as a "catch-all" last project in :func:`populate_vtags_history()`,
+    to capture *vtags* not captured by any other project.
+    """
+    # Note: `pname` ignored by patterns, used only for labeling.
+    return make_mp_project(pname='<VTAG>',
+                           **project_kw)

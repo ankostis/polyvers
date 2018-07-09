@@ -6,7 +6,7 @@
 # You may not use this work except in compliance with the Licence.
 # You may obtain a copy of the Licence at: http://ec.europa.eu/idabc/eupl
 
-from polyvers import gitag
+from polyvers import gitag, pvproject
 from polyvers._vendor import traitlets as trt
 from polyvers._vendor.traitlets import config as trc
 from polyvers.pvproject import Project
@@ -24,12 +24,10 @@ p1_vtag = 'proj1-v0.0.1-2-g'
 pname2 = 'proj-2'
 p2_vtag = 'proj-2-V0.2.1'
 
-search_all = gitag.make_match_all_pp_vtags_project()
-
 
 @pytest.fixture
 def monorepocfg():
-    template_project = gitag.make_pp_project()
+    template_project = pvproject.make_pp_project()
     cfg = trc.Config({
         'Project': {
             'tag_format': template_project.tag_format,
@@ -93,14 +91,14 @@ def test_Project_defaults(monorepocfg):
 
 
 def test_pp_Project_interpolations():
-    proj = gitag.make_pp_project(pname='foo', version='1.2.3')
+    proj = pvproject.make_pp_project(pname='foo', version='1.2.3')
 
     assert 'foo' in proj.tag_fnmatch()
     assert proj.tag_fnmatch().endswith('v*')
     assert 'foo' in proj.gitdesc_regex().pattern
     assert not re.search(r'1.2.3', proj.gitdesc_regex().pattern)
 
-    proj = gitag.make_pp_project(pname='f*o')
+    proj = pvproject.make_pp_project(pname='f*o')
 
     assert 'f[*]o' in proj.tag_fnmatch()
     assert r'f\*o' in proj.gitdesc_regex().pattern
@@ -108,9 +106,9 @@ def test_pp_Project_interpolations():
 
 def test_mp_Project_interpolations():
     with pytest.raises(trt.TraitError, match="Invalid version: '1.2.3"):
-        gitag.make_mp_project(version='1.2.3(-: ')
+        pvproject.make_mp_project(version='1.2.3(-: ')
 
-    proj = gitag.make_mp_project(version='1.2.3')
+    proj = pvproject.make_mp_project(version='1.2.3')
 
     assert 'foo' not in proj.tag_fnmatch()
     assert proj.tag_fnmatch().endswith('v*')
@@ -184,12 +182,12 @@ def test_fetch_vtags_history_git_not_in_path(foo, monkeypatch):
 def test_project_matching_all_pp_vtags(ok_repo, project1):
     ok_repo.chdir()
 
-    all_vtags = gitag.make_match_all_pp_vtags_project()
+    all_vtags = pvproject.make_match_all_pp_vtags_project()
     gitag.populate_vtags_history(all_vtags)
     assert all_vtags.pname == '<PVTAG>'
     assert all_vtags.vtags_history == ['proj1-v0.0.1', 'proj1-v0.0.0']
 
-    all_vtags = gitag.make_match_all_mp_vtags_project()
+    all_vtags = pvproject.make_match_all_mp_vtags_project()
     assert all_vtags.pname == '<VTAG>'
     gitag.populate_vtags_history(all_vtags)
     assert all_vtags.vtags_history == []
@@ -203,7 +201,7 @@ def test_simple_project(mutable_pp_repo, project2, caplog):
     cmd.git.tag(BAD_TAG, m='ggg')
     cmd.git.tag('v123')
     cmd.git.tag('v12.0', m='hh')
-    all_mp_tags = gitag.make_match_all_mp_vtags_project()
+    all_mp_tags = pvproject.make_match_all_mp_vtags_project()
     caplog.clear()
     gitag.populate_vtags_history(all_mp_tags)
     assert all_mp_tags.vtags_history == ['v12.0']
@@ -214,7 +212,7 @@ def test_simple_project(mutable_pp_repo, project2, caplog):
 
     ## Check both vtag & vtag formats.
 
-    all_pp_tags = gitag.make_match_all_pp_vtags_project()
+    all_pp_tags = pvproject.make_match_all_pp_vtags_project()
     gitag.populate_vtags_history(project2, all_pp_tags, all_mp_tags,
                                  include_lightweight=True)
     assert all_mp_tags.vtags_history == ['v12.0', 'v123']

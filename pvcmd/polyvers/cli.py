@@ -294,15 +294,15 @@ class PolyversCmd(cmdlets.Cmd, yu.YAMLable):
         Guess whether *monorepo* or *mono-project* versioning schema applies.
 
         :return:
-            one of :func:`gitag.make_mp_project`, :func:`gitag.make_pp_project`
+            one of :func:`pvproject.make_mp_project`, :func:`pvproject.make_pp_project`
         """
         pp_proj, mp_proj = self.autodiscover_version_scheme_projects
         gitag.populate_vtags_history(pp_proj, mp_proj)
 
         if bool(pp_proj.vtags_history) ^ bool(mp_proj.vtags_history):
-            return (gitag.make_pp_project(parent=self)
+            return (pvproject.make_pp_project(parent=self)
                     if pp_proj.vtags_history else
-                    gitag.make_mp_project(parent=self))
+                    pvproject.make_mp_project(parent=self))
         else:
             raise cmdlets.CmdException(
                 "Cannot auto-discover versioning scheme, "
@@ -359,7 +359,7 @@ class PolyversCmd(cmdlets.Cmd, yu.YAMLable):
                 {'pname': pname, 'basepath': basepath}
                 for pname, basepath in pdata.items()]
 
-        if len(self.projects) > 1 and template_project.pname == gitag.MONO_PROJECT:
+        if len(self.projects) > 1 and template_project.pname == pvproject.MONO_PROJECT:
             self.log.warning(
                 "Incompatible *vtags* version-scheme with %s sub-projects!"
                 "\n  You may ether switch to *vtags* (see `--monorepo`) or "
@@ -603,7 +603,7 @@ PolyversCmd.flags = {  # type: ignore
 
     'monorepo': (
         {'Project': {  # type: ignore
-            'pname': gitag.MONOREPO,
+            'pname': pvproject.MONOREPO,
             'tag_format': pvlib.pp_tag_format,
             'gitdesc_repat': pvlib.pp_gitdesc_repat,
         }},
@@ -614,7 +614,7 @@ PolyversCmd.flags = {  # type: ignore
     ),
     'mono-project': (
         {'Project': {  # type: ignore
-            'pname': gitag.MONO_PROJECT,
+            'pname': pvproject.MONO_PROJECT,
             'tag_format': pvlib.mp_tag_format,
             'gitdesc_repat': pvlib.mp_gitdesc_repat,
         }},
