@@ -241,6 +241,7 @@ def _caller_module_name(nframes_back=2):
 
 
 def _caller_basepath(nframes_back=2):
+    # TODO: MERGE WITH ABOVE inspect func
     import inspect
 
     frame = inspect.currentframe()
@@ -248,9 +249,11 @@ def _caller_basepath(nframes_back=2):
         for _ in range(nframes_back):
             frame = frame.f_back
         mod = inspect.getmodule(frame)
-
-        topackage = __import__(mod.__name__.split('.')[0])
-        basepath = osp.dirname(inspect.getfile(topackage))
+        if not mod:
+            basepath = '.'
+        else:
+            topackage = __import__(mod.__name__.split('.')[0])
+            basepath = osp.dirname(inspect.getfile(topackage))
 
         return basepath
     finally:
@@ -489,7 +492,8 @@ def polyversion(**kw):
         - None: both tags searched.
     :param str basepath:
         The path of the outermost package inside the git repo hosting the project;
-        if missing, assumed as the dirname of the calling code's package.
+        if missing, assumed as the dirname of the calling code's package,
+        or (if no module) cwd(`.`).
     :param git_options:
         a str or an iterator of (converted to str) options to pass
         to ``git describe`` command (empty by default).  If a string,
