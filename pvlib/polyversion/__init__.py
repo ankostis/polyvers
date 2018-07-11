@@ -649,16 +649,16 @@ def run(*args):
         %(prog)s [-t] [PROJ-1] ...
         %(prog)s [-v | -V ]     # print my version information
 
-    See http://polyvers.readthedocs.io
-
-    :param argv:
-        Cmd-line arguments, nothing assumed if nothing given.
-
-    - Invokes :func:`polyversion.run()` with ``sys.argv[1:]``.
+    - See http://polyvers.readthedocs.io
     - In order to set cmd-line arguments, invoke directly the function above.
     - With a single project, it raises any problems (e.g. no tags).
     - Use env-var[POLYVERSION_LOG_LEVEL] to control verbosity
       (0: show all, 10: DEBUG, 30: INFO, 40: WARN, 50: ERROR, 60=FATAL).
+
+    :param argv:
+        Cmd-line arguments, nothing assumed if nothing given,
+        so it nvokes :func:`polyversion.run()` with ``sys.argv[1:]``.
+
     """
     for o in ('-h', '--help'):
 
@@ -666,7 +666,7 @@ def run(*args):
             import textwrap as tw
 
             cmdname = osp.basename(sys.argv[0])
-            doc = tw.dedent('\n'.join(run.__doc__.split('\n')[1:7]))
+            doc = tw.dedent('\n'.join(run.__doc__.split('\n')[1:-5]))
             print(doc % {'prog': cmdname})
             return
 
