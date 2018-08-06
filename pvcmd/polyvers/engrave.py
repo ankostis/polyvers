@@ -110,6 +110,23 @@ def _glob_filter_out_other_bases(files: pvproject.FPaths,
     return nfiles
 
 
+def _gitignore_files(files: pvproject.FPaths) -> pvproject.FPaths:
+    import subprocess as sbp
+    from boltons.setutils import IndexedSet as iset
+
+    if not files:
+        return []
+
+    files_lines = '\n'.join('%s' % f for f in files).encode('utf-8')
+    p = sbp.run('git check-ignore --stdin'.split(),
+                input=files_lines, stdout=sbp.PIPE,
+                check=True)
+
+    ignored = p.stdout.decode('utf-8').splitlines()
+
+    return list(iset(files) - set(ignored))
+
+
 def glob_files(patterns: List[str],
                mybase: pvproject.FLike = '.',
                other_bases: pvproject.FLikeList = None) -> pvproject.FPaths:
@@ -123,6 +140,7 @@ def glob_files(patterns: List[str],
 
     mybase = Path(mybase)
     files = _glob_find_files(pattern_pairs, mybase)
+    files = _gitignore_files(files)
 
     files = _glob_filter_in_mybase(files, mybase)
     if other_bases:
