@@ -23,4 +23,4 @@ if __name__ == '__main__':
     if not globals().get('__package__'):
         __package__ = "polyversion"  # noqa: A001 F841 @ReservedAssignment
 
-    main()
+    sys.exit(main())
