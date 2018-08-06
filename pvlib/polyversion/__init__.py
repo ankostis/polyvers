@@ -134,8 +134,17 @@ def _my_run(cmd, cwd='.'):
     "For commands with small output/stderr."
     if not isinstance(cmd, (list, tuple)):
         cmd = cmd.split()
-    proc = sbp.Popen(cmd, stdout=sbp.PIPE, stderr=sbp.PIPE,
-                     cwd=str(cwd), bufsize=-1)
+    try:
+        proc = sbp.Popen(cmd, stdout=sbp.PIPE, stderr=sbp.PIPE,
+                         cwd=str(cwd), bufsize=-1)
+    except FileNotFoundError as ex:
+        ## On Windows you don't see the command attempted to run:
+        #  FileNotFoundError: [WinError 2] The system cannot find the file specified
+        #
+        if not ex.filename:
+            ex.filename = cmd[0]
+        raise
+
     out, err = proc.communicate()
 
     if proc.returncode != 0:

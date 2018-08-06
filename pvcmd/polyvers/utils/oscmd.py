@@ -102,7 +102,8 @@ def exec_cmd(cmd,
             **popen_kws
         )
     except FileNotFoundError as ex:
-        ## On windows, no path provided!
+        ## On Windows you don't see the command attempted to run:
+        #  FileNotFoundError: [WinError 2] The system cannot find the file specified
         #
         if not ex.filename:
             ex.filename = _CmdName(cmd[0])
