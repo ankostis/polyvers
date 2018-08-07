@@ -81,6 +81,15 @@ TODOs
 .. towncrier release notes start
 
 
+2018-08-07: polyversion-v0.2.2a1, polyvers-v0.1.1a1
+===================================================
+Maintenance release.
+
+- enh:  `polyversion` now logs which was cmd not found on Windows
+  (usually it is executing ``git``).
+- chore: Merge all *pyupd* requests for dependencies.
+
+
 2018-07-08: polyversion-v0.2.2a0
 ================================
 - FIX: `git < 2.15.0` was buggy with multiple match-patterns in command::
@@ -104,8 +113,9 @@ were miss-located when switching graft in a same file.
   Run ``polyversion -h`` fo help.
 - Change: minor reordering when searching version from package-metadata.
 - fix: add standalone ``bin/pvlib.run`` from last release.
-- fix: :func:~polyversion()`/:func:~polytime()` are guessing ``basepath`` keyword
-  from the path of caller's top-package (not just from caller's fpath).
+- fix: :func:`~polyversion.polyversion()`/:func:`~polyversion.polytime()`
+  are guessing ``basepath`` keyword from the path of caller's top-package
+  (not just from caller's fpath).
 
 
 2018-07-04: polyversion-v0.2.0a2
@@ -117,23 +127,21 @@ were miss-located when switching graft in a same file.
 
 Features
 --------
-
 - Teach non-engraved projects how to retrieve polyversion when pip-installed:
 
-  - The functions :func:`.polyversion.polyversion()` & :func:`polyversion..polytime()`
+  - The functions :func:`~polyversion.polyversion()` & :func:`~polyversion.polytime()`
     now attempt to fetch version from package/site-package infos.
   - And the function doing this  :func:`polyversion.pkg_metadata_version()`
     retrofitted to:
 
     - search  for `<pname-<version>.egg-info/PKG-INFO` in `baspath` sibling folder
       (before searching PKG-INFO, METADATA in `basepath`),
-    - so now `basepath` always needed in  `polyversion()/polytime()` functions
+    - so now `basepath` always needed in  ``polyversion()/polytime()`` functions
       to locate sibling dir.
 
 
 Breaking Changes
 ----------------
-
 - Rename :term:`setuptools` flag from ``skip_polyversion_check -->
   polyversion_check_bdist_enabled`` to flip its default logic (not checking by
   default), since non-engraved wheels install just fine now.
