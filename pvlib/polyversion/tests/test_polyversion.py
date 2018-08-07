@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
+from datetime import date
 import fnmatch
 import os
 import re
@@ -16,7 +17,7 @@ import subprocess as sbp
 PY_OLD_SBP = sys.version_info < (3, 5)
 
 proj1 = 'proj1'
-proj1_ver = '0.0.1+'
+proj1_ver = '0.0.1.dev'
 proj2 = 'proj-2'
 proj2_ver = '0.2.1'
 
@@ -26,12 +27,15 @@ split_pvtag_validation_patterns = [
     ('proj-1.0.5', None),
     ('proj-1-0.5', None),
     ('proj-v1.0-gaffe', None),
-    ('proj-v1', ('proj', '1', None)),
-    ('pa-v1.2', ('pa', '1.2', None)),
-    ('proj.name-v1.2.3', ('proj.name', '1.2.3', None)),
-    ('proj-v1.3_name-v1.2.3', ('proj-v1.3_name', '1.2.3', None)),
-    ('foo-bar-v00.0-1-g4f99a6f', ('foo-bar', '00.0', '1-g4f99a6f')),
-    ('foo_bar-v00.0.dev1-1-g3fb1bfae20', ('foo_bar', '00.0.dev1', '1-g3fb1bfae20')),
+    ('proj-v1', ('proj', '1', None, None, None, None)),
+    ('pa-v1.2', ('pa', '1.2', None, None, None, None)),
+    ('proj.name-v1.2.3', ('proj.name', '1.2.3', None, None, None, None)),
+    ('proj.name-v1.2.3-dirty', ('proj.name', '1.2.3', None, None, None, '-dirty')),
+    ('proj-v1.3_name-v1.2.3', ('proj-v1.3_name', '1.2.3', None, None, None, None)),
+    ('foo1-bar-v00.0-1-g4f99a6f',
+     ('foo1-bar', '00.0', '1-g4f99a6f', '1', 'g4f99a6f', None)),
+    ('foo2_bar-v00.0.dev1-1-g3fb1bfae20',
+     ('foo2_bar', '00.0.dev1', '1-g3fb1bfae20', '1', 'g3fb1bfae20', None)),
 ]
 
 
@@ -59,12 +63,42 @@ def test_fnmatch_format(inp, exp):
         assert fnmatch.fnmatch(inp, frmt)
 
 
+_year = date.today().strftime('%Y')
+
+
+@pytest.mark.parametrize('inp, exp', [
+    ((None, None, None, None, None), None),
+    (('anything', None, None, None, None), 'anything'),
+    (('foo', 'abcd', None, None, None), 'foo+abcd'),
+    (('foo', None, None, None, 'dirty'), 'foo+' + _year),
+    (('foo', 'abcd', None, None, 'dirty'), 'foo+abcd.' + _year),
+
+    (('foo', None, '3', None, None), AssertionError),
+    (('foo', 'ggg', '3', None, None), AssertionError),
+
+    (('foo', 'abcd', '3', 'ggg', 'dirty'), 'foo.dev3+ggg.' + _year),
+
+    (('foo.dev4', 'abcd', '3', 'ggg', None), 'foo.dev403+ggg'),
+    (('foo.dev4', 'abcd', '3', 'ggg', 'd'), 'foo.dev403+ggg.' + _year),
+
+    (('foodev4', 'abcd', None, None, None), 'foodev4+abcd'),
+    (('foodev4', 'abcd', None, None, 1), 'foodev4+abcd.' + _year),
+])
+def test_version_from_parts(inp, exp):
+    if type(exp) is type and issubclass(exp, Exception):
+        with pytest.raises(exp):
+            pvlib._version_from_parts(*inp)
+    else:
+        got = pvlib._version_from_parts(*inp)
+        assert got and got.startswith(exp) or got == exp
+
+
 def test_caller_fpath():
-    caller_dir = pvlib._caller_basepath(1)
+    caller_dir = pvlib._caller_srcpath(1)
     exp = osp.join(osp.dirname(__file__), '..')
     assert os.stat(caller_dir) == os.stat(exp)
 
-    caller_dir = pvlib._caller_basepath(0)
+    caller_dir = pvlib._caller_srcpath(0)
     exp = osp.join(osp.dirname(__file__), '..')
     ## Windows misses `osp.samefile()`,
     # see https://stackoverflow.com/questions/8892831/
@@ -266,19 +300,19 @@ def test_MAIN_polyversions(ok_repo, untagged_repo, no_repo, capsys, caplog):
     out, err = capsys.readouterr()
     assert not err
     assert out.startswith(proj1)
-    assert proj1_ver[:-1] in out  # clip local-ver char
+    assert proj1_ver[:-4] in out  # clip '.dev'
 
     run(proj1, 'foo')
     out, err = capsys.readouterr()
     assert re.match(
-        r'proj1: 0\.0\.1\+2\.g[\da-f]+\nfoo:', out)
+        r'proj1: 0\.0\.1\.dev2\+g[\da-f]+\nfoo:', out)
     #assert 'No names found' in caplog.text()
 
     run('-t', proj1, 'foo')
     out, err = capsys.readouterr()
     #'proj1: proj1-v0.0.1-2-gccff299\nfoo: \n
     assert re.match(
-        r'proj1: proj1-v0\.0\.1\-2-g[\da-f]+\nfoo:', out)
+        r'proj1: proj1-v0\.0\.1-2-g[\da-f]+\nfoo:', out)
 
     untagged_repo.chdir()
     git_err = '' if PY_OLD_SBP else 'fatal: No names found'

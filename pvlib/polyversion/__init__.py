@@ -52,29 +52,60 @@ pvtag_format = '{pname}-{vprefix}{version}'
 vtag_format = '{vprefix}{version}'
 
 #: The default regex pattern breaking :term:`monorepo` version-tags
-#: and/or ``git-describe`` output into 3 capturing groups:
+#: and/or ``git-describe`` output (eg ``1.9.0a1+18.g887986c6-dirty``
+#: into these capturing groups:
 #:
 #:   - ``pname``,
 #:   - ``version`` (without the ``{vprefix)``),
-#:   - ``descid`` (optional) anything following the dash('-') after
-#:     the version in ``git-describe`` result.
+#:   - ``descid`` (optional) anything in ``git-describe`` result following
+#:     the dash('-') after the version, till any ``'-dirty'``.
+#:   - ``distance`` (optional) the number following the plus('+')
+#:   - ``hexid`` (optional) the commit-hash's hex-number following  ``g`` sch-letter
+#:   - ``dirty`` (optional) the last ``'-dirty'`` literal part
 #:
 #: It is given 2 :pep:`3101` interpolation parameters::
 #:
 #:     {pname}, {vprefix} = tag_vprefixes[0 | 1]
 #:
-#: See :pep:`0426` for project-name characters and format.
+#: - See :pep:`0426` for project-name characters and format.
+#: - See https://pypi.org/project/setuptools_scm/#default-versioning-scheme
 pvtag_regex = r"""(?xmi)
     ^(?P<pname>{pname})
     -
-    {vprefix}(?P<version>\d[^-]*)
-    (?:-(?P<descid>\d+-g[a-f\d]+))?$
+    {vprefix}
+    (?P<version>\d[^-]*)
+    (?:
+        -
+        (?P<descid>
+            (?P<distance>\d+)
+            -
+            (?P<hexid>
+                g
+                [a-f\d]+
+            )
+        )
+    )?
+    (?P<dirty>-dirty)?
+    $
 """
 #: Like :data:`pvtag_format` but for :term:`mono-project` version-tags.
 vtag_regex = r"""(?xmi)
     ^(?P<pname>)
-    {vprefix}(?P<version>\d[^-]*)
-    (?:-(?P<descid>\d+-g[a-f\d]+))?$
+    {vprefix}
+    (?P<version>\d[^-]*)
+    (?:
+        -
+        (?P<descid>
+            (?P<distance>\d+)
+            -
+            (?P<hexid>
+                g
+                [a-f\d]+
+            )
+        )
+    )?
+    (?P<dirty>-dirty)?
+    $
 """
 
 
@@ -83,7 +114,7 @@ def _clean_cmd_result(res):  # type: (bytes) -> str
     :return:
         only if there is something in `res`, as utf-8 decoded string
     """
-    res = res and res.strip()
+    res = res and res.rstrip()
     if res:
         return res.decode('utf-8', errors='surrogateescape')
 
@@ -160,19 +191,19 @@ def _parse_metadata(fp):
     return Parser().parse(fp, headersonly=True)
 
 
-def pkg_metadata_version(pname, basepath=None):
+def pkg_metadata_version(pname, srcpath=None):
     """Get the version from package metadata if present.
 
     :param pname:
         package-name
-    :param basepath:
+    :param srcpath:
         The path of the outermost package inside the git repo hosting the project
         if missing, cwd assumed.
 
     :return:
       `None` if nothing found
 
-    It will retrieve the version from these ``<basepath>`` filepaths (see :pep:`0376`),
+    It will retrieve the version from these ``<srcpath>`` filepaths (see :pep:`0376`),
     and in this order:
 
       - ``../<pname>-<version>.dist-info/METADATA``: for packages
@@ -193,7 +224,7 @@ def pkg_metadata_version(pname, basepath=None):
     ]
     pkg_metadata = {}
     for fpath in pkg_metadata_fpaths:
-        fpath = osp.join(str(basepath) or '.', fpath)
+        fpath = osp.join(str(srcpath) or '.', fpath)
         try:
             matches = glob.glob(fpath)
             if len(matches) == 1:
@@ -240,7 +271,7 @@ def _caller_module_name(nframes_back=2):
         del frame
 
 
-def _caller_basepath(nframes_back=2):
+def _caller_srcpath(nframes_back=2):
     import inspect
 
     frame = inspect.currentframe()
@@ -250,16 +281,22 @@ def _caller_basepath(nframes_back=2):
         mod = inspect.getmodule(frame)
 
         topackage = __import__(mod.__name__.split('.')[0])
-        basepath = osp.dirname(inspect.getfile(topackage))
+        srcpath = osp.dirname(inspect.getfile(topackage))
 
-        return basepath
+        return srcpath
     finally:
         del frame
 
 
 def split_pvtag(pvtag, tag_regexes):
-    ## TODO: parse descids like `setuptools_scm` plugin:
-    #  https://pypi.org/project/setuptools_scm/#default-versioning-scheme
+    """Parse git-describe outpout for crafting versions like `setuptools_scm` plugin:
+
+      https://pypi.org/project/setuptools_scm/#default-versioning-scheme
+
+      :return:
+          a dict with all :data:`pvtag_regex` named groups:
+         (pname, version, descid, dist, scm, hexid)
+      """
     if not isinstance(tag_regexes, (list, tuple)):
         raise ValueError("Expected `tag_regexes` as list-of-str, got: %r" %
                          tag_regexes)
@@ -269,7 +306,11 @@ def split_pvtag(pvtag, tag_regexes):
             m = tregex.match(pvtag)
             if m:
                 mg = m.groupdict()
-                return mg['pname'], mg['version'], mg['descid']
+                return (mg['pname'], mg['version'],
+                        mg.get('descid'),
+                        mg.get('distance'), mg.get('hexid'),
+                        mg.get('dirty')
+                        )
         except Exception as ex:
             raise ValueError("Matching pvtag '%s' by '%s' failed due to: %s" %
                              (pvtag, tregex.pattern, ex))
@@ -280,22 +321,53 @@ def split_pvtag(pvtag, tag_regexes):
                         for tregex in tag_regexes)))
 
 
-def _version_from_descid(version, descid):
+def _version_from_parts(version, descid, distance, hexid, dirty,
+                        repopath='.'):
     """
-    Combine ``git-describe`` parts in a :pep:`440` version with "local" part.
+    Combine ``git-describe`` parts in a :pep:`440` version with "local" part,
+
+    like this: https://pypi.org/project/setuptools_scm/#default-versioning-scheme
 
     :param: version:
         anythng after the project and ``'-v`'`` i,
         e.g it is ``1.7.4.post0``. ``foo-project-v1.7.4.post0-2-g79ceebf8``
     :param: descid:
-        the part after the *pvtag* and the 1st dash('-'), which must not be empty,
-        e.g it is ``2-g79ceebf8`` for ``foo-project-v1.7.4.post0-2-g79ceebf8``.
+        (optional) the part after the *pvtag* and the 1st dash('-'), which
+        may have any format, or folow git's format; in that case, the `distance` and
+        `hexid` should be defined.
     :return:
         something like this: ``1.7.4.post0+2.g79ceebf8`` or ``1.7.4.post0``
     """
-    assert descid, (version, descid)
-    local_part = descid.replace('-', '.')
-    return '%s+%s' % (version, local_part)
+    def timestamp():
+        """The *modification-time* of the most recently edited dirty file."""
+        from datetime import datetime as dt
+
+        try:
+            root = _my_run('git rev-parse --show-toplevel'.split(), cwd=repopath)
+            mtime = dt.fromtimestamp(osp.getmtime(root))
+        except Exception:
+            mtime = dt.now()
+
+        return mtime.strftime(r'%Y%m%d.%H%M%S')
+
+    if distance:
+        assert descid and hexid, (version, descid, distance, hexid, dirty)
+        if 'dev' in version:
+            ## Separate distance from existing `devX` by one zero.
+            version += '0%s+%s' % (distance, hexid)
+        else:
+            version += '.dev%s+%s' % (distance, hexid)
+        if dirty:
+            version += '.' + timestamp()
+    elif descid:
+        version += '+' + descid.replace('-', '.')
+        if dirty:
+            version += '.' + timestamp()
+    else:
+        if dirty:
+            version += '+' + timestamp()
+
+    return version
 
 
 def _interp_fnmatch(tag_format, vprefix, pname):
@@ -328,11 +400,11 @@ def _is_git_describe_accept_signle_pattern():
     return _git_version()[:2] < (2, 15)
 
 
-def _git_describe(cmd, tag_patterns, basepath):
+def _git_describe(cmd, tag_patterns, repopath):
     if _is_git_describe_accept_signle_pattern():
         for i, tp in enumerate(tag_patterns):
             try:
-                pvtag = _my_run(cmd + ['--match=%s' % tp], cwd=basepath)
+                pvtag = _my_run(cmd + ['--match=%s' % tp], cwd=repopath)
                 break
             ## Catching overriden MyCalledProcessError here
             #  bc error we want to ignore is raised after communicate
@@ -345,16 +417,44 @@ def _git_describe(cmd, tag_patterns, basepath):
 
     else:
         cmd.extend('--match=' + tp for tp in tag_patterns)
-        pvtag = _my_run(cmd, cwd=basepath)
+        pvtag = _my_run(cmd, cwd=repopath)
 
     return pvtag
+
+
+def _validate_git_options(git_options):
+    if isinstance(git_options, str):
+        git_options = git_options.split()
+    else:
+        try:
+            git_options = [str(s) for s in git_options]
+        except Exception as ex:
+            raise TypeError(
+                "invalid `git_options` due to: %s"
+                "\n  must be a str or an iterable, got: %r" %
+                (ex, git_options))
+
+    return git_options
+
+
+def _make_tag_patterns(pname,
+                       tag_format, tag_regex,
+                       vprefixes):
+    import re
+
+    tag_patterns, tag_regexes = zip(
+        *((_interp_fnmatch(tag_format, vp, pname),
+           re.compile(_interp_regex(tag_regex, vp, pname)))
+          for vp in vprefixes))
+
+    return tag_patterns, tag_regexes
 
 
 def _git_describe_parsed(pname,
                          default_version,        # if None, raise
                          tag_format, tag_regex,
                          vprefixes,
-                         basepath, git_options):
+                         repopath, git_options):
     """
     Parse git-desc as `pvtag, version, descid` or raise when no `default_version`.
 
@@ -363,42 +463,29 @@ def _git_describe_parsed(pname,
     """
     assert not isinstance(vprefixes, str), "req list-of-str, got: %r" % vprefixes
 
-    import re
-
-    if git_options:
-        if isinstance(git_options, str):
-            git_options = git_options.split()
-        else:
-            try:
-                git_options = [str(s) for s in git_options]
-            except Exception as ex:
-                raise TypeError(
-                    "invalid `git_options` due to: %s"
-                    "\n  must be a str or an iterable, got: %r" %
-                    (ex, git_options))
-    tag_patterns, tag_regexes = zip(
-        *((_interp_fnmatch(tag_format, vp, pname),
-           re.compile(_interp_regex(tag_regex, vp, pname)))
-          for vp in vprefixes))
-
+    git_options = git_options and _validate_git_options(git_options)
+    tag_patterns, tag_regexes = _make_tag_patterns(
+        pname, tag_format, tag_regex, vprefixes)
     #
     ## Guard against git's runtime errors, below,
     #  and not configuration-ones, above.
     #
     pvtag = version = descid = None
     try:
-        cmd = 'git describe'.split()
+        cmd = 'git describe --dirty'.split()
         if git_options:
             cmd.extend(git_options)
 
-        pvtag = _git_describe(cmd, tag_patterns, basepath)
+        pvtag = _git_describe(cmd, tag_patterns, repopath)
 
-        matched_project, version, descid = split_pvtag(pvtag, tag_regexes)
-        if matched_project and matched_project != pname:
+        parts = split_pvtag(pvtag, tag_regexes)
+        matched_pname = parts[0]
+        version = parts[1]
+        rest_parts = parts[2:]
+        if matched_pname and matched_pname != pname:
             log.warning("Matched  pvtag project '%s' different from expected '%s'!",
-                        matched_project, pname)
-        if descid:
-            version = _version_from_descid(version, descid)
+                        matched_pname, pname)
+        version = _version_from_parts(version, *rest_parts, repopath=repopath)
     except Exception as ex:
         if default_version is None:
             raise
@@ -488,8 +575,9 @@ def polyversion(**kw):
         - true: r-tags searched;
         - None: both tags searched.
     :param str basepath:
-        The path of the outermost package inside the git repo hosting the project;
-        if missing, assumed as the dirname of the calling code's package.
+        The path of the topmost package inside the git repo hosting the project;
+        if missing, assumed as the dir of the calling code's top-package.
+        Used also as git's repo-path.
     :param git_options:
         a str or an iterator of (converted to str) options to pass
         to ``git describe`` command (empty by default).  If a string,
@@ -533,9 +621,14 @@ def polyversion(**kw):
         pname = _caller_module_name()
 
     if not basepath:
-        basepath = _caller_basepath()
+        basepath = _caller_srcpath()
         if not basepath:
             basepath = '.'
+
+    ## TODO: can polyversion logic described with a list-of specs?
+    #     (callable, raise?, break?)
+    #  where `raise`: true, false, None:= only if no prev-versions in list.
+    #  Also, should collect valid-kwds from callables?
 
     version = pkg_metadata_version(pname, basepath)
     if version:
@@ -575,8 +668,9 @@ def polytime(**kw):
         If true, never fail and return current-time.
         Assumed true if a :term:`default version env-var` is found.
     :param str basepath:
-        The path of the outermost package inside the git repo hosting the project;
-        if missing, assumed as the dirname of the calling code's package.
+        The path of the topmost package inside the git repo hosting the project;
+        if missing, assumed as the dir of the calling code's top-package.
+        Used also as git's repo-path.
     :param str pname:
         The project-name used only as the prefix for :term:`default version env-var`.
         If not given, defaults to the *last segment of the module-name of the caller*.
@@ -590,7 +684,8 @@ def polytime(**kw):
         [Default: ``<pname>_VERSION``]
 
     :return:
-        the commit-date if in git repo, or now; :rfc:`2822` formatted
+        the commit-date if in git repo, or now; :rfc:`2822` formatted,
+        like: `Sun, 8 Jul 2018 00:22:37 +0300`
     """
     no_raise = kw.get('no_raise', False)
     basepath = kw.get('basepath')
@@ -600,7 +695,7 @@ def polytime(**kw):
         pname = _caller_module_name()
 
     if not basepath:
-        basepath = _caller_basepath()
+        basepath = _caller_srcpath()
 
     cdate = None
     if not pkg_metadata_version(pname, basepath):
@@ -655,8 +750,9 @@ def run(*args):
     Describe the version of a *polyvers* projects from git tags.
 
     USAGE:
-        %(prog)s [-t] [PROJ-1] ...
-        %(prog)s [-v | -V ]     # print my version information
+        %(prog)s [PROJ-1] ...           ## print project version(s)
+        %(prog)s  -t  [PROJ-1] ...      ## print  project vtag(s)
+        %(prog)s [-v | -V ]             ## print my version information
 
     - See http://polyvers.readthedocs.io
     - In order to set cmd-line arguments, invoke directly the function above.
@@ -696,7 +792,7 @@ def run(*args):
     _init_logging()
 
     if len(args) == 1:
-        res = polyversion(pname=args[0], basepath=os.curdir,
+        res = polyversion(pname=args[0], basepath='.',
                           return_all=print_tag)
         # fetces either 1-triplet or screams.
         if print_tag:
@@ -705,7 +801,7 @@ def run(*args):
     else:
         versions = [(pname, polyversion(pname=pname,
                                         default_version='',
-                                        basepath=os.curdir,
+                                        basepath='.',
                                         return_all=print_tag))
                     for pname in args]
 

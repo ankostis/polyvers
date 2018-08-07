@@ -11,9 +11,10 @@ import setuptools
 _exp_bad_args = \
     "error in pname setup command: invalid content in `polyversion` keyword due to: "
 _git_desc_cmd = re.escape(
-    r"Command '['git', 'describe', '--match=pname-v*', '--match=pname-r*']' returned non-zero")
+    r"Command '['git', 'describe', '--dirty', '--match=pname-v*', '--match=pname-r*']' "
+    "returned non-zero")
 _git_desc_cmd_old_git = re.escape(
-    r"Command '['git', 'describe', '--match=pname-r*']' returned non-zero")
+    r"Command '['git', 'describe', '--dirty', '--match=pname-r*']' returned non-zero")
 
 
 def call_setup(pv, **kwds):

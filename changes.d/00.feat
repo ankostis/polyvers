@@ -1,0 +1,5 @@
+- Parse ``git describe`` DISTANCE as :pep:`-426` *developmental* part and 
+  timstamps, as the blessed :term:`setuptools_scm` `does 
+  <https://pypi.org/project/setuptools_scm/#default-versioning-scheme>`_.
+  Also a DIRTY repository produces versions with local-parts containing the 
+  timetamp of the latest change. 
