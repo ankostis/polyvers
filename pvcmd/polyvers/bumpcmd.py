@@ -114,6 +114,7 @@ class BumpCmd(cli._SubCmd):
         """
     )
 
+    ## TODO: rename `bumpcmd.out_of_trunk_releases` --> out_of_trunk_enabled, flag: no_rtag
     out_of_trunk_releases = Bool(
         True,
         config=True,
@@ -139,6 +140,7 @@ class BumpCmd(cli._SubCmd):
         """
     )
 
+    ## TODO: rename `bumpcmd.commit` --> commit_enabled
     commit = Bool(
         config=True,
         help="""
