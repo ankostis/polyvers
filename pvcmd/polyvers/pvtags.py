@@ -130,7 +130,7 @@ def git_restore_point(restore_head=False, heads=True, tags=True):
         ok = True
     finally:
         if not ok or restore_head:
-            if cur_branch:
+            if cur_branch and 'detached' not in cur_branch:
                 cmd.git.checkout(cur_branch, force=True)
             cmd.git.reset._(hard=True)(original_commit_id)
             if heads or tags:

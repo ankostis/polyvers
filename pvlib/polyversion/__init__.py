@@ -139,10 +139,17 @@ def _my_run(cmd, cwd='.'):
                          cwd=str(cwd), bufsize=-1)
     except FileNotFoundError as ex:
         ## On Windows you don't see the command attempted to run:
-        #  FileNotFoundError: [WinError 2] The system cannot find the file specified
+        #      FileNotFoundError: [WinError 2] The system cannot find the file specified
         #
         if not ex.filename:
             ex.filename = cmd[0]
+        raise
+    except NotADirectoryError as ex:
+        ## On Windows you don't see the cwd directory:
+        #      NotADirectoryError: [WinError 267] The directory name is invalid:
+        #
+        if not ex.filename:
+            ex.filename = osp.realpath(cwd)
         raise
 
     out, err = proc.communicate()

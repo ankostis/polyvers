@@ -54,15 +54,6 @@ def format_syscmd(cmd):
     return cmd
 
 
-class _CmdName:
-    "To `workaround `:classLFileNotFoundError` not explaing it's a command missing."
-    def __init__(self, path):
-        self.path = path
-
-    def __repr__(self):
-        return "'%s' (command)" % self.path
-
-
 def exec_cmd(cmd,
              dry_run=False,
              check_stdout=True,
@@ -103,11 +94,19 @@ def exec_cmd(cmd,
         )
     except FileNotFoundError as ex:
         ## On Windows you don't see the command attempted to run:
-        #  FileNotFoundError: [WinError 2] The system cannot find the file specified
+        #      FileNotFoundError: [WinError 2] The system cannot find the file specified
         #
         if not ex.filename:
-            ex.filename = _CmdName(cmd[0])
+            ex.filename = cmd[0]
+        raise
+    except NotADirectoryError as ex:
+        import os.path as osp
 
+        ## On Windows you don't see the cwd directory:
+        #      NotADirectoryError: [WinError 267] The directory name is invalid:
+        #
+        if not ex.filename:
+            ex.filename = osp.realpath(popen_kws.get('cwd') or '.')
         raise
 
     if res.returncode:
