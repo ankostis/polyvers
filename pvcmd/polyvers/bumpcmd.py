@@ -271,6 +271,11 @@ class BumpCmd(cli._SubCmd):
             )
             prj.version = latest_version
 
+    def _bump_description(self, projects):
+        return ''.join(
+            '\n    - %s-%s --> %s' % (prj.pname, prj.current_version, prj.version)
+            for prj in projects)
+
     def _log_action_completed(self, projects, fproc):
         if self.log.isEnabledFor(NOTICE):
             git_root = self.git_root.resolve(strict=True)
@@ -278,17 +283,14 @@ class BumpCmd(cli._SubCmd):
             enfiles_desc = '\n    - '.join(
                 str(f.relative_to(git_root)) for
                 f in enfiles)
-            projver_desc = '\n    - '.join(
-                '%s-%s --> %s' % (prj.pname, prj.current_version, prj.version)
-                for prj in projects)
             action = "Engraved" if self.engrave_only else "Bumped"
             self.log.notice(
-                "%s%s projects: \n    - %s\n  with %s grafts in %s files"
+                "%s%s projects: %s\n  with %s grafts in %s files"
                 " (out of %s files globbed): "
                 "\n    - %s",
                 'PRETEND ' if self.dry_run else '',
                 action,
-                projver_desc,
+                self._bump_description(projects),
                 fproc.nmatches(),
                 len(enfiles),
                 len(fproc.grafted_files(all_searched=True)),
@@ -317,6 +319,8 @@ class BumpCmd(cli._SubCmd):
             self._prepare_project_for_bump(prj,
                                            version_bump,
                                            prj in bump_projects)
+
+        self.log.notice("Bumping: %s", self._bump_description(bump_projects))
 
         fproc = engrave.FileProcessor(parent=self)
         if not self.engrave_only:
