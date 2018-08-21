@@ -12,7 +12,8 @@ python:
   - 3.6
   - 3.7-dev
 
-# matrix:
+matrix:
+  fast_finish: true
 #   allow_failures:
 #     - python: 3.7-dev
 
