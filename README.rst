@@ -634,8 +634,7 @@ Bumped across these projects while building it...
         https://github.com/arrdem/git-bump
 
     Lerna
-        A tool for managing JavaScript projects
-        with multiple packages.
+        A tool for managing JavaScript projects with multiple packages.
         https://lernajs.io/
 
     Pants
@@ -688,6 +687,14 @@ Bumped across these projects while building it...
         .. Note:
             Interesting how this project parses ``git describe`` tags:
             https://pypi.org/project/setuptools_scm/#default-versioning-scheme
+
+    Dunamai
+        Library and command line tool for producing dynamic, standards-compliant version strings, 
+        derived from tags in your version control system. Suitable for projects written in 
+        any programming language (i.e. no need for  `setup.py`), 
+        many VCSs(Git; Mercurial, Darcs, Subversion, Bazaar), and 
+        many Version styles (PEP 440, Semantic Versioning, Haskell Package Versioning Policy, Custom)
+         https://github.com/mtkennerly/dunamai
 
     python guide
         There is a dedicated guide for this problem in pythons docs:
