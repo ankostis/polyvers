@@ -109,13 +109,13 @@ setup(
     long_description=long_desc,
     author="Kostis Anagnostopoulos",
     author_email='ankostis@gmail.com',
-    url='https://github.com/jrcstu/polyvers',
+    url='https://github.com/ankostis/polyvers',
     download_url='https://pypi.org/project/polyversion/',
     project_urls={
         'Documentation':
         'http://polyvers.readthedocs.io/en/latest/usage-pvlib.html',
-        'Source': 'https://github.com/jrcstu/polyvers',
-        'Tracker': 'https://github.com/jrcstu/polyvers/issues',
+        'Source': 'https://github.com/ankostis/polyvers',
+        'Tracker': 'https://github.com/ankostis/polyvers/issues',
     },
     ## The ``package_dir={'': <sub-dir>}`` arg is needed for `py_modules` to work
     #  when packaging sub-projects. But ``<sub-dir>`` must be relative to launch cwd,

@@ -56,7 +56,7 @@ extensions = ['sphinx.ext.autodoc',
               ]
 
 extlinks = {
-    'git': ('https://github.com/JRCSTU/polyvers/commit/%s', ''),
+    'git': ('https://github.com/ankostis/polyvers/commit/%s', ''),
 }
 
 # Add any paths that contain templates here, relative to this directory.

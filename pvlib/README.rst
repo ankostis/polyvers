@@ -6,19 +6,19 @@ Polyversion: derive subproject versions from tags on Git monorepos
     :alt: Deployed in PyPi?
     :target: https://pypi.org/pypi/polyversion
 
-.. image:: https://img.shields.io/travis/JRCSTU/polyvers.svg
+.. image:: https://img.shields.io/travis/ankostis/polyvers.svg
     :alt: TravisCI (linux) build ok?
-    :target: https://travis-ci.org/JRCSTU/polyvers
+    :target: https://travis-ci.org/ankostis/polyvers
 
 .. image:: https://ci.appveyor.com/api/projects/status/lyyjtmit5ti7tg1n?svg=true
     :alt: Apveyor (Windows) build?
     :scale: 100%
     :target: https://ci.appveyor.com/project/ankostis/polyvers
 
-.. image:: https://img.shields.io/coveralls/github/JRCSTU/polyvers.svg
+.. image:: https://img.shields.io/coveralls/github/ankostis/polyvers.svg
     :alt: Test-case coverage report
     :scale: 100%
-    :target: https://coveralls.io/github/JRCSTU/polyvers?branch=master&service=github
+    :target: https://coveralls.io/github/ankostis/polyvers?branch=master&service=github
 
 .. image:: https://readthedocs.org/projects/polyvers/badge/?version=latest
     :target: https://polyvers.readthedocs.io/en/latest/?badge=latest
@@ -33,13 +33,13 @@ Polyversion: derive subproject versions from tags on Git monorepos
 :version:       |version|
 :updated:       |today|
 :Documentation: http://polyvers.readthedocs.io/en/latest/usage-pvlib.html
-:repository:    https://github.com/JRCSTU/polyvers
+:repository:    https://github.com/ankostis/polyvers
 :pypi-repo:     https://pypi.org/project/polyversion/
 :copyright:     2018 JRC.C4(STU), European Commission (`JRC <https://ec.europa.eu/jrc/>`_)
 :license:       `MIT License <https://choosealicense.com/licenses/mit/>`_
 
 The python 2.7+ library needed by (sub-)projects managed by `polyvers cmd
-<https://github.com/JRCSTU/polyvers>`_ to derive their version-ids on runtime from Git.
+<https://github.com/ankostis/polyvers>`_ to derive their version-ids on runtime from Git.
 
 Specifically, the configuration file ``.polyvers.yaml`` is NOT read -
 you have to repeat any non-default configurations as function/method keywords

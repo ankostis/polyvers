@@ -7,26 +7,26 @@ Polyvers: Bump sub-project versions in Git monorepos independently
     :alt: Deployed in PyPi?
     :target: https://pypi.org/pypi/polyvers
 
-.. image:: https://img.shields.io/travis/JRCSTU/polyvers.svg
+.. image:: https://img.shields.io/travis/ankostis/polyvers.svg
     :alt: TravisCI (linux) build ok?
-    :target: https://travis-ci.org/JRCSTU/polyvers
+    :target: https://travis-ci.org/ankostis/polyvers
 
 .. image:: https://ci.appveyor.com/api/projects/status/lyyjtmit5ti7tg1n?svg=true
     :alt: Apveyor (Windows) build?
     :scale: 100%
     :target: https://ci.appveyor.com/project/ankostis/polyvers
 
-.. image:: https://img.shields.io/coveralls/github/JRCSTU/polyvers.svg
+.. image:: https://img.shields.io/coveralls/github/ankostis/polyvers.svg
     :alt: Test-case coverage report
     :scale: 100%
-    :target: https://coveralls.io/github/JRCSTU/polyvers?branch=master&service=github
+    :target: https://coveralls.io/github/ankostis/polyvers?branch=master&service=github
 
 .. image:: https://readthedocs.org/projects/polyvers/badge/?version=latest
     :target: https://polyvers.readthedocs.io/en/latest/?badge=latest
     :alt: Auto-generated documentation status
 
-.. image:: https://pyup.io/repos/github/JRCSTU/polyvers/shield.svg
-    :target: https://pyup.io/repos/github/JRCSTU/polyvers/
+.. image:: https://pyup.io/repos/github/ankostis/polyvers/shield.svg
+    :target: https://pyup.io/repos/github/ankostis/polyvers/
     :alt: Dependencies needing updates?
 
 .. image:: https://api.codacy.com/project/badge/Grade/11b2545fd0264f1cab4c862998833503
@@ -36,7 +36,7 @@ Polyvers: Bump sub-project versions in Git monorepos independently
 :version:       |version|
 :updated:       |today|
 :Documentation: https://polyvers.readthedocs.io
-:repository:    https://github.com/JRCSTU/polyvers
+:repository:    https://github.com/ankostis/polyvers
 :pypi-repo:     https://pypi.org/project/polyvers/, https://pypi.org/project/polyversion/
 :keywords:      version-management, configuration-management, versioning, git, monorepos,
                 tool, library
@@ -559,14 +559,14 @@ Known Limitations, Drawbacks & Workarounds
 
 - Installing directly from git-repos needs an engraved branch (e.g. ``latest``)::
 
-      pip install git+https://github.com/JRCSTU/polyvers@latest
+      pip install git+https://github.com/ankostis/polyvers@latest
 
   If you still want to install non-engraved branhces (e.g. ``master``),
   set the :term:`default version env-var`; for example, since *polyvers* subproject
   has not customized the name of its env-var, you may install the very latest
   like this::
 
-      polyvers_VERSION=1.2.3 pip install git+https://github.com/JRCSTU/polyvers
+      polyvers_VERSION=1.2.3 pip install git+https://github.com/ankostis/polyvers
 
   .. Attention::
     The version given in the env-var is irrelevant.
@@ -582,12 +582,12 @@ Known Limitations, Drawbacks & Workarounds
   <https://pip.pypa.io/en/stable/reference/pip_install/#vcs-support>`_.
   For example, to install *polyversion* subproject::
 
-      pip install "git+https://github.com/JRCSTU/polyvers@latest#egg=polyversion&subdirectory=pvlib"
+      pip install "git+https://github.com/ankostis/polyvers@latest#egg=polyversion&subdirectory=pvlib"
 
   Notice that the quotes are needed to escape the ``&`` char from bash.
   Respectively, use this to install from the very latest::
 
-      polyversion_VERSION=1.2.3 pip install git+https://github.com/JRCSTU/polyvers#egg=polyversion&subdirectory=pvlib"
+      polyversion_VERSION=1.2.3 pip install git+https://github.com/ankostis/polyvers#egg=polyversion&subdirectory=pvlib"
 
 
 - Set branch ``latest`` as default in GitHub to show :term:`engrave`\d sub-project version-ids.

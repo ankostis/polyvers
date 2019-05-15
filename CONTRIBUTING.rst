@@ -13,7 +13,7 @@ Install both sub-projects in *develop* mode using ``pip``
 
 .. code-block:: console
 
-    $ git clone  https://github.com/JRCSTU/polyvers  polyvers.git
+    $ git clone  https://github.com/ankostis/polyvers  polyvers.git
     $ cd polyvers.git
     $ pip install  -e pvlib[test]  -e .[test]
 

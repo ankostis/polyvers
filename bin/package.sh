@@ -71,4 +71,4 @@ echo -ne '#!/usr/bin/env python\n' | cat - $tmpzip > "$PVLIB_SH"
 chmod a+x "$PVLIB_SH"
 
 ## Nice chance to send tags.
-git push jrcstu latest --tag -f  # latest always forced.
+git push origin latest --tag -f  # latest always forced.
