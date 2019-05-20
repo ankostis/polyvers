@@ -696,6 +696,11 @@ Bumped across these projects while building it...
         many Version styles (PEP 440, Semantic Versioning, Haskell Package Versioning Policy, Custom)
          https://github.com/mtkennerly/dunamai
 
+    setupmeta
+        Helper for simple `setup.py` files with *setuptools_scm* like tag-based versioning
+        plus commands for bumping version, explain meta infos, cleanall, twine, etc
+        https://github.com/zsimic/setupmeta
+
     python guide
         There is a dedicated guide for this problem in pythons docs:
         https://packaging.python.org/guides/single-sourcing-package-version/
